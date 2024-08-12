@@ -1,10 +1,10 @@
 const express = require('express');
 const router = express();
-const userCtrl = require("../controllers/auth.js");
-const normalizeEmail = require('../middlewares/normalizeEmail');
+const authCtrl = require("../controllers/auth.js");
+const normalizeEmailMiddleware = require('../middlewares/normalizeEmail');
 
-router.get("/", userCtrl.base);
-router.post("/signup", userCtrl.signup);
-router.post("/login", normalizeEmail, userCtrl.login);
+router.get("/", authCtrl.base);
+router.post("/signup", authCtrl.signup);
+router.post("/login", normalizeEmailMiddleware, authCtrl.login);
 
 module.exports = router;
