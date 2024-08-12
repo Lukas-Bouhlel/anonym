@@ -71,16 +71,15 @@ module.exports = (sequelize, DataTypes) => {
     avatar: {
       type: DataTypes.STRING,
       allowNull: true,
-    },
-    ip_address: {
-      type: DataTypes.STRING,
-      allowNull: false,
     }
   }, {
     sequelize,
     modelName: 'User',
     hooks: {
       beforeCreate: async (user, options) => {
+        // Normalize the email
+        user.email = normalizeEmail(user.email);
+
         if (user.password) {
           user.password = await bcrypt.hash(user.password, 10);
         }
@@ -99,5 +98,14 @@ module.exports = (sequelize, DataTypes) => {
       },
     }
   });
+
+  // Function to normalize Gmail addresses
+  function normalizeEmail(email) {
+    const [localPart, domainPart] = email.split('@');
+    if (domainPart.toLowerCase() === 'gmail.com') {
+      return localPart.replace(/\./g, '') + '@' + domainPart;
+    }
+    return email;
+  }
   return User;
 };

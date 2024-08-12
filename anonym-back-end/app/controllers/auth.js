@@ -16,11 +16,8 @@ exports.base = async (req, res) => {
 
 exports.signup = async (req, res) => {
     try {
-        const deviceId = req.deviceInfo;
-
         const user = await User.create({
-            ...req.body,
-            ip_address: deviceId,
+            ...req.body
         });
 
         res.status(201).json(user);
@@ -56,14 +53,9 @@ exports.login = async (req, res) => {
 
         // Comparer le mot de passe
         const passwordMatch = await bcrypt.compare(password, user.password);
-        console.log(user)
+
         if (!passwordMatch) {
             return res.status(401).json({ message: "Invalid password" });
-        }
-
-        // Vérifier l'adresse IP ou le device ID (si nécessaire)
-        if (user.ip_address !== req.deviceInfo) {
-            return res.status(401).json({ message: "Device mismatch" });
         }
 
         // Générer le token JWT
