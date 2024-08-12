@@ -1,0 +1,191 @@
+#container-access {
+    opacity: 1;
+    transition: opacity 0.9s;
+}
+.container-access {
+    opacity: 0;
+    background-color: $white;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.35);
+    position: fixed;
+    width: 768px;
+    max-width: 100%;
+    min-height: 480px;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+
+    p {
+        font-size: 14px;
+        line-height: 20px;
+        letter-spacing: 0.3px;
+        margin: 20px 0;
+        padding: 0 50px;
+    }
+
+    span {
+        font-size: 12px;
+    }
+
+    a {
+        color: #333;
+        font-size: 13px;
+        text-decoration: none;
+        margin: 15px 0 10px;
+    }
+
+    button {
+        background-color: $black;
+        color: $white;
+        font-size: 12px;
+        padding: 10px 45px;
+        border: 1px solid transparent;
+        border-radius: 8px;
+        font-weight: 600;
+        letter-spacing: 0.5px;
+        text-transform: uppercase;
+        margin-top: 10px;
+        cursor: pointer;
+    }
+
+    button.hidden {
+        background-color: transparent;
+        border-color: $white;
+    }
+
+    form {
+        background-color: $white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
+        padding: 0 40px;
+        height: 100%;
+        margin: 0px 1px;
+    }
+
+    input {
+        background-color: #3434342b;
+        border: none;
+        margin: 8px 0;
+        padding: 10px 15px;
+        font-size: 13px;
+        border-radius: 8px;
+        width: 100%;
+        outline: none;
+    }
+
+    &-access {
+        color: #333;
+    }
+
+    .form-container {
+        position: absolute;
+        top: 0;
+        height: 100%;
+        transition: all 0.6s ease-in-out;
+    }
+    
+    .sign-in {
+        left: 0;
+        width: 50%;
+        z-index: 2;
+    }
+    
+    .sign-up {
+        left: 0;
+        width: 50%;
+        opacity: 0;
+        z-index: 1;
+    }
+    
+    .toggle-container-access {
+        position: absolute;
+        top: 0;
+        left: 50%;
+        width: 50%;
+        height: 100%;
+        overflow: hidden;
+        transition: all 0.6s ease-in-out;
+        border-radius: 150px 0 0 100px; 
+        z-index: 9;
+    }
+    
+    .toggle {
+        background-color: $black;
+        height: 100%;
+        background: linear-gradient(to right, #404040, $black);
+        color: $white;
+        position: relative;
+        left: -100%;
+        height: 100%;
+        width: 200%;
+        transform: translateX(0);
+        transition: all 0.6s ease-in-out;
+    }
+    
+    .toggle-panel {
+        position: absolute;
+        width: 50%;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
+        text-align: center;
+        top: 0;
+        transform: translateX(0);
+        transition: all 0.6s ease-in-out;
+    }
+    
+    .toggle-left {
+        transform: translateX(-200%);
+        // padding: 0 30px 0 0;
+    }
+    
+    .toggle-right {
+        right: 0;
+        transform: translateX(0);
+        // padding: 0 0 0 30px;
+    }
+
+    &.active .sign-in {
+        transform: translateX(100%);
+    }
+
+    &.active .sign-up {
+        transform: translateX(100%);
+        opacity: 1;
+        z-index: 5;
+    }
+
+    &.active .toggle-container-access {
+        transform: translateX(-100%);
+        border-radius: 0 150px 100px 0;
+    }
+
+    &.active .toggle {
+        transform: translateX(50%);
+    }
+
+    &.active .toggle-left {
+        transform: translateX(0);
+    }
+    
+    &.active .toggle-right {
+        transform: translateX(200%);
+    }
+
+    .close-popup {
+        position: absolute;
+        z-index: 10;
+        border-radius: 50%;
+        padding: 10px 14px;
+        margin: 0;
+        right: -20px;
+        top: -20px;
+        background-color: #414141;
+        svg {
+            height: 1.5em;
+        }
+    }
+}

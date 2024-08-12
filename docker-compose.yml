@@ -1,0 +1,59 @@
+services:
+  mysql-db:
+    image: mysql:latest
+    container_name: db-anonym
+    volumes:
+      - db-anonym:/var/lib/mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: anonym
+      MYSQL_DATABASE: anonym
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    ports:
+      - 3306:3306
+  backend:
+    build:
+      context: ./anonym-back-end
+      dockerfile: Dockerfile
+    container_name: node-backend
+    ports:
+      - 5000:5000
+    depends_on:
+      mysql-db:
+        condition: service_healthy
+    volumes:
+      - ./anonym-back-end:/app
+    develop:
+      watch:
+        - action: sync
+          path: ./anonym-back-end/
+          target: /app/
+          ignore:
+            - node_modules/
+        - action: rebuild
+          path: ./anonym-back-end/package.json
+  frontend:
+    build:
+      context: ./anonym-front-end
+      dockerfile: Dockerfile
+    container_name: node-frontend
+    ports:
+      - 8080:8080
+    depends_on:
+      - backend
+    develop:
+      watch:
+        - action: sync
+          path: ./anonym-front-end/
+          target: /app/
+          ignore:
+            - node_modules/
+        - action: rebuild
+          path: ./anonym-front-end/package.json
+    extra_hosts:
+      - "anonym.local=127.0.0.1"
+volumes:
+  db-anonym:

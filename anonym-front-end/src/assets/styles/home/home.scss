@@ -1,0 +1,72 @@
+@import '../base/mixins';
+@import '../access/access.scss';
+
+.page-home {
+    background: $black;
+    height: 100%;
+    @include display(flex, center, column);
+    &-title {
+        text-align: center;
+        color: $white;
+        text-transform: uppercase;
+        font-size: 50px;
+    }
+    &-paragraph {
+        color: $white;
+        padding: 0 27%;
+        text-align: center;
+        font-size: 17px;
+    }
+    &-content {
+        z-index: 1;
+        position: relative;
+    }
+
+    &-icons {
+        position: absolute;
+        width: 100%;
+        display: flex;
+        justify-content: center;
+        .sphere-animation {
+            width: 35%;
+            @include display(flex, center, center);
+            .sphere{
+                width: 35%;
+                fill: url(#sphereGradient);
+                stroke-width: 1px;
+                stroke: rgba(80,80,80,.35);
+                backface-visibility: hidden;
+            }
+        }
+        .cloud {
+            width: 70px;
+            left: 70%;
+        }
+        .star-white {
+            width: 10px;
+            left: 20%;
+            top: 50%;
+        }
+        .star-yellow {
+            width: 20px;
+            right: 10%;
+        }
+        .star-flash-white {
+            width: 50px;
+            bottom: 0;
+            rotate: -37deg;
+            left: 0;
+            right: -72%;
+        }
+        .star-flash-yellow {
+            width: 35px;
+            rotate: 50deg;
+            bottom: 0;
+        }
+    }
+    @media (min-width: 500px) {
+        .sphere {
+            stroke-width: .4px;
+        }
+    }
+}
