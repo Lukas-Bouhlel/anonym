@@ -4,10 +4,16 @@ const authRoutes = require('./auth.js');
 const accountRoutes = require('./account.js');
 const adminRoutes = require('./admin.js');
 const shopRoutes = require('./shop.js');
+const paymentRoutes = require('./payment.js');
+const invoiceRoutes = require('./invoice.js');
+const inventoryRoutes = require('./inventory.js');
 
 router.use("/auth", authRoutes);
 router.use("/account", accountRoutes);
 router.use("/admin", adminRoutes);
 router.use("/shop", shopRoutes);
+router.use("/payment", paymentRoutes);
+router.use("/invoice", invoiceRoutes);
+router.use("/inventory", inventoryRoutes);
 
 module.exports = router
