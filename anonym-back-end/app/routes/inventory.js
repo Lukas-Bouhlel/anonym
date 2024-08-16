@@ -6,6 +6,7 @@ const authMiddleware = require('../middlewares/auth');
 // Routes pour les utilisateurs
 router.get('/:item_id', authMiddleware, inventoryCtrl.read); // Lire un article spécifique dans l'inventaire d'un utilisateur
 router.get('/', authMiddleware, inventoryCtrl.readAll); // Lire tous les articles dans l'inventaire d'un utilisateur
+router.put('/:item_id', authMiddleware, inventoryCtrl.updateStatus);
 
 // Routes pour les admins
 router.post('/admin/', authMiddleware, inventoryCtrl.create);

@@ -5,7 +5,6 @@ const normalizeEmailMiddleware = require('../middlewares/normalizeEmail');
 const multer = require('../middlewares/mutler.js');
 const generateAvatar = require('../middlewares/generateAvatar');
 
-router.get("/", authCtrl.base);
 router.post("/signup", multer, generateAvatar, authCtrl.signup);
 router.post("/login", normalizeEmailMiddleware, authCtrl.login);
 

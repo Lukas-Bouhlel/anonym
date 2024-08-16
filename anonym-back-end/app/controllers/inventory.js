@@ -1,4 +1,5 @@
 const { Inventory, Shop, User } = require('../models');
+const { Op } = require('sequelize');
 
 // Lire un article spécifique dans l'inventaire d'un utilisateur
 exports.read = async (req, res) => {
@@ -39,6 +40,55 @@ exports.readAll = async (req, res) => {
         res.status(200).json(inventoryItems);
     } catch (error) {
         res.status(500).json({ message: error.message || 'An error occurred while fetching the inventory.' });
+    }
+};
+
+exports.updateStatus = async (req, res) => {
+    try {
+        const itemId = req.params.item_id;
+        const { active } = req.body;
+
+        // Trouver l'inventaire par ID
+        const inventory = await Inventory.findOne({
+            where: { item_id: itemId },
+            include: { model: Shop, attributes: ['type'] }
+        });
+
+        if (!inventory) {
+            return res.status(404).json({ message: "Inventory not found" });
+        }
+
+        // Si l'article doit être activé
+        if (active === true) {
+            // Désactiver tous les autres articles du même type pour ce user_id
+            const sameTypeInventories = await Inventory.findAll({
+                where: {
+                    user_id: inventory.user_id,
+                },
+                include: {
+                    model: Shop,
+                    where: { type: inventory.Shop.type }
+                }
+            });
+
+            // Désactiver chaque item du même type
+            await Promise.all(sameTypeInventories.map(async (inv) => {
+                if (inv.item_id !== itemId) {
+                    inv.active = false;
+                    await inv.save();
+                }
+            }));
+        }
+
+        // Mettre à jour l'état actif de cet inventaire
+        inventory.active = active;
+        await inventory.save();
+
+        res.status(200).json(inventory);
+    } catch (error) {
+        res.status(500).json({
+            message: error.message || 'An error occurred while updating the inventory.'
+        });
     }
 };
 
