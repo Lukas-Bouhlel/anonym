@@ -76,7 +76,7 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.ENUM('USER', 'ADMIN', 'SUPER_ADMIN'),
       allowNull: false,
       defaultValue: 'USER'
-    }
+    },
   }, {
     sequelize,
     modelName: 'User',

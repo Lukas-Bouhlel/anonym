@@ -5,17 +5,6 @@ const fs = require('fs');
 const path = require('path')
 const { Op } = require('sequelize');
 
-exports.base = async (req, res) => {
-    try {
-        const test = ['Test Api !']
-        res.status(200).json({ test });
-    } catch (error) {
-        res.status(500).json({
-            message: error.message || 'Could not read all wood'
-        });
-    }
-};
-
 exports.signup = async (req, res) => {
     try {
 
@@ -24,8 +13,8 @@ exports.signup = async (req, res) => {
             ...req.body
         });
 
-         // Après la création réussie de l'utilisateur, générer l'avatar si nécessaire
-         if (!req.file && req.avatarData) {
+        // Après la création réussie de l'utilisateur, générer l'avatar si nécessaire
+        if (!req.file && req.avatarData) {
             const { circleColor, pathColor, uniqueAvatarName } = req.avatarData;
 
             // Chemin du fichier avatar par défaut
@@ -49,8 +38,8 @@ exports.signup = async (req, res) => {
 
         res.status(201).json(user);
     } catch (error) {
-        res.status(500).json({ 
-            message: error.message || 'Could not create user' 
+        res.status(500).json({
+            message: error.message || 'Could not create user'
         });
     }
 }
@@ -87,7 +76,7 @@ exports.login = async (req, res) => {
 
         // Générer le token JWT
         const token = jwt.sign({ userId: user.id, userRole: user.roles }, process.env.JWT_SECRET, { expiresIn: '10h' });
-        
+
         res.status(200).json({ token, user });
     } catch (error) {
         res.status(500).json({
