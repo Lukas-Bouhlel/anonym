@@ -1,4 +1,5 @@
 const { Shop } = require('../models');
+const fs = require('fs');
 
 // Lister tous les articles
 exports.readAll = async (req, res) => {
@@ -26,20 +27,30 @@ exports.read = async (req, res) => {
 // Créer un nouvel article
 exports.create = async (req, res) => {
     try {
-        const { amount, timestamp, title, type, content } = req.body;
+        const pathname = `${req.protocol}://${req.get("host")}/uploads/articles/${req.file.filename}`;
 
+        if (!pathname) {
+            return res.status(400).json({ message: "Pathname are required." });
+        }
         // Vérifier que l'utilisateur est soit ADMIN, soit SUPER_ADMIN
         if (req.auth.userRole === 'USER') {
             return res.status(403).json({ message: "You do not have permission to create a article." });
         }
-    
+
+        let newArticle = await Shop.create({
+            ...JSON.parse(req.body.datas),
+            content: pathname,
+        });
+        newArticle = {
+            ...newArticle.toJSON()
+        };
+
         // Validation pour les champs requis
-        if (!amount || !title || !type || !content) {
-            return res.status(400).json({ message: "Amount, title, type, and content are required." });
+        if (!newArticle.amount || !newArticle.title || !newArticle.type) {
+            return res.status(400).json({ message: "Amount, title and type are required." });
         }
 
-        const shop = await Shop.create({ amount, timestamp, title, type, content });
-        res.status(201).json(shop);
+        res.status(201).json(newArticle);
     } catch (error) {
         res.status(500).json({ message: error.message || "An error occurred while creating the shop item." });
     }
@@ -53,22 +64,42 @@ exports.update = async (req, res) => {
             return res.status(403).json({ message: "You do not have permission to create a article." });
         }
 
-        const shop = await Shop.findByPk(req.params.id);
+        let shop = await Shop.findByPk(req.params.id);
 
         if (!shop) {
             return res.status(404).json({ message: "Shop item not found." });
         }
 
-        const { amount, timestamp, title, type, content } = req.body;
+        let updateArticle = {
+            ...JSON.parse(req.body.datas)
+        }
+        
+        if (req.file) {
+            const pathname = `${req.protocol}://${req.get("host")}/uploads/articles/${req.file.filename}`;
 
-        // Mise à jour des champs
-        if (amount) shop.amount = amount;
-        if (timestamp) shop.timestamp = timestamp;
-        if (title) shop.title = title;
-        if (type) shop.type = type;
-        if (content) shop.content = content;
+            updateArticle = {
+                ...updateArticle,
+                content: pathname
+            };
 
-        await shop.save();
+            if (shop.content) {
+                const filename = shop.content.split("/uploads/articles/")[1];
+                fs.unlink(`uploads/articles/${filename}`, (err) => {
+                    if (err) {
+                        console.error(`Error deleting image ${filename}: ${err.message}`);
+                    } else {
+                        console.log(`Image ${filename} deleted`);
+                    }
+                });
+            }
+        }
+
+        await shop.update(updateArticle);
+
+        shop = {
+            ...shop.toJSON()
+        };
+
         res.status(200).json(shop);
     } catch (error) {
         res.status(500).json({ message: error.message || "An error occurred while updating the shop item." });
@@ -83,30 +114,26 @@ exports.delete = async (req, res) => {
             return res.status(403).json({ message: "You do not have permission to create a article." });
         }
 
-        const shop = await Shop.findByPk(req.params.id);
+        let shop = await Shop.findByPk(req.params.id);
         if (!shop) {
             return res.status(404).json({ message: "Shop item not found." });
         }
 
-        await shop.destroy();
-        res.status(200).json({ message: "Shop item successfully deleted." });
+        if (shop.content) {
+            const filename = shop.content.split("/uploads/articles/")[1];
+            fs.unlink(`uploads/articles/${filename}`, (err) => {
+                if (err) {
+                    console.error(`Error deleting image ${filename}: ${err.message}`);
+                } else {
+                    console.log(`Image ${filename} deleted`);
+                }
+            });
+        }
+
+        await shop.destroy(shop);
+
+        res.status(204).send();
     } catch (error) {
         res.status(500).json({ message: error.message || "An error occurred while deleting the shop item." });
-    }
-};
-
-// Gérer le paiement d'un article spécifique par ID (exemple basique)
-exports.payment = async (req, res) => {
-    try {
-        const shop = await Shop.findByPk(req.params.id);
-        if (!shop) {
-            return res.status(404).json({ message: "Shop item not found." });
-        }
-
-        // Logique de paiement simplifiée (à adapter selon vos besoins)
-        // Ici, vous pourriez appeler un service de paiement, vérifier l'état, etc.
-        res.status(200).json({ message: `Payment processed for shop item ${shop.id}.` });
-    } catch (error) {
-        res.status(500).json({ message: error.message || "An error occurred while processing the payment." });
     }
 };

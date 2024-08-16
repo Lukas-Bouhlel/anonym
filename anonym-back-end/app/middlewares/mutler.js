@@ -1,5 +1,6 @@
 const multer = require("multer");
 const fs = require('fs');
+const path = require('path');
 
 //On définit les extensions selon le mime type.
 const MIME_TYPES = {
@@ -15,16 +16,31 @@ if (!fs.existsSync('uploads')) {
     fs.mkdirSync('uploads');
 }
 
+// On crée dynamiquement le dossier uploads s'il n'existe pas
+const createDirectory = (dir) => {
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
+  };
+
 // diskStorage => destination du fichier / générer un nom de fichier unique
 const storage = multer.diskStorage({
-destination: (req, file, callback) => {
-    callback(null, "uploads");
-},
-filename: (req, file, callback) => {
-const name = file.originalname.split(" ").join("_").split(".")[0]
-const extension = MIME_TYPES[file.mimetype]
-callback(null, name + "_" + Date.now() + "." + extension);
-},
+    destination: (req, file, callback) => {
+        // Détecter le contexte de la route pour déterminer le dossier
+        let folder = 'uploads';  // dossier par défaut
+    
+        if (req.baseUrl.includes('/shop')) {
+          folder = 'uploads/articles';
+        }
+
+        createDirectory(folder);  // créer le dossier si nécessaire
+        callback(null, folder);
+    },
+    filename: (req, file, callback) => {
+        const name = file.originalname.split(" ").join("_").split(".")[0]
+        const extension = MIME_TYPES[file.mimetype]
+        callback(null, name + "_" + Date.now() + "." + extension);
+    },
 });
 
 // On exporte le module avec ces paramètres en précisant
