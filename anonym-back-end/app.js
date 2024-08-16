@@ -4,6 +4,7 @@ const cookieParser = require('cookie-parser');
 const app = express();
 const router = require("./app/routes/index.js");
 const db = require("./app/models/index.js");
+const path = require('path');
 const deviceInfoMiddleware = require('./app/middlewares/deviceInfo.js');
 
 db.sequelize
@@ -19,7 +20,11 @@ app.get('/', (req, res) => {
 });
 
 app.use(cookieParser());
+
 app.use(deviceInfoMiddleware);
+
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+
 app.use("/api", router);
 
 module.exports = app;
