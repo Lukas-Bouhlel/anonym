@@ -1,6 +1,8 @@
 const { User } = require('../models');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
+const fs = require('fs');
+const path = require('path')
 const { Op } = require('sequelize');
 
 exports.base = async (req, res) => {
@@ -16,9 +18,34 @@ exports.base = async (req, res) => {
 
 exports.signup = async (req, res) => {
     try {
+
+        // Créer l'utilisateur avec l'avatar (soit celui téléchargé, soit la copie du défaut)
         const user = await User.create({
             ...req.body
         });
+
+         // Après la création réussie de l'utilisateur, générer l'avatar si nécessaire
+         if (!req.file && req.avatarData) {
+            const { circleColor, pathColor, uniqueAvatarName } = req.avatarData;
+
+            // Chemin du fichier avatar par défaut
+            const defaultAvatarPath = path.join(__dirname, '../../uploads/profiles/default/default_avatar.svg');
+            const userAvatarPath = path.resolve(__dirname, '../../uploads/profiles/avatars', uniqueAvatarName);
+
+            // Lire le contenu du SVG
+            let svgContent = fs.readFileSync(defaultAvatarPath, 'utf8');
+
+            // Remplacer la couleur dans le SVG
+            svgContent = svgContent.replace(/<circle[^>]*fill="[^"]*"[^>]*>/, `<circle cx="115" cy="115" r="115" fill="${circleColor}"/>`);
+            svgContent = svgContent.replace(/<path[^>]*fill="[^"]*"[^>]*>/, `<path d="M114.37 48L150.593 117.743L167.732 116.319L184.87 114.894L158.396 132.766C169.932 154.979 184.87 183.741 184.87 183.741L161.077 183.801L140.549 144.814L66.4727 183.801H44L54.9652 162.64L135.365 133.027C135.365 133.027 135.396 133.016 135.457 132.994C136.576 132.584 177.708 117.529 184.87 114.894L167.732 116.319L150.593 117.743L131.372 124.824L115.018 92.3567L103.054 114.894L89.6156 140.207L44 157.012L66.0193 141.308L79.1852 115.9L114.37 48Z" fill="${pathColor}"/>`);
+
+            // Enregistrer le SVG modifié
+            fs.writeFileSync(userAvatarPath, svgContent);
+
+            // Mettre à jour l'avatar de l'utilisateur dans la base de données
+            user.avatar = `${req.protocol}://${req.get("host")}/uploads/profiles/avatars/${uniqueAvatarName}`;
+            await user.save();
+        }
 
         res.status(201).json(user);
     } catch (error) {

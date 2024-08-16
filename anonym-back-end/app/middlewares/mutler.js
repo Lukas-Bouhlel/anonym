@@ -9,6 +9,7 @@ const MIME_TYPES = {
 "image/gif" : "gif",
 "image/png" : "png",
 "image/webp" : "webp",
+"image/svg" : "svg"
 };
 
 //On crée le dossier uploads s'il n'existe pas
@@ -31,6 +32,10 @@ const storage = multer.diskStorage({
     
         if (req.baseUrl.includes('/shop')) {
           folder = 'uploads/articles';
+        }
+
+        if (req.baseUrl.includes('/auth') || req.baseUrl.includes('/account') || req.baseUrl.includes('/admin')) {
+            folder = 'uploads/profiles/avatars';
         }
 
         createDirectory(folder);  // créer le dossier si nécessaire
