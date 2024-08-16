@@ -53,8 +53,13 @@ module.exports = (sequelize, DataTypes) => {
       }
     },
     content: {
-      type: DataTypes.BLOB,
-      allowNull: false
+      type: DataTypes.STRING,
+      allowNull: false,
+      validate: {
+        notEmpty: {
+          msg: 'Content cannot be empty.'
+        }
+      }
     }
   }, {
     sequelize,
