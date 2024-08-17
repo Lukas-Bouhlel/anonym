@@ -4,7 +4,6 @@ const { Invoice, Shop } = require('../models');
 exports.readAll = async (req, res) => {
     try {
         const invoices = await Invoice.findAll({ where: { user_id: req.auth.userId } });
-        console.log(invoices)
         res.status(200).json(invoices);
     } catch (error) {
         res.status(500).json({ message: error.message || 'An error occurred while fetching invoices.' });
