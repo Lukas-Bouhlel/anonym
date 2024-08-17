@@ -3,30 +3,10 @@ const bcrypt = require('bcrypt');
 const fs = require('fs');
 const path = require('path');
 
-exports.readAll = async (req, res) => {
-    try {
-        const users = await User.findAll();
-
-        if (req.auth.userRole === 'USER') {
-            return res.status(403).json({ message: "Il faut être admin pour accéder à cette page." });
-        }
-
-        if (!users) {
-            return res.status(404).json({ message: "Users not found" });
-        }
-
-        res.status(200).json(users);
-    } catch (error) {
-        res.status(500).json({
-            message: error.message || 'Une erreur est survenue lors de la récupération des comptes.'
-        });
-    }
-};
-
 exports.create = async (req, res) => {
     try {
         const datas = JSON.parse(req.body.datas);
-        const { username, email, password, avatar, roles } = datas;
+        const { username, email, password, roles } = datas;
         let newAvatarPath;
 
         // Vérifier que l'utilisateur est soit ADMIN, soit SUPER_ADMIN

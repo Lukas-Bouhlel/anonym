@@ -1,5 +1,4 @@
 const { Inventory, Shop, User } = require('../models');
-const { Op } = require('sequelize');
 
 // Lire un article spécifique dans l'inventaire d'un utilisateur
 exports.read = async (req, res) => {

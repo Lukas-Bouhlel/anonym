@@ -3,7 +3,7 @@ const bcrypt = require('bcrypt');
 const fs = require('fs');
 const path = require('path');
 
-exports.read = async (req, res) => {
+exports.readAccount = async (req, res) => {
     try {
         const userId = req.auth.userId;// Récupérer l'ID de l'utilisateur depuis les paramètres JWT
 
@@ -15,6 +15,45 @@ exports.read = async (req, res) => {
         }
 
         res.status(200).json(user);
+    } catch (error) {
+        res.status(500).json({
+            message: error.message || 'Une erreur est survenue lors de la récupération des comptes.'
+        });
+    }
+};
+
+exports.read = async (req, res) => {
+    try {
+        const userId = req.params.id;
+
+        const user = await User.findOne({
+            where: { id: userId },
+            attributes: { exclude: ['password'] } // Exclure le champ 'password'
+        });
+
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
+        }
+
+        res.status(200).json(user);
+    } catch (error) {
+        res.status(500).json({
+            message: error.message || 'Une erreur est survenue lors de la récupération du compte.'
+        });
+    }
+};
+
+exports.readAll = async (req, res) => {
+    try {
+        const users = await User.findAll({
+            attributes: { exclude: ['password'] } // Exclure le champ 'password'
+        });
+
+        if (!users) {
+            return res.status(404).json({ message: "Users not found" });
+        }
+
+        res.status(200).json(users);
     } catch (error) {
         res.status(500).json({
             message: error.message || 'Une erreur est survenue lors de la récupération des comptes.'

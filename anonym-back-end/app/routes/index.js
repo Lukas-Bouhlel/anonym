@@ -7,6 +7,8 @@ const shopRoutes = require('./shop.js');
 const paymentRoutes = require('./payment.js');
 const invoiceRoutes = require('./invoice.js');
 const inventoryRoutes = require('./inventory.js');
+const friendsRoutes = require('./friends.js');
+const privateMessagesRoutes = require('./private_message.js');
 
 router.use("/auth", authRoutes);
 router.use("/account", accountRoutes);
@@ -15,5 +17,7 @@ router.use("/shop", shopRoutes);
 router.use("/payment", paymentRoutes);
 router.use("/invoice", invoiceRoutes);
 router.use("/inventory", inventoryRoutes);
+router.use("/friends", friendsRoutes);
+router.use("/privateMessage", privateMessagesRoutes);
 
 module.exports = router

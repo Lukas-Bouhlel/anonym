@@ -1,4 +1,4 @@
-const { Invoice, Shop, User } = require('../models');
+const { Invoice, Shop } = require('../models');
 
 // Lire toutes les factures du user connecté
 exports.readAll = async (req, res) => {
