@@ -15,8 +15,8 @@ const Navbar = () => {
             </Link>
             <div id='navbar-items'>
                 <Link to='/discover' className='navbar-items-links'>Découvrir</Link>
-                <Link to='/support' className='navbar-items-links'>Assistance</Link>
-                <Link to='/donation' className='navbar-items-links'>Donation</Link>
+                <Link to='/reputation' className='navbar-items-links'>Reputation</Link>
+                <Link to='/support' className='navbar-items-links'>Support</Link>
             </div>
             <button className='navbar-items-links open-anonym' onClick={AnonymIsOpen}>Ouvrir Anonym</button>
         </div>

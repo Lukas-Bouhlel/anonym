@@ -2,6 +2,12 @@
 @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@100;200;300;400;500;600;700;800;900&display=swap');
 //colors
 @import './base/colors';
+@import './base/mixins';
 //pages
 @import './home/home.scss';
 @import './discover/discover.scss';
+@import './support/support.scss';
+@import './reputation/reputation.scss';
+@import './privacy-policy/privacy-policy.scss';
+@import './terms-conditions/terms-conditions.scss';
+@import './legal-notices/legal-notices.scss';
