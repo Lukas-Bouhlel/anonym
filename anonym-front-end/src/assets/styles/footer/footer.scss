@@ -1,20 +1,33 @@
 #footer {
-    position: absolute;
-    bottom: 0;
-    width: 100%;
-    z-index: 1;
     display: flex;
     justify-content: center;
-    #footer-items {
+    position: relative;
+    bottom: 30px;
+    height: 0;
+}
+
+// .home {
+//     position: relative;
+//     bottom: 30px;
+// }
+
+#footer-items {
+    padding: 5px;
+    .footer-items-links {
         padding: 5px;
+        color: black;
+        font-size: 10px;
+        text-decoration: none;
+        &:hover {
+            text-decoration: underline;
+        }
+    }
+}
+
+.home, .discover {
+    #footer-items {
         .footer-items-links {
-            padding: 5px;
             color: #FFF9F4;
-            font-size: 10px;
-            text-decoration: none;
-            &:hover {
-                text-decoration: underline;
-            }
         }
     }
 }

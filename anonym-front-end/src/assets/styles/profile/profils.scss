@@ -1,0 +1,90 @@
+#profils {
+    color: $white;
+    width: 100%;
+    .profils-title {
+        display: flex;
+        justify-content: space-between;
+        h1 {
+            font-size: 16px;
+        }
+    }
+    .profils-infos {
+        padding: 17px;
+        border-radius: 5px;
+        background: $black;
+        position: relative;
+        margin-top: 2rem;
+        &-first {
+            display: flex;
+            justify-content: flex-end;
+            padding-bottom: 35px;
+        }
+        &-button {
+            background-color: #7289da;
+            font-size: 12px;
+            padding: 3px 14px;
+            border-radius: 3px;
+            &:hover {
+                background-color: #4b64bb;
+            }
+        }
+        img {
+            position: absolute;
+            top: -15px;
+            left: 17px;
+            border: 5px solid $black;
+        }
+        &-content {
+            background-color: #3c3c3c;
+            padding: 17px;
+            border: 5px;
+            &-item:nth-child(1) {
+                margin-bottom: 3%;
+            }
+            &-item {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                h3 {
+                    font-size: 13px;
+                    text-transform: uppercase;
+                    margin-bottom: 0;
+                }
+                span {
+                    font-size: 12px;
+                }
+                button {
+                    background-color: #575757;
+                    font-size: 12px;
+                    padding: 3px 14px;
+                    border-radius: 3px;
+                    height: 24px;
+                    &:hover {
+                        background-color: #6e6e6e;
+                    }
+                }
+            }
+        }
+    }
+    .profils-password {
+        margin-top: 3%;
+        h3 {
+            font-size: 16px;
+        }
+    }
+    .profils-delete {
+        margin-top: 3%;
+        h4 {
+            color: #cacaca;
+            font-size: 12px;
+            text-transform: uppercase;
+        }
+        button {
+            background-color: transparent;
+            border: 1px solid rgb(229, 46, 46);
+            &:hover {
+                background-color: rgb(229, 46, 46);
+            }
+        }
+    }
+}

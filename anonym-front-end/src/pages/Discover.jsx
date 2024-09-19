@@ -1,38 +1,51 @@
-import axios from 'axios';
-import { useQuery } from '@tanstack/react-query';
-import { useApi } from '../context/ApiContext';
+import { useAuth } from '../context/AuthContext';
+import logo from '../assets/images/logos/anonym-logo-white.svg';
+import persona from '../assets/images/icons/persona.svg';
+import tel from '../assets/images/icons/tel.svg';
 
 const Discover = () => {
-  // const url = useApi();
-  
-  // const getTest = async () => {
-  //     const res = await axios.get(`${url.api_url}/api/test`);
-  //     return res.data;
-  // }
-
-  // const { isLoading, error, data } = useQuery({ 
-  //   queryKey: ['todos'], 
-  //   queryFn: getTest 
-  // })
-
-  // if (isLoading) return <div>Loading...</div>;
-
-  // if (error) return <div>Error: {error.message}</div>;
+  const { AnonymIsOpen } = useAuth();
 
   return (
     <section className='page-discover'>
         <div className='page-discover-content'>
-            <div className='page-discover-content-video'>
-                <iframe className="page-discover-content-video-player" width="560" height="315" src="https://www.youtube.com/embed/MgTsvp2Sclc?si=BjozaLG59dcq5_xH" title="YouTube video player" frameBorder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
-            </div>
+          <h1 className='page-reputation-title'>Découvrir</h1>
+          <p>Anonym est idéal pour jouer à des jeux et se détendre entre amis.</p>
+          <p>Personnalisez votre propre espace pour parler, jouer...</p>
+        </div>
+        <div className='bandeau-anonym-discover'>
+          <h2>retrouve tes amis</h2>
+          <img src={logo} alt='logo-anonym'/>
+          <h2>échange</h2>
+          <img src={logo} alt='logo-anonym'/>
+          <h2>joue</h2>
+          <img src={logo} alt='logo-anonym'/>
+          <h2>discute</h2>
+        </div>
+        <div className='content-image-text'>
+            <img src={persona} alt='icon-persona'/>
+          <div className='content-image-text-paragraph'>
+            <h2>Rends tes conversations plus amusantes</h2>
+            <p>Utilise des émojis, autocollants et bien plus encore pour que ta personnalité transparaisse dans tes discussions.</p>
+            <p>Définis ton avatar et ton propre profil pour apparaître dans le chat comme tu le souhaites.</p>
+          </div>
         </div>
         <div className='page-discover-container'>
             <div className='page-discover-container-content'>
               <div className='page-discover-container-content-title'>
-                <span>Découvrir Anonym</span>
                 <h1>RETROUVEZ-VOUS ENTRE AMIS SUR ANONYM</h1>
               </div>
+              <button className='page-discover-container-content-open-anonym' onClick={AnonymIsOpen}>Open Anonym in your browser</button>
             </div>
+        </div>
+        <div className='content-image-text'>
+          <div className='content-image-text-paragraph'>
+            <h2>Discute en toute sécurité</h2>
+            <p>Des discussions fluides et sécurisées t'attendent. </p>
+            <p>Profite d'une plateforme de confiance, épurée et agréable.</p>
+            <p>N'hésite plus, rejoins-nous dès maintenant !</p>
+          </div>
+          <img className="icon-tel" src={tel} alt='icon-tel'/>
         </div>
     </section>
   );

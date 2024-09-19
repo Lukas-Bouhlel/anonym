@@ -139,6 +139,55 @@ exports.update = async (req, res) => {
     }
 };
 
+exports.updatePassword = async (req, res) => {
+    try {
+        const userId = req.auth.userId; // Récupérer l'ID de l'utilisateur via JWT
+        const { currentPassword, newPassword, confirmNewPassword } = req.body;
+
+        // Vérification des champs
+        if (!currentPassword || !newPassword || !confirmNewPassword) {
+            return res.status(400).json({ message: "Tous les champs sont obligatoires." });
+        }
+
+        // Vérifier que le nouveau mot de passe correspond à la confirmation
+        if (newPassword !== confirmNewPassword) {
+            return res.status(400).json({ message: "Les nouveaux mots de passe ne correspondent pas." });
+        }
+
+        // Regex pour valider le mot de passe
+        const passwordRegex = /^(?!.*\s).{8,}$/;
+        if (!passwordRegex.test(newPassword)) {
+            return res.status(400).json({ message: "Le mot de passe doit contenir au moins 8 caractères et ne pas inclure d'espaces." });
+        }
+
+        // Trouver l'utilisateur dans la base de données
+        const user = await User.findOne({ where: { id: userId } });
+
+        if (!user) {
+            return res.status(404).json({ message: "Utilisateur non trouvé." });
+        }
+
+        // Vérifier que le mot de passe actuel est correct
+        const passwordMatch = await bcrypt.compare(currentPassword, user.password);
+        if (!passwordMatch) {
+            return res.status(401).json({ message: "Mot de passe actuel incorrect." });
+        }
+
+        // Hacher le nouveau mot de passe
+        const hashedNewPassword = await bcrypt.hash(newPassword, 10);
+
+        // Mettre à jour le mot de passe de l'utilisateur
+        user.password = hashedNewPassword;
+        await user.save();
+
+        res.status(200).json({ message: "Mot de passe mis à jour avec succès." });
+    } catch (error) {
+        res.status(500).json({
+            message: error.message || "Une erreur est survenue lors de la mise à jour du mot de passe."
+        });
+    }
+};
+
 exports.delete = async (req, res) => {
     try {
         const userId = req.auth.userId;// Récupérer l'ID de l'utilisateur depuis les paramètres JWT
@@ -163,6 +212,12 @@ exports.delete = async (req, res) => {
                 }
             });
         }
+
+        res.clearCookie('token', {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'Strict',
+        });
 
         // Supprimer l'utilisateur
         await user.destroy();

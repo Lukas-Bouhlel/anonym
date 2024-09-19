@@ -18,7 +18,7 @@ const LegalNotices = () => {
         </ul>
         <h3>Directeur de la publication :</h3>
         <p>Bouhlel Lukas</p>
-        <p>Email : lukasbouhlel@anonym.fr</p>
+        <p>Email : dpo@anonym-tech.fr</p>
         <h2>2. Hébergement du site</h2>
         <h3>Hébergeur du site :</h3>
         <ul>

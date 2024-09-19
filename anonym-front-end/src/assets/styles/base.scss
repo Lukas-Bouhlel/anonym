@@ -1,7 +1,14 @@
 body {
     margin: 0 auto;
+    background-color: #FFF9F4;
+    overflow: auto;
 }
 #root {
     font-family: 'Montserrat', sans-serif;
-    height: 100vh;
+    background-color: #333333;
+}
+#content {
+    height: 100%;
+    transition: transform 0.3s ease-in-out;
+    background-color: #FFF9F4;
 }

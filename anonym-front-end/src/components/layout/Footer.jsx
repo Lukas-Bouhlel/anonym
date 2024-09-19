@@ -6,7 +6,7 @@ const Footer = () => {
     const location = useLocation();
 
     return ( 
-        <div id='footer' className={`${location.pathname.substring(1)}`}>
+        <div id='footer' className={`${location.pathname.substring(1) ? location.pathname.substring(1) : 'home'}`}>
             <div id='footer-items'>
                 <Link to='/legal-notices' className='footer-items-links'>Mentions légales</Link>
                 <Link to='/privacy-policy' className='footer-items-links'>Confidentialité</Link>

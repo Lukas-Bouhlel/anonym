@@ -11,5 +11,6 @@ router.get('/users', authMiddleware, accountCtrl.readAll);
 router.put("/update", authMiddleware, normalizeEmailMiddleware, multer, generateAvatar, accountCtrl.update);
 router.delete("/delete", authMiddleware, accountCtrl.delete);
 router.get("/:id", authMiddleware, accountCtrl.read);
+router.put('/password', authMiddleware, accountCtrl.updatePassword);
 
 module.exports = router;

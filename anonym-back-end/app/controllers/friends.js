@@ -33,11 +33,25 @@ exports.read = async (req, res) => {
 
 exports.addFriend = async (req, res) => {
     try {
-        const userId = req.auth.userId;
-        const friendId = req.params.id;
+        const userId = req.auth.userId; // ID de l'utilisateur actuel
+        const friendUsername = req.params.username; // Récupérer le nom d'utilisateur de l'ami à ajouter
+
+        // Rechercher l'ami par son nom d'utilisateur
+        const friend = await User.findOne({
+            where: {
+                username: friendUsername
+            }
+        });
+
+        // Vérifier si l'utilisateur existe
+        if (!friend) {
+            return res.status(404).json({ message: "User not found." });
+        }
+
+        const friendId = friend.id; // ID de l'ami trouvé
 
         // Vérifier que l'utilisateur ne s'ajoute pas lui-même en ami
-        if (userId === parseInt(friendId, 10)) {
+        if (userId === friendId) {
             return res.status(400).json({ message: "You cannot add yourself as a friend." });
         }
 

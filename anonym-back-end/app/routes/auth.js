@@ -7,5 +7,6 @@ const generateAvatar = require('../middlewares/generateAvatar');
 
 router.post("/signup", multer, generateAvatar, authCtrl.signup);
 router.post("/login", normalizeEmailMiddleware, authCtrl.login);
+router.post("/logout", authCtrl.logout);
 
 module.exports = router;

@@ -1,0 +1,182 @@
+#friends {
+    .content-friends {
+        justify-content: start;
+        align-items: center;
+        gap: 3%;
+        color: $white;
+        &-title {
+            font-size: 14px;
+            padding-right: 2%;
+            margin: 0;
+            border-right: 1px solid;
+        }
+        &-filter {
+            font-size: 14px;
+            background: none;
+            color: #e2e2e2;
+            border-radius: 5px;
+            color: $white;
+            &:hover {
+                background: #919191;
+            }
+            &-active {
+                background: #717171;
+            }
+        }
+        &-add {
+            font-size: 14px;
+            border-radius: 5px;
+            color: $white;
+            background: rgb(36, 188, 36);
+            &-active {
+                background: none;
+                color: rgb(46, 229, 46);
+            }
+        }
+    }
+    .list-friends {
+        background: none;
+        color: $white;
+        display: flex;
+        align-items: center;
+        padding-left: 0;
+        padding-right: 0;
+        border-color: #a1a1a1;
+        font-size: 14px;
+        justify-content: space-between;
+        .content-friend {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .tooltip-friend {
+            background-color: #717171;
+            width: 25px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 5px;
+            border-radius: 100%;
+            cursor: pointer;
+        }
+    }
+    .status-type-friends {
+        padding-bottom: 0.5rem;
+        padding-top: 1.5rem;
+        border-bottom: 1px solid #a1a1a1;
+        text-transform: uppercase;
+        font-size: 14px;
+    }
+    .no-friends-found {
+        display: flex;
+        justify-content: center;
+        flex-direction: column;
+        align-items: center;
+        position: relative;
+        height: 30em;
+        gap: 15px;
+        .icon-tel {
+            height: 150px;
+        }
+    }
+    .add-friends {
+        width: 100%;
+        padding-top: 1.5rem;
+        &-title {
+            font-size: 14px;
+            padding-right: 2%;
+            margin: 0;
+            padding-bottom: 1rem;
+        }
+        &-paragraph {
+            font-size: 14px;
+            padding-bottom: 1rem;
+        }
+        &-form {
+            display: flex;
+            gap: 1%;
+            background-color: #717171;
+            justify-content: space-between;
+            max-width:  720px;
+            font-size: 14px;
+            padding: 10px;
+            border-radius: 5px;
+            &-input {
+                height: 30px;
+                width: 100%;
+                color: $white;
+                border: none;
+                background: #717171;
+                &:focus-visible {
+                    outline: none;
+                    border: none;
+                }
+                &::placeholder {
+                    color: #cacaca;
+                }
+            }
+            &-submit {
+                background-color: $black;
+                height: 30px;
+                text-overflow: ellipsis;
+                border-radius: 5px;
+                font-size: 13px;
+                width: 300px;
+            }
+        }
+        &-icons {
+            display: flex;
+            justify-content: center;
+            flex-direction: column;
+            align-items: center;
+            position: relative;
+            height: 30em;
+            gap: 15px;
+            color: #cacaca;
+            font-size: 14px;
+            .icon-tel {
+                height: 150px;
+            }
+        }
+    }
+    .add-friends-success {
+        .add-friends-form {
+            border: 1px solid rgb(46, 229, 46);
+        }
+        .add-friends-status  {
+            color: rgb(46, 229, 46);
+        }
+    }
+    .add-friends-error {
+        .add-friends-form {
+            border: 1px solid rgb(229, 46, 46);
+        }
+        .add-friends-status  {
+            color: rgb(229, 46, 46);
+        }
+    }
+}
+#control-id-click {
+    padding: 5px;
+    background-color: $black;
+    &::after {
+        border-left-color: $black;
+    }
+}
+.delete-friend {
+    cursor: pointer;
+    color: rgb(229, 46, 46);
+    padding: 0 5px;
+    &:hover {
+        background-color: rgb(229, 46, 46);
+        color: $white;
+    }
+}
+
+.update-friend {
+    cursor: pointer;
+    padding: 0 5px;
+    &:hover {
+        color: #e5e5e5;
+    }
+}

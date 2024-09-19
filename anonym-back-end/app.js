@@ -23,7 +23,10 @@ const io = socketIo(server, {
 });
 
 app.use(express.json());
-app.use(cors(process.env.ORIGIN));
+app.use(cors({
+    origin: process.env.ORIGIN, 
+    credentials: true,  // Permet les cookies
+}));
 app.use(cookieParser());
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 app.use("/api", router);

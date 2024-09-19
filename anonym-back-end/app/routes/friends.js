@@ -5,7 +5,7 @@ const authMiddleware = require('../middlewares/auth');
 
 router.get('/', authMiddleware, friendsCtrl.readAll);
 router.get('/:id', authMiddleware, friendsCtrl.read);
-router.post('/:id', authMiddleware, friendsCtrl.addFriend);
+router.post('/:username', authMiddleware, friendsCtrl.addFriend);
 router.put('/:id', authMiddleware, friendsCtrl.update);
 router.delete('/:id', authMiddleware, friendsCtrl.delete);
 
