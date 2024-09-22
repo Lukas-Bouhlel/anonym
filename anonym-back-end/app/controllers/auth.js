@@ -8,7 +8,6 @@ const crypto = require('crypto');
 
 exports.signup = async (req, res) => {
     try {
-
         // Créer l'utilisateur avec l'avatar (soit celui téléchargé, soit la copie du défaut)
         const user = await User.create({
             ...req.body
@@ -55,6 +54,12 @@ exports.signup = async (req, res) => {
 
         res.status(201).json(user);
     } catch (error) {
+         // Gérer les erreurs spécifiques à la validation Sequelize
+         if (error.name === 'SequelizeValidationError') {
+            const messages = error.errors.map(err => err.message);
+            return res.status(400).json({ message: messages });
+        }
+
         res.status(500).json({
             message: error.message || 'Could not create user'
         });
@@ -66,8 +71,12 @@ exports.login = async (req, res) => {
         const { identifier, password } = req.body;
 
         // Vérifiez que le champ 'identifier' et le mot de passe sont fournis
-        if (!identifier || !password) {
-            return res.status(400).json({ message: "Identifier and password are required." });
+        if (!password) {
+            return res.status(400).json({ message: "Votre identifiant est requis." });
+        }
+
+        if (!password) {
+            return res.status(400).json({ message: "Votre mot de passe est requis." });
         }
 
         // Chercher l'utilisateur par email ou nom d'utilisateur
@@ -81,14 +90,14 @@ exports.login = async (req, res) => {
         });
 
         if (!user) {
-            return res.status(404).json({ message: "User not found" });
+            return res.status(404).json({ message: "Votre identifiant ou votre mot de passe est incorrect" });
         }
 
         // Comparer le mot de passe
         const passwordMatch = await bcrypt.compare(password, user.password);
 
         if (!passwordMatch) {
-            return res.status(401).json({ message: "Invalid password" });
+            return res.status(401).json({ message: "Votre identifiant ou votre mot de passe est incorrect" });
         }
 
         // Générer le token JWT

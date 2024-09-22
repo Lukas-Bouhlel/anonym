@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import axios from 'axios';
 import { Accordion } from 'rsuite';
 import { useForm } from "react-hook-form";
@@ -7,6 +7,8 @@ import { useApi } from '../context/ApiContext';
 
 const Support = () => {
   const { register, handleSubmit, formState: { errors } } = useForm(); // Capture des erreurs du formulaire
+  const [messageError, setMessageError] = useState('');
+  const [showMessage, setShowMessage] = useState(false);
   const { api_url } = useApi();
 
   // Mutation pour l'envoi du rapport
@@ -22,7 +24,8 @@ const Support = () => {
          alert('Email envoyé, votre demande sera traitée dans les plus brefs délais.');
      },
      onError: (error) => {
-         alert(error.response.data.message);
+        setShowMessage(true);
+        setMessageError(error.response.data.message);
      }
   });
 
@@ -71,16 +74,28 @@ const Support = () => {
             <form onSubmit={handleSubmit(onSubmit)}>
                 <h1 className='report-in-title'>Envoyer une demande</h1>
                 <span>❗Formulaire pour nous signaler un problème</span>
-                <input className="input-report" type="email" placeholder="Email" {...register("email", { required: true })}/>
-                <select className="select-report" type='select'  {...register("type", { required: true })}>
+                <input className="input-report" type="email" placeholder="Email" {...register("email", { required: "L'adresse email est requise" })}/>
+                <select className="select-report" type='select'  {...register("type", { required: "Le type de demande est requis" })}>
                   <option value="">Type de demande</option>
                   <option value="Signalement d'utilisateur">Signalement d'utilisateur</option>
                   <option value="Problème sur la plateforme">Problème sur la plateforme</option>
                   <option value="autres">Autres</option>
                 </select>
-                <textarea className="textarea-report" type="text" placeholder="Message" {...register("message", { required: true })}/>
+                <textarea className="textarea-report" type="text" placeholder="Message" {...register("message", { required: "Le contenu de votre demande est requis" })}/>
                 <button className='submit-report'>Submit</button>
             </form>
+            {/* Gestion de l'affichage des erreurs */}
+            {(showMessage || (errors.email || errors.type || errors.message)) && 
+                !errors.email && !errors.password && ( 
+                    <p className='error-message-form'>{messageError}</p>
+            )}
+            
+            {/* Affichage des messages d'erreur si tous les champs sont remplis */}
+            {(errors.email || errors.type || errors.message) && (
+                <p className='error-message-form'>
+                    {errors.email?.message || errors.type?.message || errors.message?.message}
+                </p>
+            )}
           </div>
         </div>
       </div>

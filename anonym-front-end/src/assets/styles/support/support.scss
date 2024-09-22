@@ -47,19 +47,21 @@
             width: 100%;
             display: flex;
             justify-content: center;
+            position: relative;
             &-title {
                 font-size: 25px;
             }
         }
+
         form {
             background-color: #FFF9F4;
             display: flex;
             align-items: flex-start;
             justify-content: center;
             flex-direction: column;
-            padding: 20px;
+            padding: 30px 30px 50px 30px;
             width: 100%;
-            margin: 30px 1px;
+            margin: 30px 0 8px 0;
             border: 1px solid var(--rs-border-primary);
             border-radius: 6px;
             max-width: 450px;

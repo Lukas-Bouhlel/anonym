@@ -12,6 +12,7 @@ export const useUser = () => useContext(UserContext);
 // Fournisseur de contexte utilisateur
 export const UserProvider = ({ children }) => {
     const [user, setUser] = useState(null); // Stocke les informations de l'utilisateur connecté
+    const [isRegistered, setIsRegistered] = useState(false);
     const { api_url } = useApi();
 
     const fetchUser = async () => {
@@ -49,21 +50,21 @@ export const UserProvider = ({ children }) => {
 
     const registered = (userData) => {
         setUser(userData);
+        setIsRegistered(true); // Marquer que l'utilisateur est enregistré
     };
 
     // Fonction pour déconnecter l'utilisateur
     const logout = async () => {
         try {
             await axios.post(`${api_url}/api/auth/logout`, {}, { withCredentials: true });
-            setUser(null); // Supprime les informations de l'utilisateur du contexte
-            console.log('déconnexion réussi')
+            setUser(null);
         } catch (error) {
             console.error("Erreur lors de la déconnexion:", error);
         }
     };
 
     return (
-        <UserContext.Provider value={{ user, setUser, registered, login, logout, isLoading, isError, error  }}>
+        <UserContext.Provider value={{ user, setUser, registered, login, logout, isLoading, isError, error, isRegistered, setIsRegistered }}>
             {children}
         </UserContext.Provider>
     );

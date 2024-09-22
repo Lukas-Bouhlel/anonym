@@ -203,7 +203,6 @@ exports.delete = async (req, res) => {
 
 exports.report = async (req, res) => {
     const { email, type, content } = req.body;
-
     try {
         // Vérifier que tous les champs nécessaires sont présents
         if (!email || !type || !content) {
@@ -213,7 +212,7 @@ exports.report = async (req, res) => {
         // Rechercher l'utilisateur par email
         const user = await User.findOne({ where: { email: email } });
         if (!user) {
-            return res.status(404).json({ message: "Utilisateur non trouvé avec cet email." });
+            return res.status(404).json({ message: "Utilisateur non trouvé avec cet email" });
         }
 
         // Si l'utilisateur est trouvé, on peut récupérer son nom d'utilisateur

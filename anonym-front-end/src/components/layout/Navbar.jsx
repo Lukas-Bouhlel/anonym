@@ -1,17 +1,18 @@
 import React, { useState, useEffect } from 'react';
-import { useLocation, useNavigate  } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { Squash as Hamburger } from 'hamburger-react';
 import '../../assets/styles/navbar/navbar.scss';
-import { useUser } from '../../context/UserContext'; 
+import { useUser } from '../../context/UserContext';
 import logo from '../../assets/images/logos/anonym-logo-white.svg';
+import Popup from '../Utils/Popup';
 
 const Navbar = () => {
     const { AnonymIsOpen } = useAuth();
-    const {user} = useUser(); // Récupère l'utilisateur du contexte
+    const { user, isRegistered, setIsRegistered } = useUser();
     const location = useLocation();
-    const navigate = useNavigate(); 
+    const navigate = useNavigate();
     const [isOpenMenu, setIsOpenMenu] = useState();
 
     useEffect(() => {
@@ -23,7 +24,7 @@ const Navbar = () => {
             document.body.classList.add('body-animating');
             logo.classList.remove('animate-left');
             logo.classList.add('animate-right');
-        } else if(isOpenMenu === false) {
+        } else if (isOpenMenu === false) {
             contentContainer.classList.remove('animate-right');
             contentContainer.classList.add('animate-left');
             logo.classList.remove('animate-right');
@@ -34,7 +35,6 @@ const Navbar = () => {
 
     // Gérer le clic du bouton pour ouvrir Anonym ou rediriger vers /app
     const handleOpenAnonym = () => {
-        console.log(user)
         if (user) {
             navigate('/app'); // Redirige vers /app si l'utilisateur est connecté
         } else {
@@ -42,11 +42,14 @@ const Navbar = () => {
         }
     };
 
-    return ( 
+    return (
         <>
+            {isRegistered && (
+                <Popup showPopup={isRegistered} setShowPopup={setIsRegistered} text={"Votre compte a été créé avec succès. Vous trouverez une confirmation envoyée par e-mail !"} state={'success'}/>
+            )}
             <div id='navbar' className={`${location.pathname.substring(1)}`}>
                 <Link to='/' className='navbar-items-links logo-anonym'>
-                    <img src={logo} alt='logo-anonym'/>nonym
+                    <img src={logo} alt='logo-anonym' />nonym
                 </Link>
                 <div id='navbar-items'>
                     <Link to='/discover' className='navbar-items-links'>Découvrir</Link>
@@ -56,11 +59,11 @@ const Navbar = () => {
                 <button className='navbar-items-links open-anonym' onClick={handleOpenAnonym}>Ouvrir Anonym</button>
             </div>
             <div id='navbar-mobile' className={`${location.pathname.substring(1)}`}>
-                <Hamburger toggled={isOpenMenu} toggle={setIsOpenMenu} direction={'right'} color='#FFF9F4' size={23}/>
+                <Hamburger toggled={isOpenMenu} toggle={setIsOpenMenu} direction={'right'} color='#FFF9F4' size={23} />
             </div>
             <div id='navbar-mobile-logo'>
                 <Link to='/' className='navbar-items-links logo-anonym'>
-                    <img src={logo} alt='logo-anonym'/>nonym
+                    <img src={logo} alt='logo-anonym' />nonym
                 </Link>
             </div>
             <div className={`side-menu${isOpenMenu ? ' open' : ''}`}>
@@ -72,6 +75,6 @@ const Navbar = () => {
             </div>
         </>
 
-     )
+    )
 }
 export default Navbar;

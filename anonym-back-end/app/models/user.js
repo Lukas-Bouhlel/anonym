@@ -19,11 +19,11 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: false,
       unique: {
         args: true,
-        msg: "This username is already in use."
+        msg: "Ce nom d'utilisateur est déjà utilisé"
       },
       validate: {
         notNull: {
-          msg: "Username is required."
+          msg: "Le nom d'utilisateur est requis"
         }
       }
     },
@@ -32,20 +32,20 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: false,
       unique: {
         args: true,
-        msg: "This email is already in use."
+        msg: "L'adresse email est déjà utilisé"
       },
-      required: [true, "L'e-mail est requise."],
+      required: [true, "L'adresse email est requise"],
       trim: true,
       lowercase: true,
       validate: {
         isEmail: {
-          msg: "The email must be in the correct format."
+          msg: "L'e-mail doit être dans un format correct"
         },
         notNull: {
-          msg: "Email is required."
+          msg: "L'adresse email est requise"
         },
         notEmpty: {
-          msg: "Email cannot be empty."
+          msg: "L'adresse email est requise"
         },
         isValidEmail: function(value) {
           const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -58,13 +58,13 @@ module.exports = (sequelize, DataTypes) => {
     password: {
       type: DataTypes.STRING,
       allowNull: false,
-      required: [true, 'Le mot de passe est requis.'],
+      required: [true, 'Le mot de passe est requis'],
       validate: {
         notNull: {
-          msg: "Password is required."
+          msg: "Le mot de passe est requis"
         },
         notEmpty: {
-          msg: "Password cannot be empty."
+          msg: "Le mot de passe est requis"
         }
       }
     },
@@ -99,13 +99,13 @@ module.exports = (sequelize, DataTypes) => {
         if (user.changed('username')) {
           const existingUser = await User.findOne({ where: { username: user.username } });
           if (existingUser) {
-            throw new Error('This username is already in use.');
+            throw new Error("Ce nom d'utilisateur est déjà utilisé");
           }
         }
         if (user.changed('email')) {
           const existingEmail = await User.findOne({ where: { email: user.email } });
           if (existingEmail) {
-            throw new Error('This email is already in use.');
+            throw new Error("L'adresse email est déjà utilisé");
           }
         }
       },

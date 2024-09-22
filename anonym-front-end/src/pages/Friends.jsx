@@ -14,7 +14,7 @@ const Friends = () => {
     const [choiceFriendsType, setChoiceFriendsType] = useState('online');
     const [usernameToAdd, setUsernameToAdd] = useState('');
     const [addStatus, setAddStatus] = useState();
-    const [messageStatus, setMessageStatus] = useState();
+    const [messageStatus, setMessageStatus] = useState('');
     const [showPopup, setShowPopup] = useState(false);
     const [messagePopup, setMessagePopup] = useState('');
 
