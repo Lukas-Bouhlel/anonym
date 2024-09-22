@@ -4,19 +4,28 @@ import Profils from "../components/Profile/Profils";
 import Account from "../components/Profile/Account";
 import Inventory from "../components/Profile/Inventory";
 import Invoices from "../components/Profile/Invoices";
-import { useUser } from '../context/UserContext'; // Utiliser le contexte utilisateur
+import { useUser } from '../context/UserContext';
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faXmark } from "@fortawesome/free-solid-svg-icons";
+import { faXmark, faDoorOpen } from "@fortawesome/free-solid-svg-icons";
+import { Modal, Button } from 'rsuite';
 
 const Profile = () => {
-    const { user, logout } = useUser();
+    const { user, logout, setUser } = useUser();
     const [typeProfils, setTypeProfils] = useState('Profils');
+    const [deleteModalOpen, setDeleteModalOpen] = useState(false); 
     const navigate = useNavigate(); // Hook pour rediriger après la déconnexion
 
     const handleLogout = async () => {
         await logout(); // Appelle la fonction logout
         navigate('/');  // Redirige vers la page d'accueil après la déconnexion
     };
+
+    const handleOpen = value => {
+        setSize(value);
+        setOpen(true);
+    };
+  
+    const handleClose = () => setOpen(false);
 
     return (
         <div id="profile">
@@ -50,9 +59,26 @@ const Profile = () => {
                             <hr />
                             <ul className="profile-sidebar nav nav-pills flex-column mb-0 align-items-center align-items-sm-start" id="menu">
                                 <li className="nav-item">
-                                <span onClick={handleLogout} className="ms-1 d-none d-sm-inline link-sidebar">Déconnexion</span>
+                                <span onClick={() => setDeleteModalOpen(true)}  className="ms-1 d-none d-sm-inline link-sidebar link-side-exit">Déconnexion <FontAwesomeIcon icon={faDoorOpen}/></span>
                                 </li>
                             </ul>
+                            {/* Modal pour la suppression du compte */}
+                            <Modal open={deleteModalOpen} onClose={() => setDeleteModalOpen(false)} size="xs">
+                                <Modal.Header>
+                                    <Modal.Title>Déconnexion</Modal.Title>
+                                </Modal.Header>
+                                <Modal.Body>
+                                    Êtes-vous sûr(e) de vouloir vous déconnecter ?
+                                </Modal.Body>
+                                <Modal.Footer>
+                                    <Button onClick={() => setDeleteModalOpen(false)} appearance="subtle">
+                                        Annuler
+                                    </Button>
+                                    <Button onClick={handleLogout} color="red">
+                                        Déconnexion
+                                    </Button>
+                                </Modal.Footer>
+                            </Modal>
                             <hr />
                         </div>
                     </div>
@@ -60,11 +86,11 @@ const Profile = () => {
                         {typeProfils === 'Profils' ? (
                             <Profils user={user} setTypeProfils={setTypeProfils}/>
                         ) : typeProfils === 'Account' ? (
-                            <Account/>
+                            <Account user={user} setUser={setUser}/>
                         ) : typeProfils === 'Invoices' ? (
                             <Invoices/>
                         ) : typeProfils === 'Inventory' && (
-                            <Inventory/>
+                            <Inventory user={user}/>
                         )}
                         <div className="container-link">
                             <Link to='/app' className="container-link-esc">

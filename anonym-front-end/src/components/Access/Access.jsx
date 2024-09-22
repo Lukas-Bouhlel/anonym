@@ -5,10 +5,12 @@ import { useAuth } from '../../context/AuthContext';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faXmark } from '@fortawesome/free-solid-svg-icons';
 import { useLocation  } from 'react-router-dom';
+import PasswordReset from './Reset/PasswordReset';
 
 const Access = () => {
     const { isAnonymOpen, AnonymIsClose } = useAuth();
     const [statusAccess, setStatusAccess] = useState(false);
+    const [statusForm, setStatusForm] = useState('login');
     const location = useLocation();
 
     useEffect(() => {
@@ -24,7 +26,11 @@ const Access = () => {
     return (
         <div id={`${isAnonymOpen ? 'container-access' : ''}`} className={`container-access ${statusAccess ? 'active' : ''}`}>
             <Register/>
-            <Login/>
+            {statusForm === 'login' ? (
+                <Login setStatusForm={setStatusForm}/>
+            ) : (
+                <PasswordReset setStatusForm={setStatusForm}/>
+            )}
             <button className='close-popup' onClick={AnonymIsClose}><FontAwesomeIcon icon={faXmark}/></button>
             <div className="toggle-container-access">
                 <div className="toggle">

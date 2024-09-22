@@ -9,6 +9,10 @@
             padding-right: 2%;
             margin: 0;
             border-right: 1px solid;
+            line-height: normal;
+            svg {
+                padding-right: 5px;
+            }
         }
         &-filter {
             font-size: 14px;
@@ -27,10 +31,11 @@
             font-size: 14px;
             border-radius: 5px;
             color: $white;
-            background: rgb(36, 188, 36);
+            background: #88CD7D;
+            color: $black;
             &-active {
                 background: none;
-                color: rgb(46, 229, 46);
+                color: #88CD7D;
             }
         }
     }
@@ -74,7 +79,7 @@
         align-items: center;
         position: relative;
         height: 30em;
-        gap: 15px;
+        color: #A9A9A9;
         .icon-tel {
             height: 150px;
         }
@@ -131,8 +136,7 @@
             align-items: center;
             position: relative;
             height: 30em;
-            gap: 15px;
-            color: #cacaca;
+            color: #A9A9A9;
             font-size: 14px;
             .icon-tel {
                 height: 150px;
@@ -141,10 +145,10 @@
     }
     .add-friends-success {
         .add-friends-form {
-            border: 1px solid rgb(46, 229, 46);
+            border: 1px solid #88CD7D
         }
         .add-friends-status  {
-            color: rgb(46, 229, 46);
+            color: #88CD7D;
         }
     }
     .add-friends-error {

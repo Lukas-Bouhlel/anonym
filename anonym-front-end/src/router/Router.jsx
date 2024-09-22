@@ -1,4 +1,8 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { AuthProvider } from "../context/AuthContext";
+import { ApiProvider } from "../context/ApiContext";
+import { UserProvider } from '../context/UserContext.jsx';
+import PrivateRoute from '../router/PrivateRoute';
 import Home from "../pages/Home";
 import Discover from "../pages/Discover";
 import LegalNotices from "../pages/Legal-notices";
@@ -9,10 +13,8 @@ import TermsConditions from "../pages/TermsConditions";
 import Layout from "../components/layout/Layout.jsx";
 import App from "../pages/App";
 import Profile from "../pages/Profile.jsx";
-import { AuthProvider } from "../context/AuthContext";
-import { ApiProvider } from "../context/ApiContext";
-import { UserProvider } from '../context/UserContext.jsx';
-import PrivateRoute from '../router/PrivateRoute';
+import Success from "../pages/Success.jsx";
+import Reset from "../components/Access/Reset/Reset.jsx";
 
 const Router = () => {
   return (
@@ -29,9 +31,11 @@ const Router = () => {
                 <Route path="/legal-notices" element={<LegalNotices />} />
                 <Route path="/privacy-policy" element={<PrivacyPolicy />} />
                 <Route path="/terms-conditions" element={<TermsConditions />} />
+                <Route path="/reset" element={<Reset/>}/>
                 {/* Routes privées */}
-                <Route path="/app" element={<PrivateRoute><App /></PrivateRoute>}></Route>
+                <Route path="/app" element={<PrivateRoute><App /></PrivateRoute>} />
                 <Route path="/profile" element={<PrivateRoute><Profile/></PrivateRoute>} />
+                <Route path="/app/success" element={<PrivateRoute><Success/></PrivateRoute>} />
               </Routes>
             </Layout>
           </UserProvider>

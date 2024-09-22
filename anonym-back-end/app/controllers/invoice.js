@@ -1,4 +1,7 @@
-const { Invoice, Shop } = require('../models');
+const { Invoice, Shop, User } = require('../models');
+const fs = require('fs');
+const path = require('path');
+const generateInvoice = require('../middlewares/generateInvoice');
 
 // Lire toutes les factures du user connecté
 exports.readAll = async (req, res) => {
@@ -14,7 +17,6 @@ exports.readAll = async (req, res) => {
 exports.read = async (req, res) => {
     try {
         const invoice = await Invoice.findByPk(req.params.id);
-
         // Vérifiez si la facture existe
         if (!invoice) {
             return res.status(404).json({ message: 'Invoice not found.' });
@@ -25,7 +27,36 @@ exports.read = async (req, res) => {
             return res.status(403).json({ message: 'You do not have permission to view this invoice.' });
         }
 
-        res.status(200).json(invoice);
+        const user = await User.findByPk(invoice.user_id);
+
+        // Générer la facture PDF et obtenir le buffer
+        const pdfData = await generateInvoice({
+            id: invoice.id,
+            username: user.username,
+            email: user.email,
+            createdAt: invoice.createdAt,
+            content: invoice.content,
+            amount: invoice.amount,
+            quantity: invoice.quantity
+        });
+
+        const emailTemplatePath = path.join(__dirname, '../../templates/invoice-email.html');
+        let htmlContent = fs.readFileSync(emailTemplatePath, 'utf8');
+
+        // Envoyer l'e-mail avec le PDF en tant qu'attachement
+        await req.mailer.sendEmail(
+            user.email,
+            `Facture N°${invoice.id}`,
+            '',
+            htmlContent,
+            [{
+                filename: `invoice_${invoice.id}.pdf`,
+                content: pdfData,
+                contentType: 'application/pdf',
+            }]
+        );
+
+        res.status(200).json({ message: 'Invoice sent successfully via email.' });
     } catch (error) {
         res.status(500).json({ message: error.message || 'An error occurred while fetching the invoice.' });
     }

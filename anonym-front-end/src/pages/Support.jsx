@@ -1,11 +1,35 @@
 import React from 'react';
+import axios from 'axios';
 import { Accordion } from 'rsuite';
 import { useForm } from "react-hook-form";
-import 'rsuite/Accordion/styles/index.css';
+import { useMutation  } from '@tanstack/react-query';
+import { useApi } from '../context/ApiContext';
 
 const Support = () => {
-  const { register, handleSubmit, watch, formState: { errors }, } = useForm();
-  const onSubmit = (data) => console.log(data);
+  const { register, handleSubmit, formState: { errors } } = useForm(); // Capture des erreurs du formulaire
+  const { api_url } = useApi();
+
+  // Mutation pour l'envoi du rapport
+  const reportMutation = useMutation({
+     mutationFn: async (data) => {
+         return await axios.post(`${api_url}/api/admin/report`, {
+             email: data.email,
+             type: data.type,
+             content: data.message
+         }, { withCredentials: true });
+     },
+     onSuccess: () => {
+         alert('Email envoyé, votre demande sera traitée dans les plus brefs délais.');
+     },
+     onError: (error) => {
+         alert(error.response.data.message);
+     }
+  });
+
+  // Gestion de la soumission du formulaire
+  const onSubmit = (data) => {
+    reportMutation.mutate(data); // Lancer la mutation
+  };
 
   return (
     <section className='page-support'>
@@ -50,8 +74,8 @@ const Support = () => {
                 <input className="input-report" type="email" placeholder="Email" {...register("email", { required: true })}/>
                 <select className="select-report" type='select'  {...register("type", { required: true })}>
                   <option value="">Type de demande</option>
-                  <option value="signalement">Signalement d'utilisateur</option>
-                  <option value="bugs">Problème sur la plateforme</option>
+                  <option value="Signalement d'utilisateur">Signalement d'utilisateur</option>
+                  <option value="Problème sur la plateforme">Problème sur la plateforme</option>
                   <option value="autres">Autres</option>
                 </select>
                 <textarea className="textarea-report" type="text" placeholder="Message" {...register("message", { required: true })}/>

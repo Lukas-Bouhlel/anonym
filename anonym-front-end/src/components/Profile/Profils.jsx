@@ -3,6 +3,7 @@ import axios from "axios";
 import { useNavigate  } from "react-router-dom";
 import { Modal, Button } from 'rsuite';
 import { useApi } from '../../context/ApiContext';
+import Popup from "../Utils/Popup";
 
 const Profils = ({user, setTypeProfils}) => {
     const [open, setOpen] = useState(false);
@@ -12,6 +13,7 @@ const Profils = ({user, setTypeProfils}) => {
     const [newPassword, setNewPassword] = useState("");
     const [confirmNewPassword, setConfirmNewPassword] = useState("");
     const [errorMessage, setErrorMessage] = useState("");
+    const [showPopup, setShowPopup] = useState(false);
     const { api_url } = useApi();
     const navigate = useNavigate(); 
 
@@ -66,6 +68,7 @@ const Profils = ({user, setTypeProfils}) => {
 
             if (response.status === 200) {
                 handleClose();
+                setShowPopup(true);
             }
         } catch (error) {
             setErrorMessage(error.response?.data?.message || "Une erreur est survenue.");
@@ -74,18 +77,19 @@ const Profils = ({user, setTypeProfils}) => {
 
     return (
         <div id="profils">
+            <Popup showPopup={showPopup} setShowPopup={setShowPopup} text={'Votre mot de passe a bien été mis à jour !'} state={'update'}/>
             <div className="profils-title">
                 <h1>Mon Compte</h1>
             </div>
             <div className="profils-infos">
                 <div className="profils-infos-first">
-                    <img src={`${user.avatar}`} alt="hugenerd" width="80" height="80" className="rounded-circle" />
+                    <img src={`${user.avatar}`} alt="hugenerd" width="80" height="80" className="rounded-circle avatar-profile" />
                     <button onClick={() => setTypeProfils('Account')} className="profils-infos-button">Modifier profil d'utilisateur</button>
                 </div>
                 <div className="profils-infos-content">
                     <div className="profils-infos-content-item">
                         <div>
-                            <h3>Nom d'affichage</h3>
+                            <h3>Nom d'utilisateur</h3>
                             <span>{user.username}</span>
                         </div>
                         <button onClick={() => setTypeProfils('Account')} >Modifier</button>
@@ -93,7 +97,7 @@ const Profils = ({user, setTypeProfils}) => {
                     <div className="profils-infos-content-item">
                         <div>
                             <h3>E-mail</h3>
-                            <span>{user.username}</span>
+                            <span>{user.email}</span>
                         </div>
                         <button onClick={() => setTypeProfils('Account')} >Modifier</button>
                     </div>
@@ -114,7 +118,7 @@ const Profils = ({user, setTypeProfils}) => {
                 Saisis ton mot de passe actuel puis le nouveau
                 </Modal.Header>
                 <Modal.Body>
-                    {errorMessage && <div style={{ color: "red" }}>{errorMessage}</div>}
+                    {errorMessage && <div className="error-message" style={{ color: "red" }}>{errorMessage}</div>}
                     <form onSubmit={handleSubmit}>
                         <div className="mb-3">
                             <label htmlFor="currentPassword" className="form-label">Mot de passe actuel</label>
@@ -139,8 +143,8 @@ const Profils = ({user, setTypeProfils}) => {
                     </form>
                 </Modal.Body>
             </Modal>
-             {/* Modal pour la suppression du compte */}
-             <Modal open={deleteModalOpen} onClose={() => setDeleteModalOpen(false)} size="xs">
+            {/* Modal pour la suppression du compte */}
+            <Modal open={deleteModalOpen} onClose={() => setDeleteModalOpen(false)} size="xs">
                 <Modal.Header>
                     <Modal.Title>Confirmation de suppression</Modal.Title>
                 </Modal.Header>

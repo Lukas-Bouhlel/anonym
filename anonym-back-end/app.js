@@ -9,6 +9,7 @@ const router = require("./app/routes/index.js");
 const db = require("./app/models/index.js");
 const path = require('path');
 const initializeSocket = require('./app/utils/socket');
+const createMailer = require('./app/utils/mailer.js');
 
 db.sequelize
     .authenticate()
@@ -22,11 +23,28 @@ const io = socketIo(server, {
     }
 });
 
+const mailerConfig = {
+    service: 'gmail',
+    auth: {
+      user: 'lukas.bouhlel@gmail.com',
+      pass: 'vcqkzqwmgoejkmuo',
+    },
+};
+  
+const mailer = createMailer(mailerConfig); // Instanciation de mailer
+
+app.use((req, res, next) => {
+    req.mailer = mailer; // Ajouter l'instance du mailer à l'objet req
+    next();
+});
+
 app.use(express.json());
+
 app.use(cors({
     origin: process.env.ORIGIN, 
     credentials: true,  // Permet les cookies
 }));
+
 app.use(cookieParser());
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 app.use("/api", router);

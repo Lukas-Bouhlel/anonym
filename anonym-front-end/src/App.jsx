@@ -2,7 +2,6 @@ import React, { useEffect } from 'react';
 import Router from './router/Router.jsx';
 import './assets/styles/index.scss';
 import './assets/styles/base.scss';
-import 'rsuite/dist/rsuite.min.css';
 import 'bootstrap/dist/css/bootstrap.css';
 
 const App = () => {

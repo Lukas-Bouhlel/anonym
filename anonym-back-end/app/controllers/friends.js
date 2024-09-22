@@ -22,7 +22,7 @@ exports.read = async (req, res) => {
         });
 
         if (!friend) {
-            return res.status(404).json({ message: "Friend not found." });
+            return res.status(404).json({ message: "Ami non trouvé." });
         }
 
         res.status(200).json(friend);
@@ -45,14 +45,14 @@ exports.addFriend = async (req, res) => {
 
         // Vérifier si l'utilisateur existe
         if (!friend) {
-            return res.status(404).json({ message: "User not found." });
+            return res.status(404).json({ message: "Utilisateur introuvable" });
         }
 
         const friendId = friend.id; // ID de l'ami trouvé
 
         // Vérifier que l'utilisateur ne s'ajoute pas lui-même en ami
         if (userId === friendId) {
-            return res.status(400).json({ message: "You cannot add yourself as a friend." });
+            return res.status(400).json({ message: "Vous ne pouvez pas vous ajouter comme ami" });
         }
 
         // Vérifier si la relation d'amitié existe déjà
@@ -64,7 +64,7 @@ exports.addFriend = async (req, res) => {
         });
 
         if (existingFriend) {
-            return res.status(400).json({ message: "Friendship already exists." });
+            return res.status(400).json({ message: "Cet utilisateur est déjà votre ami" });
         }
 
         // Créer la relation d'amitié

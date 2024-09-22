@@ -1,11 +1,15 @@
-import React from "react";
+import React, { useState } from "react";
 import Sidebar from "../components/layout/Sidebar";
 import { useUser } from '../context/UserContext';
 import logo from '../assets/images/logos/anonym-logo-white.svg';
+import logoBuy from '../assets/images/logos/anonym-logo-green.svg';
 import Friends from "./Friends";
+import Shop from "../components/Shop/Shop";
 
 const App = () => {
     const { user } = useUser();
+    const [page, setPage] = useState('friends');
+
     return (
         <div id="app">
             <div className="navbar-logo-anonym">
@@ -13,9 +17,13 @@ const App = () => {
             </div>
             <div className="container-fluid">
                 <div className="row flex-nowrap">
-                    <Sidebar user={user} />
+                    <Sidebar user={user} page={page} setPage={setPage}/>
                     <div className="col app-container">
-                        <Friends/>
+                        {page === 'friends' ? (
+                            <Friends/>
+                        ) : page === 'shop' && (
+                            <Shop user={user} logo={logoBuy}/>
+                        )}
                     </div>
                 </div>
             </div>

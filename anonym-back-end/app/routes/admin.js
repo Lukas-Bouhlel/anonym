@@ -9,5 +9,6 @@ const generateAvatar = require('../middlewares/generateAvatar');
 router.post('/users', authMiddleware, normalizeEmailMiddleware, mutler, generateAvatar, usersCtrl.create);
 router.put('/users/:id', authMiddleware, normalizeEmailMiddleware, mutler, generateAvatar, usersCtrl.update);
 router.delete('/users/:id', authMiddleware, usersCtrl.delete);
+router.post('/report',  normalizeEmailMiddleware, usersCtrl.report)
 
 module.exports = router;

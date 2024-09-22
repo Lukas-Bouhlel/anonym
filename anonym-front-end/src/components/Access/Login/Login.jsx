@@ -6,7 +6,7 @@ import { useApi } from '../../../context/ApiContext';
 import { useUser } from '../../../context/UserContext'; 
 import { useNavigate } from 'react-router-dom';
 
-const Login = () => {
+const Login = ({setStatusForm}) => {
     const { register, handleSubmit, watch, formState: { errors }, } = useForm();
     const { login } = useUser(); 
     const { api_url } = useApi();// Utilise le contexte pour obtenir l'URL de l'API
@@ -22,9 +22,7 @@ const Login = () => {
             return response.data;
         },
         onSuccess: (data) => {
-            // Appeler la fonction `login` du contexte pour stocker l'utilisateur
             login(data.user);
-            // console.log('Login successful:', data.user);
             navigate(`/app`);
         },
     });
@@ -41,7 +39,7 @@ const Login = () => {
                 <span>utilisez votre e-mail et votre mot de passe</span>
                 <input type="text" placeholder="Email" {...register("email", { required: true })}/>
                 <input type="password" placeholder="mot de passe" {...register("password", { required: true })}/>
-                <a href="#">Mot de passe oublié ?</a>
+                <a className="link-login-or-password-reset" onClick={() => setStatusForm('resetPassword')}>Mot de passe oublié ?</a>
                 <button>Se connecter</button>
             </form>
         </div>

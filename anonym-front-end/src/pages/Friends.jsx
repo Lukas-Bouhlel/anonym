@@ -3,9 +3,11 @@ import axios from 'axios';
 import { useApi } from '../context/ApiContext';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import tel from '../assets/images/icons/tel.svg';
+import spaceman from '../assets/images/icons/spaceman.svg'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faUser, faEllipsisVertical } from '@fortawesome/free-solid-svg-icons';
 import { Tooltip, Whisper } from 'rsuite';
+import Popup from "../components/Utils/Popup";
 
 const Friends = () => {
     const { api_url } = useApi();
@@ -13,6 +15,8 @@ const Friends = () => {
     const [usernameToAdd, setUsernameToAdd] = useState('');
     const [addStatus, setAddStatus] = useState();
     const [messageStatus, setMessageStatus] = useState();
+    const [showPopup, setShowPopup] = useState(false);
+    const [messagePopup, setMessagePopup] = useState('');
 
     const fetchFriends = async () => {
         try {
@@ -48,7 +52,7 @@ const Friends = () => {
         onSuccess: () => {
             // Afficher le nom d'utilisateur ajouté dans le message de succès
             setAddStatus('Success');
-            setMessageStatus(`Bravo ! Ta demande d'ami a été envoyée à ${usernameToAdd} !`);
+            setMessageStatus(`Ta demande d'ami a été envoyée à ${usernameToAdd} !`);
             refetch();
         },
         onError: (data) => {
@@ -59,11 +63,13 @@ const Friends = () => {
 
     // Mutation pour supprimer un ami
     const { mutate: deleteFriend } = useMutation({
-        mutationFn: async (friendId) => {
+        mutationFn: async (friend) => {
             try {
-                await axios.delete(`${api_url}/api/friends/${friendId}`, {
+                await axios.delete(`${api_url}/api/friends/${friend.id}`, {
                     withCredentials: true,
                 });
+                setMessagePopup(`${friend.username} vient d'être retiré de votre liste d'amis !`)
+                setShowPopup(true);
             } catch (error) {
                 console.error("Erreur lors de la suppression de l'ami:", error);
                 throw error;
@@ -76,11 +82,13 @@ const Friends = () => {
 
     // Mutation pour mettre à jour le status d'un ami
     const { mutate: updateFriend } = useMutation({
-        mutationFn: async ({friendId, status}) => {
+        mutationFn: async ({friend, status}) => {
             try {
-                await axios.put(`${api_url}/api/friends/${friendId}`, {
+                await axios.put(`${api_url}/api/friends/${friend.id}`, {
                     status: status
                 }, { withCredentials: true });
+                status === 'BLOQUED' ? setMessagePopup(`${friend.username} vient d'être bloqué !`) : setMessagePopup(`${friend.username} vient d'être débloqué !`);
+                setShowPopup(true);
             } catch (error) {
                 console.error("Erreur lors de la mise à jour du status de l'utilisateur:", error);
                 throw error;
@@ -125,17 +133,17 @@ const Friends = () => {
     const filteredFriends = filterFriends(friends);
 
     // Fonction pour faire le rendu du tooltip avec la suppression
-    const renderTooltip = (friendId, status) => (
+    const renderTooltip = (friend, status) => (
         <Tooltip>
             <div
                 className="delete-friend"
-                onClick={() => deleteFriend(friendId)} // Appelle la fonction de suppression avec l'ID de l'ami
+                onClick={() => deleteFriend(friend)} // Appelle la fonction de suppression avec l'ID de l'ami
             >
                 Retirer l'ami
             </div>
             <div
                 className="update-friend"
-                onClick={() => updateFriend({friendId, status})} // Appelle la fonction de suppression avec l'ID de l'ami
+                onClick={() => updateFriend({friend, status})} // Appelle la fonction de suppression avec l'ID de l'ami
             >
                 {choiceFriendsType === 'bloqued' ? (
                      <>Débloquer l'utilisateur</>
@@ -149,6 +157,7 @@ const Friends = () => {
 
     return (
         <div id="friends">
+            <Popup showPopup={showPopup} setShowPopup={setShowPopup} text={messagePopup}/>
             <div className="content-friends d-flex">
                 <h1 className="content-friends-title"><FontAwesomeIcon icon={faUser}/>  Amis</h1>
                 <button onClick={() => setChoiceFriendsType('online')} className={`content-friends-filter ${choiceFriendsType === 'online' ? 'content-friends-filter-active' : ''}`}>En ligne</button>
@@ -172,10 +181,10 @@ const Friends = () => {
                             filteredFriends.map((friend, index) => (
                                 <li key={index} className="list-group-item list-friends">
                                     <div className="content-friend">
-                                        <img src={`${friend.FriendDetails.avatar}`} alt="avatar" width="30" height="30" className="rounded-circle" />
+                                        <img src={`${friend.FriendDetails.avatar}`} alt="avatar" width="30" height="30" className="rounded-circle avatar-profile" />
                                         <strong>{friend.FriendDetails.username}</strong>   
                                     </div>
-                                    <Whisper placement="left" controlId="control-id-click" trigger="click" speaker={renderTooltip(friend.FriendDetails.id, choiceFriendsType === 'bloqued' ? 'ACTIVE' : 'BLOQUED')}>
+                                    <Whisper placement="left" controlId="control-id-click" trigger="click" speaker={renderTooltip(friend.FriendDetails, choiceFriendsType === 'bloqued' ? 'ACTIVE' : 'BLOQUED')}>
                                         <div className="tooltip-friend" tabIndex="0">
                                             <FontAwesomeIcon icon={faEllipsisVertical} />
                                         </div>
@@ -184,7 +193,7 @@ const Friends = () => {
                             ))
                         ) : (
                             <div className="no-friends-found">
-                                <img className="icon-tel" src={tel} alt='icon-tel' />
+                                <img className="icon-spaceman" src={spaceman} alt='icon-spaceman' />
                                 Aucun utilisateur trouvé
                             </div>
                         )}
@@ -212,7 +221,7 @@ const Friends = () => {
                     </form>
                     {messageStatus && <p className={`add-friends-status ${addStatus === 'Success' ? 'add-friends-success' : addStatus === 'Error' ? 'add-friends-error' :''}`}>{messageStatus}</p>}
                     <div className="add-friends-icons">
-                        <img className="icon-tel" src={tel} alt='icon-tel' />
+                        <img className="icon-spaceman" src={spaceman} alt='icon-spaceman' />
                         Anonym attends des amis. Mais rien ne t'oblige à en ajouter !
                     </div>
                 </div>

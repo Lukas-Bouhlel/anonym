@@ -200,4 +200,11 @@
             height: 1.5em;
         }
     }
+    .link-login-or-password-reset {
+        cursor: pointer;
+        &:hover {
+            text-decoration: none;
+            color: #333;
+        }
+    }
 }

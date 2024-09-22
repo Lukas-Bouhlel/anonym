@@ -61,10 +61,9 @@ export const UserProvider = ({ children }) => {
             console.error("Erreur lors de la déconnexion:", error);
         }
     };
-    
 
     return (
-        <UserContext.Provider value={{ user, registered, login, logout, isLoading, isError, error  }}>
+        <UserContext.Provider value={{ user, setUser, registered, login, logout, isLoading, isError, error  }}>
             {children}
         </UserContext.Provider>
     );

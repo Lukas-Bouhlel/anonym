@@ -200,3 +200,50 @@ exports.delete = async (req, res) => {
         res.status(500).json({ message: error.message || 'An error occurred while deleting the user.' });
     }
 };
+
+exports.report = async (req, res) => {
+    const { email, type, content } = req.body;
+
+    try {
+        // Vérifier que tous les champs nécessaires sont présents
+        if (!email || !type || !content) {
+            return res.status(400).json({ message: "Veuillez fournir votre email, un type et un contenu." });
+        }
+
+        // Rechercher l'utilisateur par email
+        const user = await User.findOne({ where: { email: email } });
+        if (!user) {
+            return res.status(404).json({ message: "Utilisateur non trouvé avec cet email." });
+        }
+
+        // Si l'utilisateur est trouvé, on peut récupérer son nom d'utilisateur
+        const username = user.username;
+
+        // Charger le template de l'email pour le rapport
+        const emailTemplatePath = path.join(__dirname, '../../templates/report-email.html');
+        let emailHtmlContent = fs.readFileSync(emailTemplatePath, 'utf8');
+        
+        // Remplacer {{username}} et {{description}} par les valeurs correspondantes
+        emailHtmlContent = emailHtmlContent
+            .replace(/{{username}}/g, username)
+            .replace(/{{description}}/g, content)
+            .replace(/{{email}}/g, email);
+
+        // Créer le sujet de l'email basé sur le type de rapport
+        const subject = `Rapport - Type: ${type}`;
+
+        // Envoyer l'email avec les informations
+        await req.mailer.sendEmail(
+            'lukasbouhlel@gmail.com',             // Adresse de l'utilisateur
+            subject,           // Sujet de l'email
+            '',                // Texte brut vide car on utilise HTML
+            emailHtmlContent   // Contenu HTML
+        );
+
+        // Répondre avec un succès
+        res.status(200).json({ message: "Email de rapport envoyé avec succès." });
+    } catch (error) {
+        console.error("Error during report sending:", error);
+        res.status(500).json({ message: error.message || "Une erreur s'est produite lors de l'envoi du rapport." });
+    }
+};

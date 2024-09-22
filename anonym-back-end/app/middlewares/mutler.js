@@ -9,7 +9,7 @@ const MIME_TYPES = {
 "image/gif" : "gif",
 "image/png" : "png",
 "image/webp" : "webp",
-"image/svg" : "svg"
+"image/svg+xml": "svg"
 };
 
 //On crée le dossier uploads s'il n'existe pas

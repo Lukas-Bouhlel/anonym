@@ -1,0 +1,42 @@
+#popup {
+    width: 100%;
+    .popup-confirm-update {
+        text-align: center;
+        position: absolute;
+        top: -50px; /* Position initiale hors de la vue */
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 1;
+        font-size: 14px;
+        transition: top 0.5s ease-in-out; /* Transition fluide pour le top */
+    }
+    
+    .popup-confirm-update.active {
+        top: 30px; /* Position visible */
+    }
+    
+    .popup-confirm-update.hidden {
+        top: -50px; /* Position hors de la vue lors de la sortie */
+    }
+    
+    .popup-confirm-update {
+        p{
+            background-color: #313131;
+            padding: 5px 14px;
+            margin: 0;
+            border-radius: 50px;
+            width: 100%;
+            color: $white;
+        }
+        .popup-confirm-update-success {
+            background-color: #88CD7D;
+            color: $black;
+        }
+        .popup-confirm-update-update {
+            background-color: #7289da;
+        }
+        .popup-confirm-update-error {
+            background-color: rgb(229, 46, 46);
+        }
+    }
+}

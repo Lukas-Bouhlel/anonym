@@ -7,12 +7,12 @@
     &-content {
         padding-top: 69px;
         min-height: 200px;
-        background-color: $white;
+        background-color: $black;
         display: flex;
         justify-content: center;
         align-items: center;
         position: relative;
-        color: $black;
+        color: $white;
         flex-direction: column;
     }
     &-container {
@@ -40,20 +40,6 @@
                 border: none;
                 cursor: pointer;
             }
-        }
-    }
-    .bandeau-anonym-discover {
-        background-color: $black;
-        height: 100px;
-        width: 100%;
-        display: flex;
-        color: $white;
-        gap: 30px;
-        align-items: center;
-        justify-content: space-around;
-        text-transform: uppercase;
-        img {
-            height: 23px;
         }
     }
     .content-image-text {

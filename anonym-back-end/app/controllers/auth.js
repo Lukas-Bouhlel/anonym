@@ -4,6 +4,7 @@ const jwt = require('jsonwebtoken');
 const fs = require('fs');
 const path = require('path')
 const { Op } = require('sequelize');
+const crypto = require('crypto');
 
 exports.signup = async (req, res) => {
     try {
@@ -35,6 +36,22 @@ exports.signup = async (req, res) => {
             user.avatar = `${req.protocol}://${req.get("host")}/uploads/profiles/avatars/${uniqueAvatarName}`;
             await user.save();
         }
+
+         // Lire le fichier HTML pour l'e-mail
+        const emailTemplatePath = path.join(__dirname, '../../templates/signup-email.html');
+        let htmlContent = fs.readFileSync(emailTemplatePath, 'utf8');
+
+        // Remplacer le nom de l'utilisateur dans le contenu HTML
+        htmlContent = htmlContent.replace(/Salut\s+Rei,/, `Salut ${user.username},`);
+
+        // Envoyer l'e-mail de confirmation avec le contenu HTML
+        await req.mailer.sendEmail(
+            user.email,// Destinataire
+            'Bienvenue sur notre plateforme Anonym !',// Sujet
+            '',// Contenu texte (vide)
+            htmlContent// Contenu HTML
+        );
+
 
         res.status(201).json(user);
     } catch (error) {
@@ -109,5 +126,95 @@ exports.logout = (req, res) => {
         res.status(200).json({ message: "Successfully logged out" });
     } catch (error) {
         res.status(500).json({ message: error.message || 'Logout failed' });
+    }
+};
+
+exports.requestPasswordReset = async (req, res) => {
+    const { email } = req.body;
+
+    try {
+        const user = await User.findOne({ where: { email } });
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
+        }
+
+        // Générer un token unique
+        const token = crypto.randomBytes(20).toString('hex');
+
+        // Enregistrer le token et l'expiration (15 minutes)
+        user.resetPasswordToken = token;
+        user.resetPasswordExpires = Date.now() + 15 * 60 * 1000; // 15 minutes
+        await user.save();
+
+        // Créer un lien de réinitialisation
+        const resetLink = `${process.env.ORIGIN}/reset/?token=${token}`;
+
+        // Lire le template d'email
+        const emailTemplatePath = path.join(__dirname, '../../templates/reset-password-email.html');
+        let htmlContent = fs.readFileSync(emailTemplatePath, 'utf8');
+        htmlContent = htmlContent.replace(/{{resetLink}}/, resetLink);
+
+        // Envoyer l'email
+        await req.mailer.sendEmail(
+            user.email,
+            'Réinitialisation de votre mot de passe',
+            '',
+            htmlContent
+        );
+
+        res.status(200).json({ message: 'Email sent for password reset' });
+    } catch (error) {
+        res.status(500).json({ message: error.message || 'Could not initiate password reset' });
+    }
+};
+
+exports.resetPassword = async (req, res) => {
+    const { token } = req.query;
+    const { password, confirmPassword } = req.body;
+
+    try {
+        const user = await User.findOne({
+            where: {
+                resetPasswordToken: token,
+                resetPasswordExpires: { [Op.gt]: Date.now() } // Vérifier si le token est toujours valide
+            }
+        });
+
+        if (!user) {
+            return res.status(400).json({ message: "Token is invalid or has expired" });
+        }
+
+        if (password !== confirmPassword) {
+            return res.status(400).json({ message: "Passwords do not match" });
+        }
+
+        // Hash le nouveau mot de passe
+        user.password = await bcrypt.hash(password, 10);
+        user.resetPasswordToken = null; // Réinitialiser le token
+        user.resetPasswordExpires = null; // Réinitialiser l'expiration
+        await user.save();
+
+        // Envoyer un email de confirmation
+        const confirmationEmailTemplatePath = path.join(__dirname, '../../templates/reset-password-confirmation-email.html');
+        let confirmationHtmlContent = fs.readFileSync(confirmationEmailTemplatePath, 'utf8');
+        confirmationHtmlContent = confirmationHtmlContent.replace(/{{username}}/, user.username);
+
+        await req.mailer.sendEmail(
+            user.email,
+            'Votre mot de passe a été réinitialisé',
+            '',
+            confirmationHtmlContent
+        );
+
+        // Invalider le cookie contenant le token JWT
+        res.clearCookie('token', {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'Strict',
+        });
+
+        res.status(200).json({ message: 'Password has been reset successfully' });
+    } catch (error) {
+        res.status(500).json({ message: error.message || 'Could not reset password' });
     }
 };

@@ -6,7 +6,7 @@ import { useUser } from '../../context/UserContext';
 
 // Composant qui conditionne l'affichage des éléments
 const Layout = ({ children }) => {
-  const privateRoutes = ["/app", "/profile"];
+  const privateRoutes = ["/app", "/profile", "/app/success"];
   const location = useLocation();
   const isPrivateRoute = privateRoutes.includes(location.pathname);
   const { user, isLoading } = useUser(); // Récupère l'utilisateur du contexte

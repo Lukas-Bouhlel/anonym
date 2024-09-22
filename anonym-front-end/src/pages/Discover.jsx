@@ -11,16 +11,15 @@ const Discover = () => {
         <div className='page-discover-content'>
           <h1 className='page-reputation-title'>Découvrir</h1>
           <p>Anonym est idéal pour jouer à des jeux et se détendre entre amis.</p>
-          <p>Personnalisez votre propre espace pour parler, jouer...</p>
         </div>
-        <div className='bandeau-anonym-discover'>
-          <h2>retrouve tes amis</h2>
-          <img src={logo} alt='logo-anonym'/>
-          <h2>échange</h2>
-          <img src={logo} alt='logo-anonym'/>
-          <h2>joue</h2>
-          <img src={logo} alt='logo-anonym'/>
-          <h2>discute</h2>
+        <div className='content-image-text'>
+          <div className='content-image-text-paragraph'>
+            <h2>Discute en toute sécurité</h2>
+            <p>Des discussions fluides et sécurisées t'attendent. </p>
+            <p>Profite d'une plateforme de confiance, épurée et agréable.</p>
+            <p>N'hésite plus, rejoins-nous dès maintenant !</p>
+          </div>
+          <img className="icon-tel" src={tel} alt='icon-tel'/>
         </div>
         <div className='content-image-text'>
             <img src={persona} alt='icon-persona'/>
@@ -37,15 +36,6 @@ const Discover = () => {
               </div>
               <button className='page-discover-container-content-open-anonym' onClick={AnonymIsOpen}>Open Anonym in your browser</button>
             </div>
-        </div>
-        <div className='content-image-text'>
-          <div className='content-image-text-paragraph'>
-            <h2>Discute en toute sécurité</h2>
-            <p>Des discussions fluides et sécurisées t'attendent. </p>
-            <p>Profite d'une plateforme de confiance, épurée et agréable.</p>
-            <p>N'hésite plus, rejoins-nous dès maintenant !</p>
-          </div>
-          <img className="icon-tel" src={tel} alt='icon-tel'/>
         </div>
     </section>
   );

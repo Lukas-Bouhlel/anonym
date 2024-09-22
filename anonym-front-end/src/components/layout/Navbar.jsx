@@ -50,7 +50,7 @@ const Navbar = () => {
                 </Link>
                 <div id='navbar-items'>
                     <Link to='/discover' className='navbar-items-links'>Découvrir</Link>
-                    <Link to='/reputation' className='navbar-items-links'>Reputation</Link>
+                    {/* <Link to='/reputation' className='navbar-items-links'>Reputation</Link> */}
                     <Link to='/support' className='navbar-items-links'>Support</Link>
                 </div>
                 <button className='navbar-items-links open-anonym' onClick={handleOpenAnonym}>Ouvrir Anonym</button>
@@ -66,7 +66,7 @@ const Navbar = () => {
             <div className={`side-menu${isOpenMenu ? ' open' : ''}`}>
                 <nav>
                     <Link to='/discover' onClick={() => setIsOpenMenu(false)} className='side-menu-link'>Découvrir</Link>
-                    <Link to='/reputation' onClick={() => setIsOpenMenu(false)} className='side-menu-link'>Reputation</Link>
+                    {/* <Link to='/reputation' onClick={() => setIsOpenMenu(false)} className='side-menu-link'>Reputation</Link> */}
                     <Link to='/support' onClick={() => setIsOpenMenu(false)} className='side-menu-link'>Support</Link>
                 </nav>
             </div>

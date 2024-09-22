@@ -17,13 +17,46 @@
     background-color: $black;
     &-content {
         padding-top: 2rem !important;
-        .link-sidebar {
-            color: $white;
-            font-size: 14px;
-            span {
-                svg {
-                    padding-right: 5px;
-                    width: 18px;
+        ul {
+            gap: 3px;
+            li {
+                width: 100%;
+                .active-link {
+                    color: $white;
+                    background-color: #575757;
+                }
+                .link-sidebar {
+                    color: $white;
+                    font-size: 14px;
+                    text-decoration: none;
+                    padding: 5px;
+                    &:hover {
+                        color: $white;
+                        background-color: #575757;
+                    }
+                    span {
+                        svg {
+                            padding-right: 5px;
+                            width: 18px;
+                        }
+                    }
+                }
+                .message-mp {
+                    color: #ebe6e1;
+                    text-transform: uppercase;
+                    font-size: 12px;
+                    display: flex;
+                    align-items: center;
+                    gap: 10px;
+                    a {
+                        text-decoration: none;
+                        color: #ebe6e1;
+                        font-size: 20px;
+                    }
+                    &:hover {
+                        color: $white;
+                        cursor: default;
+                    }
                 }
             }
         }
@@ -48,6 +81,11 @@
                     transform: rotate(90deg);
                 }
             }
+            &-infos {
+                display: flex;
+                align-items: center;
+                gap: 7%;
+            }
         }
     }
 }
@@ -56,5 +94,5 @@
     padding: 10px 30px !important;
     // border-radius: 10px;
     // border: 4px solid $black;
-    background: #818181;
+    background: #424242;
 }
