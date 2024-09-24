@@ -1,6 +1,5 @@
 const multer = require("multer");
 const fs = require('fs');
-const path = require('path');
 
 //On définit les extensions selon le mime type.
 const MIME_TYPES = {

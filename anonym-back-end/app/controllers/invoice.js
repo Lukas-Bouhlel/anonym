@@ -16,8 +16,12 @@ exports.readAll = async (req, res) => {
 // Lire une facture par ID
 exports.read = async (req, res) => {
     try {
-        const invoice = await Invoice.findByPk(req.params.id);
-        // Vérifiez si la facture existe
+        const invoiceId = req.params.id;
+        if (!invoiceId) {
+            return res.status(400).json({ message: 'Invoice ID is required.' });
+        }
+
+        const invoice = await Invoice.findByPk(invoiceId);
         if (!invoice) {
             return res.status(404).json({ message: 'Invoice not found.' });
         }
@@ -71,6 +75,9 @@ exports.create = async (req, res) => {
         }
 
         const { article_id, user_id } = req.body;
+        if (!article_id || !user_id) {
+            return res.status(400).json({ message: 'Article ID and User ID are required.' });
+        }
 
         const shopItem = await Shop.findByPk(article_id);
         if (!shopItem) {
@@ -99,7 +106,12 @@ exports.update = async (req, res) => {
             return res.status(403).json({ message: 'You do not have permission to update this invoice.' });
         }
 
-        const invoice = await Invoice.findByPk(req.params.id);
+        const invoiceId = req.params.id;
+        if (!invoiceId) {
+            return res.status(400).json({ message: 'Invoice ID is required.' });
+        }
+
+        const invoice = await Invoice.findByPk(invoiceId);
         if (!invoice) {
             return res.status(404).json({ message: 'Invoice not found.' });
         }
@@ -121,7 +133,9 @@ exports.update = async (req, res) => {
             invoice.user_id = user_id;
         }
 
-        invoice.quantity = quantity;
+        if (quantity) {
+            invoice.quantity = quantity;
+        }
 
         await invoice.save();
         res.status(200).json({ message: 'Invoice updated successfully.', invoice });
@@ -137,7 +151,12 @@ exports.delete = async (req, res) => {
             return res.status(403).json({ message: 'You do not have permission to delete this invoice.' });
         }
 
-        const invoice = await Invoice.findByPk(req.params.id);
+        const invoiceId = req.params.id;
+        if (!invoiceId) {
+            return res.status(400).json({ message: 'Invoice ID is required.' });
+        }
+
+        const invoice = await Invoice.findByPk(invoiceId);
         if (!invoice) {
             return res.status(404).json({ message: 'Invoice not found.' });
         }

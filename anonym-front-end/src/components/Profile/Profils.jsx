@@ -4,8 +4,9 @@ import { useNavigate  } from "react-router-dom";
 import { Modal, Button } from 'rsuite';
 import { useApi } from '../../context/ApiContext';
 import Popup from "../Utils/Popup";
+import { usePopup } from '../../context/PopupContext';
 
-const Profils = ({user, setTypeProfils}) => {
+const Profils = ({user, setTypeProfils, setUser}) => {
     const [open, setOpen] = useState(false);
     const [size, setSize] = useState();
     const [deleteModalOpen, setDeleteModalOpen] = useState(false); 
@@ -14,6 +15,7 @@ const Profils = ({user, setTypeProfils}) => {
     const [confirmNewPassword, setConfirmNewPassword] = useState("");
     const [errorMessage, setErrorMessage] = useState("");
     const [showPopup, setShowPopup] = useState(false);
+    const { setOpenPopup, setTextPopup, setState } = usePopup();
     const { api_url } = useApi();
     const navigate = useNavigate(); 
 
@@ -30,27 +32,18 @@ const Profils = ({user, setTypeProfils}) => {
             await axios.delete(`${api_url}/api/account/delete`, {
                 withCredentials: true
             });
-            // Redirige vers la page de déconnexion ou d'accueil après suppression
+            setUser(null);
+            setOpenPopup(true);
+            setTextPopup('Votre compte a été supprimé. Nous espérons vous revoir bientôt sur notre plateforme !');
+            setState('error');
             navigate('/');
         } catch (error) {
             console.error("Erreur lors de la suppression du compte:", error);
         }
     };
 
-    // Fonction de validation du mot de passe
-    const validatePassword = (password) => {
-        const passwordRegex = /^(?!.*\s).{8,}$/;
-        return passwordRegex.test(password);
-    };
-
     const handleSubmit = async (e) => {
         e.preventDefault();
-
-        // Validation du nouveau mot de passe avant soumission
-        if (!validatePassword(newPassword)) {
-            setErrorMessage("Le mot de passe doit contenir au moins 8 caractères et ne pas inclure d'espaces.");
-            return;
-        }
 
         if (newPassword !== confirmNewPassword) {
             setErrorMessage("Les nouveaux mots de passe ne correspondent pas.");

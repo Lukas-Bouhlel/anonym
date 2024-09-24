@@ -26,6 +26,8 @@ const Login = ({setStatusForm}) => {
         onSuccess: (data) => {
             login(data.user);
             navigate(`/app`);
+            setShowMessage(false);
+            setMessageError('');
         },
         onError: (data) => {
             setShowMessage(true);

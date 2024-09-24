@@ -3,11 +3,13 @@ import axios from "axios";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useApi } from "../../context/ApiContext";
 import Popup from "../Utils/Popup";
+import spaceman from "../../assets/images/icons/spaceman.svg"
 
 const Inventory = ({ user }) => {
     const { api_url } = useApi();
     const queryClient = useQueryClient();
     const [showPopup, setShowPopup] = useState(false); 
+    const [messageError, setMessageError] = useState('');
 
     // Fonction pour récupérer l'inventaire
     const fetchInventory = async () => {
@@ -17,8 +19,7 @@ const Inventory = ({ user }) => {
             });
             return response.data;
         } catch (error) {
-            console.error('Erreur lors de la récupération de l\'inventaire:', error);
-            return null;
+            setMessageError(error.response.data.message)
         }
     };
 
@@ -55,6 +56,8 @@ const Inventory = ({ user }) => {
         toggleActiveMutation.mutate({ itemId, currentState });
     };
 
+    console.log(messageError)
+
     return (
         <div id="inventory">
             <Popup showPopup={showPopup} setShowPopup={setShowPopup} text={'Ta décoration d\'avatar a été mise à jour !'}/>
@@ -64,7 +67,7 @@ const Inventory = ({ user }) => {
             {!inventory.isLoading && (
                 <div className="inventory">
                     <div className="card-deck">
-                        {inventory.data.length > 0 ? (
+                        {inventory.data && inventory.data.length > 0 ? (
                             inventory.data.map((item, index) => (
                                 <div className="card inventory-card-content" key={index}>
                                     <div className="inventory-card-content-header">
@@ -85,7 +88,10 @@ const Inventory = ({ user }) => {
                                 </div>
                             ))
                         ) : (
-                            <></>
+                            <div className="no-inventory-found">
+                                <img className="icon-spaceman" src={spaceman} alt='icon-spaceman' />
+                                {messageError}
+                            </div>
                         )}
                     </div>
                 </div>

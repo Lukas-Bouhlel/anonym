@@ -95,3 +95,12 @@
         }
     }
 }
+.no-inventory-found {
+    display: flex;
+    justify-content: center;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+    width: 100%;   
+    color: #A9A9A9;
+}

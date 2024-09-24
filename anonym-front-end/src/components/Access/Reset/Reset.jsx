@@ -4,12 +4,16 @@ import { useForm } from "react-hook-form";
 import { useMutation } from '@tanstack/react-query';
 import { useApi } from '../../../context/ApiContext';
 import { useNavigate } from 'react-router-dom';
+import { usePopup } from '../../../context/PopupContext';
 
 const Reset = () => {
     const { register, handleSubmit, watch, formState: { errors }, } = useForm();
     const { api_url } = useApi();
     const navigate = useNavigate();
     const [token, setToken] = useState('');
+    const { setOpenPopup, setTextPopup, setState } = usePopup();
+    const [messageError, setMessageError] = useState('');
+    const [showMessage, setShowMessage] = useState(false);
 
     // Extraction du token de l'URL à partir des query params
     useEffect(() => {
@@ -27,32 +31,47 @@ const Reset = () => {
             }, { withCredentials: true });
         },
         onSuccess: () => {
-            alert('Mot de passe réinitialisé avec succès');
-            navigate('/'); // Redirection après le succès
+            navigate('/');
+            setOpenPopup(true);
+            setShowMessage(false);
+            setState('success');
+            setTextPopup('Mot de passe réinitialisé avec succès');
+            setMessageError('');
         },
         onError: (error) => {
-            alert('Erreur lors de la réinitialisation: ' + error.response.data.message);
+            setShowMessage(true);
+            setMessageError(error.response.data.message);
         }
     });
 
     // Gestion de la soumission du formulaire
     const onSubmit = (data) => {
-        if (data.password !== data.confirmPassword) {
-            alert("Les mots de passe ne correspondent pas.");
-            return;
-        }
         resetPasswordMutation.mutate(data); // Lancer la mutation
     };
 
     return (
-        <div className='reset'>
-            <form className="reset-form" onSubmit={handleSubmit(onSubmit)}>
-                <h1>Réinitialisation</h1>
-                <span>Renseigner votre nouveau mot de passe</span>
-                <input type="password" placeholder='Mot de passe' {...register("password", { required: true })} />
-                <input type="password" placeholder="Mot de passe de confirmation" {...register("confirmPassword", { required: true })} />
-                <button>Valider</button>
-            </form>
+        <div id='reset'>
+            <div className='reset'>
+                <form className="reset-form" onSubmit={handleSubmit(onSubmit)}>
+                    <h1>Réinitialisation</h1>
+                    <span>Renseigner votre nouveau mot de passe</span>
+                    <input type="password" placeholder='Mot de passe' {...register("password", { required: 'Le mot de passe est requis' })} />
+                    <input type="password" placeholder="Mot de passe de confirmation" {...register("confirmPassword", { required: 'Le mot de passe de confirmation est requis' })} />
+                    <button>Valider</button>
+                </form>
+                {/* Gestion de l'affichage des erreurs */}
+                {(showMessage || (errors.password || errors.confirmPassword)) &&
+                    !errors.password && !errors.confirmPassword && (
+                        <p className='error-message-form'>{messageError}</p>
+                    )}
+
+                {/* Affichage des messages d'erreur si tous les champs sont remplis */}
+                {(errors.password || errors.confirmPassword) && (
+                    <p className='error-message-form'>
+                        {errors.password?.message || errors.confirmPassword?.message}
+                    </p>
+                )}
+            </div>
         </div>
     )
 }

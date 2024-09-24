@@ -4,8 +4,8 @@ const fs = require('fs');
 // Lister tous les articles
 exports.readAll = async (req, res) => {
     try {
-        const shop = await Shop.findAll();
-        res.status(200).json(shop);
+        const shopItems  = await Shop.findAll();
+        res.status(200).json(shopItems);
     } catch (error) {
         res.status(500).json({ message: error.message || "An error occurred while retrieving the shop." });
     }
@@ -14,11 +14,11 @@ exports.readAll = async (req, res) => {
 // Lire un article spécifique par ID
 exports.read = async (req, res) => {
     try {
-        const shop = await Shop.findByPk(req.params.id);
-        if (!shop) {
+        const shopItem  = await Shop.findByPk(req.params.id);
+        if (!shopItem ) {
             return res.status(404).json({ message: "Shop item not found." });
         }
-        res.status(200).json(shop);
+        res.status(200).json(shopItem);
     } catch (error) {
         res.status(500).json({ message: error.message || "An error occurred while retrieving the shop item." });
     }
@@ -27,28 +27,25 @@ exports.read = async (req, res) => {
 // Créer un nouvel article
 exports.create = async (req, res) => {
     try {
+        if (req.auth.userRole === 'USER') {
+            return res.status(403).json({ message: "You do not have permission to create an article." });
+        }
+        
         const pathname = `${req.protocol}://${req.get("host")}/uploads/articles/${req.file.filename}`;
 
         if (!pathname) {
             return res.status(400).json({ message: "Pathname are required." });
         }
-        // Vérifier que l'utilisateur est soit ADMIN, soit SUPER_ADMIN
-        if (req.auth.userRole === 'USER') {
-            return res.status(403).json({ message: "You do not have permission to create a article." });
+
+        const { title, amount, type } = JSON.parse(req.body.datas);
+        if (!title || !amount || !type) {
+            return res.status(400).json({ message: "Title, amount, and type are required." });
         }
 
-        let newArticle = await Shop.create({
+        const newArticle = await Shop.create({
             ...JSON.parse(req.body.datas),
             content: pathname,
         });
-        newArticle = {
-            ...newArticle.toJSON()
-        };
-
-        // Validation pour les champs requis
-        if (!newArticle.amount || !newArticle.title || !newArticle.type) {
-            return res.status(400).json({ message: "Amount, title and type are required." });
-        }
 
         res.status(201).json(newArticle);
     } catch (error) {
@@ -65,14 +62,11 @@ exports.update = async (req, res) => {
         }
 
         let shop = await Shop.findByPk(req.params.id);
-
         if (!shop) {
             return res.status(404).json({ message: "Shop item not found." });
         }
 
-        let updateArticle = {
-            ...JSON.parse(req.body.datas)
-        }
+        let updateArticle = { ...JSON.parse(req.body.datas) }
         
         if (req.file) {
             const pathname = `${req.protocol}://${req.get("host")}/uploads/articles/${req.file.filename}`;
@@ -95,10 +89,6 @@ exports.update = async (req, res) => {
         }
 
         await shop.update(updateArticle);
-
-        shop = {
-            ...shop.toJSON()
-        };
 
         res.status(200).json(shop);
     } catch (error) {

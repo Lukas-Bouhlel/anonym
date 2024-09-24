@@ -1,5 +1,11 @@
+const { JSDOM } = require('jsdom');
+const DOMPurify = require('dompurify');
 const PDFDocument = require('pdfkit');
 const path = require('path');
+
+// Créer un DOM virtuel pour DOMPurify
+const window = new JSDOM('').window;
+const purify = DOMPurify(window);
 
 const drawTable = (doc, startX, startY, headers, rows) => {
     const rowHeight = 25;
@@ -53,9 +59,9 @@ const generateInvoice = async (invoiceData) => {
 
         // Informations de l'utilisateur
         doc.fontSize(14).text('Facturé à');
-        doc.fontSize(12).text(`Numéro de facture: ${invoiceData.id}`);
-        doc.text(`Nom: ${invoiceData.username}`);
-        doc.text(`Email: ${invoiceData.email}`);
+        doc.fontSize(12).text(`Numéro de facture: ${purify.sanitize(invoiceData.id)}`);
+        doc.text(`Nom: ${purify.sanitize(invoiceData.username)}`);
+        doc.text(`Email: ${purify.sanitize(invoiceData.email)}`);
         doc.text(`Date: ${new Date(invoiceData.createdAt).toLocaleDateString()}`);
         doc.moveDown(2);
         doc.moveTo(50, doc.y).lineTo(550, doc.y).stroke().moveDown(2);
@@ -63,12 +69,12 @@ const generateInvoice = async (invoiceData) => {
         // Détails de la facture
         doc.fontSize(14).text('Détails de la facture').moveDown(2);
         const headers = ['Article', 'Montant', 'Quantité'];
-        const rows = [[invoiceData.content, `${invoiceData.amount}€`, invoiceData.quantity]];
+        const rows = [[purify.sanitize(invoiceData.content), `${purify.sanitize(invoiceData.amount)}€`, purify.sanitize(invoiceData.quantity)]];
         drawTable(doc, 50, doc.y, headers, rows);
         doc.moveDown(2);
 
         // Total
-        doc.text(`Total: ${invoiceData.amount * invoiceData.quantity}€`).moveDown(2);
+        doc.text(`Total: ${purify.sanitize(invoiceData.amount * invoiceData.quantity)}€`).moveDown(2);
         doc.end(); // Fin du document
     });
 };

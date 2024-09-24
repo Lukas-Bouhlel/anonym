@@ -28,6 +28,8 @@ const Register = () => {
             // Appeler la fonction `login` du contexte pour stocker l'utilisateur
             registered(data.user);
             AnonymIsClose();
+            setShowMessage(false);
+            setMessageError('');
         },
         onError: (data) => {
           setShowMessage(true);
@@ -53,7 +55,7 @@ const Register = () => {
       {/* Gestion de l'affichage des erreurs */}
       {(showMessage || (errors.email || errors.password || errors.name)) && 
           !errors.email && !errors.password && ( 
-              <p className='error-message-form'>{messageError}</p>
+            <p className='error-message-form'>{messageError}</p>
       )}
       
       {/* Affichage des messages d'erreur si tous les champs sont remplis */}

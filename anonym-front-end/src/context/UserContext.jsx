@@ -2,6 +2,7 @@ import React, { createContext, useEffect, useState, useContext } from 'react';
 import axios from 'axios';
 import { useApi } from '../context/ApiContext';
 import { useQuery } from '@tanstack/react-query';
+import { usePopup } from './PopupContext';
 
 // Créez le contexte
 const UserContext = createContext();
@@ -12,7 +13,7 @@ export const useUser = () => useContext(UserContext);
 // Fournisseur de contexte utilisateur
 export const UserProvider = ({ children }) => {
     const [user, setUser] = useState(null); // Stocke les informations de l'utilisateur connecté
-    const [isRegistered, setIsRegistered] = useState(false);
+    const { setTextPopup, setOpenPopup, setState } = usePopup();
     const { api_url } = useApi();
 
     const fetchUser = async () => {
@@ -50,7 +51,9 @@ export const UserProvider = ({ children }) => {
 
     const registered = (userData) => {
         setUser(userData);
-        setIsRegistered(true); // Marquer que l'utilisateur est enregistré
+        setOpenPopup(true);
+        setState('success');
+        setTextPopup('Votre compte a été créé avec succès. Vous trouverez une confirmation envoyée par e-mail !');
     };
 
     // Fonction pour déconnecter l'utilisateur
@@ -64,7 +67,7 @@ export const UserProvider = ({ children }) => {
     };
 
     return (
-        <UserContext.Provider value={{ user, setUser, registered, login, logout, isLoading, isError, error, isRegistered, setIsRegistered }}>
+        <UserContext.Provider value={{ user, setUser, registered, login, logout, isLoading, isError, error }}>
             {children}
         </UserContext.Provider>
     );

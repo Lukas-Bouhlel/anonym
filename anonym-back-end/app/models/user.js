@@ -65,6 +65,12 @@ module.exports = (sequelize, DataTypes) => {
         },
         notEmpty: {
           msg: "Le mot de passe est requis"
+        },
+        isValidPassword(value) {
+          const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+=\-\[\]{};:,.<>?/\\|`~"'£¤§µ¢₹])[A-Za-z\d!@#$%^&*()_+=\-\[\]{};:,.<>?/\\|`~"'£¤§µ¢₹]{12,}$/;
+          if (!passwordRegex.test(value)) {
+              throw new Error("Mot de passe : 12 caractères min, majuscules, minuscules, chiffres et caractères spéciaux");
+          }
         }
       }
     },

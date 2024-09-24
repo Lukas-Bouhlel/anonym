@@ -15,31 +15,34 @@ import App from "../pages/App";
 import Profile from "../pages/Profile.jsx";
 import Success from "../pages/Success.jsx";
 import Reset from "../components/Access/Reset/Reset.jsx";
+import { PopupProvider } from "../context/PopupContext.jsx";
 
 const Router = () => {
   return (
     <BrowserRouter>
       <ApiProvider>
-        <AuthProvider>
-          <UserProvider>
-            <Layout>
-              <Routes>
-                <Route path="/" element={<Home />} />
-                <Route path="/discover" element={<Discover />} />
-                <Route path="/reputation" element={<Reputation />} />
-                <Route path="/support" element={<Support />} />
-                <Route path="/legal-notices" element={<LegalNotices />} />
-                <Route path="/privacy-policy" element={<PrivacyPolicy />} />
-                <Route path="/terms-conditions" element={<TermsConditions />} />
-                <Route path="/reset" element={<Reset/>}/>
-                {/* Routes privées */}
-                <Route path="/app" element={<PrivateRoute><App /></PrivateRoute>} />
-                <Route path="/profile" element={<PrivateRoute><Profile/></PrivateRoute>} />
-                <Route path="/app/success" element={<PrivateRoute><Success/></PrivateRoute>} />
-              </Routes>
-            </Layout>
-          </UserProvider>
-        </AuthProvider>
+        <PopupProvider>
+          <AuthProvider>
+            <UserProvider>
+              <Layout>
+                <Routes>
+                  <Route path="/" element={<Home />} />
+                  <Route path="/discover" element={<Discover />} />
+                  <Route path="/reputation" element={<Reputation />} />
+                  <Route path="/support" element={<Support />} />
+                  <Route path="/legal-notices" element={<LegalNotices />} />
+                  <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+                  <Route path="/terms-conditions" element={<TermsConditions />} />
+                  <Route path="/reset" element={<Reset />} />
+                  {/* Routes privées */}
+                  <Route path="/app" element={<PrivateRoute><App /></PrivateRoute>} />
+                  <Route path="/profile" element={<PrivateRoute><Profile /></PrivateRoute>} />
+                  <Route path="/app/success" element={<PrivateRoute><Success /></PrivateRoute>} />
+                </Routes>
+              </Layout>
+            </UserProvider>
+          </AuthProvider>
+        </PopupProvider>
       </ApiProvider>
     </BrowserRouter>
   );

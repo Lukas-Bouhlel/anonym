@@ -4,7 +4,7 @@ const jwt = require('jsonwebtoken');
 const fs = require('fs');
 const path = require('path')
 const { Op } = require('sequelize');
-const crypto = require('crypto');
+const cryptoJS = require('crypto-js');
 
 exports.signup = async (req, res) => {
     try {
@@ -21,15 +21,30 @@ exports.signup = async (req, res) => {
             const defaultAvatarPath = path.join(__dirname, '../../uploads/profiles/default/default_avatar.svg');
             const userAvatarPath = path.resolve(__dirname, '../../uploads/profiles/avatars', uniqueAvatarName);
 
-            // Lire le contenu du SVG
-            let svgContent = fs.readFileSync(defaultAvatarPath, 'utf8');
+            // Vérifier si le fichier SVG par défaut existe
+            if (!fs.existsSync(defaultAvatarPath)) {
+                return res.status(500).json({ message: 'Default avatar not found' });
+            }
+
+             // Lire et modifier le contenu du SVG
+            let svgContent;
+            try {
+                svgContent = fs.readFileSync(defaultAvatarPath, 'utf8');
+            } catch (error) {
+                return res.status(500).json({ message: 'Error reading default avatar' });
+            }
 
             // Remplacer la couleur dans le SVG
-            svgContent = svgContent.replace(/<circle[^>]*fill="[^"]*"[^>]*>/, `<circle cx="115" cy="115" r="115" fill="${circleColor}"/>`);
-            svgContent = svgContent.replace(/<path[^>]*fill="[^"]*"[^>]*>/, `<path d="M114.37 48L150.593 117.743L167.732 116.319L184.87 114.894L158.396 132.766C169.932 154.979 184.87 183.741 184.87 183.741L161.077 183.801L140.549 144.814L66.4727 183.801H44L54.9652 162.64L135.365 133.027C135.365 133.027 135.396 133.016 135.457 132.994C136.576 132.584 177.708 117.529 184.87 114.894L167.732 116.319L150.593 117.743L131.372 124.824L115.018 92.3567L103.054 114.894L89.6156 140.207L44 157.012L66.0193 141.308L79.1852 115.9L114.37 48Z" fill="${pathColor}"/>`);
+             svgContent = svgContent
+                .replace(/<circle[^>]*fill="[^"]*"[^>]*>/, `<circle cx="115" cy="115" r="115" fill="${circleColor}"/>`)
+                .replace(/<path[^>]*fill="[^"]*"[^>]*>/, `<path d="M114.37 48L150.593 117.743L167.732 116.319L184.87 114.894L158.396 132.766C169.932 154.979 184.87 183.741 184.87 183.741L161.077 183.801L140.549 144.814L66.4727 183.801H44L54.9652 162.64L135.365 133.027C135.365 133.027 135.396 133.016 135.457 132.994C136.576 132.584 177.708 117.529 184.87 114.894L167.732 116.319L150.593 117.743L131.372 124.824L115.018 92.3567L103.054 114.894L89.6156 140.207L44 157.012L66.0193 141.308L79.1852 115.9L114.37 48Z" fill="${pathColor}"/>`);
 
-            // Enregistrer le SVG modifié
-            fs.writeFileSync(userAvatarPath, svgContent);
+            // Écrire le SVG modifié
+            try {
+                fs.writeFileSync(userAvatarPath, svgContent);
+            } catch (error) {
+                return res.status(500).json({ message: 'Error saving user avatar' });
+            }
 
             // Mettre à jour l'avatar de l'utilisateur dans la base de données
             user.avatar = `${req.protocol}://${req.get("host")}/uploads/profiles/avatars/${uniqueAvatarName}`;
@@ -38,7 +53,13 @@ exports.signup = async (req, res) => {
 
          // Lire le fichier HTML pour l'e-mail
         const emailTemplatePath = path.join(__dirname, '../../templates/signup-email.html');
-        let htmlContent = fs.readFileSync(emailTemplatePath, 'utf8');
+
+        let htmlContent;
+        try {
+            htmlContent = fs.readFileSync(emailTemplatePath, 'utf8');
+        } catch (error) {
+            return res.status(500).json({ message: 'Error reading email template' });
+        }
 
         // Remplacer le nom de l'utilisateur dans le contenu HTML
         htmlContent = htmlContent.replace(/Salut\s+Rei,/, `Salut ${user.username},`);
@@ -54,8 +75,8 @@ exports.signup = async (req, res) => {
 
         res.status(201).json(user);
     } catch (error) {
-         // Gérer les erreurs spécifiques à la validation Sequelize
-         if (error.name === 'SequelizeValidationError') {
+        // Gérer les erreurs spécifiques à la validation Sequelize
+        if (error.name === 'SequelizeValidationError') {
             const messages = error.errors.map(err => err.message);
             return res.status(400).json({ message: messages });
         }
@@ -139,19 +160,27 @@ exports.logout = (req, res) => {
 };
 
 exports.requestPasswordReset = async (req, res) => {
-    const { email } = req.body;
-
     try {
+        const { email } = req.body;
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    
+        if (!emailRegex.test(email)) {
+            return res.status(400).json({ message: "L'adresse email fournie est invalide" });
+        }
+
         const user = await User.findOne({ where: { email } });
+
         if (!user) {
-            return res.status(404).json({ message: "User not found" });
+            return res.status(404).json({ message: "Vous n'êtes pas inscrit sur la plateforme" });
         }
 
         // Générer un token unique
-        const token = crypto.randomBytes(20).toString('hex');
+        const token = cryptoJS.lib.WordArray.random(20).toString();
 
-        // Enregistrer le token et l'expiration (15 minutes)
-        user.resetPasswordToken = token;
+        const hashedToken = cryptoJS.SHA256(token).toString();
+
+        // Enregistrer le token haché et l'expiration (15 minutes)
+        user.resetPasswordToken = hashedToken;
         user.resetPasswordExpires = Date.now() + 15 * 60 * 1000; // 15 minutes
         await user.save();
 
@@ -171,30 +200,49 @@ exports.requestPasswordReset = async (req, res) => {
             htmlContent
         );
 
-        res.status(200).json({ message: 'Email sent for password reset' });
+        res.status(200).json({ message: 'Email envoyé pour la réinitialisation de votre mot de passe' });
     } catch (error) {
-        res.status(500).json({ message: error.message || 'Could not initiate password reset' });
+        return res.status(500).json({ message: error.message || 'Impossible d’initier la réinitialisation du mot de passe' });
     }
 };
 
 exports.resetPassword = async (req, res) => {
-    const { token } = req.query;
-    const { password, confirmPassword } = req.body;
-
     try {
+        const { token } = req.query;
+        const { password, confirmPassword } = req.body;
+    
+        if (!password) {
+            return res.status(400).json({ message: "Le mot de passe est requis" });
+        }
+    
+        if (!confirmPassword) {
+            return res.status(400).json({ message: "Le mot de passe de confirmation est requis" });
+        }
+    
+        if (password !== confirmPassword) {
+            return res.status(400).json({ message: "Les mots de passe ne correspondent pas" });
+        }
+
+        // Vérifier que le mot de passe respecte la regex définie dans le modèle
+        const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+=\-\[\]{};:,.<>?/\\|`~"'£¤§µ¢₹])[A-Za-z\d!@#$%^&*()_+=\-\[\]{};:,.<>?/\\|`~"'£¤§µ¢₹]{12,}$/;
+        if (!passwordRegex.test(password)) {
+            return res.status(400).json({ 
+                message: "Mot de passe : 12 caractères min, avec majuscules, minuscules, chiffres et caractères spéciaux"
+            });
+        }
+        
+        // Hacher le token fourni pour la comparaison
+        const hashedToken = cryptoJS.SHA256(token).toString();
+
         const user = await User.findOne({
             where: {
-                resetPasswordToken: token,
+                resetPasswordToken: hashedToken,
                 resetPasswordExpires: { [Op.gt]: Date.now() } // Vérifier si le token est toujours valide
             }
         });
 
         if (!user) {
-            return res.status(400).json({ message: "Token is invalid or has expired" });
-        }
-
-        if (password !== confirmPassword) {
-            return res.status(400).json({ message: "Passwords do not match" });
+            return res.status(400).json({ message: "Votre session est invalide ou a expiré" });
         }
 
         // Hash le nouveau mot de passe
@@ -222,8 +270,8 @@ exports.resetPassword = async (req, res) => {
             sameSite: 'Strict',
         });
 
-        res.status(200).json({ message: 'Password has been reset successfully' });
+        res.status(200).json({ message: 'Le mot de passe a été réinitialisé avec succès' });
     } catch (error) {
-        res.status(500).json({ message: error.message || 'Could not reset password' });
+        res.status(500).json({ message: error.message || 'Impossible de réinitialiser le mot de passe' });
     }
 };

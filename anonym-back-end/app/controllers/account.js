@@ -65,7 +65,7 @@ exports.update = async (req, res) => {
     try {
         const userId = req.auth.userId;// Récupérer l'ID de l'utilisateur depuis les paramètres JWT
         const datas = JSON.parse(req.body.datas);
-        const { username, email, password, avatar } = datas;
+        const { username, email, avatar } = datas;
 
         if (!userId) {
             return res.status(400).json({ message: "User ID is required." });
@@ -126,7 +126,6 @@ exports.update = async (req, res) => {
         // Mise à jour des informations de l'utilisateur
         if (username) user.username = username;
         if (email) user.email = email;
-        if (password) user.password = await bcrypt.hash(password, 10);
         user.avatar = newAvatarPath;
 
         await user.save();
@@ -155,9 +154,9 @@ exports.updatePassword = async (req, res) => {
         }
 
         // Regex pour valider le mot de passe
-        const passwordRegex = /^(?!.*\s).{8,}$/;
+        const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+=\-\[\]{};:,.<>?/\\|`~"'£¤§µ¢₹])[A-Za-z\d!@#$%^&*()_+=\-\[\]{};:,.<>?/\\|`~"'£¤§µ¢₹]{12,}$/;
         if (!passwordRegex.test(newPassword)) {
-            return res.status(400).json({ message: "Le mot de passe doit contenir au moins 8 caractères et ne pas inclure d'espaces." });
+            return res.status(400).json({ message: "Mot de passe : 12 caractères min, avec majuscules, minuscules, chiffres et caractères spéciaux" });
         }
 
         // Trouver l'utilisateur dans la base de données

@@ -6,11 +6,13 @@ import { Squash as Hamburger } from 'hamburger-react';
 import '../../assets/styles/navbar/navbar.scss';
 import { useUser } from '../../context/UserContext';
 import logo from '../../assets/images/logos/anonym-logo-white.svg';
+import { usePopup } from '../../context/PopupContext';
 import Popup from '../Utils/Popup';
 
 const Navbar = () => {
     const { AnonymIsOpen } = useAuth();
-    const { user, isRegistered, setIsRegistered } = useUser();
+    const { user } = useUser();
+    const { openPopup, setOpenPopup, textPopup, setTextPopup, state, setState } = usePopup();
     const location = useLocation();
     const navigate = useNavigate();
     const [isOpenMenu, setIsOpenMenu] = useState();
@@ -44,8 +46,8 @@ const Navbar = () => {
 
     return (
         <>
-            {isRegistered && (
-                <Popup showPopup={isRegistered} setShowPopup={setIsRegistered} text={"Votre compte a été créé avec succès. Vous trouverez une confirmation envoyée par e-mail !"} state={'success'}/>
+            {openPopup && (
+                <Popup showPopup={openPopup} setShowPopup={setOpenPopup} text={textPopup} setTextPopup={setTextPopup} state={state} setState={setState}/>
             )}
             <div id='navbar' className={`${location.pathname.substring(1)}`}>
                 <Link to='/' className='navbar-items-links logo-anonym'>

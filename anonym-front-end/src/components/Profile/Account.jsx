@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { useForm } from "react-hook-form";
 import { useApi } from '../../context/ApiContext';
@@ -13,13 +13,23 @@ const Account = ({ user, setUser }) => {
 
     const { register, handleSubmit, setValue, reset, formState: { errors } } = useForm({
         defaultValues: {
-            username: user?.username || "",
-            email: user?.email || "",
+            username: user.username || "",
+            email: user?.email || ""
         }
     });
 
+    // Mettre à jour les valeurs du formulaire et les aperçus après une mise à jour du compte (user)
+    useEffect(() => {
+        reset({
+            username: user?.username || "",
+            email: user?.email || ""
+        });
+        setPreviewUsername(user?.username || "");
+    }, [user, reset]);
+
     const onSubmit = async (data) => {
         const formData = new FormData();
+
         const jsonData = {
             username: data.username,
             email: data.email,
@@ -83,7 +93,6 @@ const Account = ({ user, setUser }) => {
         setPreviewAvatar(user?.avatar || ""); // Réinitialise l'avatar à sa valeur initiale
         setAvatarFile(null); // Réinitialise le fichier local de l'avatar
     };
-
 
     return (
         <div id="account">

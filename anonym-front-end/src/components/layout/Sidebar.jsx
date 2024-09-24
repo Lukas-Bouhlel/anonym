@@ -10,6 +10,7 @@ const Sidebar = ({ user, page, setPage }) => {
             Paramètres utilisateur
         </Tooltip>
     );
+
     return (
         <>
             <div className="col-auto px-0 sidebar">

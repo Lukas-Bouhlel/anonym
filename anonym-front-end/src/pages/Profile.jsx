@@ -20,13 +20,6 @@ const Profile = () => {
         navigate('/');  // Redirige vers la page d'accueil après la déconnexion
     };
 
-    const handleOpen = value => {
-        setSize(value);
-        setOpen(true);
-    };
-  
-    const handleClose = () => setOpen(false);
-
     return (
         <div id="profile">
             <div className="container-fluid">
@@ -84,7 +77,7 @@ const Profile = () => {
                     </div>
                     <div className="profile-container col">
                         {typeProfils === 'Profils' ? (
-                            <Profils user={user} setTypeProfils={setTypeProfils}/>
+                            <Profils user={user} setTypeProfils={setTypeProfils} setUser={setUser}/>
                         ) : typeProfils === 'Account' ? (
                             <Account user={user} setUser={setUser}/>
                         ) : typeProfils === 'Invoices' ? (

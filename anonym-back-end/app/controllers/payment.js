@@ -8,6 +8,10 @@ exports.create = async (req, res) => {
         const { article_id } = req.body; // ID du produit acheté
         const userId = req.auth.userId;
 
+        if (!article_id) {
+            return res.status(400).json({ message: "Article ID is required." });
+        }
+
         // Trouver le produit
         const shopItem = await Shop.findOne({ where: { article_id: article_id } });
         if (!shopItem) {
@@ -59,9 +63,12 @@ exports.create = async (req, res) => {
 };
 // Route de succès après le paiement
 exports.success = async (req, res) => {
-    const session_id = req.query.session_id;  // Récupérer session_id depuis la requête
-
     try {
+        const session_id = req.query.session_id;  // Récupérer session_id depuis la requête
+
+        if (!session_id) {
+            return res.status(400).json({ message: 'Session ID is required.' });
+        }
         // Récupérer la session de paiement via l'ID
         const session = await stripe.checkout.sessions.retrieve(session_id);
 

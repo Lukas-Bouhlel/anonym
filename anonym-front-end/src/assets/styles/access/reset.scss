@@ -1,69 +1,73 @@
-.reset {
+#reset {
     height: 100vh;
     display: flex;
     justify-content: center;
     align-items: center;
-    &-form {
-        gap: 20px;
-        background-color: #FFF9F4;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        flex-direction: column;
-        padding: 0 40px;
-        height: 100%;
-        margin: 0px 1px;
-        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.35);
-        max-height: 480px;
-        border-radius: 15px;
-        width: 450px;
-        h1 {
-            font-size: 34px;
-            text-align: center;
+    .reset {
+        position: relative;
+        padding: 5px 0px;
+        &-form {
+            gap: 20px;
+            background-color: #FFF9F4;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            padding: 65px 60px;
+            height: 100%;
+            margin: 0px 1px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.35);
+            max-height: 480px;
+            border-radius: 15px;
+            width: 450px;
+            h1 {
+                font-size: 34px;
+                text-align: center;
+            }
+            input {
+                background-color: rgba(52, 52, 52, 0.168627451);
+                border: none;
+                margin: 8px 0;
+                padding: 10px 15px;
+                font-size: 13px;
+                border-radius: 8px;
+                width: 100%;
+                outline: none;
+            }
+        
+            p {
+                font-size: 14px;
+                line-height: 20px;
+                letter-spacing: 0.3px;
+                margin: 20px 0;
+                padding: 0 50px;
+            }
+        
+            span {
+                font-size: 12px;
+            }
+        
+            a {
+                color: #333;
+                font-size: 13px;
+                text-decoration: none;
+                margin: 15px 0 10px;
+            }
+        
+            button {
+                background-color: $black;
+                color: $white;
+                font-size: 12px;
+                padding: 10px 45px;
+                border: 1px solid transparent;
+                border-radius: 8px;
+                font-weight: 600;
+                letter-spacing: 0.5px;
+                text-transform: uppercase;
+                margin-top: 10px;
+                cursor: pointer;
+            }
+        
         }
-        input {
-            background-color: rgba(52, 52, 52, 0.168627451);
-            border: none;
-            margin: 8px 0;
-            padding: 10px 15px;
-            font-size: 13px;
-            border-radius: 8px;
-            width: 100%;
-            outline: none;
-        }
-    
-        p {
-            font-size: 14px;
-            line-height: 20px;
-            letter-spacing: 0.3px;
-            margin: 20px 0;
-            padding: 0 50px;
-        }
-    
-        span {
-            font-size: 12px;
-        }
-    
-        a {
-            color: #333;
-            font-size: 13px;
-            text-decoration: none;
-            margin: 15px 0 10px;
-        }
-    
-        button {
-            background-color: $black;
-            color: $white;
-            font-size: 12px;
-            padding: 10px 45px;
-            border: 1px solid transparent;
-            border-radius: 8px;
-            font-weight: 600;
-            letter-spacing: 0.5px;
-            text-transform: uppercase;
-            margin-top: 10px;
-            cursor: pointer;
-        }
-    
     }
 }

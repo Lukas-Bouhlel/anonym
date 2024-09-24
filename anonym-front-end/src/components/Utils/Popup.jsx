@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 
-const Popup = ({ showPopup, setShowPopup, text, state }) => {
+const Popup = ({ showPopup, setShowPopup, text, setTextPopup, state, setState }) => {
     const [popupClass, setPopupClass] = useState('hidden');
 
     // Utilisation de useEffect pour masquer la pop-up après 5 secondes
@@ -12,7 +12,9 @@ const Popup = ({ showPopup, setShowPopup, text, state }) => {
                 const timer = setTimeout(() => {
                     setPopupClass('hidden'); // Active l'animation de sortie (repartir vers -50px)
                     setTimeout(() => {
-                        setShowPopup(false); // Cache la pop-up après l'animation de sortie
+                        setShowPopup(false)
+                        setTextPopup(''); // Cache la pop-up après l'animation de sortie
+                        setState('');
                     }, 500); // Correspond à la durée de l'animation CSS (0.5s)
                 }, 5000); // La pop-up reste visible 5 secondes
     

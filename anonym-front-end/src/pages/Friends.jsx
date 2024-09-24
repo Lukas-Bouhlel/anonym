@@ -2,7 +2,6 @@ import React, { useState } from "react";
 import axios from 'axios';
 import { useApi } from '../context/ApiContext';
 import { useQuery, useMutation } from '@tanstack/react-query';
-import tel from '../assets/images/icons/tel.svg';
 import spaceman from '../assets/images/icons/spaceman.svg'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faUser, faEllipsisVertical } from '@fortawesome/free-solid-svg-icons';
@@ -82,7 +81,7 @@ const Friends = () => {
 
     // Mutation pour mettre à jour le status d'un ami
     const { mutate: updateFriend } = useMutation({
-        mutationFn: async ({friend, status}) => {
+        mutationFn: async ({ friend, status }) => {
             try {
                 await axios.put(`${api_url}/api/friends/${friend.id}`, {
                     status: status
@@ -109,6 +108,9 @@ const Friends = () => {
 
     // Fonction pour filtrer les amis en fonction du statut sélectionné
     const filterFriends = (friendsList) => {
+        if (!friendsList) {
+            return [];
+        }
         switch (choiceFriendsType) {
             case 'online':
                 return friendsList.filter(friend => friend.status === 'online');
@@ -143,88 +145,92 @@ const Friends = () => {
             </div>
             <div
                 className="update-friend"
-                onClick={() => updateFriend({friend, status})} // Appelle la fonction de suppression avec l'ID de l'ami
+                onClick={() => updateFriend({ friend, status })} // Appelle la fonction de suppression avec l'ID de l'ami
             >
                 {choiceFriendsType === 'bloqued' ? (
-                     <>Débloquer l'utilisateur</>
+                    <>Débloquer l'utilisateur</>
                 ) : (
                     <>Bloquer l'utilisateur</>
                 )}
-               
+
             </div>
         </Tooltip>
     );
 
     return (
         <div id="friends">
-            <Popup showPopup={showPopup} setShowPopup={setShowPopup} text={messagePopup}/>
-            <div className="content-friends d-flex">
-                <h1 className="content-friends-title"><FontAwesomeIcon icon={faUser}/>  Amis</h1>
-                <button onClick={() => setChoiceFriendsType('online')} className={`content-friends-filter ${choiceFriendsType === 'online' ? 'content-friends-filter-active' : ''}`}>En ligne</button>
-                <button onClick={() => setChoiceFriendsType('all')} className={`content-friends-filter ${choiceFriendsType === 'all' ? 'content-friends-filter-active' : ''}`}>Tous</button>
-                <button onClick={() => setChoiceFriendsType('bloqued')} className={`content-friends-filter ${choiceFriendsType === 'bloqued' ? 'content-friends-filter-active' : ''}`}>Bloqué</button>
-                <button onClick={() => setChoiceFriendsType('add')} className={`content-friends-add ${choiceFriendsType === 'add' ? 'content-friends-add-active' : ''}`}>Ajouter</button>
-            </div>
-            {choiceFriendsType !== 'add' ? (
+            <Popup showPopup={showPopup} setShowPopup={setShowPopup} text={messagePopup} />
+            {friends && (
                 <>
-                    <div className="status-type-friends">
-                        {choiceFriendsType === 'online' ? (
-                            <p>En ligne - {friends.filter(friend => friend.status === 'online').length}</p>
-                        ) : choiceFriendsType === 'all' ? (
-                            <p>Tous les amis - {friends.filter(friend => friend.status !== 'BLOQUED').length}</p>
-                        ) : (
-                            <p>Bloqués - {friends.filter(friend => friend.status === 'BLOQUED').length}</p>
-                        )}
+                    <div className="content-friends d-flex">
+                        <h1 className="content-friends-title"><FontAwesomeIcon icon={faUser} />  Amis</h1>
+                        <button onClick={() => setChoiceFriendsType('online')} className={`content-friends-filter ${choiceFriendsType === 'online' ? 'content-friends-filter-active' : ''}`}>En ligne</button>
+                        <button onClick={() => setChoiceFriendsType('all')} className={`content-friends-filter ${choiceFriendsType === 'all' ? 'content-friends-filter-active' : ''}`}>Tous</button>
+                        <button onClick={() => setChoiceFriendsType('bloqued')} className={`content-friends-filter ${choiceFriendsType === 'bloqued' ? 'content-friends-filter-active' : ''}`}>Bloqué</button>
+                        <button onClick={() => setChoiceFriendsType('add')} className={`content-friends-add ${choiceFriendsType === 'add' ? 'content-friends-add-active' : ''}`}>Ajouter</button>
                     </div>
-                    <ul className="list-group list-group-flush">
-                        {filteredFriends.length > 0 ? (
-                            filteredFriends.map((friend, index) => (
-                                <li key={index} className="list-group-item list-friends">
-                                    <div className="content-friend">
-                                        <img src={`${friend.FriendDetails.avatar}`} alt="avatar" width="30" height="30" className="rounded-circle avatar-profile" />
-                                        <strong>{friend.FriendDetails.username}</strong>   
-                                    </div>
-                                    <Whisper placement="left" controlId="control-id-click" trigger="click" speaker={renderTooltip(friend.FriendDetails, choiceFriendsType === 'bloqued' ? 'ACTIVE' : 'BLOQUED')}>
-                                        <div className="tooltip-friend" tabIndex="0">
-                                            <FontAwesomeIcon icon={faEllipsisVertical} />
-                                        </div>
-                                    </Whisper>
-                                </li>
-                            ))
-                        ) : (
-                            <div className="no-friends-found">
-                                <img className="icon-spaceman" src={spaceman} alt='icon-spaceman' />
-                                Aucun utilisateur trouvé
+                    {choiceFriendsType !== 'add' ? (
+                        <>
+                            <div className="status-type-friends">
+                                {choiceFriendsType === 'online' ? (
+                                    <p>En ligne - {friends.filter(friend => friend.status === 'online').length}</p>
+                                ) : choiceFriendsType === 'all' ? (
+                                    <p>Tous les amis - {friends.filter(friend => friend.status !== 'BLOQUED').length}</p>
+                                ) : (
+                                    <p>Bloqués - {friends.filter(friend => friend.status === 'BLOQUED').length}</p>
+                                )}
                             </div>
-                        )}
-                    </ul>
+                            <ul className="list-group list-group-flush">
+                                {filteredFriends.length > 0 ? (
+                                    filteredFriends.map((friend, index) => (
+                                        <li key={index} className="list-group-item list-friends">
+                                            <div className="content-friend">
+                                                <img src={`${friend.FriendDetails.avatar}`} alt="avatar" width="30" height="30" className="rounded-circle avatar-profile" />
+                                                <strong>{friend.FriendDetails.username}</strong>
+                                            </div>
+                                            <Whisper placement="left" controlId="control-id-click" trigger="click" speaker={renderTooltip(friend.FriendDetails, choiceFriendsType === 'bloqued' ? 'ACTIVE' : 'BLOQUED')}>
+                                                <div className="tooltip-friend" tabIndex="0">
+                                                    <FontAwesomeIcon icon={faEllipsisVertical} />
+                                                </div>
+                                            </Whisper>
+                                        </li>
+                                    ))
+                                ) : (
+                                    <div className="no-friends-found">
+                                        <img className="icon-spaceman" src={spaceman} alt='icon-spaceman' />
+                                        Aucun utilisateur trouvé
+                                    </div>
+                                )}
+                            </ul>
+                        </>
+                    ) : (
+                        <div className={`add-friends ${addStatus === 'Success' ? 'add-friends-success' : addStatus === 'Error' ? 'add-friends-error' : ''}`}>
+                            <h1 className="add-friends-title">AJOUTER</h1>
+                            <p className="add-friends-paragraph">Tu peux ajouter des amis grâce à leurs noms d'utilisateur Anonym</p>
+                            <form className="add-friends-form" onSubmit={handleAddFriend}>
+                                <input
+                                    className="add-friends-form-input"
+                                    placeholder="Nom d'utilisateur"
+                                    type="text"
+                                    value={usernameToAdd}
+                                    onChange={(e) => {
+                                        setUsernameToAdd(e.target.value);
+                                        setAddStatus('');
+                                        setMessageStatus('');
+                                    }} // Gérer l'état du nom d'utilisateur
+                                />
+                                <button className="button add-friends-form-submit" type="submit" disabled={isSending}>
+                                    {isSending ? 'Envoi en cours...' : 'Envoyer une demande d\'ami'}
+                                </button>
+                            </form>
+                            {messageStatus && <p className={`add-friends-status ${addStatus === 'Success' ? 'add-friends-success' : addStatus === 'Error' ? 'add-friends-error' : ''}`}>{messageStatus}</p>}
+                            <div className="add-friends-icons">
+                                <img className="icon-spaceman" src={spaceman} alt='icon-spaceman' />
+                                Anonym attends des amis. Mais rien ne t'oblige à en ajouter !
+                            </div>
+                        </div>
+                    )}
                 </>
-            ) : (
-                <div className={`add-friends ${addStatus === 'Success' ? 'add-friends-success' : addStatus === 'Error' ? 'add-friends-error' :''}`}>
-                    <h1 className="add-friends-title">AJOUTER</h1>
-                    <p className="add-friends-paragraph">Tu peux ajouter des amis grâce à leurs noms d'utilisateur Anonym</p>
-                    <form className="add-friends-form" onSubmit={handleAddFriend}>
-                        <input
-                            className="add-friends-form-input"
-                            placeholder="Nom d'utilisateur"
-                            type="text"
-                            value={usernameToAdd}
-                            onChange={(e) => {
-                                setUsernameToAdd(e.target.value); 
-                                setAddStatus('');
-                                setMessageStatus('');
-                            }} // Gérer l'état du nom d'utilisateur
-                        />
-                        <button className="button add-friends-form-submit" type="submit" disabled={isSending}>
-                            {isSending ? 'Envoi en cours...' : 'Envoyer une demande d\'ami'}
-                        </button>
-                    </form>
-                    {messageStatus && <p className={`add-friends-status ${addStatus === 'Success' ? 'add-friends-success' : addStatus === 'Error' ? 'add-friends-error' :''}`}>{messageStatus}</p>}
-                    <div className="add-friends-icons">
-                        <img className="icon-spaceman" src={spaceman} alt='icon-spaceman' />
-                        Anonym attends des amis. Mais rien ne t'oblige à en ajouter !
-                    </div>
-                </div>
             )}
         </div>
     )

@@ -3,10 +3,16 @@ const { Inventory, Shop, User } = require('../models');
 // Lire un article spécifique dans l'inventaire d'un utilisateur
 exports.read = async (req, res) => {
     try {
-        const item = await Inventory.findByPk(req.params.item_id, {
+        const itemId = req.params.item_id;
+
+        if (!itemId) {
+            return res.status(400).json({ message: 'Item ID is required.' });
+        }
+
+        const item = await Inventory.findByPk(itemId, {
             include: {
-                model: Shop, // Inclure les détails de l'article depuis le modèle Shop
-                attributes: ['article_id', 'title', 'type', 'content', 'amount'] // Sélectionner les attributs que vous voulez afficher
+                model: Shop,
+                attributes: ['article_id', 'title', 'type', 'content', 'amount']
             }
         });
 
@@ -31,21 +37,39 @@ exports.readAll = async (req, res) => {
     try {
         const userId = req.auth.userId;
 
+        if (!userId) {
+            return res.status(400).json({ message: "User ID is required." });
+        }
+
         const inventoryItems = await Inventory.findAll({
             where: { user_id: userId },
             include: [{ model: Shop }]
         });
 
+        if (inventoryItems.length === 0) {
+            return res.status(404).json({ message: 'Aucun article d\'inventaire trouvé' });
+        }
+
         res.status(200).json(inventoryItems);
     } catch (error) {
+        console.error("Error fetching inventory:", error);
         res.status(500).json({ message: error.message || 'An error occurred while fetching the inventory.' });
     }
 };
+
 
 exports.updateStatus = async (req, res) => {
     try {
         const itemId = req.params.item_id;
         const { active } = req.body;
+
+        if (!itemId) {
+            return res.status(400).json({ message: 'Item ID is required.' });
+        }
+
+        if (typeof active !== 'boolean') {
+            return res.status(400).json({ message: "Active status must be a boolean." });
+        }
 
         // Trouver l'inventaire par ID
         const inventory = await Inventory.findOne({
@@ -58,7 +82,7 @@ exports.updateStatus = async (req, res) => {
         }
 
         // Si l'article doit être activé
-        if (active === true) {
+        if (active) {
             // Désactiver tous les autres articles du même type pour ce user_id
             const sameTypeInventories = await Inventory.findAll({
                 where: {
@@ -117,6 +141,10 @@ exports.create = async (req, res) => {
 
         const { user_id, article_id } = req.body;
 
+        if (!user_id || !article_id) {
+            return res.status(400).json({ message: 'User ID and Article ID are required.' });
+        }
+
         const inventoryItem = await Inventory.create({
             user_id,
             article_id
@@ -137,6 +165,14 @@ exports.update = async (req, res) => {
 
         const itemId = req.params.item_id;
         const { user_id, article_id } = req.body;
+
+        if (!itemId) {
+            return res.status(400).json({ message: 'Item ID is required.' });
+        }
+
+        if (!user_id || !article_id) {
+            return res.status(400).json({ message: 'User ID and Article ID are required.' });
+        }
 
         const inventoryItem = await Inventory.findByPk(itemId);
         if (!inventoryItem) {
@@ -161,7 +197,10 @@ exports.delete = async (req, res) => {
         }
 
         const itemId = req.params.item_id;
-
+        if (!itemId) {
+            return res.status(400).json({ message: 'Item ID is required.' });
+        }
+        
         const inventoryItem = await Inventory.findByPk(itemId);
         if (!inventoryItem) {
             return res.status(404).json({ message: 'Inventory item not found.' });
