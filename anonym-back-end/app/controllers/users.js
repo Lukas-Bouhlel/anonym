@@ -144,7 +144,17 @@ exports.update = async (req, res) => {
             }
         }
 
-        if (username) user.username = username;
+        // Mise à jour des informations de l'utilisateur
+        if (username) {
+            // Valider le username
+            const usernameRegex = /^(?=.*[a-zA-Z])(?=^[A-Za-z0-9_-]{3,15}$)/; // Regex pour le username
+            if (!usernameRegex.test(username)) {
+                return res.status(400).json({
+                    message: "Le nom d'utilisateur doit contenir entre 3 et 15 caractères, inclure au moins une lettre, et peut contenir des chiffres, des tirets et des tirets du bas."
+                });
+            }
+            user.username = username;
+        }
         if (email) user.email = email;
         if (password) user.password = await bcrypt.hash(password, 10);
         if (roles) {

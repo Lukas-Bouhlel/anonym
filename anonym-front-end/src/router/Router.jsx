@@ -15,6 +15,7 @@ import App from "../pages/App";
 import Profile from "../pages/Profile.jsx";
 import Success from "../pages/Success.jsx";
 import Reset from "../components/Access/Reset/Reset.jsx";
+import Admin from "../pages/Admin.jsx";
 import { PopupProvider } from "../context/PopupContext.jsx";
 
 const Router = () => {
@@ -35,9 +36,10 @@ const Router = () => {
                   <Route path="/terms-conditions" element={<TermsConditions />} />
                   <Route path="/reset" element={<Reset />} />
                   {/* Routes privées */}
-                  <Route path="/app" element={<PrivateRoute><App /></PrivateRoute>} />
+                  <Route path="/admin" element={<PrivateRoute><Admin/></PrivateRoute>} />
                   <Route path="/profile" element={<PrivateRoute><Profile /></PrivateRoute>} />
                   <Route path="/app/success" element={<PrivateRoute><Success /></PrivateRoute>} />
+                  <Route path="/app" element={<PrivateRoute><App /></PrivateRoute>} />
                 </Routes>
               </Layout>
             </UserProvider>

@@ -124,7 +124,16 @@ exports.update = async (req, res) => {
         }
 
         // Mise à jour des informations de l'utilisateur
-        if (username) user.username = username;
+        if (username) {
+            // Valider le username
+            const usernameRegex = /^(?=.*[a-zA-Z])(?=^[A-Za-z0-9_-]{3,15}$)/; // Regex pour le username
+            if (!usernameRegex.test(username)) {
+                return res.status(400).json({
+                    message: "Nom d'utilisateur : 3 à 15 caractères, min une lettre, et peut contenir des chiffres, des tirets et des tirets du bas"
+                });
+            }
+            user.username = username;
+        }
         if (email) user.email = email;
         user.avatar = newAvatarPath;
 

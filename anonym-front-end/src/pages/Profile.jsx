@@ -14,6 +14,8 @@ const Profile = () => {
     const [typeProfils, setTypeProfils] = useState('Profils');
     const [deleteModalOpen, setDeleteModalOpen] = useState(false); 
     const navigate = useNavigate(); // Hook pour rediriger après la déconnexion
+    const roles = ["ADMIN", "SUPER_ADMIN"];
+    const hasRole = roles.includes(user.roles);
 
     const handleLogout = async () => {
         await logout(); // Appelle la fonction logout
@@ -34,6 +36,11 @@ const Profile = () => {
                                 <li className="nav-item">
                                     <span onClick={() => setTypeProfils('Account')} className={`link-sidebar ${typeProfils === 'Account' ? 'link-sidebar-active' : ''}`}>Profil</span>
                                 </li>
+                                {hasRole && (
+                                    <li className="nav-item">
+                                        <span onClick={() => navigate('/admin')} className={`link-sidebar ${typeProfils === 'Admin' ? 'link-sidebar-active' : ''}`}>Admin DashBoard</span>
+                                    </li>
+                                )}
                             </ul>
                             <hr/>
                             <ul className="profile-sidebar nav nav-pills flex-column mb-0 align-items-center align-items-sm-start" id="menu">

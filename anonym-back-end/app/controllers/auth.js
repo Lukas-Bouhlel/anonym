@@ -4,7 +4,7 @@ const jwt = require('jsonwebtoken');
 const fs = require('fs');
 const path = require('path')
 const { Op } = require('sequelize');
-const cryptoJS = require('crypto-js');
+const CryptoJS = require('crypto-js');
 
 exports.signup = async (req, res) => {
     try {
@@ -12,6 +12,8 @@ exports.signup = async (req, res) => {
         const user = await User.create({
             ...req.body
         });
+
+        const email_user = req.body.email;
 
         // Après la création réussie de l'utilisateur, générer l'avatar si nécessaire
         if (!req.file && req.avatarData) {
@@ -66,7 +68,7 @@ exports.signup = async (req, res) => {
 
         // Envoyer l'e-mail de confirmation avec le contenu HTML
         await req.mailer.sendEmail(
-            user.email,// Destinataire
+            email_user,// Destinataire
             'Bienvenue sur notre plateforme Anonym !',// Sujet
             '',// Contenu texte (vide)
             htmlContent// Contenu HTML
@@ -175,9 +177,9 @@ exports.requestPasswordReset = async (req, res) => {
         }
 
         // Générer un token unique
-        const token = cryptoJS.lib.WordArray.random(20).toString();
+        const token = CryptoJS.lib.WordArray.random(20).toString();
 
-        const hashedToken = cryptoJS.SHA256(token).toString();
+        const hashedToken = CryptoJS.SHA256(token).toString();
 
         // Enregistrer le token haché et l'expiration (15 minutes)
         user.resetPasswordToken = hashedToken;
@@ -232,7 +234,7 @@ exports.resetPassword = async (req, res) => {
         }
         
         // Hacher le token fourni pour la comparaison
-        const hashedToken = cryptoJS.SHA256(token).toString();
+        const hashedToken = CryptoJS.SHA256(token).toString();
 
         const user = await User.findOne({
             where: {

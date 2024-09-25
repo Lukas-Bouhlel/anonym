@@ -24,6 +24,12 @@ module.exports = (sequelize, DataTypes) => {
       validate: {
         notNull: {
           msg: "Le nom d'utilisateur est requis"
+        },
+        isValidUsername(value) {
+          const usernameRegex = /^(?=.*[A-Za-z])([A-Za-z0-9_-]{3,15})$/;
+          if (!usernameRegex.test(value)) {
+            throw new Error("Nom d'utilisateur : 3 à 15 caractères, min une lettre, et peut contenir chiffres et tirets");
+          }
         }
       }
     },

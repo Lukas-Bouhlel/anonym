@@ -56,8 +56,6 @@ const Inventory = ({ user }) => {
         toggleActiveMutation.mutate({ itemId, currentState });
     };
 
-    console.log(messageError)
-
     return (
         <div id="inventory">
             <Popup showPopup={showPopup} setShowPopup={setShowPopup} text={'Ta décoration d\'avatar a été mise à jour !'}/>

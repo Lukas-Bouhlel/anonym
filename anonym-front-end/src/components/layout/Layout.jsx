@@ -6,15 +6,13 @@ import { useUser } from '../../context/UserContext';
 
 // Composant qui conditionne l'affichage des éléments
 const Layout = ({ children }) => {
-  const privateRoutes = ["/app", "/profile", "/app/success"];
+  const privateRoutes = ["/app", "/profile", "/app/success", "/admin"];
+  const adminRoute = ['/admin'];
   const location = useLocation();
   const isPrivateRoute = privateRoutes.includes(location.pathname);
+  const isAdminRoute = adminRoute.includes(location.pathname);
   const { user, isLoading } = useUser(); // Récupère l'utilisateur du contexte
-  // Si l'utilisateur est connecté, on affiche la page protégée
-  // Redirection vers /app si l'utilisateur est connecté et essaie d'accéder à une route publique
-  //  if (user && !isPrivateRoute && !isLoading) {
-  //   return <Navigate to="/app" />;
-  // }
+
   // Gestion du chargement
   if (isLoading) {
     return <div>Chargement...</div>; // Affiche un message ou un spinner pendant le chargement
@@ -23,6 +21,14 @@ const Layout = ({ children }) => {
   // Redirection vers / si l'utilisateur n'est pas connecté et essaie d'accéder à une route privée
   if (!user && isPrivateRoute && !isLoading) {
     return <Navigate to="/" />;
+  }
+
+  if(isAdminRoute) {
+    const roles = ["ADMIN", "SUPER_ADMIN"];
+    const hasRole = roles.includes(user.roles);
+    if (!hasRole) {
+      return <Navigate to="/" />;
+    }
   }
   
   return (
