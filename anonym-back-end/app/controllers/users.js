@@ -95,7 +95,7 @@ exports.update = async (req, res) => {
 
         // Vérification des permissions
         if (req.auth.userRole === 'ADMIN' && user.roles !== 'USER') {
-            return res.status(403).json({ message: "Admins can only modify or delete users with role USER." });
+            return res.status(403).json({ message: "Seul le SUPER_ADMIN peut attribuer des rôles autres que USER" });
         }
 
         let newAvatarPath = user.avatar;
@@ -157,13 +157,14 @@ exports.update = async (req, res) => {
         }
         if (email) user.email = email;
         if (password) user.password = await bcrypt.hash(password, 10);
-        if (roles) {
-            if (req.auth.userRole === 'SUPER_ADMIN') {
-                user.roles = roles;
-            } else {
-                return res.status(403).json({ message: "Only SUPER_ADMIN can modify user roles." });
+        // Vérifier si l'utilisateur tente de créer un rôle autre que 'USER'
+        if (roles && roles !== 'USER') {
+            // Vérifier si le rôle de l'utilisateur qui fait la requête est SUPER_ADMIN
+            if (req.auth.userRole !== 'SUPER_ADMIN') {
+                return res.status(403).json({ message: "Seul le SUPER_ADMIN peut attribuer des rôles autres que USER" });
             }
         }
+        user.roles = roles;
         user.avatar = newAvatarPath;
 
         await user.save();
