@@ -28,7 +28,7 @@ const Sidebar = ({ }) => {
                         <li className="nav-item">
                             <Link to="/admin/friends" className={`nav-link ${!isOpen && 'togglable'}`}>
                                 <FontAwesomeIcon icon={faUser} />
-                                {isOpen && <span className="ms-3">Admin Dashboard</span>}
+                                {isOpen && <span className="ms-3">Dashboard</span>}
                             </Link>
                         </li>
                         <li className="nav-item">

@@ -1,10 +1,10 @@
 #admin {
     display: flex;
     background-color: #424242;
+    min-height: 100vh;
     .sidebar {
         background-color: $black;
         color: white;
-        height: 100vh;
         transition: width 0.3s ease;
         position: relative;
     }

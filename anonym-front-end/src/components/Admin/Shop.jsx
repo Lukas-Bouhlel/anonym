@@ -208,7 +208,7 @@ const Shop = ({ shop, refetch }) => {
                                 <Modal.Footer>
                                     <Button onClick={handleClose} appearance="subtle">Annuler</Button>
                                     <Button type="submit" className="btn btn-primary">Enregistrer</Button>
-                                    <Button onClick={() => setShowDeleteConfirmation(true)}>Supprimer l'article</Button>
+                                    <Button color="red" appearance="subtle" onClick={() => setShowDeleteConfirmation(true)}>Supprimer l'article</Button>
                                 </Modal.Footer>
                             </form>
                         </Modal.Body>
@@ -261,7 +261,7 @@ const Shop = ({ shop, refetch }) => {
                             </Modal.Body>
                             <Modal.Footer>
                                 <Button onClick={() => setShowDeleteConfirmation(false)} appearance="subtle">Annuler</Button>
-                                <Button onClick={handleDeleteArticle}>Supprimer</Button>
+                                <Button color="red" appearance="subtle" onClick={handleDeleteArticle}>Supprimer</Button>
                             </Modal.Footer>
                         </Modal>
                     )}
