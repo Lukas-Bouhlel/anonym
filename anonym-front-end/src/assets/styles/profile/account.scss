@@ -84,11 +84,15 @@
         }
         .profils-infos {
             background-color: $black;
-            padding: 17px;
+            padding: 20px;
             border-radius: 5px;
             min-width: 300px;
             &-first {
-                padding-bottom: 35px;
+                padding-bottom: 30px;
+                .profile-content-infos-img {
+                    height: 80px;
+                    width: 80px;
+                }
             }
         }
     }

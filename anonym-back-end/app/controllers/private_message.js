@@ -1,19 +1,4 @@
 const { PrivateMessage, User } = require('../models');
-const { Op } = require('sequelize');
-
-// Créer un message
-exports.create = async (req, res) => {
-    try {
-        const { receiver_id, content } = req.body;
-        const sender_id = req.auth.userId; // L'ID de l'utilisateur connecté
-
-        const message = await PrivateMessage.create({ sender_id, receiver_id, content });
-
-        res.status(201).json(message);
-    } catch (error) {
-        res.status(500).json({ message: error.message || 'Une erreur est survenue lors de la création du message.' });
-    }
-};
 
 // Mettre à jour un message
 exports.update = async (req, res) => {
@@ -58,31 +43,16 @@ exports.delete = async (req, res) => {
 // Lire les messages entre deux utilisateurs
 exports.read = async (req, res) => {
     try {
-        const { userId } = req.auth; // L'ID de l'utilisateur connecté
-        const otherUserId = req.params.otherUserId; // L'ID de l'autre utilisateur
+        const { channel_id } = req.params;
 
-        // Vérifier si l'otherUserId est défini
-        if (!otherUserId) {
-            return res.status(400).json({ message: "Other user ID is required." });
-        }
-
-        const messages = await PrivateMessage.findAll({
-            where: {
-                [Op.or]: [
-                    { sender_id: userId, receiver_id: otherUserId },
-                    { sender_id: otherUserId, receiver_id: userId }
-                ]
-            },
-            include: [
-                { model: User, as: 'Sender', attributes: ['id', 'username'] },
-                { model: User, as: 'Receiver', attributes: ['id', 'username'] }
-            ],
-            order: [['createdAt', 'ASC']] // Trier par ordre chronologique
+        const messages = await Message.findAll({
+            where: { channel_id },
+            order: [['createdAt', 'ASC']], // Trier les messages par date de création
+            include: [{
+                model: User, // Associe les messages aux utilisateurs pour récupérer leurs infos (ex: username, avatar)
+                attributes: ['username', 'avatar']
+            }]
         });
-
-        if (!messages.length) {
-            return res.status(404).json({ message: "No messages found between you and this user." });
-        }
 
         res.status(200).json(messages);
     } catch (error) {

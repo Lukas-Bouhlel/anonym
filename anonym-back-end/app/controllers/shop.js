@@ -30,16 +30,24 @@ exports.create = async (req, res) => {
         if (req.auth.userRole === 'USER') {
             return res.status(403).json({ message: "You do not have permission to create an article." });
         }
+
+        if(!req.file) {
+            return res.status(400).json({ message: "L'image' de l'article est obligatoires" });
+        }
+
+        const { title, amount, type } = JSON.parse(req.body.datas);
+        if (!title) {
+            return res.status(400).json({ message: "Le titre de l'article est obligatoires" });
+        } else if(!amount) {
+            return res.status(400).json({ message: "Le montant de l'article est obligatoires" });
+        }else if (!type) {
+            return res.status(400).json({ message: "Le type de l'article est obligatoires" });
+        }
         
         const pathname = `${req.protocol}://${req.get("host")}/uploads/articles/${req.file.filename}`;
 
         if (!pathname) {
             return res.status(400).json({ message: "Pathname are required." });
-        }
-
-        const { title, amount, type } = JSON.parse(req.body.datas);
-        if (!title || !amount || !type) {
-            return res.status(400).json({ message: "Title, amount, and type are required." });
         }
 
         const newArticle = await Shop.create({

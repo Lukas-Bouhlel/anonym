@@ -165,7 +165,12 @@ const Account = ({ user, setUser }) => {
                     <h2>Aperçu</h2>
                     <div className="profils-infos">
                         <div className="profils-infos-first">
-                            <img src={previewAvatar || user.avatar} alt="hugenerd" width="80" height="80" className="rounded-circle avatar-profile" />
+                            <div className="profile-content-infos-img">
+                                {user?.Inventories?.[0]?.Shop?.content && (
+                                    <img className="avatar-profile decoration-profile" src={`${user.Inventories[0].Shop.content}`} alt="hugenerd" width="80" height="80"/>
+                                )}
+                                <img className="rounded-circle avatar-profile image-profile" src={`${previewAvatar || user.avatar}`} alt="hugenerd" width="80" height="80" />
+                            </div>
                         </div>
                         <div className="profils-infos-content">
                             <div className="profils-infos-content-item">

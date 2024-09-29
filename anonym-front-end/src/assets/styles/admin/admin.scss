@@ -2,6 +2,9 @@
     display: flex;
     background-color: #424242;
     min-height: 100vh;
+    #popup {
+        position: absolute;
+    }
     .sidebar {
         background-color: $black;
         color: white;
@@ -36,6 +39,7 @@
         padding: 10px 30px;
         width: 100%;
         border-radius: 0px 20px 20px 0px;
+        text-decoration: none;
         svg {
             width: 17px;
         }
@@ -88,9 +92,9 @@
     }
     .content-admin {
         display: flex;
-        justify-content: center;
-        align-items: center;
+        align-items: flex-start;
         margin-left: 5%;
+        margin-top: 5%;
         &-container {
             display: flex;
             flex-direction: column;
@@ -127,11 +131,15 @@
                     overflow-x: auto; /* Active le scroll horizontal */
                     -webkit-overflow-scrolling: touch; 
                     table {
-                        min-width: 700px; /* Optionnel : Définit une largeur minimale pour éviter que la table se resserre trop */
+                        min-width: 700px; /* Largeur minimale pour activer le scroll */
+                        width: 100%; /* S'assure que la table occupe toute la largeur */
                         img {
                             width: 45px;
-                             height: 45px;
-                             object-fit: cover;
+                            height: 45px;
+                            object-fit: cover;
+                        }
+                        button {
+                            text-decoration: none;
                         }
                     }
                 }

@@ -76,7 +76,12 @@ const Profils = ({user, setTypeProfils, setUser}) => {
             </div>
             <div className="profils-infos">
                 <div className="profils-infos-first">
-                    <img src={`${user.avatar}`} alt="hugenerd" width="80" height="80" className="rounded-circle avatar-profile" />
+                    <div className="profile-content-infos-img">
+                        {user?.Inventories?.[0]?.Shop?.content && (
+                            <img className="avatar-profile decoration-profile" src={`${user.Inventories[0].Shop.content}`} alt="hugenerd" width="80" height="80"/>
+                        )}
+                        <img src={`${user.avatar}`} alt="hugenerd" width="80" height="80" className="rounded-circle avatar-profile" />
+                    </div>
                     <button onClick={() => setTypeProfils('Account')} className="profils-infos-button">Modifier profil d'utilisateur</button>
                 </div>
                 <div className="profils-infos-content">

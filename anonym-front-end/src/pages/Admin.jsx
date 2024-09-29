@@ -7,10 +7,13 @@ import { Navigate } from "react-router-dom";
 import Sidebar from "../components/Admin/Sidebar";
 import Users from "../components/Admin/Users";
 import Shop from "../components/Admin/Shop";
+import { usePopup } from "../context/PopupContext";
+import Popup from "../components/Utils/Popup";
 
 const Admin = () => {
     const { user } = useUser();
     const { api_url } = useApi();
+    const { openPopup, setOpenPopup, textPopup, setTextPopup, state, setState } = usePopup();
 
     const fetchUsers = async () => {
         try {
@@ -50,6 +53,9 @@ const Admin = () => {
 
     return (
         <div id="admin">
+            {openPopup && (
+                <Popup showPopup={openPopup} setShowPopup={setOpenPopup} text={textPopup} setTextPopup={setTextPopup} state={state} setState={setState}/>
+            )}
            <Sidebar/>
            <div className="content-admin">
                 <div className="content-admin-container">

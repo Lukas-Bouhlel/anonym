@@ -1,10 +1,31 @@
-const { Friend, User } = require('../models');
+const { Friend, User, Inventory, Shop  } = require('../models');
 
 exports.readAll = async (req, res) => {
     try {
+        const userId = req.auth.userId;
         const friends = await Friend.findAll({
-            where: { user_id: req.auth.userId },
-            include: { model: User, as: 'FriendDetails', attributes: ['id', 'username', 'email', 'avatar'] }
+            where: { user_id: userId, status: 'ACTIVE' }, // Amis actifs seulement
+            include: [
+                {
+                    model: User, // L'ami
+                    as: 'FriendDetails',
+                    attributes: ['id', 'username', 'email', 'avatar'], // Attributs de l'ami
+                    include: [
+                        {
+                            model: Inventory, // Inclure l'inventaire
+                            where: { active: true }, // Ne récupérer que les articles actifs
+                            attributes: ['item_id', 'article_id', 'active'],
+                            include: [
+                                {
+                                    model: Shop, // Détails de l'article
+                                    attributes: ['title', 'type', 'content', 'amount']
+                                }
+                            ],
+                            required: false // Rendre l'inventaire facultatif, récupérer même s'il n'y a pas d'articles actifs
+                        }
+                    ]
+                }
+            ]
         });
 
         res.status(200).json(friends);

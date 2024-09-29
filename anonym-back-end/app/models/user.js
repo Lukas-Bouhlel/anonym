@@ -10,7 +10,8 @@ module.exports = (sequelize, DataTypes) => {
      * The `models/index` file will call this method automatically.
      */
     static associate(models) {
-      // define association here
+      User.hasMany(models.Inventory, { foreignKey: 'user_id' });
+      User.belongsToMany(models.Channel, { through: 'UserChannel', foreignKey: 'user_id' });
     }
   }
   User.init({

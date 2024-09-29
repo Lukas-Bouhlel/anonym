@@ -5,9 +5,9 @@ module.exports = (sequelize, DataTypes) => {
     class PrivateMessage extends Model {
         static associate(models) {
             // Association avec l'utilisateur (expéditeur)
-            PrivateMessage.belongsTo(models.User, { as: 'Sender', foreignKey: 'sender_id' });
-            // Association avec l'utilisateur (destinataire)
-            PrivateMessage.belongsTo(models.User, { as: 'Receiver', foreignKey: 'receiver_id' });
+            PrivateMessage.belongsTo(models.User, { foreignKey: 'sender_id' })    
+            // Association avec le canal
+            PrivateMessage.belongsTo(models.Channel, { foreignKey: 'channel_id' });
         }
     }
 
@@ -22,20 +22,28 @@ module.exports = (sequelize, DataTypes) => {
             allowNull: false,
             references: {
                 model: 'users',
-                key: 'id'
-            }
-        },
-        receiver_id: {
-            type: DataTypes.INTEGER,
-            allowNull: false,
-            references: {
-                model: 'users',
-                key: 'id'
+                key: 'id',
             }
         },
         content: {
             type: DataTypes.TEXT,
             allowNull: false
+        },
+        status: {
+            type: DataTypes.STRING,
+            allowNull: false,
+            defaultValue: 'unread',  // Valeur par défaut
+            validate: {
+                isIn: [['unread', 'read']]  // Seulement 'unread' ou 'read' comme valeur possible
+            }
+        },
+        channel_id: {
+            type: DataTypes.INTEGER,
+            allowNull: false,
+            references: {
+                model: 'channels',
+                key: 'channel_id'
+            }
         }
     }, {
         sequelize,

@@ -19,6 +19,9 @@
             display: flex;
             justify-content: flex-end;
             padding-bottom: 35px;
+            .profile-content-infos-img {
+                position: inherit;
+            }
         }
         &-button {
             background-color: #7289da;
@@ -33,7 +36,6 @@
             position: absolute;
             top: -15px;
             left: 17px;
-            border: 5px solid $black;
         }
         &-content {
             background-color: #3c3c3c;

@@ -1,12 +1,12 @@
 const express = require('express');
-const { createServer } = require('node:http');
-const socketIo = require('socket.io');
+const { createServer } = require("http");
+const { Server } = require("socket.io");
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
 const rateLimit = require('express-rate-limit'); 
 const slowDown = require('express-slow-down'); 
 const app = express();
-const server = createServer(app);
+const httpServer = createServer(app);
 const helmet = require('helmet');
 const router = require("./app/routes/index.js");
 const db = require("./app/models/index.js");
@@ -18,13 +18,6 @@ db.sequelize
     .authenticate()
     .then(() => console.log("Database connected..."))
     .catch((err) => console.log(err));
-
-const io = socketIo(server, {
-    cors: {
-        origin: process.env.ORIGIN,
-        methods: ["GET", "POST"]
-    }
-});
 
 const mailerConfig = {
     service: 'gmail',
@@ -89,10 +82,21 @@ app.use(cors({
     allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
+const io = new Server(httpServer, {
+    cors: {
+        origin: process.env.ORIGIN, 
+        credentials: true,  // Permet les cookies
+        methods: ['GET', 'POST', 'PUT', 'DELETE'],
+        allowedHeaders: ['Content-Type', 'Authorization']
+    }
+});
+
+httpServer.listen(3000);
+
+initializeSocket(io);
+
 app.use(cookieParser());
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 app.use("/api", router);
-
-initializeSocket(io);
 
 module.exports = app;

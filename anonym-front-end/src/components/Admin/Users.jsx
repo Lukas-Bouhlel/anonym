@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import axios from "axios";
 import { Modal, Button } from 'rsuite';
 import { useApi } from "../../context/ApiContext";
+import { usePopup } from "../../context/PopupContext";
 
 const Users = ({ users, refetch }) => {
     const data = users.data || []; // Définit data par défaut à un tableau vide
@@ -10,6 +11,7 @@ const Users = ({ users, refetch }) => {
     const [open, setOpen] = useState(false);
     const [createOpen, setCreateOpen] = useState(false);
     const [errorMessage, setErrorMessage] = useState("");
+    const { setOpenPopup, setTextPopup, setState } = usePopup();
     const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
     const [newUser, setNewUser] = useState({
         username: '',
@@ -24,11 +26,11 @@ const Users = ({ users, refetch }) => {
     };
 
     const handleClose = () => {
-        setSelectedUser({}); // Réinitialise selectedUser à un objet vide
-        setOpen(false);
-        setShowDeleteConfirmation(false);
         setErrorMessage("");
         setNewUser({ username: '', email: '', password: '', roles: 'USER' }); 
+        setSelectedUser({});
+        setOpen(false);
+        setShowDeleteConfirmation(false);
     };
 
     const handleSubmit = async (e) => {
@@ -50,8 +52,11 @@ const Users = ({ users, refetch }) => {
             });
 
             if (response.status === 200) {
-                handleClose();
+                setOpenPopup(true);
+                setTextPopup('L\'utilisateur à bien été modifier');
+                setState('update');
                 refetch();
+                handleClose();
             }
         } catch (error) {
             setErrorMessage(error.response?.data?.message || "Une erreur est survenue.");
@@ -63,6 +68,9 @@ const Users = ({ users, refetch }) => {
             await axios.delete(`${api_url}/api/admin/users/${selectedUser.id}`, {
                 withCredentials: true
             });
+            setOpenPopup(true);
+            setTextPopup('L\'utilisateur à bien été supprimer');
+            setState('success');
             handleClose();
             refetch();
         } catch (error) {
@@ -80,7 +88,11 @@ const Users = ({ users, refetch }) => {
             await axios.post(`${api_url}/api/admin/users`, formData, {
                 withCredentials: true
             });
-            setCreateOpen(false)
+            setOpenPopup(true);
+            setTextPopup('L\'utilisateur à bien été créer');
+            setState('success');
+            setCreateOpen(false);
+            handleClose();
             refetch();
         } catch (error) {
             console.error("Erreur lors de la création du compte:", error);

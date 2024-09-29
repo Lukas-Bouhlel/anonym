@@ -85,6 +85,10 @@
                 display: flex;
                 align-items: center;
                 gap: 7%;
+                .profile-content-infos-img{
+                    height: 40px;
+                    width: 40px;
+                }    
             }
         }
     }

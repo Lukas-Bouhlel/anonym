@@ -6,6 +6,9 @@
     }
     .sidebar-content {
         width: 85%;
+        ul {
+            gap: 15px;
+        }
     }
     hr {
         height: 1px;
@@ -140,7 +143,23 @@
         }
     }
 }
-
+.profile-content-infos-img {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    .decoration-profile {
+        z-index: 1;
+        position: absolute;
+    }
+    .image-profile {
+        z-index: 0;
+        left: 50%;
+        transform: translateX(-50%);
+        border-radius: 100%;
+        position: absolute;
+    }
+}
 .avatar-profile {
     object-fit: cover;
 }

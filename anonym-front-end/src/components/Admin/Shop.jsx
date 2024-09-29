@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import axios from "axios";
 import { Modal, Button } from 'rsuite';
 import { useApi } from "../../context/ApiContext";
+import { usePopup } from "../../context/PopupContext";
 
 const Shop = ({ shop, refetch }) => {
     const data = shop.data || []; // Définit data par défaut à un tableau vide
@@ -11,6 +12,7 @@ const Shop = ({ shop, refetch }) => {
     const [createOpen, setCreateOpen] = useState(false);
     const [errorMessage, setErrorMessage] = useState("");
     const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
+    const { setOpenPopup, setTextPopup, setState } = usePopup();
     const [newArticle, setNewArticle] = useState({
         title: '',
         amount: '',
@@ -69,6 +71,9 @@ const Shop = ({ shop, refetch }) => {
             });
 
             if (response.status === 200) {
+                setOpenPopup(true);
+                setTextPopup('L\'article à bien été modifier');
+                setState('update');
                 handleClose();
                 refetch();
             }
@@ -96,8 +101,11 @@ const Shop = ({ shop, refetch }) => {
                     'Content-Type': 'multipart/form-data',
                 }
             });
-
+            setOpenPopup(true);
+            setTextPopup('L\'article à bien été créer');
+            setState('success');
             setCreateOpen(false);
+            handleClose();
             refetch();
         
         } catch (error) {
@@ -127,6 +135,9 @@ const Shop = ({ shop, refetch }) => {
             await axios.delete(`${api_url}/api/shop/${selectedArticle.article_id}`, {
                 withCredentials: true
             });
+            setOpenPopup(true);
+            setTextPopup('L\'article à bien été supprimer');
+            setState('success');
             handleClose();
             refetch();
         } catch (error) {

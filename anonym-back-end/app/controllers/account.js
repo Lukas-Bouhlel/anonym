@@ -1,4 +1,4 @@
-const { User } = require('../models');
+const { User, Inventory, Shop } = require('../models');
 const bcrypt = require('bcrypt');
 const fs = require('fs');
 const path = require('path');
@@ -8,7 +8,22 @@ exports.readAccount = async (req, res) => {
         const userId = req.auth.userId;// Récupérer l'ID de l'utilisateur depuis les paramètres JWT
 
         // Trouver l'utilisateur par ID avec findOne
-        const user = await User.findOne({ where: { id: userId } });
+        const user = await User.findOne({
+            where: { id: userId },
+            include: [
+                {
+                    model: Inventory,
+                    where: { active: true }, // Ne récupérer que les articles actifs
+                    include: [
+                        {
+                            model: Shop, // Inclure les informations sur l'article depuis le modèle Shop
+                            attributes: ['title', 'type', 'content', 'amount']
+                        }
+                    ],
+                    required: false
+                }
+            ]
+        });
 
         if (!user) {
             return res.status(404).json({ message: "User not found" });

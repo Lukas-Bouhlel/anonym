@@ -185,7 +185,12 @@ const Friends = () => {
                                     filteredFriends.map((friend, index) => (
                                         <li key={index} className="list-group-item list-friends">
                                             <div className="content-friend">
-                                                <img src={`${friend.FriendDetails.avatar}`} alt="avatar" width="30" height="30" className="rounded-circle avatar-profile" />
+                                                <div className="profile-content-infos-img">
+                                                    {friend?.FriendDetails?.Inventories?.[0]?.Shop?.content && (
+                                                        <img className="avatar-profile decoration-profile" src={`${friend.FriendDetails.Inventories[0].Shop.content}`} alt="hugenerd" width="50" height="50"/>
+                                                    )}
+                                                    <img src={`${friend.FriendDetails.avatar}`} alt="avatar" width="50" height="50" className="rounded-circle avatar-profile" />
+                                                </div>
                                                 <strong>{friend.FriendDetails.username}</strong>
                                             </div>
                                             <Whisper placement="left" controlId="control-id-click" trigger="click" speaker={renderTooltip(friend.FriendDetails, choiceFriendsType === 'bloqued' ? 'ACTIVE' : 'BLOQUED')}>

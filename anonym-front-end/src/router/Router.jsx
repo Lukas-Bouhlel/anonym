@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "../context/AuthContext";
 import { ApiProvider } from "../context/ApiContext";
 import { UserProvider } from '../context/UserContext.jsx';
+import { PopupProvider } from "../context/PopupContext.jsx";
 import PrivateRoute from '../router/PrivateRoute';
 import Home from "../pages/Home";
 import Discover from "../pages/Discover";
@@ -16,7 +17,6 @@ import Profile from "../pages/Profile.jsx";
 import Success from "../pages/Success.jsx";
 import Reset from "../components/Access/Reset/Reset.jsx";
 import Admin from "../pages/Admin.jsx";
-import { PopupProvider } from "../context/PopupContext.jsx";
 
 const Router = () => {
   return (

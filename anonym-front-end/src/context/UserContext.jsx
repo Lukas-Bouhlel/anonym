@@ -22,6 +22,7 @@ export const UserProvider = ({ children }) => {
             withCredentials: true,
           });
           setUser(response.data);
+          console.log(response)
           return response.data;
         } catch (error) {
           console.error('Erreur lors de la récupération de l\'utilisateur:', error);

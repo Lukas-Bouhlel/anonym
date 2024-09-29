@@ -27,6 +27,12 @@ exports.create = async (req, res) => {
             return res.status(400).json({ message: "Password is required." });
         }
 
+         // Regex pour valider le mot de passe
+         const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+=\-\[\]{};:,.<>?/\\|`~"'£¤§µ¢₹])[A-Za-z\d!@#$%^&*()_+=\-\[\]{};:,.<>?/\\|`~"'£¤§µ¢₹]{12,}$/;
+         if (!passwordRegex.test(password)) {
+             return res.status(400).json({ message: "Mot de passe : 12 caractères min, avec majuscules, minuscules, chiffres et caractères spéciaux" });
+         }
+
         // Vérifier si l'utilisateur tente de créer un rôle autre que 'USER'
         if (roles && roles !== 'USER') {
             // Vérifier si le rôle de l'utilisateur qui fait la requête est SUPER_ADMIN
@@ -64,7 +70,7 @@ exports.create = async (req, res) => {
         const newUser = await User.create({
             username,
             email,
-            password: await bcrypt.hash(password, 10),
+            password: password,
             roles: roles || 'USER', // Par défaut, le rôle est USER
             avatar: newAvatarPath
         });

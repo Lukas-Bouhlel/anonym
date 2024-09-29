@@ -1,6 +1,7 @@
 import React from 'react';
 import { Navigate } from 'react-router-dom';
 import { useUser } from '../context/UserContext'; // Utiliser le contexte utilisateur
+import { SocketProvider } from "../context/SocketContext.jsx";
 
 const PrivateRoute = ({ children }) => {
   const { user, isLoading } = useUser(); // Récupère l'utilisateur du contexte
@@ -16,7 +17,11 @@ const PrivateRoute = ({ children }) => {
   }
 
   // Si tout est bon, on affiche les enfants (le contenu protégé)
-  return children;
+  return (
+    <SocketProvider>
+        {children}
+    </SocketProvider>
+  )
 };
 
 export default PrivateRoute;

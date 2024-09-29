@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faUser, faShop, faBars } from '@fortawesome/free-solid-svg-icons';
+import { faGlobe, faChartLine, faBars, faInfo } from '@fortawesome/free-solid-svg-icons';
 import logo from '../../assets/images/logos/anonym-logo-white.svg';
 
 const Sidebar = ({ }) => {
@@ -26,20 +26,20 @@ const Sidebar = ({ }) => {
                 <div className="sidebar-content">
                     <ul className="nav flex-column">
                         <li className="nav-item">
-                            <Link to="/admin/friends" className={`nav-link ${!isOpen && 'togglable'}`}>
-                                <FontAwesomeIcon icon={faUser} />
+                            <Link  className={`nav-link ${!isOpen && 'togglable'} active-link`}>
+                                <FontAwesomeIcon icon={faGlobe} />
                                 {isOpen && <span className="ms-3">Dashboard</span>}
                             </Link>
                         </li>
                         <li className="nav-item">
-                            <Link to="/admin/friends" className={`nav-link ${!isOpen && 'togglable'}`}>
-                                <FontAwesomeIcon icon={faUser} />
+                            <Link className={`nav-link ${!isOpen && 'togglable'}`}>
+                                <FontAwesomeIcon icon={faInfo} />
                                 {isOpen && <span className="ms-3">Support</span>}
                             </Link>
                         </li>
                         <li className="nav-item">
-                            <Link to="/admin/shop" className={`nav-link ${!isOpen && 'togglable'}`}>
-                                <FontAwesomeIcon icon={faShop} />
+                            <Link  className={`nav-link ${!isOpen && 'togglable'}`}>
+                                <FontAwesomeIcon icon={faChartLine} />
                                 {isOpen && <span className="ms-3">Analyse</span>}
                             </Link>
                         </li>
