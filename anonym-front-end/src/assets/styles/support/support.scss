@@ -24,7 +24,7 @@
         justify-content: center;
         margin-top: 30px;
         &-content {
-            width: 70%;
+            width: 95%;
             &-title {
                 text-align: center;
                 margin-top: 2%;
@@ -123,4 +123,9 @@
     }
 }
 
+@media (min-width: 992px) {
+    .page-support-container-content{
+        width: 70%;
+    }
+}
   

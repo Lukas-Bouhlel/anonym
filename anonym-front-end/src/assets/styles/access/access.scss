@@ -217,3 +217,44 @@
     width: 100%;
     padding: 0 25px !important;
 }
+
+.mobile-redirect-register-or-login {
+    display: none;
+}
+
+@media (max-width: 992px) {
+    .container-access {
+        width: 60%;
+        max-width: 60%;
+        form {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .sign-in,
+        .sign-up {
+            width: 100%;
+            margin-bottom: 20px;
+            transform: translateX(0) !important;
+        }
+
+        .toggle-container-access {
+            display: none;
+        }
+
+        .mobile-redirect-register-or-login {
+            display: block;
+            cursor: pointer;
+        }
+    }
+}
+
+@media (max-width: 600px) {
+    .container-access {
+        width: 90%;
+        max-width: 90%;
+    }
+}

@@ -95,10 +95,12 @@
         align-items: flex-start;
         margin-left: 5%;
         margin-top: 5%;
+        max-width: 72%;
+        margin-right: 5%;
         &-container {
             display: flex;
             flex-direction: column;
-
+            width: 100%;
             .admin-title {
                 color: $white;
                 font-size: 25px;
@@ -131,8 +133,6 @@
                     overflow-x: auto; /* Active le scroll horizontal */
                     -webkit-overflow-scrolling: touch; 
                     table {
-                        min-width: 700px; /* Largeur minimale pour activer le scroll */
-                        width: 100%; /* S'assure que la table occupe toute la largeur */
                         img {
                             width: 45px;
                             height: 45px;
@@ -144,6 +144,18 @@
                     }
                 }
             }
+        }
+    }
+}
+
+@media (max-width: 992px) {
+    #admin {
+        overflow-x: hidden;
+        .content-admin-container-item-head h1 {
+            font-size: 15px;
+        }
+        .content-admin-container-item-head button {
+            font-size: 12px;
         }
     }
 }

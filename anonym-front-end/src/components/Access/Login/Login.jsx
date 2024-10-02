@@ -6,7 +6,7 @@ import { useApi } from '../../../context/ApiContext';
 import { useUser } from '../../../context/UserContext'; 
 import { useNavigate } from 'react-router-dom';
 
-const Login = ({setStatusForm}) => {
+const Login = ({setStatusForm, setStatusAccess}) => {
     const { register, handleSubmit, watch, formState: { errors }, } = useForm();
     const [showMessage, setShowMessage] = useState(false);
     const [messageError, setMessageError] = useState('');
@@ -54,13 +54,13 @@ const Login = ({setStatusForm}) => {
                     !errors.email && !errors.password && ( 
                         <p className='error-message-form'>{messageError}</p>
                 )}
-                
                 {/* Affichage des messages d'erreur si tous les champs sont remplis */}
                 {(errors.email || errors.password) && (
                     <p className='error-message-form'>
                         {errors.email?.message || errors.password?.message}
                     </p>
                 )}
+                <p onClick={() => setStatusAccess(true)}className='mobile-redirect-register-or-login'>S'inscrire</p>
             </form>
         </div>
     )

@@ -6,8 +6,94 @@
     }
 }
 
+.app-message {
+    height: 100vh;
+}
+
 .sidebar-content {
+    display: flex;
     ul {
         gap: 10px;
+    }
+}
+@media (max-width: 580px) {
+    #app {
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw; 
+            height: 100vh;
+            background-color: #333;
+            transform: translateX(-100%); /* Cachée hors de l'écran */
+            transition: transform 0.3s ease;
+            z-index: 1000;
+            
+            /* Petit bouton au centre pour initier le drag */
+            &::before {
+                content: "";
+                position: absolute;
+                top: 50%;
+                right: -20px;
+                width: 40px;
+                height: 40px;
+                background-color: #c9c2bc;
+                border-radius: 50%;
+                cursor: pointer;
+            }
+        
+            /* État ouvert */
+            &.open {
+                transform: translateX(0); /* Visible sur tout l'écran */
+            }
+        }
+        .message-container-content {
+            padding: 10px 10px 10px 0px !important;
+        }
+        .container-app {
+            min-height: 100vh;
+            .sidebar-content {
+                justify-content: space-between;
+                height: 100%;
+                ul {
+                    width: 100%;
+                }
+                .message-mp {
+                    justify-content: space-between;
+                    padding: 5px;
+                    a {
+                        padding-top: 2px;
+                        font-size: 25px;
+                    }
+                }
+            }
+            .sidebar-profile {
+                padding: 0.8rem;
+            }
+            .app-container {
+                padding: 10px 16px !important;
+                min-height: 100vh;
+            }
+            &-content {
+                height: 100%;
+                #friends {
+                    height: 100%;
+                    .content-friends {
+                        gap: 2%;
+                        &-filter {
+                            font-size: 12px;
+                        }
+                    }
+                    .no-friends-found {
+                        height: 100%;
+                    }
+                    .add-friends-form-submit {
+                        font-size: 11px;
+                        width: 500px;
+                    }
+                }
+            }
+ 
+        }
     }
 }

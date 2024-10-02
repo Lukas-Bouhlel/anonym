@@ -25,9 +25,9 @@ const Access = () => {
 
     return (
         <div id={`${isAnonymOpen ? 'container-access' : ''}`} className={`container-access ${statusAccess ? 'active' : ''}`}>
-            <Register/>
+            <Register setStatusAccess={setStatusAccess}/>
             {statusForm === 'login' ? (
-                <Login setStatusForm={setStatusForm}/>
+                <Login setStatusForm={setStatusForm} setStatusAccess={setStatusAccess}/>
             ) : (
                 <PasswordReset setStatusForm={setStatusForm}/>
             )}

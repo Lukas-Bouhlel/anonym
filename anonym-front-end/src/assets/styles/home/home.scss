@@ -5,17 +5,19 @@
     background: $black;
     height: 100vh;
     @include display(flex, center, column);
+    position: relative;
+    overflow: hidden;
     &-title {
         text-align: center;
         color: $white;
         text-transform: uppercase;
-        font-size: 50px;
+        font-size: 30px;
     }
     &-paragraph {
         color: $white;
-        padding: 0 27%;
+        padding: 0 5%;
         text-align: center;
-        font-size: 17px;
+        font-size: 15px;
     }
     &-content {
         z-index: 1;
@@ -31,7 +33,7 @@
             width: 35%;
             @include display(flex, center, center);
             .sphere{
-                width: 35%;
+                width: 70%;
                 fill: url(#sphereGradient);
                 stroke-width: 1px;
                 stroke: rgba(80,80,80,.35);
@@ -68,5 +70,18 @@
         .sphere {
             stroke-width: .4px;
         }
+    }
+}
+
+@media (min-width: 992px) {
+    .page-home-title {
+        font-size: 50px;
+    }
+    .page-home-paragraph {
+        padding: 0 27%;
+        font-size: 17px;
+    }
+    .sphere {
+        width: 35% !important;
     }
 }

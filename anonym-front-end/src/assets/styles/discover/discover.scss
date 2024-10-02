@@ -4,6 +4,7 @@
     justify-content: flex-start;
     flex-direction: column;
     padding-bottom: 30px;
+    text-align: center;
     &-content {
         padding-top: 69px;
         min-height: 200px;
@@ -14,6 +15,9 @@
         position: relative;
         color: $white;
         flex-direction: column;
+        text-align: center;
+        padding-left: 5%;
+        padding-right: 5%;
     }
     &-container {
         width: 100%;
@@ -29,7 +33,7 @@
             &-title {
                 margin-top: 2%;
                 h1 {
-                    font-size: 30px;
+                    font-size: 1.5rem;
                 }
             }
             &-open-anonym {
@@ -48,15 +52,46 @@
         background-color: $white;
         align-items: center;    
         justify-content: center;
+        flex-direction: column-reverse;
         &-paragraph {
-            width: 30%;
+            width: 90%;
+            margin-bottom: 5%;
             h2 {
                 text-transform: uppercase;
+                font-size: 1.5rem;
             }
         }
         .icon-tel {
-            width: 15%;
             padding: 20px;
+            max-width: 200px;
         }
+        img {
+            max-width: 250px;
+        }
+    }
+}
+
+@media (min-width: 992px) {
+    .page-discover {
+        text-align: initial;
+        .content-image-text {
+            flex-direction: row !important;
+            img {
+                max-width: 315px;
+            }
+        }
+        .content-image-text-paragraph {
+            width: 30% !important;
+            margin-bottom: 0 !important;
+        }
+        .icon-tel {
+            max-width: 250px;
+        }
+    }
+}
+
+@media (max-width: 400px) {
+    .page-discover-container {
+        margin-bottom: 5%;
     }
 }

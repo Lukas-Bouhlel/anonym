@@ -22,8 +22,8 @@ const App = () => {
                 <img src={logo} alt='logo-anonym' />nonym
             </div>
             <ChannelForm show={modalVisible} onClose={() => setModalVisible(false)} />
-            <div className="container-fluid">
-                <div className="row flex-nowrap">
+            <div className="container-fluid container-app">
+                <div className="row flex-nowrap container-app-content">
                     <Sidebar user={user} page={page} setPage={setPage} setModalVisible={setModalVisible} canal={channel} setChannel={setChannel} socket={socket}/>
                     <div className={`col ${page !== 'canal' ? 'app-container' : 'app-message'}`}>
                         {page === 'friends' ? (

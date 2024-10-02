@@ -34,7 +34,7 @@ const Discover = () => {
               <div className='page-discover-container-content-title'>
                 <h1>RETROUVEZ-VOUS ENTRE AMIS SUR ANONYM</h1>
               </div>
-              <button className='page-discover-container-content-open-anonym' onClick={AnonymIsOpen}>Open Anonym in your browser</button>
+              <button className='page-discover-container-content-open-anonym' onClick={AnonymIsOpen}>Ouvrez Anonym dans votre navigateur</button>
             </div>
         </div>
     </section>

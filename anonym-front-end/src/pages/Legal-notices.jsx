@@ -3,7 +3,7 @@ const LegalNotices = () => {
   return (
     <section className='page-legal-notices'>
       <div className="page-legal-notices-content">
-        <h1 className='page-legal-notices-tile'>Mentions légales</h1>
+        <h1 className='page-legal-notices-title'>Mentions légales</h1>
         <p>Dernière mise à jour : 23/08/2024</p>
         <h2>1. Informations légales</h2>
         <p>Conformément aux dispositions des articles 6-III et 19 de la Loi n°2004-575 du 21 juin 2004 pour la Confiance dans l'Économie Numérique (LCEN), nous informons les utilisateurs et visiteurs du site Anonym des informations suivantes :</p>

@@ -4,7 +4,7 @@ exports.readAll = async (req, res) => {
     try {
         const userId = req.auth.userId;
         const friends = await Friend.findAll({
-            where: { user_id: userId, status: 'ACTIVE' }, // Amis actifs seulement
+            where: { user_id: userId },
             include: [
                 {
                     model: User, // L'ami

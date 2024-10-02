@@ -73,6 +73,7 @@ const Navbar = () => {
                     <Link to='/discover' onClick={() => setIsOpenMenu(false)} className='side-menu-link'>Découvrir</Link>
                     {/* <Link to='/reputation' onClick={() => setIsOpenMenu(false)} className='side-menu-link'>Reputation</Link> */}
                     <Link to='/support' onClick={() => setIsOpenMenu(false)} className='side-menu-link'>Support</Link>
+                    <span className='side-menu-link pe-auto' onClick={() => {setIsOpenMenu(false); handleOpenAnonym();}} >Ouvrir Anonym</span>
                 </nav>
             </div>
         </>
