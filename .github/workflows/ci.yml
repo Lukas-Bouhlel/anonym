@@ -13,60 +13,94 @@ jobs:
   build:
     runs-on: ubuntu-latest
 
+    services:
+      mysql:
+        image: mysql:5.7
+        env:
+          MYSQL_ROOT_PASSWORD: root_password
+          MYSQL_DATABASE: test_anonym  
+          MYSQL_USER: test_user
+          MYSQL_PASSWORD: test_password
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping --silent"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=3
+
     steps:
-    # Checkout the repository
-    - name: Checkout repository
-      uses: actions/checkout@v3
+      # Checkout the repository
+      - name: Checkout repository
+        uses: actions/checkout@v3
 
-    # Set up Node.js
-    - name: Set up Node.js
-      uses: actions/setup-node@v3
-      with:
-        node-version: '20.16.0'
+      - name: Set environment variables for testing
+        run: |
+          echo "DB_TEST_USERNAME=test_user" >> $GITHUB_ENV
+          echo "DB_TEST_PASSWORD=test_password" >> $GITHUB_ENV
+          echo "DB_TEST_DATABASE=test_anonym" >> $GITHUB_ENV
+          echo "DB_TEST_HOST=localhost" >> $GITHUB_ENV
+          echo "DB_TEST_DIALECT=mysql" >> $GITHUB_ENV
 
-    # Créer un fichier .env à partir des secrets
-    - name: Create .env file
-      run: |
-        echo "DB_TEST_USERNAME=${{ secrets.DB_TEST_USERNAME }}" >> .env
-        echo "DB_TEST_PASSWORD=" >> .env
-        echo "DB_TEST_DATABASE=${{ secrets.DB_TEST_DATABASE }}" >> .env
-        echo "DB_TEST_HOST=${{ secrets.DB_TEST_HOST }}" >> .env
-        echo "DB_TEST_DIALECT=${{ secrets.DB_TEST_DIALECT }}" >> .env
+      - name: Wait for MySQL
+        run: |
+          for i in {1..30}; do
+            if mysqladmin ping -h localhost --silent; then
+              echo "MySQL is up!"
+              break
+            fi
+            echo "Waiting for MySQL..."
+            sleep 1
+          done
 
-    # ---- Frontend: Lint, Test, and Build ----
-    - name: Install dependencies for Frontend
-      working-directory: ./anonym-front-end   # Path to your front-end folder
-      run: npm install
+      - name: Create Test Database
+        working-directory: ./anonym-back-end/app
+        run: npx sequelize-cli db:create --env test
 
-    - name: Run Frontend Lint
-      working-directory: ./anonym-front-end   # Lint JavaScript files
-      run: npm run lint
+      - name: Run Migrations
+        working-directory: ./anonym-back-end/app
+        run: npx sequelize-cli db:migrate --env test
 
-    - name: Run Frontend SCSS Lint
-      working-directory: ./anonym-front-end   # Lint SCSS files
-      run: npm run lint:scss
+      # Set up Node.js
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20.16.0'
 
-    - name: Run Frontend Tests
-      working-directory: ./anonym-front-end
-      run: npm run test -- --ci
+      # ---- Frontend: Lint, Test, and Build ----
+      - name: Install dependencies for Frontend
+        working-directory: ./anonym-front-end   # Path to your front-end folder
+        run: npm install
 
-    - name: Build Frontend
-      working-directory: ./anonym-front-end
-      run: npm run build
+      - name: Run Frontend Lint
+        working-directory: ./anonym-front-end   # Lint JavaScript files
+        run: npm run lint
 
-    # ---- Backend: Lint, Test, and Snyk Security Check ----
-    - name: Install dependencies for Backend
-      working-directory: ./anonym-back-end    # Path to your back-end folder
-      run: npm install
+      - name: Run Frontend SCSS Lint
+        working-directory: ./anonym-front-end   # Lint SCSS files
+        run: npm run lint:scss
 
-    - name: Run Backend Lint
-      working-directory: ./anonym-back-end    # Lint JavaScript files in the back-end
-      run: npm run lint
+      - name: Run Frontend Tests
+        working-directory: ./anonym-front-end
+        run: npm run test -- --ci
 
-    - name: Run Backend Tests
-      working-directory: ./anonym-back-end
-      run: npm run test -- --ci
+      - name: Build Frontend
+        working-directory: ./anonym-front-end
+        run: npm run build
 
-    - name: Run Snyk Security Check
-      working-directory: ./anonym-back-end
-      run: npx snyk test   # Run Snyk to check for vulnerabilities
+      # ---- Backend: Lint, Test, and Snyk Security Check ----
+      - name: Install dependencies for Backend
+        working-directory: ./anonym-back-end    # Path to your back-end folder
+        run: npm install
+
+      - name: Run Backend Lint
+        working-directory: ./anonym-back-end    # Lint JavaScript files in the back-end
+        run: npm run lint
+
+      - name: Run Backend Tests
+        working-directory: ./anonym-back-end
+        run: npm run test -- --ci
+
+      - name: Run Snyk Security Check
+        working-directory: ./anonym-back-end
+        run: npx snyk test   # Run Snyk to check for vulnerabilities
