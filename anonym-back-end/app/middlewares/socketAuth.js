@@ -14,7 +14,6 @@ module.exports = (socket, next) => {
 
         next(); // Appelle next() pour continuer si tout est correct
     } catch (error) {
-        console.error(error);
         next(new Error('Authentication error'));
     }
 };

@@ -33,7 +33,6 @@ exports.signup = async (req, res) => {
             try {
                 svgContent = fs.readFileSync(defaultAvatarPath, 'utf8');
             } catch (error) {
-                console.error(error);
                 return res.status(500).json({ message: 'Error reading default avatar' });
             }
 
@@ -46,7 +45,6 @@ exports.signup = async (req, res) => {
             try {
                 fs.writeFileSync(userAvatarPath, svgContent);
             } catch (error) {
-                console.error(error);
                 return res.status(500).json({ message: 'Error saving user avatar' });
             }
 
@@ -62,7 +60,6 @@ exports.signup = async (req, res) => {
         try {
             htmlContent = fs.readFileSync(emailTemplatePath, 'utf8');
         } catch (error) {
-            console.error(error);
             return res.status(500).json({ message: 'Error reading email template' });
         }
 

@@ -98,7 +98,6 @@ exports.getUserChannels = async (req, res) => {
 
         res.status(200).json(channelsWithUnreadCount);
     } catch (error) {
-        console.error(error);
         res.status(500).json({ message: error.message || 'Erreur lors de la récupération des canaux.' });
     }
 };
