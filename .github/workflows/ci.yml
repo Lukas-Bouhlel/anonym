@@ -56,7 +56,7 @@ jobs:
 
     - name: Run Backend Tests
       working-directory: ./anonym-back-end
-      run: npm run test
+      run: npm test
 
     - name: Run Snyk Security Check
       working-directory: ./anonym-back-end
