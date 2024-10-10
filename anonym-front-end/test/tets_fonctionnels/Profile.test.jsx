@@ -1,7 +1,6 @@
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, act } from '@testing-library/react';
 import { BrowserRouter as Router } from 'react-router-dom';
 import Profile from '../../src/pages/Profile';
-import { act } from '@testing-library/react';
 import { UserProvider } from '../../src/context/UserContext';
 import { PopupProvider } from '../../src/context/PopupContext';
 import { ApiProvider } from '../../src/context/ApiContext';
@@ -89,13 +88,6 @@ describe('Profile Component', () => {
         expect(screen.getByText('Account Component')).toBeInTheDocument();
     });
 
-    test('opens logout modal on logout button click', async () => {
-        await act(async () => {
-            renderProfile(mockUser);
-        });
-        fireEvent.click(screen.getByText('Déconnexion'));// Vérifiez que le modal est ouvert
-    });
-
     test('calls logout function when confirmed in modal', async () => {
         await act(async () => {
             renderProfile(mockUser);
@@ -117,16 +109,6 @@ describe('Profile Component', () => {
             fireEvent.click(confirmButton); // Cliquez sur le bouton de déconnexion
         });
     });
-
-    test('navigates to admin dashboard if user has admin role', async () => {
-        const adminUser = {
-            roles: ['ADMIN'], // Assurez-vous que l'utilisateur a le rôle ADMIN
-        };
-    
-        await act(async () => {
-            renderProfile(adminUser);
-        });
-    });    
     
     test('renders without crashing when user is null', async () => {
         await act(async () => {

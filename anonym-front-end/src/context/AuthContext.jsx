@@ -3,6 +3,8 @@ import PropTypes from 'prop-types';
 
 const AuthContext = createContext();
 
+export const useAuth = () => { return useContext(AuthContext); };
+
 export const AuthProvider = ({ children }) => {
     const [isAnonymOpen, setIsAnonymOpen] = useState(false);
 
@@ -23,8 +25,4 @@ export const AuthProvider = ({ children }) => {
 
 AuthProvider.propTypes = {
     children: PropTypes.node.isRequired,
-};
-
-export const useAuth = () => {
-  return useContext(AuthContext);
 };

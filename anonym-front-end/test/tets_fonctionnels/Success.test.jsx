@@ -25,13 +25,6 @@ jest.mock('@tanstack/react-query', () => ({
 // Mock de axios
 jest.mock('axios');
 
-// Remplacer l'importation de useNavigate et mock directement
-import { useNavigate } from 'react-router-dom';
-jest.mock('react-router-dom', () => ({
-    ...jest.requireActual('react-router-dom'), // Conserver les autres méthodes
-    useNavigate: jest.fn(),
-}));
-
 describe('Success Page', () => {
     const mockApiUrl = 'http://localhost:3000';
 
@@ -74,21 +67,7 @@ describe('Success Page', () => {
         // Vérifier la date formatée
         const dateFormatted = screen.getByText(/Le \d{2}\/\d{2}\/\d{4}/i);
         expect(dateFormatted).toBeInTheDocument();
-    });
-
-    test('should navigate to /app if payment confirmation fails', async () => {
-        // Simuler un échec de l'API
-        useQuery.mockReturnValue({
-            isLoading: false, // L'appel API est terminé
-            error: new Error('API Error'), // Simuler une erreur
-        });
-    
-        // Mock de useNavigate
-        const mockNavigate = jest.fn();
-        useNavigate.mockImplementation(() => mockNavigate);
-    
-        renderWithRouter(<Success />);
-    });    
+    }); 
 
     test('should show loading state initially', () => {
         useQuery.mockReturnValue({
