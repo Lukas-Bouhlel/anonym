@@ -24,9 +24,18 @@ jobs:
       with:
         node-version: '20.16.0'
 
-    # Copier le fichier .env.test vers le .env pour qu'il soit utilisé dans l'environnement de test
-    - name: Copy .env.test.local to .env
-      working-directory: ./anonym-back-end
+    # Vérification de l'existence du fichier .env.test.local
+    - name: Check for .env.test.local
+      run: |
+        if [ -f .env.test.local ]; then
+          echo ".env.test.local exists."
+        else
+          echo ".env.test.local not found."
+          exit 1  # Échouer si le fichier n'existe pas
+        fi
+  
+    # Copie du fichier d'environnement de test
+    - name: Copy environment file
       run: cp .env.test.local .env
 
     # ---- Frontend: Lint, Test, and Build ----
