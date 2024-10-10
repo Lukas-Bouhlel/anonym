@@ -23,6 +23,13 @@ jobs:
       uses: actions/setup-node@v3
       with:
         node-version: '20.16.0'
+        
+    # Chargement des variables d'environnement à partir de .env
+    - name: Load environment variables
+      run: |
+        if [ -f .env ]; then
+          export $(cat .env | xargs)
+        fi
 
     # ---- Frontend: Lint, Test, and Build ----
     - name: Install dependencies for Frontend
