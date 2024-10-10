@@ -24,19 +24,14 @@ jobs:
       with:
         node-version: '20.16.0'
 
-    # Vérification de l'existence du fichier .env.test.local
-    - name: Check for .env.test.local
+    # Créer un fichier .env à partir des secrets
+    - name: Create .env file
       run: |
-        if [ -f .env.test.local ]; then
-          echo ".env.test.local exists."
-        else
-          echo ".env.test.local not found."
-          exit 1  # Échouer si le fichier n'existe pas
-        fi
-  
-    # Copie du fichier d'environnement de test
-    - name: Copy environment file
-      run: cp .env.test.local .env
+        echo "DB_TEST_USERNAME=${{ secrets.DB_TEST_USERNAME }}" >> .env
+        echo "DB_TEST_PASSWORD=" >> .env
+        echo "DB_TEST_DATABASE=${{ secrets.DB_TEST_DATABASE }}" >> .env
+        echo "DB_TEST_HOST=${{ secrets.DB_TEST_HOST }}" >> .env
+        echo "DB_TEST_DIALECT=${{ secrets.DB_TEST_DIALECT }}" >> .env
 
     # ---- Frontend: Lint, Test, and Build ----
     - name: Install dependencies for Frontend
