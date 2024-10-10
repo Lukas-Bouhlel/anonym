@@ -33,6 +33,7 @@ exports.signup = async (req, res) => {
             try {
                 svgContent = fs.readFileSync(defaultAvatarPath, 'utf8');
             } catch (error) {
+                console.error(error);
                 return res.status(500).json({ message: 'Error reading default avatar' });
             }
 
@@ -45,6 +46,7 @@ exports.signup = async (req, res) => {
             try {
                 fs.writeFileSync(userAvatarPath, svgContent);
             } catch (error) {
+                console.error(error);
                 return res.status(500).json({ message: 'Error saving user avatar' });
             }
 
@@ -60,6 +62,7 @@ exports.signup = async (req, res) => {
         try {
             htmlContent = fs.readFileSync(emailTemplatePath, 'utf8');
         } catch (error) {
+            console.error(error);
             return res.status(500).json({ message: 'Error reading email template' });
         }
 
@@ -73,7 +76,6 @@ exports.signup = async (req, res) => {
             '',// Contenu texte (vide)
             htmlContent// Contenu HTML
         );
-
 
         res.status(201).json(user);
     } catch (error) {
@@ -165,13 +167,13 @@ exports.requestPasswordReset = async (req, res) => {
     try {
         const { email } = req.body;
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    
+        
         if (!emailRegex.test(email)) {
             return res.status(400).json({ message: "L'adresse email fournie est invalide" });
         }
 
         const user = await User.findOne({ where: { email } });
-
+ 
         if (!user) {
             return res.status(404).json({ message: "Vous n'êtes pas inscrit sur la plateforme" });
         }
@@ -226,7 +228,7 @@ exports.resetPassword = async (req, res) => {
         }
 
         // Vérifier que le mot de passe respecte la regex définie dans le modèle
-        const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+=\-\[\]{};:,.<>?/\\|`~"'£¤§µ¢₹])[A-Za-z\d!@#$%^&*()_+=\-\[\]{};:,.<>?/\\|`~"'£¤§µ¢₹]{12,}$/;
+        const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+=\-[\]{};:,.<>?/\\|`~"'£¤§µ¢₹])[A-Za-z\d!@#$%^&*()_+=\-[\]{};:,.<>?/\\|`~"'£¤§µ¢₹]{12,}$/;
         if (!passwordRegex.test(password)) {
             return res.status(400).json({ 
                 message: "Mot de passe : 12 caractères min, avec majuscules, minuscules, chiffres et caractères spéciaux"

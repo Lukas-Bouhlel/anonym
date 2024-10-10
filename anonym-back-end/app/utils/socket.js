@@ -1,4 +1,4 @@
-const { PrivateMessage, User, Inventory, Shop, UserChannel } = require('../models');
+const { PrivateMessage, User, Inventory, Shop, Channel } = require('../models');
 const { Op } = require('sequelize'); // Assurez-vous d'importer Op pour les requêtes
 
 const getUnreadMessageCount = async (channelId, userId) => {
@@ -90,7 +90,7 @@ const initializeSocket = (io) => {
         });
 
         // Lorsqu'un utilisateur quitte le canal
-        socket.on('leaveChannel', async ({channelId, userId}) => {
+        socket.on('leaveChannel', async ({channelId}) => {
             socket.leave(channelId);
         });
 

@@ -21,7 +21,7 @@ module.exports = {
     });
   },
 
-  async down (queryInterface, Sequelize) {
+  async down (queryInterface) {
     await queryInterface.removeConstraint('channels', 'channels_created_by_fk');
     await queryInterface.removeColumn('channels', 'created_by');
   }

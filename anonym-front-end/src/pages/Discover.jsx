@@ -1,5 +1,4 @@
 import { useAuth } from '../context/AuthContext';
-import logo from '../assets/images/logos/anonym-logo-white.svg';
 import persona from '../assets/images/icons/persona.svg';
 import tel from '../assets/images/icons/tel.svg';
 
@@ -15,9 +14,9 @@ const Discover = () => {
         <div className='content-image-text'>
           <div className='content-image-text-paragraph'>
             <h2>Discute en toute sécurité</h2>
-            <p>Des discussions fluides et sécurisées t'attendent. </p>
-            <p>Profite d'une plateforme de confiance, épurée et agréable.</p>
-            <p>N'hésite plus, rejoins-nous dès maintenant !</p>
+            <p>Des discussions fluides et sécurisées t&apos;attendent. </p>
+            <p>Profite d&apos;une plateforme de confiance, épurée et agréable.</p>
+            <p>N&apos;hésite plus, rejoins-nous dès maintenant !</p>
           </div>
           <img className="icon-tel" src={tel} alt='icon-tel'/>
         </div>

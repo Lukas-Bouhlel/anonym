@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import { useState, useRef } from "react";
 import { Link, useNavigate  } from "react-router-dom";
 import Profils from "../components/Profile/Profils";
 import Account from "../components/Profile/Account";
@@ -18,14 +18,14 @@ const Profile = () => {
     const sidebarRef = useRef(null);
     const navigate = useNavigate(); // Hook pour rediriger après la déconnexion
     const roles = ["ADMIN", "SUPER_ADMIN"];
-    const hasRole = roles.includes(user.roles);
+    const hasRole = user && roles.includes(user.roles);
 
     const handleLogout = async () => {
         await logout(); // Appelle la fonction logout
         navigate('/');  // Redirige vers la page d'accueil après la déconnexion
     };
 
-    const handleTouchStart = (e) => {
+    const handleTouchStart = () => {
         setIsDragging(true);
     };
 
@@ -81,7 +81,7 @@ const Profile = () => {
                             </ul>
                             <hr />
                             <ul className="profile-sidebar nav nav-pills flex-column mb-0 align-items-center align-items-sm-start" id="menu">
-                                <span className="profile-category"><strong>Paramètres de l'appli</strong></span>
+                                <span className="profile-category"><strong>Paramètres de l&apos;appli</strong></span>
                                 <li className="nav-item">
                                     <span onClick={() => {setTypeProfils('Inventory'); setIsSidebarOpen(false);}} className={`link-sidebar ${typeProfils === 'Inventory' ? 'link-sidebar-active' : ''}`}>Inventaire</span>
                                 </li>

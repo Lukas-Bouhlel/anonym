@@ -15,7 +15,7 @@ module.exports = {
   });
   },
 
-  async down (queryInterface, Sequelize) {
+  async down (queryInterface) {
     await queryInterface.removeColumn('inventories', 'friend_id');
   }
 };

@@ -1,17 +1,13 @@
 const express = require('express');
-const { createServer } = require("http");
-const { Server } = require("socket.io");
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
 const rateLimit = require('express-rate-limit'); 
 const slowDown = require('express-slow-down'); 
 const app = express();
-const httpServer = createServer(app);
 const helmet = require('helmet');
 const router = require("./app/routes/index.js");
 const db = require("./app/models/index.js");
 const path = require('path');
-const initializeSocket = require('./app/utils/socket');
 const createMailer = require('./app/utils/mailer.js');
 
 db.sequelize
@@ -81,19 +77,6 @@ app.use(cors({
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
     allowedHeaders: ['Content-Type', 'Authorization']
 }));
-
-const io = new Server(httpServer, {
-    cors: {
-        origin: process.env.ORIGIN, 
-        credentials: true,  // Permet les cookies
-        methods: ['GET', 'POST', 'PUT', 'DELETE'],
-        allowedHeaders: ['Content-Type', 'Authorization']
-    }
-});
-
-httpServer.listen(3000);
-
-initializeSocket(io);
 
 app.use(cookieParser());
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));

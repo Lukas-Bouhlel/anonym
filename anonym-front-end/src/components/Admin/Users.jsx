@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import { useState } from "react";
+import PropTypes from 'prop-types';
 import axios from "axios";
 import { Modal, Button } from 'rsuite';
 import { useApi } from "../../context/ApiContext";
@@ -177,18 +178,18 @@ const Users = ({ users, refetch }) => {
                     {/* Modal pour éditer l'utilisateur */}
                     <Modal open={open} onClose={handleClose}>
                         <Modal.Header>
-                            <Modal.Title>Editer l'utilisateur</Modal.Title>
+                            <Modal.Title>Editer l&apos;utilisateur</Modal.Title>
                         </Modal.Header>
                         <Modal.Body>
                             {errorMessage && <div className="error-message" style={{ color: "red" }}>{errorMessage}</div>}
                             <form onSubmit={handleSubmit}>
                                 <div className="mb-3">
-                                    <label htmlFor="username" className="form-label">Nom d'utilisateur</label>
-                                    <input type="text" className="form-control" id="username" name="username" value={selectedUser.username || ''} onChange={handleChange} /> {/* Gère le cas où selectedUser.username est indéfini */}
+                                    <label htmlFor="username" className="form-label">Nom d&apos;utilisateur</label>
+                                    <input aria-required="true" aria-label="Nom d'utilisateur" type="text" className="form-control" id="username" name="username" value={selectedUser.username || ''} onChange={handleChange} /> {/* Gère le cas où selectedUser.username est indéfini */}
                                 </div>
                                 <div className="mb-3">
                                     <label htmlFor="email" className="form-label">Email</label>
-                                    <input type="email" className="form-control" id="email" name="email" value={selectedUser.email || ''} onChange={handleChange} /> {/* Gère le cas où selectedUser.email est indéfini */}
+                                    <input aria-required="true" aria-label="Email" type="email" className="form-control" id="email" name="email" value={selectedUser.email || ''} onChange={handleChange} /> {/* Gère le cas où selectedUser.email est indéfini */}
                                 </div>
                                 <div className="mb-3">
                                     <label htmlFor="roles" className="form-label">Rôles</label>
@@ -196,6 +197,7 @@ const Users = ({ users, refetch }) => {
                                         className="form-select"
                                         id="roles"
                                         name="roles"
+                                        aria-label="Type"
                                         value={selectedUser.roles || 'USER'} // Utilise 'USER' par défaut si selectedUser.roles est indéfini
                                         onChange={handleChange}
                                     >
@@ -222,16 +224,16 @@ const Users = ({ users, refetch }) => {
                             {errorMessage && <div className="error-message" style={{ color: "red" }}>{errorMessage}</div>}
                             <form onSubmit={handleCreateAccount}>
                                 <div className="mb-3">
-                                    <label htmlFor="username" className="form-label">Nom d'utilisateur</label>
-                                    <input type="text" className="form-control" id="username" name="username" value={newUser.username} onChange={handleChange} required />
+                                    <label htmlFor="username" className="form-label">Nom d&apos;utilisateur</label>
+                                    <input aria-required="true" aria-label="Nom d'utilisateur" type="text" className="form-control" id="username" name="username" value={newUser.username} onChange={handleChange} required />
                                 </div>
                                 <div className="mb-3">
                                     <label htmlFor="email" className="form-label">Email</label>
-                                    <input type="email" className="form-control" id="email" name="email" value={newUser.email} onChange={handleChange} required />
+                                    <input aria-required="true" aria-label="Email" type="email" className="form-control" id="email" name="email" value={newUser.email} onChange={handleChange} required />
                                 </div>
                                 <div className="mb-3">
                                     <label htmlFor="password" className="form-label">Mot de passe</label>
-                                    <input type="password" className="form-control" id="password" name="password" value={newUser.password} onChange={handleChange} required />
+                                    <input aria-required="true" aria-label="Mot de passe" type="password" className="form-control" id="password" name="password" value={newUser.password} onChange={handleChange} required />
                                 </div>
                                 <div className="mb-3">
                                     <label htmlFor="roles" className="form-label">Rôles</label>
@@ -239,6 +241,7 @@ const Users = ({ users, refetch }) => {
                                         className="form-select" 
                                         id="roles" 
                                         name="roles" 
+                                        aria-label="Type"
                                         value={newUser.roles} 
                                         onChange={handleChange}
                                     >
@@ -277,5 +280,12 @@ const Users = ({ users, refetch }) => {
         </div>
     );
 }
+
+Users.propTypes = {
+    users: PropTypes.shape({
+        data: PropTypes.array // Expecting data to be an array
+    }).isRequired, // users is required
+    refetch: PropTypes.func.isRequired // refetch is required and should be a function
+};
 
 export default Users;

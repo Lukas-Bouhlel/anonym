@@ -1,3 +1,4 @@
+import PropTypes from 'prop-types';
 import { useLocation, Navigate } from "react-router-dom";
 import Navbar from "./Navbar";
 import Footer from "./Footer";
@@ -46,6 +47,10 @@ const Layout = ({ children }) => {
       {!isPrivateRoute && <Footer />}
     </>
   );
+};
+
+Layout.propTypes = {
+  children: PropTypes.node.isRequired,
 };
 
 export default Layout;

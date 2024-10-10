@@ -3,6 +3,7 @@
     background-color: $black;
     overflow: hidden;
     position: relative;  
+
     .card-success {
         width: 20%;
         background: $white;
@@ -16,12 +17,14 @@
         bottom: 0;
         left: 50%;
         transform: translateX(-50%);
-        padding: 60px 15px 15px 15px;
+        padding: 60px 15px 15px;
         min-width: 270px;
-        animation: moveUpAndDown 1s ease-in-out; 
+        animation: move-up-and-down 1s ease-in-out;
+
         p {
             margin: 0;
         }
+
         &-icon {
             position: absolute;
             top: -44px;
@@ -36,30 +39,34 @@
             justify-content: center;
             border-radius: 100%;
             border: 10px solid  rgb(136 205 125 / 47%);
-            -webkit-background-clip: padding-box;
             background-clip: padding-box; 
             
         }
+
         &-super {
             color: #88CD7D;
             font-size: 15px;
             font-weight: 500;
         }
+
         &-title {
             color: $black;
             font-size: 22px;
             text-align: center;
             font-weight: 600;
         }
+
         &-subtitle {
             color: #757575;
             font-size: 12px;
         }
+
         &-line {
             color: $black;
             width: 100%;
             border-style: dashed;
         }
+
         &-resume {
             font-size: 12px;
             color: #757575;
@@ -67,12 +74,14 @@
             padding-left: 20px;
             width: 100%;
         }
+
         &-product {
             height: 40px;
             width: 100%;
             padding-left: 20px;
             padding-right: 20px;
-            margin: 3px 0 10px 0;
+            margin: 3px 0 10px;
+
             &-content {
                 background-color: #EFE9E4;
                 height: 100%;
@@ -80,6 +89,7 @@
                 display: flex;
                 align-items: center;
                 padding: 15px;
+
                 p {
                     font-size: 12px;
                     color: $black;
@@ -88,32 +98,37 @@
                 }
             }
         }
+
         &-total {
             color: $black;
             font-size: 12px;
             font-weight: 600;
         }
+
         &-amount {
             font-size: 30px;
             color: #88CD7D;
         }
+
         &-date {
             color: #757575;
             font-size: 15px;
         }
+
         &-button {
             margin: 15px 0;
             background-color: #EFE9E4;
             border-radius: 8px;
             padding: 5px 15px;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.154);
+            box-shadow: 0 5px 15px rgb(0 0 0 / 15.4%);
             transition: all 1s ease;
             font-size: 15px;
             color: $black;
             font-weight: 400;
             text-decoration: none;
+
             &:hover {
-                box-shadow: 0 5px 15px rgba(0, 0, 0, 0.35);
+                box-shadow: 0 5px 15px rgb(0 0 0 / 35%);
                 background-color: #e5dcd4;
                 transition: all 1s ease;
                 text-decoration: none;
@@ -123,10 +138,11 @@
 }
 
 /* Animation Keyframes pour la carte */
-@keyframes moveUpAndDown {
+@keyframes move-up-and-down {
     0% {
         bottom: -20%;
     }
+
     100% {
         bottom: 0; /* La carte remonte */
     }

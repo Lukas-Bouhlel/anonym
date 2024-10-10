@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import axios from 'axios';
 import { useForm } from "react-hook-form";
 import { useMutation } from '@tanstack/react-query';
@@ -7,7 +7,7 @@ import { useNavigate } from 'react-router-dom';
 import { usePopup } from '../../../context/PopupContext';
 
 const Reset = () => {
-    const { register, handleSubmit, watch, formState: { errors }, } = useForm();
+    const { register, handleSubmit, formState: { errors }, } = useForm();
     const { api_url } = useApi();
     const navigate = useNavigate();
     const [token, setToken] = useState('');
@@ -17,10 +17,10 @@ const Reset = () => {
 
     // Extraction du token de l'URL à partir des query params
     useEffect(() => {
-        const params = new URLSearchParams(location.search); // Récupère les paramètres de l'URL
+        const params = new URLSearchParams(window.location.search); // Récupère les paramètres de l'URL
         const tokenFromUrl = params.get('token'); // Récupère le token
         setToken(tokenFromUrl); // Met à jour le state avec le token
-    }, [location.search]);
+    }, []);
 
     // Mutation pour la réinitialisation du mot de passe
     const resetPasswordMutation = useMutation({
@@ -55,8 +55,8 @@ const Reset = () => {
                 <form className="reset-form" onSubmit={handleSubmit(onSubmit)}>
                     <h1>Réinitialisation</h1>
                     <span>Renseigner votre nouveau mot de passe</span>
-                    <input type="password" placeholder='Mot de passe' {...register("password", { required: 'Le mot de passe est requis' })} />
-                    <input type="password" placeholder="Mot de passe de confirmation" {...register("confirmPassword", { required: 'Le mot de passe de confirmation est requis' })} />
+                    <input aria-label={"Mot de passe"} aria-required="true" type="password" placeholder='Mot de passe' {...register("password", { required: 'Le mot de passe est requis' })} />
+                    <input aria-label={"Mot de passe de confirmation"} aria-required="true" type="password" placeholder="Mot de passe de confirmation" {...register("confirmPassword", { required: 'Le mot de passe de confirmation est requis' })} />
                     <button>Valider</button>
                 </form>
                 {/* Gestion de l'affichage des erreurs */}

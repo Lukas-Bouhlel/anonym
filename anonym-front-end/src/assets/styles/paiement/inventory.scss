@@ -1,14 +1,17 @@
 #inventory {
     color: $white;
     width: 100%;
+
     .inventory-title {
         display: flex;
         justify-content: space-between;
         margin-bottom: 1%;
+
         h1 {
             font-size: 16px;
         }
     }
+
     .inventory {
         .card-deck {
             display: flex;
@@ -17,11 +20,11 @@
             margin: 0;
             padding: 0;
             gap: 3%;
+
             .card {
                 background-color: #313131;
                 border-radius: 5%;
-                box-shadow: 0 20px 40px -14px rgba(0, 0, 0, 0.25);
-                display: flex;
+                box-shadow: 0 20px 40px -14px rgb(0 0 0 / 25%);
                 flex-direction: column;
                 overflow: hidden;
                 margin-bottom: 3%;
@@ -31,20 +34,22 @@
                 color: $white;
             }
               
-            @media (min-width: 40rem) {
+            @media (width >= 40rem) {
                 .card {
                     width: 48%;
                 }
             }
             
-            @media (min-width: 56rem) {
+            @media (width >= 56rem) {
                 .card {
                     width: 30%;
                 }
             }
         }
+
         &-card-content {
             padding: 0 !important;
+
             &-header {
                 position: relative;
                 height: 150px;
@@ -53,15 +58,18 @@
                 display: flex;
                 align-items: center;
                 justify-content: center;
+
                 img {                    
                     object-fit: cover;
                     position: absolute;
                 }
+
                 &-first {
                     z-index: 1;
                     height: 150px;
                     width: 150px;
                 }
+
                 &-last {
                     z-index: 0;
                     height: 145px;
@@ -71,30 +79,36 @@
                     border-radius: 100%;
                 }
             }
+
             &-footer {
                 background-color: #474747;
                 text-align: center;
                 padding: 17px;
+
                 .card-text {
                     font-size: 16px;
                     margin-bottom: 15px;
                 }
+
                 button {
                     font-size: 12px;
                     padding: 5px 14px;
                     border-radius: 3px;
                     color: $white;
                 }
+
                 .button-active {
                     background-color: #7289da;
                 }
+
                 .button-no-active{
-                    background-color: rgb(229, 46, 46);
+                    background-color: rgb(229 46 46);
                 }
             }
         }
     }
 }
+
 .no-inventory-found {
     display: flex;
     justify-content: center;

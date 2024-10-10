@@ -1,4 +1,5 @@
 const { JSDOM } = require('jsdom');
+const { Buffer } = require('buffer');
 const DOMPurify = require('dompurify');
 const PDFDocument = require('pdfkit');
 const path = require('path');
@@ -32,7 +33,7 @@ const drawTable = (doc, startX, startY, headers, rows) => {
 };
 
 const generateInvoice = async (invoiceData) => {
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve) => {
         const doc = new PDFDocument();
         let buffers = [];
 

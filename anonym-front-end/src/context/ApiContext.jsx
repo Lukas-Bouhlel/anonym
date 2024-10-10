@@ -1,4 +1,5 @@
 import { createContext, useContext } from "react";
+import PropTypes from 'prop-types'; 
 
 const ApiContext = createContext();
 
@@ -14,3 +15,6 @@ export const ApiProvider = ({ children }) => {
     );
 };
 
+ApiProvider.propTypes = {
+    children: PropTypes.node.isRequired,
+};

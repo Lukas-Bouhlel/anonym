@@ -4,19 +4,22 @@
         justify-content: flex-end;
         max-width: 300px;
     }
+
     .sidebar-content {
         width: 85%;
+
         ul {
             gap: 15px;
         }
     }
+
     hr {
         height: 1px;
-        width: 100%;
         border-top: 1px solid #8f8f8f;
         margin-left: 14px;
         width: 92%;
     }
+
     .profile-category {
         color: #cacaca;
         width: 100%;
@@ -26,6 +29,7 @@
         margin-bottom: 3%;
         padding-left: 6%;
     }
+
     .link-sidebar {
         font-size: 14px;
         padding: 5px 14px;
@@ -33,36 +37,44 @@
         display: flex !important;
         margin-bottom: 2%;
         cursor: pointer;
+
         &:hover {
             background-color: #575757;
         }
     }
+
     .link-side-exit {
         align-items: center;
         justify-content: space-between;
     }
+
     .link-sidebar-active {
         background-color: #575757;
     }
+
     .profile-sidebar {
         width: 100%;
         align-items: flex-end !important;
         padding-left: 0 !important;
+
         .nav-item {
             width: 100%;
             text-align: start;
         }
     }
+
     .profile-container {
         padding: 2rem 30px !important;
         background: #424242;
         display: flex;
         min-height: 100vh;
     }
+
     .container-link {
         color: $white;
         position: absolute;
         right: 15px;
+
         &-esc {
             text-decoration: none;
             color: $white;
@@ -72,6 +84,7 @@
             cursor: pointer;
             font-size: 14px;
             text-align: center;
+
             span {
                 border: 1px solid $white;
                 border-radius: 100%;
@@ -81,80 +94,99 @@
                 justify-content: center;
                 padding: 10px;
                 margin-bottom: 5%;
+
                 svg {
                     width: 17px;
                     height: 17px;
                 }
             }
         }
+
         &:hover {
             color: white;
         }
     }
 }
+
 .rs-modal-content {
     background-color: #424242 !important;
     color: $white !important;
+
     .rs-modal-header {
         font-size: 14px;
         text-align: center;
         color: #c9c9c9;
     }
+
     .rs-modal-title {
         color: $white;
         text-transform: uppercase;
         font-size: 16px;
     }
+
     .btn-primary {
         background-color: #7289da;
         border: none !important;
         font-size: 14px !important;
+
         &:hover {
             background-color: #4b64bb;
             color: $white !important;
         }
     }
+
     .rs-btn-primary {
         background-color: #7289da;
+
         &:hover {
             background-color: #4b64bb;
         }
     }
+
     .rs-btn-subtle {
         color: $white !important;
+
         &:hover {
             color: $black !important;
         }
     }
+
     .rs-btn-red {
         background-color: transparent;
-        border: 1px solid rgb(229, 46, 46);
+        border: 1px solid rgb(229 46 46);
         color: $white;
+
         &:hover {
-            background-color: rgb(229, 46, 46);
+            background-color: rgb(229 46 46);
         }
     }
+
     .form-label {
         font-size: 14px;
     } 
+
     .form-control {
         background-color: #313131 !important;
         border: 1px solid #313131;
         color: $white;
+
         &:focus {
             color: $white;
         }
     }
 }
+
 .profile-content-infos-img {
     position: relative;
     display: flex;
     align-items: center;
     justify-content: center;
+
     .decoration-profile {
         z-index: 1;
         position: absolute;
     }
+
     .image-profile {
         z-index: 0;
         left: 50%;
@@ -163,16 +195,17 @@
         position: absolute;
     }
 }
+
 .avatar-profile {
     object-fit: cover;
 }
 
 .error-message {
-    color: rgb(229, 46, 46);
+    color: rgb(229 46 46);
     margin-bottom: 20px;
 }
 
-@media (max-width: 900px) { 
+@media (width <= 900px) { 
     #account {
         .account {
             flex-direction: column-reverse;
@@ -180,11 +213,12 @@
     }
 }
 
-@media (max-width: 580px) {
+@media (width <= 580px) {
     #profile {
         .profile-container {
             padding: 2rem 15px !important;
         }
+
         .sidebar {
             position: fixed;
             top: 0;
@@ -214,16 +248,19 @@
             &.open {
                 transform: translateX(0); /* Visible sur tout l'écran */
             }
+
             .sidebar-content {
                 width: 100%;
             }
         }
     }
+
     #inventory {
         .inventory-title {
             margin-bottom: 8% !important;
         }
     }
+
     #invoices {
         .invoices-title {
             margin-bottom: 8% !important;

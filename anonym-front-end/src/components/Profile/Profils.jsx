@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import { useState } from "react";
+import PropTypes from 'prop-types';
 import axios from "axios";
 import { useNavigate  } from "react-router-dom";
 import { Modal, Button } from 'rsuite';
@@ -82,12 +83,12 @@ const Profils = ({user, setTypeProfils, setUser}) => {
                         )}
                         <img src={`${user.avatar}`} alt="hugenerd" width="80" height="80" className="rounded-circle avatar-profile" />
                     </div>
-                    <button onClick={() => setTypeProfils('Account')} className="profils-infos-button">Modifier profil d'utilisateur</button>
+                    <button onClick={() => setTypeProfils('Account')} className="profils-infos-button">Modifier profil d&apos;utilisateur</button>
                 </div>
                 <div className="profils-infos-content">
                     <div className="profils-infos-content-item">
                         <div>
-                            <h3>Nom d'utilisateur</h3>
+                            <h3>Nom d&apos;utilisateur</h3>
                             <span>{user.username}</span>
                         </div>
                         <button onClick={() => setTypeProfils('Account')} >Modifier</button>
@@ -120,15 +121,15 @@ const Profils = ({user, setTypeProfils, setUser}) => {
                     <form onSubmit={handleSubmit}>
                         <div className="mb-3">
                             <label htmlFor="currentPassword" className="form-label">Mot de passe actuel</label>
-                            <input type="password" className="form-control" id="currentPassword" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} required />
+                            <input aria-required="true" aria-label="Mot de passe actuel" type="password" className="form-control" id="currentPassword" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} required />
                         </div>
                         <div className="mb-3">
                             <label htmlFor="newPassword" className="form-label">Nouveau mot de passe</label>
-                            <input type="password" className="form-control" id="newPassword" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} required />
+                            <input aria-required="true" aria-label="Nouveau mot de passe" type="password" className="form-control" id="newPassword" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} required />
                         </div>
                         <div className="mb-3">
                             <label htmlFor="confirmNewPassword" className="form-label">Confirmer le nouveau mot de passe</label>
-                            <input type="password" className="form-control" id="confirmNewPassword" value={confirmNewPassword} onChange={(e) => setConfirmNewPassword(e.target.value)} required />
+                            <input aria-required="true" aria-label="Confirmer le nouveau mot de passe" type="password" className="form-control" id="confirmNewPassword" value={confirmNewPassword} onChange={(e) => setConfirmNewPassword(e.target.value)} required />
                         </div>
                         <Modal.Footer>
                             <Button onClick={handleClose} appearance="subtle">
@@ -161,5 +162,22 @@ const Profils = ({user, setTypeProfils, setUser}) => {
         </div>
     )
 }
+
+Profils.propTypes = {
+    user: PropTypes.shape({
+        avatar: PropTypes.string,
+        username: PropTypes.string,
+        email: PropTypes.string,
+        Inventories: PropTypes.arrayOf(
+            PropTypes.shape({
+                Shop: PropTypes.shape({
+                    content: PropTypes.string
+                })
+            })
+        )
+    }).isRequired,
+    setTypeProfils: PropTypes.func.isRequired,
+    setUser: PropTypes.func.isRequired
+};
 
 export default Profils;

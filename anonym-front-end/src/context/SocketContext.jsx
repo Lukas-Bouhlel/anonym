@@ -1,4 +1,5 @@
-import React, { createContext, useEffect, useState, useContext } from 'react';
+import { createContext, useEffect, useState, useContext } from 'react';
+import PropTypes from 'prop-types'; 
 import { useApi } from './ApiContext';
 import { io } from 'socket.io-client';
 
@@ -20,11 +21,15 @@ export const SocketProvider = ({ children }) => {
         return () => {
             newSocket.disconnect();
         };
-    }, []);
+    }, [api_url]);
 
     return (
         <SocketContext.Provider value={{ socket }}>
             {children}
         </SocketContext.Provider>
     );
+};
+
+SocketProvider.propTypes = {
+    children: PropTypes.node.isRequired,
 };

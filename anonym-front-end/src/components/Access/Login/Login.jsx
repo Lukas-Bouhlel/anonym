@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
+import PropTypes from 'prop-types';
 import axios from 'axios';
 import { useForm } from "react-hook-form";
 import { useMutation  } from '@tanstack/react-query';
@@ -7,7 +8,7 @@ import { useUser } from '../../../context/UserContext';
 import { useNavigate } from 'react-router-dom';
 
 const Login = ({setStatusForm, setStatusAccess}) => {
-    const { register, handleSubmit, watch, formState: { errors }, } = useForm();
+    const { register, handleSubmit, formState: { errors }, } = useForm();
     const [showMessage, setShowMessage] = useState(false);
     const [messageError, setMessageError] = useState('');
     const { login } = useUser(); 
@@ -45,24 +46,30 @@ const Login = ({setStatusForm, setStatusAccess}) => {
             <form onSubmit={handleSubmit(onSubmit)}>
                 <h1>Se connecter</h1>
                 <span>utilisez votre e-mail et votre mot de passe</span>
-                <input type="text" placeholder="Email" {...register("email", { required: "L'adresse email est requise." })}/>
-                <input type="password" placeholder="mot de passe" {...register("password", { required: "Le mot de passe est requis" })}/>
+                <input  aria-label={"Email"} aria-required="true" type="text" placeholder="Email" {...register("email", { required: "L'adresse email est requise." })}/>
+                <input aria-label={"Mot de passe"} aria-required="true" type="password" placeholder="Mot de passe" {...register("password", { required: "Le mot de passe est requis" })}/>
                 <a className="link-login-or-password-reset" onClick={() => setStatusForm('resetPassword')}>Mot de passe oublié ?</a>
                 <button>Se connecter</button>
                 {/* Gestion de l'affichage des erreurs */}
-                {(showMessage || (errors.email || errors.password)) && 
-                    !errors.email && !errors.password && ( 
-                        <p className='error-message-form'>{messageError}</p>
-                )}
-                {/* Affichage des messages d'erreur si tous les champs sont remplis */}
-                {(errors.email || errors.password) && (
-                    <p className='error-message-form'>
-                        {errors.email?.message || errors.password?.message}
-                    </p>
-                )}
-                <p onClick={() => setStatusAccess(true)}className='mobile-redirect-register-or-login'>S'inscrire</p>
+                <p className='error-message-form' aria-live="assertive">
+                    {(showMessage || (errors.email || errors.password)) && 
+                        !errors.email && !errors.password && ( 
+                            messageError
+                    )}
+                    
+                    {(errors.email || errors.password) && (
+                        errors.email?.message || errors.password?.message
+                    )}
+                </p>
+                <p onClick={() => setStatusAccess(true)}className='mobile-redirect-register-or-login'>S&apos;inscrire</p>
             </form>
         </div>
     )
 }
+
+Login.propTypes = {
+    setStatusForm: PropTypes.func.isRequired, // Function to set form status
+    setStatusAccess: PropTypes.func.isRequired, // Function to set access status
+};
+
 export default Login;

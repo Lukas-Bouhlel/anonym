@@ -19,6 +19,10 @@ exports.create = async (req, res) => {
         const { name, description } = req.body;
         const userId = req.auth.userId; 
 
+        if(!name) {
+            return res.status(400).json({ message: 'Le nom du groupe est requis' });
+        }
+
         // Créer le canal
         const channel = await Channel.create({ 
             name, 

@@ -6,7 +6,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faAngleUp, faAngleDown } from "@fortawesome/free-solid-svg-icons";
 import Popup from "../Utils/Popup";
 
-const Invoices = ({ user }) => {
+const Invoices = () => {
     const { api_url } = useApi();
     const [expandedRows, setExpandedRows] = useState([]);
     const [showPopup, setShowPopup] = useState(false); 
@@ -104,12 +104,12 @@ const Invoices = ({ user }) => {
                                             <tr className="expanded-row">
                                                 <td colSpan="4">
                                                     <div className="expanded-details">
-                                                        <h1>Détails de l'achat</h1>
+                                                        <h1>Détails de l&apos;achat</h1>
                                                         <p>Total : <span>{invoice.amount}€</span></p>
                                                         <span className="send-invoice" onClick={() => generateInvoice(invoice.id)} >
                                                             Télécharger la facture
                                                         </span>
-                                                        <p>Date d'achat : <span>Il y a {formatDays(invoice.createdAt) === 0 ? 1 : formatDays(invoice.createdAt)} jours</span></p>
+                                                        <p>Date d&apos;achat : <span>Il y a {formatDays(invoice.createdAt) === 0 ? 1 : formatDays(invoice.createdAt)} jours</span></p>
                                                     </div>
                                                 </td>
                                             </tr>

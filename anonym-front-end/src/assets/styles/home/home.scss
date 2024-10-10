@@ -1,24 +1,29 @@
 @import '../base/mixins';
-@import '../access/access.scss';
+@import '../access/access';
 
 .page-home {
     background: $black;
     height: 100vh;
+
     @include display(flex, center, column);
+
     position: relative;
     overflow: hidden;
+
     &-title {
         text-align: center;
         color: $white;
         text-transform: uppercase;
         font-size: 30px;
     }
+
     &-paragraph {
         color: $white;
         padding: 0 5%;
         text-align: center;
         font-size: 15px;
     }
+
     &-content {
         z-index: 1;
         position: relative;
@@ -29,30 +34,37 @@
         width: 100%;
         display: flex;
         justify-content: center;
+
         .sphere-animation {
             width: 35%;
+
             @include display(flex, center, center);
+
             .sphere{
                 width: 70%;
-                fill: url(#sphereGradient);
+                fill: url("#sphereGradient");
                 stroke-width: 1px;
-                stroke: rgba(80,80,80,.35);
+                stroke: rgb(80 80 80 / 35%);
                 backface-visibility: hidden;
             }
         }
+
         .cloud {
             width: 70px;
             left: 70%;
         }
+
         .star-white {
             width: 10px;
             left: 20%;
             top: 50%;
         }
+
         .star-yellow {
             width: 20px;
             right: 10%;
         }
+
         .star-flash-white {
             width: 50px;
             bottom: 0;
@@ -60,27 +72,31 @@
             left: 0;
             right: -72%;
         }
+
         .star-flash-yellow {
             width: 35px;
             rotate: 50deg;
             bottom: 0;
         }
     }
-    @media (min-width: 500px) {
+
+    @media (width >= 500px) {
         .sphere {
             stroke-width: .4px;
         }
     }
 }
 
-@media (min-width: 992px) {
+@media (width >= 992px) {
     .page-home-title {
         font-size: 50px;
     }
+
     .page-home-paragraph {
         padding: 0 27%;
         font-size: 17px;
     }
+
     .sphere {
         width: 35% !important;
     }

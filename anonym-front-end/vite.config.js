@@ -1,6 +1,8 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react-swc'
 import svgr from "vite-plugin-svgr";
+import fs from 'fs';
+import path from 'path';
 
 // https://vitejs.dev/config/
 export default defineConfig({
@@ -14,5 +16,16 @@ export default defineConfig({
    port: 8080,
    strictPort: true,
    host: true,
+   https: {
+    key: fs.readFileSync(path.resolve(__dirname, '../server.key')),
+    cert: fs.readFileSync(path.resolve(__dirname, '../server.crt')),
+  },
+  },
+  css: {
+    preprocessorOptions: {
+      scss: {
+        api: 'modern-compiler' // or "modern"
+      }
+    }
   },
 });

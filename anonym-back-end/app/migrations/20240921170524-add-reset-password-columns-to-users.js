@@ -13,7 +13,7 @@ module.exports = {
         });
     },
 
-    down: async (queryInterface, Sequelize) => {
+    down: async (queryInterface) => {
         await queryInterface.removeColumn('Users', 'resetPasswordToken');
         await queryInterface.removeColumn('Users', 'resetPasswordExpires');
     }

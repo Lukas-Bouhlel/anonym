@@ -2,9 +2,11 @@
     display: flex;
     background-color: #424242;
     min-height: 100vh;
+
     #popup {
         position: absolute;
     }
+
     .sidebar {
         background-color: $black;
         color: white;
@@ -21,11 +23,10 @@
     }
     
     .sidebar .sidebar-content {
-        padding-top: 0rem !important;
+        padding-top: 0 !important;
         display: flex;
         flex-direction: column;
         align-items: center;
-        padding-top: 20px;
     }
 
     .sidebar-content ul {
@@ -38,8 +39,9 @@
         align-items: center;
         padding: 10px 30px;
         width: 100%;
-        border-radius: 0px 20px 20px 0px;
+        border-radius: 0 20px 20px 0;
         text-decoration: none;
+
         svg {
             width: 17px;
         }
@@ -56,6 +58,7 @@
 
     .togglable {
         justify-content: center;
+
         .toggle-btn {
             margin-right: 0 !important;
         }
@@ -65,12 +68,14 @@
         display: flex;
         align-items: center;
         padding: 35px 30px;
+
         .toggle-btn {
             border-radius: 50%;
             color: white;
             cursor: pointer;
             display: flex;
             margin-right: 1rem;
+
             svg {
                 height: 18px;
             }
@@ -79,17 +84,20 @@
         .toggle-btn:hover {
             background-color: #495057;
         }
+
         .logo-anonym {
             color: #FFF9F4;
             font-size: 18px;
             display: flex;
             align-items: center;
             text-decoration: none;
+
             img {
                 height: 18px;
             }
         }
     }
+
     .content-admin {
         display: flex;
         align-items: flex-start;
@@ -97,47 +105,57 @@
         margin-top: 5%;
         max-width: 72%;
         margin-right: 5%;
+
         &-container {
             display: flex;
             flex-direction: column;
             width: 100%;
+
             .admin-title {
                 color: $white;
                 font-size: 25px;
                 font-weight: normal;
+
                 span {
                     color: #c4c4c4;
                 }
             }
+
             &-item {
                 border-radius: 10px;
                 background: white;
                 padding: 15px;
                 margin-bottom: 20px;
+
                 &-head {
                     display: flex;
                     justify-content: space-between;
                     align-items: center;
                     max-height: 45px;
                     margin-bottom: 15px;
+
                     h1 {
                         font-size: 20px;
                         color: $black;
                     }
+
                     button {
                         margin-bottom: 0 !important;
                     }
                 }
+
                 .table-responsive-scroll {
                     width: 100%;
                     overflow-x: auto; /* Active le scroll horizontal */
                     -webkit-overflow-scrolling: touch; 
+
                     table {
                         img {
                             width: 45px;
                             height: 45px;
                             object-fit: cover;
                         }
+
                         button {
                             text-decoration: none;
                         }
@@ -148,12 +166,14 @@
     }
 }
 
-@media (max-width: 992px) {
+@media (width <= 992px) {
     #admin {
         overflow-x: hidden;
+
         .content-admin-container-item-head h1 {
             font-size: 15px;
         }
+
         .content-admin-container-item-head button {
             font-size: 12px;
         }

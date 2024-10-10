@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
+import PropTypes from 'prop-types'; 
 import axios from "axios";
 import { useForm } from "react-hook-form";
 import { useApi } from '../../context/ApiContext';
@@ -104,11 +105,13 @@ const Account = ({ user, setUser }) => {
                 <div className="account-content">
                     <form onSubmit={handleSubmit(onSubmit)}>
                         <div className="mb-3">
-                            <label htmlFor="username" className="form-label">Nom d'utilisateur</label>
+                            <label htmlFor="username" className="form-label">Nom d&apos;utilisateur</label>
                             <input
                                 type="text"
                                 className="form-control"
                                 id="username"
+                                aria-required="true" 
+                                aria-label="Nom d'utilisateur"
                                 {...register("username", { required: "Le nom d'utilisateur est requis" })}
                                 onChange={handleUsernameChange}
                             />
@@ -120,6 +123,8 @@ const Account = ({ user, setUser }) => {
                             <input
                                 type="email"
                                 className="form-control"
+                                aria-required="true" 
+                                aria-label="E-mail"
                                 id="email"
                                 {...register("email", {
                                     required: "L'email est requis",
@@ -136,6 +141,7 @@ const Account = ({ user, setUser }) => {
                             <label htmlFor="avatar" className="form-label">Avatar</label>
                             <div className="content-file-edit">
                                 <input
+                                    aria-label="Avatar"
                                     type="file"
                                     className="form-control input-file"
                                     id="avatar"
@@ -146,7 +152,7 @@ const Account = ({ user, setUser }) => {
                                     className="btn"
                                     onClick={handleDeleteAvatar}
                                 >
-                                    Supprimer l'avatar
+                                    Supprimer l&apos;avatar
                                 </button>
                             </div>
                             {avatarFile && <p>Avatar sélectionné : {avatarFile.name}</p>}
@@ -185,5 +191,21 @@ const Account = ({ user, setUser }) => {
         </div >
     )
 }
+
+Account.propTypes = {
+    user: PropTypes.shape({
+        avatar: PropTypes.string,
+        username: PropTypes.string.isRequired,
+        email: PropTypes.string.isRequired,
+        Inventories: PropTypes.arrayOf(
+            PropTypes.shape({
+                Shop: PropTypes.shape({
+                    content: PropTypes.string
+                })
+            })
+        )
+    }).isRequired,
+    setUser: PropTypes.func.isRequired,
+};
 
 export default Account;

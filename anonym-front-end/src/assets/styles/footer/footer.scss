@@ -13,11 +13,13 @@
 
 #footer-items {
     padding: 5px;
+
     .footer-items-links {
         padding: 5px;
         color: black;
         font-size: 10px;
         text-decoration: none;
+
         &:hover {
             text-decoration: underline;
         }

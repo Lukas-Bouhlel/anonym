@@ -3,10 +3,12 @@
     display: flex;
     justify-content: center;
     align-items: center;
+
     .reset {
         position: relative;
-        padding: 5px 0px;
+        padding: 5px 0;
         text-align: center;
+
         &-form {
             gap: 20px;
             background-color: #FFF9F4;
@@ -16,17 +18,19 @@
             flex-direction: column;
             padding: 65px 60px;
             height: 100%;
-            margin: 0px 1px;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.35);
+            margin: 0 1px;
+            box-shadow: 0 5px 15px rgb(0 0 0 / 35%);
             max-height: 480px;
             border-radius: 15px;
             width: 100%;
+
             h1 {
                 font-size: 34px;
                 text-align: center;
             }
+
             input {
-                background-color: rgba(52, 52, 52, 0.168627451);
+                background-color: rgb(52 52 52 / 16.9%);
                 border: none;
                 margin: 8px 0;
                 padding: 10px 15px;
@@ -73,12 +77,13 @@
     }
 }
 
-@media (max-width: 450px) {
+@media (width <= 450px) {
     #reset {
         .reset {
             padding: 5px 15px;
             width: 100%;
         }
+
         .reset-form {
             h1 {
                 font-size: 1.8rem;

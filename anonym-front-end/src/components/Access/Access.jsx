@@ -42,7 +42,7 @@ const Access = () => {
                     <div className="toggle-panel toggle-right">
                         <h1 className='container-access-title'>Bonjour mon ami!</h1>
                         <p>Inscrivez-vous avec vos informations personnelles pour utiliser toutes les fonctionnalités du site</p>
-                        <button onClick={() => handleClick(true)} className="hidden" id="register">S'inscrire</button>
+                        <button onClick={() => handleClick(true)} className="hidden" id="register">S&apos;inscrire</button>
                     </div>
                 </div>
             </div>

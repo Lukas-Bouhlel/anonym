@@ -40,7 +40,6 @@ exports.readAccount = async (req, res) => {
 exports.read = async (req, res) => {
     try {
         const userId = req.params.id;
-
         const user = await User.findOne({
             where: { id: userId },
             attributes: { exclude: ['password'] } // Exclure le champ 'password'
@@ -178,7 +177,7 @@ exports.updatePassword = async (req, res) => {
         }
 
         // Regex pour valider le mot de passe
-        const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+=\-\[\]{};:,.<>?/\\|`~"'£¤§µ¢₹])[A-Za-z\d!@#$%^&*()_+=\-\[\]{};:,.<>?/\\|`~"'£¤§µ¢₹]{12,}$/;
+        const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+=\-[\]{};:,.<>?/\\|`~"'£¤§µ¢₹])[A-Za-z\d!@#$%^&*()_+=\-[\]{};:,.<>?/\\|`~"'£¤§µ¢₹]{12,}$/;
         if (!passwordRegex.test(newPassword)) {
             return res.status(400).json({ message: "Mot de passe : 12 caractères min, avec majuscules, minuscules, chiffres et caractères spéciaux" });
         }

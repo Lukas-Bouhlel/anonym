@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import axios from 'axios';
 import { useApi } from '../context/ApiContext';
 import { useQuery, useMutation } from '@tanstack/react-query';
@@ -141,16 +141,16 @@ const Friends = () => {
                 className="delete-friend"
                 onClick={() => deleteFriend(friend)} // Appelle la fonction de suppression avec l'ID de l'ami
             >
-                Retirer l'ami
+                Retirer l&apos;ami
             </div>
             <div
                 className="update-friend"
                 onClick={() => updateFriend({ friend, status })} // Appelle la fonction de suppression avec l'ID de l'ami
             >
                 {choiceFriendsType === 'bloqued' ? (
-                    <>Débloquer l'utilisateur</>
+                    <>Débloquer l&apos;utilisateur</>
                 ) : (
-                    <>Bloquer l'utilisateur</>
+                    <>Bloquer l&apos;utilisateur</>
                 )}
 
             </div>
@@ -201,19 +201,20 @@ const Friends = () => {
                                         </li>
                                     ))
                                 ) : (
-                                    <div className="no-friends-found">
+                                    <li className="no-friends-found">
                                         <img className="icon-spaceman" src={spaceman} alt='icon-spaceman' />
                                         Aucun utilisateur trouvé
-                                    </div>
+                                    </li>
                                 )}
                             </ul>
                         </>
                     ) : (
                         <div className={`add-friends ${addStatus === 'Success' ? 'add-friends-success' : addStatus === 'Error' ? 'add-friends-error' : ''}`}>
                             <h1 className="add-friends-title">AJOUTER</h1>
-                            <p className="add-friends-paragraph">Tu peux ajouter des amis grâce à leurs noms d'utilisateur Anonym</p>
+                            <p className="add-friends-paragraph">Tu peux ajouter des amis grâce à leurs noms d&apos;utilisateur Anonym</p>
                             <form className="add-friends-form" onSubmit={handleAddFriend}>
                                 <input
+                                    aria-label="Tu peux ajouter des amis grâce à leurs noms d'utilisateur"
                                     className="add-friends-form-input"
                                     placeholder="Nom d'utilisateur"
                                     type="text"
@@ -231,7 +232,7 @@ const Friends = () => {
                             {messageStatus && <p className={`add-friends-status ${addStatus === 'Success' ? 'add-friends-success' : addStatus === 'Error' ? 'add-friends-error' : ''}`}>{messageStatus}</p>}
                             <div className="add-friends-icons">
                                 <img className="icon-spaceman" src={spaceman} alt='icon-spaceman' />
-                                Anonym attends des amis. Mais rien ne t'oblige à en ajouter !
+                                Anonym attends des amis. Mais rien ne t&apos;oblige à en ajouter !
                             </div>
                         </div>
                     )}

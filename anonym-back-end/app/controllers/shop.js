@@ -98,7 +98,7 @@ exports.update = async (req, res) => {
 
         await shop.update(updateArticle);
 
-        res.status(200).json(shop);
+        res.status(201).json(shop);
     } catch (error) {
         res.status(500).json({ message: error.message || "An error occurred while updating the shop item." });
     }

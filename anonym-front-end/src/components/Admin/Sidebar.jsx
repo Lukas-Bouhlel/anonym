@@ -1,15 +1,23 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import {useApi} from '../../context/ApiContext';
 import { faGlobe, faChartLine, faBars, faInfo } from '@fortawesome/free-solid-svg-icons';
 import logo from '../../assets/images/logos/anonym-logo-white.svg';
 
-const Sidebar = ({ }) => {
+const Sidebar = () => {
     const [isOpen, setIsOpen] = useState(true);  // State to track sidebar open/close
+    const {api_url} = useApi();
 
     const toggleSidebar = () => {
         setIsOpen(!isOpen);  // Toggle the sidebar state
     };
+
+    const handleLinkClick = (event) => {
+        event.preventDefault();
+        window.open(api_url + '/api/admin/api-docs', '_blank', 'noopener,noreferrer');
+    };
+
     return (
         <>
          <div className={`sidebar ${isOpen ? "open" : "closed"}`}>
@@ -32,9 +40,9 @@ const Sidebar = ({ }) => {
                             </Link>
                         </li>
                         <li className="nav-item">
-                            <Link className={`nav-link ${!isOpen && 'togglable'}`}>
+                            <Link onClick={handleLinkClick} className={`nav-link ${!isOpen && 'togglable'}`}>
                                 <FontAwesomeIcon icon={faInfo} />
-                                {isOpen && <span className="ms-3">Support</span>}
+                                {isOpen && <span className="ms-3">Api</span>}
                             </Link>
                         </li>
                         <li className="nav-item">

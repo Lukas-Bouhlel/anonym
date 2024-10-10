@@ -1,4 +1,5 @@
-import React, { useEffect, useState, useRef } from "react";
+import { useState, useRef } from "react";
+import PropTypes from 'prop-types'; 
 import { Link } from "react-router-dom";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faUser, faShop, faGear, faXmark } from '@fortawesome/free-solid-svg-icons';
@@ -32,7 +33,7 @@ const Sidebar = ({ user, page, setPage, setModalVisible, canal, setChannel, sock
         }
     };
 
-    const { data: channels = [], error, isLoading, refetch } = useQuery({
+    const { data: channels = [], isLoading, refetch } = useQuery({
         queryKey: ['channels'], // Clé de la requête pour le caching
         queryFn: fetchUserChannels, // Fonction de récupération des canaux
     });
@@ -63,7 +64,7 @@ const Sidebar = ({ user, page, setPage, setModalVisible, canal, setChannel, sock
         refetch();
     }
 
-    const handleTouchStart = (e) => {
+    const handleTouchStart = () => {
         setIsDragging(true);
     };
 
@@ -110,7 +111,7 @@ const Sidebar = ({ user, page, setPage, setModalVisible, canal, setChannel, sock
                             </div>
                             <ul className="collapse show nav flex-column ms-1" id="submenu1" data-bs-parent="#menu">
                                 {isLoading ? (
-                                    <span>Chargement des canaux...</span>
+                                    <li>Chargement des canaux...</li>
                                 ) : channels.length > 0 ? (
                                     channels.map(channel => (
                                         <li className="w-100" key={channel.channel_id}>
@@ -123,14 +124,14 @@ const Sidebar = ({ user, page, setPage, setModalVisible, canal, setChannel, sock
                                         </li>
                                     ))
                                 ) : (
-                                    <span>Aucun canal trouvé</span>
+                                    <li>Aucun canal trouvé</li>
                                 )}
                             </ul>
                         </li>
                     </ul>
                     <hr />
                     <div className="pb-2 px-sm-2 sidebar-profile">
-                        <div className="d-flex align-items-center sidebar-profile-content" aria-expanded="false">
+                        <div className="d-flex align-items-center sidebar-profile-content">
                             <div className="sidebar-profile-content-infos">
                                 <div className="profile-content-infos-img">
                                     {user?.Inventories?.[0]?.Shop?.content && (
@@ -170,5 +171,27 @@ const Sidebar = ({ user, page, setPage, setModalVisible, canal, setChannel, sock
         </>
     )
 }
+
+Sidebar.propTypes = {
+    user: PropTypes.shape({
+        avatar: PropTypes.string.isRequired,
+        username: PropTypes.string.isRequired,
+        Inventories: PropTypes.arrayOf(
+            PropTypes.shape({
+                Shop: PropTypes.shape({
+                    content: PropTypes.string,
+                }),
+            })
+        ),
+    }).isRequired,
+    page: PropTypes.string.isRequired,
+    setPage: PropTypes.func.isRequired,
+    setModalVisible: PropTypes.func.isRequired,
+    canal: PropTypes.shape({
+        channel_id: PropTypes.string,
+    }),
+    setChannel: PropTypes.func.isRequired,
+    socket: PropTypes.object.isRequired,
+};
 
 export default Sidebar;

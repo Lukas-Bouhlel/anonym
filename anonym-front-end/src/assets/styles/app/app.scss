@@ -1,6 +1,7 @@
 #app {
     background-color: $black;
     color: $white;
+
     p{
         margin: 0;
     }
@@ -12,11 +13,13 @@
 
 .sidebar-content {
     display: flex;
+
     ul {
         gap: 10px;
     }
 }
-@media (max-width: 580px) {
+
+@media (width <= 580px) {
     #app {
         .sidebar {
             position: fixed;
@@ -47,46 +50,60 @@
                 transform: translateX(0); /* Visible sur tout l'écran */
             }
         }
+
         .message-container-content {
-            padding: 10px 10px 10px 0px !important;
+            padding: 10px 10px 10px 0 !important;
         }
+
         .container-app {
             min-height: 100vh;
+
             .sidebar-content {
                 justify-content: space-between;
                 height: 100%;
+
                 ul {
                     width: 100%;
                 }
+
                 .message-mp {
                     justify-content: space-between;
                     padding: 5px;
+
                     a {
                         padding-top: 2px;
                         font-size: 25px;
                     }
                 }
             }
+
             .sidebar-profile {
                 padding: 0.8rem;
             }
+
             .app-container {
                 padding: 10px 16px !important;
                 min-height: 100vh;
             }
+
             &-content {
                 height: 100%;
+
                 #friends {
                     height: 100%;
+
                     .content-friends {
                         gap: 2%;
+
                         &-filter {
                             font-size: 12px;
                         }
                     }
+
                     .no-friends-found {
                         height: 100%;
                     }
+
                     .add-friends-form-submit {
                         font-size: 11px;
                         width: 500px;

@@ -1,5 +1,5 @@
-import React from 'react';
 import { useForm } from 'react-hook-form';
+import PropTypes from 'prop-types';
 import { Modal, Button } from 'rsuite'; 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import axios from 'axios';
@@ -8,7 +8,7 @@ import { useApi } from '../../context/ApiContext';
 const ChannelForm = ({ show, onClose }) => {
     const { api_url } = useApi();
     const queryClient = useQueryClient();
-    const { register, handleSubmit, formState: { errors, isSubmitting }, reset } = useForm();
+    const { register, handleSubmit, formState: { errors }, reset } = useForm();
 
     const mutation = useMutation({
         mutationFn: async (newChannel) => {
@@ -43,7 +43,7 @@ const ChannelForm = ({ show, onClose }) => {
                     <form onSubmit={handleSubmit(onSubmit)}>
                         <div className="form-group mb-3">
                             <label htmlFor="channelName" className='form-label'>Nom du canal</label>
-                            <input id="channelName" type="text" className={`form-control ${errors.channelName ? 'is-invalid' : ''}`}
+                            <input aria-required="true" aria-label="Nom du canal" id="channelName" type="text" className={`form-control ${errors.channelName ? 'is-invalid' : ''}`}
                                 {...register('channelName', { required: 'Le nom du canal est requis' })}
                             />
                             {errors.channelName && (
@@ -56,6 +56,8 @@ const ChannelForm = ({ show, onClose }) => {
                             <input
                                 id="description"
                                 type="text"
+                                aria-required="true" 
+                                aria-label="Description"
                                 className={`form-control ${errors.description ? 'is-invalid' : ''}`}
                                 {...register('description', { required: 'La description est requise' })}
                             />
@@ -81,6 +83,11 @@ const ChannelForm = ({ show, onClose }) => {
             </Modal>  
         </div>
     );
+};
+
+ChannelForm.propTypes = {
+    show: PropTypes.bool.isRequired, // Expecting show to be a boolean and required
+    onClose: PropTypes.func.isRequired // Expecting onClose to be a function and required
 };
 
 export default ChannelForm;

@@ -1,4 +1,5 @@
 import { createContext, useContext, useState } from "react";
+import PropTypes from 'prop-types'; 
 
 const PopupContext = createContext();
 
@@ -16,3 +17,6 @@ export const PopupProvider = ({ children }) => {
     );
 };
 
+PopupProvider.propTypes = {
+    children: PropTypes.node.isRequired,
+};

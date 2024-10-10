@@ -1,6 +1,7 @@
-import React, { useEffect, useState } from "react";
+import { useState } from "react";
+import PropTypes from 'prop-types';
 import axios from "axios";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient  } from "@tanstack/react-query";
 import { useApi } from "../../context/ApiContext";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faCheck } from "@fortawesome/free-solid-svg-icons";
@@ -8,6 +9,7 @@ import Popup from "../Utils/Popup";
 
 const Shop = ({ user }) => {
     const { api_url } = useApi();
+    const queryClient = useQueryClient(); 
     const [showPopup, setShowPopup] = useState(false); 
 
     // Fonction pour récupérer l'inventaire
@@ -18,8 +20,7 @@ const Shop = ({ user }) => {
             });
             return response.data;
         } catch (error) {
-            console.error('Erreur lors de la récupération de l\'inventaire:', error);
-            return null;
+            return [];
         }
     };
 
@@ -31,8 +32,7 @@ const Shop = ({ user }) => {
             });
             return response.data;
         } catch (error) {
-            console.error('Erreur lors de la récupération de l\'inventaire:', error);
-            return null;
+            return [];
         }
     };
 
@@ -104,7 +104,7 @@ const Shop = ({ user }) => {
             {!shop.isLoading && !inventory.isLoading && (
                 <div className="shop">
                     <div className="card-deck">
-                        {shop.data.length > 0 ? (
+                        {shop?.data && shop.data.length > 0 ? (
                             shop.data.map((item, index) => (
                                 <div className="card shop-card-content" key={index}>
                                     <div className="shop-card-content-header">
@@ -142,5 +142,11 @@ const Shop = ({ user }) => {
         </div>
     )
 }
+
+Shop.propTypes = {
+    user: PropTypes.shape({
+        avatar: PropTypes.string.isRequired, 
+    }).isRequired, 
+};
 
 export default Shop;

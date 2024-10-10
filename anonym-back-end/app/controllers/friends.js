@@ -105,7 +105,7 @@ exports.update = async (req, res) => {
     try {
         const friendId = req.params.id;
         const { status } = req.body;
-
+        
         const friendship = await Friend.findOne({
             where: { user_id: req.auth.userId, friend_id: friendId }
         });

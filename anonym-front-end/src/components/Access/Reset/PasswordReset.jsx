@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
+import PropTypes from 'prop-types';
 import axios from 'axios';
 import { useForm } from "react-hook-form";
 import { useMutation  } from '@tanstack/react-query';
@@ -6,7 +7,7 @@ import { useApi } from '../../../context/ApiContext';
 import { usePopup } from '../../../context/PopupContext';
 
 const PasswordReset = ({setStatusForm}) => {
-    const { register, handleSubmit, watch, formState: { errors }, } = useForm();
+    const { register, handleSubmit, formState: { errors }, } = useForm();
     const { api_url } = useApi();
     const { setOpenPopup, setTextPopup, setState } = usePopup();
     const [messageError, setMessageError] = useState('');
@@ -43,8 +44,10 @@ const PasswordReset = ({setStatusForm}) => {
                 <h1>Réinitialiser</h1>
                 <span>Réinitialisez votre mot de passe avec votre e-mail</span>
                 <input 
+                    aria-label={"Email"} 
+                    aria-required="true" 
                     type='email'
-                    placeholder='E-mail'
+                    placeholder='Email'
                     {...register("email", { required: 'L\'adresse email est requise' })}
                 />
                 <a className="link-login-or-password-reset" onClick={() => setStatusForm('login')}>
@@ -68,4 +71,9 @@ const PasswordReset = ({setStatusForm}) => {
         </div>
     );
 }
+
+PasswordReset.propTypes = {
+    setStatusForm: PropTypes.func.isRequired,
+};
+
 export default PasswordReset;

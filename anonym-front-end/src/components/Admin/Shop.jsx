@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import { useState } from "react";
+import PropTypes from 'prop-types';
 import axios from "axios";
 import { Modal, Button } from 'rsuite';
 import { useApi } from "../../context/ApiContext";
@@ -63,7 +64,7 @@ const Shop = ({ shop, refetch }) => {
         }
 
         try {
-            const response = await axios.put(`${api_url}/api/shop/${selectedArticle.article_id}`, formData, {
+            const response = await axios.put(`${api_url}/api/shop/admin/${selectedArticle.article_id}`, formData, {
                 withCredentials: true,
                 headers: {
                     'Content-Type': 'multipart/form-data',
@@ -95,7 +96,7 @@ const Shop = ({ shop, refetch }) => {
         formData.append('image', newArticle.image); // Ajoute l'image si elle est sélectionnée
 
         try {
-            await axios.post(`${api_url}/api/shop`, formData, {
+            await axios.post(`${api_url}/api/shop/admin`, formData, {
                 withCredentials: true,
                 headers: {
                     'Content-Type': 'multipart/form-data',
@@ -132,7 +133,7 @@ const Shop = ({ shop, refetch }) => {
     // Gérer la suppression d'article
     const handleDeleteArticle = async () => {
         try {
-            await axios.delete(`${api_url}/api/shop/${selectedArticle.article_id}`, {
+            await axios.delete(`${api_url}/api/shop/admin/${selectedArticle.article_id}`, {
                 withCredentials: true
             });
             setOpenPopup(true);
@@ -191,22 +192,22 @@ const Shop = ({ shop, refetch }) => {
                     {/* Modal pour éditer l'article */}
                     <Modal open={open} onClose={handleClose}>
                         <Modal.Header>
-                            <Modal.Title>Editer l'article</Modal.Title>
+                            <Modal.Title>Editer l&apos;article</Modal.Title>
                         </Modal.Header>
                         <Modal.Body>
                             {errorMessage && <div className="error-message" style={{ color: "red" }}>{errorMessage}</div>}
                             <form onSubmit={handleSubmit}>
                                 <div className="mb-3">
-                                    <label htmlFor="title" className="form-label">Nom de l'article</label>
-                                    <input type="text" className="form-control" id="title" name="title" value={selectedArticle.title || ''} onChange={handleChange} />
+                                    <label htmlFor="title" className="form-label">Nom de l&apos;article</label>
+                                    <input aria-required="true" aria-label="Nom de l'article" type="text" className="form-control" id="title" name="title" value={selectedArticle.title || ''} onChange={handleChange} />
                                 </div>
                                 <div className="mb-3">
                                     <label htmlFor="amount" className="form-label">Montant</label>
-                                    <input type="number" className="form-control" id="amount" name="amount" value={selectedArticle.amount || ''} onChange={handleChange} />
+                                    <input aria-required="true"  aria-label="Montant" type="number" className="form-control" id="amount" name="amount" value={selectedArticle.amount || ''} onChange={handleChange} />
                                 </div>
                                 <div className="mb-3">
                                     <label htmlFor="type" className="form-label">Type</label>
-                                    <select className="form-select" id="type" name="type" value={selectedArticle.type || 'CADRE'} onChange={handleChange}>
+                                    <select aria-label="Type" className="form-select" id="type" name="type" value={selectedArticle.type || 'CADRE'} onChange={handleChange}>
                                         <option value="CADRE">CADRE</option>
                                         <option value="SUBSCRIPTION">SUBSCRIPTION</option>
                                         <option value="COLOR">COLOR</option>
@@ -214,12 +215,12 @@ const Shop = ({ shop, refetch }) => {
                                 </div>
                                 <div className="mb-3">
                                     <label htmlFor="image" className="form-label">Télécharger une image</label>
-                                    <input type="file" className="form-control" id="image" name="image" accept="image/*" onChange={handleImageChange} />
+                                    <input  aria-label="Télécharger une image" type="file" className="form-control" id="image" name="image" accept="image/*" onChange={handleImageChange} />
                                 </div>
                                 <Modal.Footer>
                                     <Button onClick={handleClose} appearance="subtle">Annuler</Button>
                                     <Button type="submit" className="btn btn-primary">Enregistrer</Button>
-                                    <Button color="red" appearance="subtle" onClick={() => setShowDeleteConfirmation(true)}>Supprimer l'article</Button>
+                                    <Button color="red" appearance="subtle" onClick={() => setShowDeleteConfirmation(true)}>Supprimer l&apos;article</Button>
                                 </Modal.Footer>
                             </form>
                         </Modal.Body>
@@ -234,7 +235,7 @@ const Shop = ({ shop, refetch }) => {
                             {errorMessage && <div className="error-message" style={{ color: "red" }}>{errorMessage}</div>}
                             <form onSubmit={handleCreateArticle}>
                                 <div className="mb-3">
-                                    <label htmlFor="title" className="form-label">Nom de l'article</label>
+                                    <label htmlFor="title" className="form-label">Nom de l&apos;article</label>
                                     <input type="text" className="form-control" id="title" name="title" value={newArticle.title} onChange={handleChange} required />
                                 </div>
                                 <div className="mb-3">
@@ -283,5 +284,12 @@ const Shop = ({ shop, refetch }) => {
         </div>
     );
 }
+
+Shop.propTypes = {
+    shop: PropTypes.shape({
+        data: PropTypes.array // Expecting data to be an array
+    }).isRequired, // shop is required
+    refetch: PropTypes.func.isRequired // refetch is required and should be a function
+};
 
 export default Shop;

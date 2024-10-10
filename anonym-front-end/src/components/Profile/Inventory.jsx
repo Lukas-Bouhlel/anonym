@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import { useState } from "react";
+import PropTypes from 'prop-types';
 import axios from "axios";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useApi } from "../../context/ApiContext";
@@ -96,6 +97,12 @@ const Inventory = ({ user }) => {
             )}
         </div>
     );
+};
+
+Inventory.propTypes = {
+    user: PropTypes.shape({
+        avatar: PropTypes.string.isRequired, // user.avatar should be a string
+    }).isRequired, // user should be an object containing avatar
 };
 
 export default Inventory;

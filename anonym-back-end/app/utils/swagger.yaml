@@ -1,0 +1,1705 @@
+openapi: 3.0.0
+info:
+  title: Documentation de l'API Auth
+  version: 1.0.0
+  description: API de la plateforme Anonym
+servers:
+  - url: http://localhost:5000/api
+    description: Serveur Web
+
+paths:
+  /auth/signup:
+    post:
+      summary: Inscription d'un nouvel utilisateur
+      tags: [Auth]
+      requestBody:
+        description: Données nécessaires pour créer un compte utilisateur
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                  example: "John Doe"
+                email:
+                  type: string
+                  example: "john.doe@example.com"
+                password:
+                  type: string
+                  example: "P@ssw0rd123"
+      responses:
+        '201':
+          description: Utilisateur créé avec succès
+        '400':
+          description: Erreur dans les données envoyées
+
+  /auth/login:
+    post:
+      summary: Connexion d'un utilisateur existant
+      tags: [Auth]
+      requestBody:
+        description: Identifiants de connexion de l'utilisateur
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                identifier:
+                  type: string
+                  example: "john.doe@example.com"  # Peut être l'email ou le pseudo
+                password:
+                  type: string
+                  example: "P@ssw0rd123"
+      responses:
+        '200':
+          description: Connexion réussie
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+                    example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.example.jwt.token"
+        '401':
+          description: Identifiants incorrects
+
+  /auth/logout:
+    post:
+      summary: Déconnexion de l'utilisateur
+      tags: [Auth]
+      responses:
+        '200':
+          description: Déconnexion réussie
+
+  /auth/reset-password:
+    post:
+      summary: Demande de réinitialisation de mot de passe
+      tags: [Auth]
+      requestBody:
+        description: Email de l'utilisateur pour demander la réinitialisation du mot de passe
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  example: "john.doe@example.com"
+      responses:
+        '200':
+          description: Email envoyé pour réinitialiser le mot de passe
+        '400':
+          description: Email non valide
+
+  /auth/reset:
+    post:
+      summary: Réinitialiser le mot de passe
+      tags: [Auth]
+      parameters:
+        - name: token
+          in: query
+          description: Token de réinitialisation
+          required: true
+          schema:
+            type: string
+            example: "123456abcdef"
+      requestBody:
+        description: Nouveau mot de passe et confirmation
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                password:
+                  type: string
+                  example: "NouveauM0tDePasse!"
+                confirmPassword:
+                  type: string
+                  example: "NouveauM0tDePasse!"
+      responses:
+        '200':
+          description: Mot de passe réinitialisé avec succès
+        '400':
+          description: Requête invalide ou token expiré
+
+  /account:
+    get:
+      summary: Récupérer les informations du compte connecté
+      tags: [Account]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Informations du compte récupérées avec succès
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    example: "78910"
+                  username:
+                    type: string
+                    example: "JaneDoe"
+                  email:
+                    type: string
+                    example: "janedoe@example.com"
+        '401':
+          description: Non autorisé
+
+  /account/users:
+    get:
+      summary: Récupérer la liste de tous les utilisateurs
+      tags: [Account]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Liste d'utilisateurs récupérée avec succès
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: string
+                      example: "78910"
+                    username:
+                      type: string
+                      example: "JaneDoe"
+                    email:
+                      type: string
+                      example: "janedoe@example.com"
+        '401':
+          description: Non autorisé
+
+  /account/update:
+    put:
+      summary: Mettre à jour les informations du compte
+      tags: [Account]
+      security:
+        - bearerAuth: []
+      requestBody:
+        description: Données à mettre à jour avec un fichier pour l'avatar
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                  example: "JaneDoe"
+                email:
+                  type: string
+                  example: "janedoe@example.com"
+                avatar:
+                  type: string
+                  example: "delete"  # Mettre "delete" pour supprimer l'avatar
+                image:
+                  type: string
+                  format: binary  # Image à uploader
+      responses:
+        '200':
+          description: Compte mis à jour avec succès
+        '400':
+          description: Requête invalide
+        '401':
+          description: Non autorisé
+
+  /account/password:
+    put:
+      summary: Mettre à jour le mot de passe de l'utilisateur
+      tags: [Account]
+      security:
+        - bearerAuth: []
+      requestBody:
+        description: Données nécessaires pour mettre à jour le mot de passe
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                currentPassword:
+                  type: string
+                  example: "OldPass123!"
+                newPassword:
+                  type: string
+                  example: "NewPass456!"
+                confirmNewPassword:
+                  type: string
+                  example: "NewPass456!"
+      responses:
+        '200':
+          description: Mot de passe mis à jour avec succès
+        '400':
+          description: Requête invalide
+        '401':
+          description: Non autorisé
+
+  /account/delete:
+    delete:
+      summary: Supprimer le compte de l'utilisateur
+      tags: [Account]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Compte supprimé avec succès
+        '401':
+          description: Non autorisé
+
+  /account/{id}:
+    get:
+      summary: Récupérer les informations d'un compte utilisateur spécifique
+      tags: [Account]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            example: "78910"
+      responses:
+        '200':
+          description: Informations du compte récupérées avec succès
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    example: "78910"
+                  username:
+                    type: string
+                    example: "JaneDoe"
+                  email:
+                    type: string
+                    example: "janedoe@example.com"
+        '401':
+          description: Non autorisé
+
+  /shop:
+    get:
+      summary: Récupérer la liste de tous les articles
+      tags: [Shop]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Liste des articles récupérée avec succès
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    article_id:
+                      type: integer
+                      example: 25
+                    amount:
+                      type: integer
+                      example: 2
+                    timestamp:
+                      type: string
+                      format: date-time
+                      nullable: true
+                      example: null
+                    title:
+                      type: string
+                      example: "Cycle d'étoile"
+                    type:
+                      type: string
+                      example: "CADRE"
+                    content:
+                      type: string
+                      example: "http://localhost:5000/uploads/articles/yellow_frame_1727389505376.png"
+                    createdAt:
+                      type: string
+                      format: date-time
+                      example: "2024-09-20T16:06:32.000Z"
+                    updatedAt:
+                      type: string
+                      format: date-time
+                      example: "2024-09-27T19:07:17.000Z"
+        '401':
+          description: Non autorisé
+
+  /shop/{id}:
+    get:
+      summary: Récupérer les détails d'un article spécifique
+      tags: [Shop]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            example: 25
+      responses:
+        '200':
+          description: Détails de l'article récupérés avec succès
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  article_id:
+                    type: integer
+                    example: 25
+                  amount:
+                    type: integer
+                    example: 2
+                  timestamp:
+                    type: string
+                    format: date-time
+                    nullable: true
+                    example: null
+                  title:
+                    type: string
+                    example: "Cycle d'étoile"
+                  type:
+                    type: string
+                    example: "CADRE"
+                  content:
+                    type: string
+                    example: "http://localhost:5000/uploads/articles/yellow_frame_1727389505376.png"
+                  createdAt:
+                    type: string
+                    format: date-time
+                    example: "2024-09-20T16:06:32.000Z"
+                  updatedAt:
+                    type: string
+                    format: date-time
+                    example: "2024-09-27T19:07:17.000Z"
+        '401':
+          description: Non autorisé
+        '404':
+          description: Article non trouvé
+
+  /inventory:
+    get:
+      summary: Récupérer tous les articles de l'inventaire de l'utilisateur
+      tags: [Inventory]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Liste des articles de l'inventaire récupérée avec succès
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    item_id:
+                      type: integer
+                      example: 56
+                    user_id:
+                      type: integer
+                      example: 198
+                    article_id:
+                      type: integer
+                      example: 26
+                    active:
+                      type: boolean
+                      example: true
+                    createdAt:
+                      type: string
+                      format: date-time
+                      example: "2024-09-26T20:18:53.000Z"
+                    updatedAt:
+                      type: string
+                      format: date-time
+                      example: "2024-10-01T22:28:02.000Z"
+                    Shop:
+                      type: object
+                      properties:
+                        article_id:
+                          type: integer
+                          example: 26
+                        amount:
+                          type: integer
+                          example: 1
+                        timestamp:
+                          type: string
+                          format: date-time
+                          nullable: true
+                          example: null
+                        title:
+                          type: string
+                          example: "Nouvelle écume"
+                        type:
+                          type: string
+                          example: "CADRE"
+                        content:
+                          type: string
+                          example: "http://localhost:5000/uploads/articles/new_ecume_1726848513659.png"
+                        createdAt:
+                          type: string
+                          format: date-time
+                          example: "2024-09-20T16:08:33.000Z"
+                        updatedAt:
+                          type: string
+                          format: date-time
+                          example: "2024-09-20T16:08:33.000Z"
+        '401':
+          description: Non autorisé
+
+  /inventory/{item_id}:
+    get:
+      summary: Récupérer un article spécifique dans l'inventaire de l'utilisateur
+      tags: [Inventory]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: item_id
+          in: path
+          required: true
+          schema:
+            type: integer
+            example: 26
+      responses:
+        '200':
+          description: Article de l'inventaire récupéré avec succès
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  article_id:
+                    type: integer
+                    example: 26
+                  title:
+                    type: string
+                    example: "Nouvelle écume"
+                  type:
+                    type: string
+                    example: "CADRE"
+                  content:
+                    type: string
+                    example: "http://localhost:5000/uploads/articles/new_ecume_1726848513659.png"
+                  amount:
+                    type: integer
+                    example: 1
+        '401':
+          description: Non autorisé
+        '404':
+          description: Article non trouvé
+
+  /inventory/{id}:
+    put:
+      summary: Mettre à jour le statut d'un article de l'inventaire (actif/inactif)
+      tags: [Inventory]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: item_id
+          in: path
+          required: true
+          schema:
+            type: integer
+            example: 26
+      requestBody:
+        description: Données nécessaires pour mettre à jour le statut de l'article
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                active:
+                  type: boolean
+                  example: true
+      responses:
+        '200':
+          description: Statut de l'article mis à jour avec succès
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  active:
+                    type: boolean
+                    example: true
+        '400':
+          description: Requête invalide
+        '401':
+          description: Non autorisé
+        '404':
+          description: Article non trouvé
+
+  /invoice:
+    get:
+      summary: Récupérer toutes les factures de l'utilisateur connecté
+      tags: [Invoice]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Liste des factures récupérée avec succès
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: integer
+                      example: 65
+                    user_id:
+                      type: integer
+                      example: 198
+                    article_id:
+                      type: integer
+                      example: 26
+                    type:
+                      type: string
+                      example: "CADRE"
+                    amount:
+                      type: integer
+                      example: 1
+                    content:
+                      type: string
+                      example: "Nouvelle écume"
+                    quantity:
+                      type: integer
+                      example: 1
+                    createdAt:
+                      type: string
+                      format: date-time
+                      example: "2024-09-26T20:18:53.000Z"
+                    updatedAt:
+                      type: string
+                      format: date-time
+                      example: "2024-09-26T20:18:53.000Z"
+        '401':
+          description: Non autorisé
+
+  /invoice/{id}:
+    get:
+      summary: Récupérer une facture par ID
+      tags: [Invoice]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            example: 65
+      responses:
+        '200':
+          description: Facture récupérée avec succès et envoyée par email
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Invoice sent successfully via email."
+        '401':
+          description: Non autorisé
+        '404':
+          description: Facture non trouvée
+
+  /payment:
+    post:
+      summary: Créer un paiement pour un article
+      tags: [Payment]
+      security:
+        - bearerAuth: []
+      requestBody:
+        description: Informations nécessaires pour créer un paiement
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                article_id:
+                  type: integer
+                  example: 22
+      responses:
+        '201':
+          description: Paiement créé avec succès
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Payment created successfully."
+        '400':
+          description: Requête invalide
+        '401':
+          description: Non autorisé
+
+  /payment/confirm:
+    get:
+      summary: Confirmer un paiement et envoyer un email de succès
+      tags: [Payment]
+      responses:
+        '200':
+          description: Email de succès envoyé
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Payment confirmation email sent successfully."
+        '400':
+          description: Requête invalide
+        '404':
+          description: Paiement non trouvé
+
+  /private_messages/{message_id}:
+      put:
+        summary: Mettre à jour un message privé
+        tags: [PrivateMessage]
+        security:
+          - bearerAuth: []
+        parameters:
+          - name: message_id
+            in: path
+            required: true
+            description: L'ID du message à mettre à jour
+            schema:
+              type: integer
+              example: 1
+        requestBody:
+          description: Nouveau contenu du message
+          required: true
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  content:
+                    type: string
+                    example: "Ceci est un message mis à jour."
+        responses:
+          '200':
+            description: Message mis à jour avec succès
+            content:
+              application/json:
+                schema:
+                  type: object
+                  properties:
+                    message_id:
+                      type: integer
+                      example: 1
+                    content:
+                      type: string
+                      example: "Ceci est un message mis à jour."
+                    sender_id:
+                      type: integer
+                      example: 198
+          '404':
+            description: Message non trouvé ou l'utilisateur n'est pas l'expéditeur
+          '500':
+            description: Erreur lors de la mise à jour du message
+
+  /private_messages/{messageid}:
+    delete:
+      summary: Supprimer un message privé
+      tags: [PrivateMessage]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: message_id
+          in: path
+          required: true
+          description: L'ID du message à supprimer
+          schema:
+            type: integer
+            example: 1
+      responses:
+        '200':
+          description: Message supprimé avec succès
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Message deleted successfully."
+        '404':
+          description: Message non trouvé ou l'utilisateur n'est pas l'expéditeur
+        '500':
+          description: Erreur lors de la suppression du message
+
+  /channel:
+    post:
+      summary: Créer un nouveau canal
+      tags: [Channel]
+      security:
+        - bearerAuth: []
+      requestBody:
+        description: Informations pour créer un canal
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  example: "Canal de discussion"
+                description:
+                  type: string
+                  example: "Ceci est un canal pour discuter de divers sujets."
+      responses:
+        '201':
+          description: Canal créé avec succès
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  channel_id:
+                    type: integer
+                    example: 1
+                  name:
+                    type: string
+                    example: "Canal de discussion"
+                  description:
+                    type: string
+                    example: "Ceci est un canal pour discuter de divers sujets."
+                  created_by:
+                    type: integer
+                    example: 198
+        '400':
+          description: Requête invalide
+        '500':
+          description: Erreur lors de la création du canal
+
+  /channel/invite:
+    post:
+      summary: Inviter un utilisateur dans un canal
+      tags: [Channel]
+      security:
+        - bearerAuth: []
+      requestBody:
+        description: Informations pour inviter un utilisateur dans un canal
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                channelId:
+                  type: integer
+                  example: 1
+                userId:
+                  type: integer
+                  example: 198
+      responses:
+        '200':
+          description: Utilisateur ajouté au canal avec succès
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Utilisateur ajouté au canal avec succès."
+        '400':
+          description: L'utilisateur est déjà membre du canal
+        '500':
+          description: Erreur lors de l'ajout de l'utilisateur au canal
+
+  /channel/user:
+    get:
+      summary: Récupérer tous les canaux d'un utilisateur
+      tags: [Channel]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Liste des canaux récupérés avec succès
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    channel_id:
+                      type: integer
+                      example: 1
+                    name:
+                      type: string
+                      example: "Canal de discussion"
+                    unreadCount:
+                      type: integer
+                      example: 5
+                    created_by:
+                      type: integer
+                      example: 198
+        '404':
+          description: Utilisateur non trouvé
+        '500':
+          description: Erreur lors de la récupération des canaux
+
+  /channel/{id}/unreadCount:
+    get:
+      summary: Obtenir le nombre de messages non lus dans un canal
+      tags: [Channel]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: L'ID du canal
+          schema:
+            type: integer
+            example: 1
+      responses:
+        '200':
+          description: Compteur de messages non lus récupéré avec succès
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  count:
+                    type: integer
+                    example: 5
+        '404':
+          description: Canal non trouvé
+        '500':
+          description: Erreur lors de la récupération du compteur de messages non lus
+
+  /channel/{id}/users:
+    get:
+      summary: Récupérer les utilisateurs d'un canal
+      tags: [Channel]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: L'ID du canal
+          schema:
+            type: integer
+            example: 1
+      responses:
+        '200':
+          description: Utilisateurs récupérés avec succès
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: integer
+                      example: 198
+                    username:
+                      type: string
+                      example: "utilisateur_test"
+                    avatar:
+                      type: string
+                      example: "http://example.com/avatar.png"
+        '403':
+          description: Accès interdit, l'utilisateur ne fait pas partie du canal
+        '404':
+          description: Aucune utilisateur trouvé dans le canal
+        '500':
+          description: Erreur lors de la récupération des utilisateurs du canal
+
+  /channel/{id}/messages:
+    get:
+      summary: Obtenir les messages d'un canal spécifique
+      tags: [Channel]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: L'ID du canal
+          schema:
+            type: integer
+            example: 1
+      responses:
+        '200':
+          description: Messages récupérés avec succès
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: integer
+                      example: 1
+                    channel_id:
+                      type: integer
+                      example: 1
+                    sender_id:
+                      type: integer
+                      example: 198
+                    content:
+                      type: string
+                      example: "Hello, world!"
+                    createdAt:
+                      type: string
+                      format: date-time
+                      example: "2024-10-01T20:18:53.000Z"
+        '404':
+          description: Canal non trouvé
+        '500':
+          description: Erreur lors de la récupération des messages
+
+  /channel/leave/{id}:
+    delete:
+      summary: Quitter un canal
+      tags: [Channel]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: L'ID du canal à quitter
+          schema:
+            type: integer
+            example: 1
+      responses:
+        '200':
+          description: Utilisateur a quitté le canal avec succès
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Vous avez quitté le canal avec succès."
+        '404':
+          description: Canal non trouvé
+        '403':
+          description: Utilisateur ne fait pas partie du canal
+        '500':
+          description: Erreur lors de la tentative de quitter le canal
+
+  /channel/{id}:
+    delete:
+      summary: Supprimer un canal
+      tags: [Channel]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: L'ID du canal à supprimer
+          schema:
+            type: integer
+            example: 1
+      responses:
+        '200':
+          description: Canal supprimé avec succès
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Canal supprimé avec succès."
+        '404':
+          description: Canal non trouvé
+        '403':
+          description: Utilisateur n'a pas la permission de supprimer ce canal
+        '500':
+          description: Erreur lors de la tentative de supprimer le canal
+
+  /friends:
+    get:
+      summary: Récupérer tous les amis de l'utilisateur
+      tags: [Friends]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Liste des amis récupérés avec succès
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: integer
+                      example: 1
+                    user_id:
+                      type: integer
+                      example: 198
+                    friend_id:
+                      type: integer
+                      example: 199
+                    status:
+                      type: string
+                      example: "ACTIVE"
+                    FriendDetails:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                          example: 199
+                        username:
+                          type: string
+                          example: "ami_test"
+                        email:
+                          type: string
+                          example: "ami@example.com"
+                        avatar:
+                          type: string
+                          example: "http://example.com/avatar.png"
+                        Inventory:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              item_id:
+                                type: integer
+                                example: 1
+                              article_id:
+                                type: integer
+                                example: 101
+                              active:
+                                type: boolean
+                                example: true
+                              Shop:
+                                type: object
+                                properties:
+                                  title:
+                                    type: string
+                                    example: "Épée"
+                                  type:
+                                    type: string
+                                    example: "Arme"
+                                  content:
+                                    type: string
+                                    example: "Une épée en acier bien aiguisée."
+                                  amount:
+                                    type: number
+                                    example: 150.75
+        '500':
+          description: Erreur lors de la récupération des amis
+
+  /friends/{id}:
+    get:
+      summary: Récupérer les détails d'un ami
+      tags: [Friends]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: L'ID de l'ami à récupérer
+          schema:
+            type: integer
+            example: 1
+      responses:
+        '200':
+          description: Détails de l'ami récupérés avec succès
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                    example: 1
+                  user_id:
+                    type: integer
+                    example: 198
+                  friend_id:
+                    type: integer
+                    example: 199
+                  FriendDetails:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                        example: 199
+                      username:
+                        type: string
+                        example: "ami_test"
+                      email:
+                        type: string
+                        example: "ami@example.com"
+                      avatar:
+                        type: string
+                        example: "http://example.com/avatar.png"
+        '404':
+          description: Ami non trouvé
+        '500':
+          description: Erreur lors de la récupération de l'ami
+
+  /friends/{username}:
+    post:
+      summary: Ajouter un ami par nom d'utilisateur
+      tags: [Friends]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: username
+          in: path
+          required: true
+          description: Le nom d'utilisateur de l'ami à ajouter
+          schema:
+            type: string
+            example: "ami_test"
+      responses:
+        '201':
+          description: Ami ajouté avec succès
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user_id:
+                    type: integer
+                    example: 198
+                  friend_id:
+                    type: integer
+                    example: 199
+                  status:
+                    type: string
+                    example: "ACTIVE"
+        '400':
+          description: L'utilisateur ne peut pas s'ajouter lui-même ou est déjà ami
+        '404':
+          description: Utilisateur introuvable
+        '500':
+          description: Erreur lors de l'ajout de l'ami
+
+  /friends/{id_}:
+    put:
+      summary: Mettre à jour l'état d'une amitié
+      tags: [Friends]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: L'ID de l'ami dont l'état doit être mis à jour
+          schema:
+            type: integer
+            example: 1
+      requestBody:
+        description: Nouveau statut de l'amitié
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status:
+                  type: string
+                  enum: [ACTIVE, BLOQUED]
+                  example: "BLOQUED"
+      responses:
+        '200':
+          description: État de l'amitié mis à jour avec succès
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                    example: 1
+                  status:
+                    type: string
+                    example: "BLOQUED"
+        '400':
+          description: Statut invalide
+        '404':
+          description: Amitié non trouvée
+        '500':
+          description: Erreur lors de la mise à jour de l'état de l'amitié
+
+  /friends/{:id}:
+    delete:
+      summary: Supprimer une amitié
+      tags: [Friends]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: L'ID de l'ami à supprimer
+          schema:
+            type: integer
+            example: 1
+      responses:
+        '204':
+          description: Amitié supprimée avec succès
+        '404':
+          description: Amitié non trouvée
+        '500':
+          description: Erreur lors de la suppression de l'amitié
+
+  /admin/invoices:
+    get:
+      summary: Récupérer toutes les factures
+      tags: [Admin]
+      description: Lecture de toutes les factures (interdit aux utilisateurs ayant le rôle USER).
+      security:
+        - auth: []
+      responses:
+        '200':
+          description: Liste des factures récupérée avec succès
+        '403':
+          description: Accès interdit
+
+    post:
+      summary: Créer une facture
+      tags: [Admin]
+      description: Crée une nouvelle facture (interdit aux utilisateurs ayant le rôle USER).
+      security:
+        - auth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                article_id:
+                  type: integer
+                user_id:
+                  type: integer
+              required:
+                - article_id
+                - user_id
+      responses:
+        '201':
+          description: Facture créée avec succès
+        '400':
+          description: Erreur de validation
+        '403':
+          description: Accès interdit
+
+  /admin/invoices/{id}:
+    put:
+      summary: Mettre à jour une facture
+      tags: [Admin]
+      description: Met à jour une facture existante (interdit aux utilisateurs ayant le rôle USER).
+      security:
+        - auth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID de la facture à mettre à jour
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                article_id:
+                  type: integer
+                user_id:
+                  type: integer
+                quantity:
+                  type: integer
+      responses:
+        '200':
+          description: Facture mise à jour avec succès
+        '404':
+          description: Facture non trouvée
+        '403':
+          description: Accès interdit
+
+    delete:
+      summary: Supprimer une facture
+      tags: [Admin]
+      description: Supprime une facture existante (interdit aux utilisateurs ayant le rôle USER).
+      security:
+        - auth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID de la facture à supprimer
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Facture supprimée avec succès
+        '404':
+          description: Facture non trouvée
+        '403':
+          description: Accès interdit
+
+  /admin/inventories:
+    get:
+      summary: Récupérer tous les articles de l'inventaire
+      tags: [Admin]
+      description: Lire tous les articles de l'inventaire (interdit aux utilisateurs ayant le rôle USER).
+      security:
+        - auth: []
+      responses:
+        '200':
+          description: Liste des articles d'inventaire récupérée avec succès
+        '403':
+          description: Accès interdit
+
+    post:
+      summary: Créer un article d'inventaire
+      tags: [Admin]
+      description: Crée un nouvel article d'inventaire (interdit aux utilisateurs ayant le rôle USER).
+      security:
+        - auth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                user_id:
+                  type: integer
+                article_id:
+                  type: integer
+              required:
+                - user_id
+                - article_id
+      responses:
+        '201':
+          description: Article d'inventaire créé avec succès
+        '400':
+          description: Erreur de validation
+        '403':
+          description: Accès interdit
+
+  /admin/inventories/{item_id}:
+    put:
+      summary: Mettre à jour un article d'inventaire
+      tags: [Admin]
+      description: Met à jour un article d'inventaire existant (interdit aux utilisateurs ayant le rôle USER).
+      security:
+        - auth: []
+      parameters:
+        - name: item_id
+          in: path
+          required: true
+          description: ID de l'article d'inventaire à mettre à jour
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                user_id:
+                  type: integer
+                article_id:
+                  type: integer
+      responses:
+        '200':
+          description: Article d'inventaire mis à jour avec succès
+        '404':
+          description: Article d'inventaire non trouvé
+        '403':
+          description: Accès interdit
+
+    delete:
+      summary: Supprimer un article d'inventaire
+      tags: [Admin]
+      description: Supprime un article d'inventaire existant (interdit aux utilisateurs ayant le rôle USER).
+      security:
+        - auth: []
+      parameters:
+        - name: item_id
+          in: path
+          required: true
+          description: ID de l'article d'inventaire à supprimer
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Article d'inventaire supprimé avec succès
+        '404':
+          description: Article d'inventaire non trouvé
+        '403':
+          description: Accès interdit
+
+  /admin/shop:
+    post:
+      summary: Créer un article dans la boutique
+      tags: [Admin]
+      description: Crée un nouvel article dans la boutique (interdit aux utilisateurs ayant le rôle USER).
+      security:
+        - auth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                title:
+                  type: string
+                amount:
+                  type: number
+                  format: float
+                type:
+                  type: string
+                image:
+                  type: string
+                  format: binary
+              required:
+                - title
+                - amount
+                - type
+                - image
+      responses:
+        '201':
+          description: Article créé avec succès
+        '400':
+          description: Erreur de validation
+        '403':
+          description: Accès interdit
+
+  /admin/shop/{id}:
+    put:
+      summary: Mettre à jour un article dans la boutique
+      tags: [Admin]
+      description: Met à jour un article dans la boutique (interdit aux utilisateurs ayant le rôle USER).
+      security:
+        - auth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID de l'article à mettre à jour
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                title:
+                  type: string
+                amount:
+                  type: number
+                  format: float
+                type:
+                  type: string
+                image:
+                  type: string
+                  format: binary
+      responses:
+        '200':
+          description: Article mis à jour avec succès
+        '404':
+          description: Article non trouvé
+        '403':
+          description: Accès interdit
+
+    delete:
+      summary: Supprimer un article de la boutique
+      tags: [Admin]
+      description: Supprime un article de la boutique (interdit aux utilisateurs ayant le rôle USER).
+      security:
+        - auth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID de l'article à supprimer
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: Article supprimé avec succès
+        '404':
+          description: Article non trouvé
+        '403':
+          description: Accès interdit
+
+  /admin/users:
+    post:
+      summary: Créer un utilisateur
+      tags: [Admin]
+      description: Crée un nouvel utilisateur (interdit aux utilisateurs ayant le rôle USER).
+      security:
+        - auth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                email:
+                  type: string
+                password:
+                  type: string
+                roles:
+                  type: string
+                  enum: [USER, ADMIN, SUPER_ADMIN] # Les rôles possibles
+              required:
+                - username
+                - email
+                - password
+      responses:
+        '201':
+          description: Utilisateur créé avec succès
+        '400':
+          description: Erreur de validation
+        '403':
+          description: Accès interdit
+
+    put:
+      summary: Mettre à jour un utilisateur
+      tags: [Admin]
+      description: Met à jour un utilisateur existant (interdit aux utilisateurs ayant le rôle USER).
+      security:
+        - auth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID de l'utilisateur à mettre à jour
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                email:
+                  type: string
+                password:
+                  type: string
+                roles:
+                  type: string
+                  enum: [USER, ADMIN, SUPER_ADMIN]
+                avatar:
+                  type: string
+                  format: uri
+              required:
+                - username
+                - email
+      responses:
+        '200':
+          description: Utilisateur mis à jour avec succès
+        '404':
+          description: Utilisateur non trouvé
+        '403':
+          description: Accès interdit
+
+    delete:
+      summary: Supprimer un utilisateur
+      tags: [Admin]
+      description: Supprime un utilisateur existant (interdit aux utilisateurs ayant le rôle USER).
+      security:
+        - auth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID de l'utilisateur à supprimer
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: Utilisateur supprimé avec succès
+        '404':
+          description: Utilisateur non trouvé
+        '403':
+          description: Accès interdit
+
+  /admin/report:
+    post:
+      summary: Soumettre un rapport
+      tags: [Admin]
+      description: Soumet un rapport pour un utilisateur.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                type:
+                  type: string
+                content:
+                  type: string
+              required:
+                - email
+                - type
+                - content
+      responses:
+        '201':
+          description: Rapport soumis avec succès
+        '400':
+          description: Erreur de validation
+        '404':
+          description: Utilisateur non trouvé
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT

@@ -39,7 +39,7 @@ module.exports = {
     });
   },
 
-  async down (queryInterface, Sequelize) {
+  async down (queryInterface) {
      // Suppression de la colonne channel_id dans private_messages
      await queryInterface.removeColumn('private_messages', 'channel_id');
      // Suppression de la table channels

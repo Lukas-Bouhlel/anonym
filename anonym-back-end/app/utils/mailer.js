@@ -17,7 +17,6 @@ module.exports = (config) => {
     try {
       // Utiliser 'await' pour gérer l'envoi d'e-mail
       const info = await transporter.sendMail(mailOptions);
-      console.log('Email envoyé : ' + info.response);
       return info;
     } catch (error) {
       console.error('Erreur lors de l\'envoi de l\'email :', error);

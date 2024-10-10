@@ -3,10 +3,11 @@
     transition: opacity 0.9s;
     display: block;
 }
+
 .container-access {
     opacity: 0;
     background-color: $white;
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.35);
+    box-shadow: 0 5px 15px rgb(0 0 0 / 35%);
     position: fixed;
     width: 768px;
     max-width: 100%;
@@ -68,7 +69,7 @@
         flex-direction: column;
         padding: 0 40px;
         height: 100%;
-        margin: 0px 1px;
+        margin: 0 1px;
     }
 
     input {
@@ -91,6 +92,7 @@
         top: 0;
         height: 100%;
         transition: all 0.6s ease-in-out;
+
         h1 {
             font-size: 34px;
             text-align: center;
@@ -123,8 +125,6 @@
     }
     
     .toggle {
-        background-color: $black;
-        height: 100%;
         background: linear-gradient(to right, #404040, $black);
         color: $white;
         position: relative;
@@ -151,12 +151,14 @@
     
     .toggle-left {
         transform: translateX(-200%);
+
         // padding: 0 30px 0 0;
     }
     
     .toggle-right {
         right: 0;
         transform: translateX(0);
+
         // padding: 0 0 0 30px;
     }
 
@@ -196,12 +198,15 @@
         right: -20px;
         top: -20px;
         background-color: #414141;
+
         svg {
             height: 1.5em;
         }
     }
+
     .link-login-or-password-reset {
         cursor: pointer;
+
         &:hover {
             text-decoration: none;
             color: #333;
@@ -210,7 +215,7 @@
 }
 
 .error-message-form {
-    color: rgb(229, 46, 46);
+    color: rgb(229 46 46);
     position: absolute;
     bottom: 5%;
     text-align: center !important;
@@ -222,10 +227,11 @@
     display: none;
 }
 
-@media (max-width: 992px) {
+@media (width <= 992px) {
     .container-access {
         width: 60%;
         max-width: 60%;
+
         form {
             display: flex;
             flex-direction: column;
@@ -252,7 +258,7 @@
     }
 }
 
-@media (max-width: 600px) {
+@media (width <= 600px) {
     .container-access {
         width: 90%;
         max-width: 90%;

@@ -1,4 +1,3 @@
-import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
 import { useApi } from '../context/ApiContext';
@@ -40,7 +39,7 @@ const Success = () => {
 
     return (
         <>
-            {!payment.isLoading && payment.data.invoice && (
+            {!payment.isLoading && payment.data?.invoice && (
                 <div id='success'>
                     <Confetti mode="boom" particleCount={30} colors={['#88CD7D', '#757575', '#FFF9F4']} shapeSize={12} />
                     <div className="navbar-logo-anonym">

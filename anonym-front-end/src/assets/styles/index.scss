@@ -1,27 +1,29 @@
-//fonts
-@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@100;200;300;400;500;600;700;800;900&display=swap');
-//colors
+// fonts
+@import 'https://fonts.googleapis.com/css2?family=Montserrat:wght@100;200;300;400;500;600;700;800;900&display=swap';
+
+// colors
 @import './base/colors';
 @import './base/mixins';
-//pages
-@import './home/home.scss';
-@import './discover/discover.scss';
-@import './support/support.scss';
-@import './reputation/reputation.scss';
-@import './privacy-policy/privacy-policy.scss';
-@import './terms-conditions/terms-conditions.scss';
-@import './legal-notices/legal-notices.scss';
-@import './sidebar/sidebar.scss';
-@import './app/app.scss';
-@import './friends/friends.scss';
-@import './profile/profile.scss';
-@import './profile/profils.scss';
-@import './profile/account.scss';
-@import './paiement/invoice.scss';
-@import './paiement/inventory.scss';
-@import './paiement/shop.scss';
-@import './paiement/success.scss';
-@import './access/reset.scss';
-@import './base/popup.scss';
-@import './admin/admin.scss';
-@import './messages/channelform.scss';
+
+// pages
+@import './home/home';
+@import './discover/discover';
+@import './support/support';
+@import './reputation/reputation';
+@import './privacy-policy/privacy-policy';
+@import './terms-conditions/terms-conditions';
+@import './legal-notices/legal-notices';
+@import './sidebar/sidebar';
+@import './app/app';
+@import './friends/friends';
+@import './profile/profile';
+@import './profile/profils';
+@import './profile/account';
+@import './paiement/invoice';
+@import './paiement/inventory';
+@import './paiement/shop';
+@import './paiement/success';
+@import './access/reset';
+@import './base/popup';
+@import './admin/admin';
+@import './messages/channelform';

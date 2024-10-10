@@ -2,12 +2,26 @@
 
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
-  up: async (queryInterface, Sequelize) => {
+  up: async (queryInterface) => {
+      // Vérifier si la contrainte existe avant de la supprimer
+      const [constraints] = await queryInterface.sequelize.query(`
+        SELECT CONSTRAINT_NAME 
+        FROM information_schema.KEY_COLUMN_USAGE 
+        WHERE TABLE_NAME = 'private_messages' 
+        AND TABLE_SCHEMA = 'test_anonym';
+      `);
 
-     // Remplacez les noms de contraintes par les noms corrects trouvés dans l'étape précédente
-     await queryInterface.removeConstraint('private_messages', 'private_messages_sender_id_foreign_idx'); // Remplacez par le nom correct
-     await queryInterface.removeConstraint('private_messages', 'private_messages_channel_id_foreign_idx'); // Remplacez par le nom correct
-        
+      // Supprimer les contraintes seulement si elles existent
+      const constraintNames = constraints.map(row => row.CONSTRAINT_NAME);
+
+      if (constraintNames.includes('private_messages_sender_id_foreign_idx')) {
+          await queryInterface.removeConstraint('private_messages', 'private_messages_sender_id_foreign_idx');
+      }
+
+      if (constraintNames.includes('private_messages_channel_id_foreign_idx')) {
+          await queryInterface.removeConstraint('private_messages', 'private_messages_channel_id_foreign_idx');
+      }
+
       // Ajouter la contrainte de clé étrangère avec ON DELETE CASCADE pour channel_id
       await queryInterface.addConstraint('private_messages', {
           fields: ['channel_id'],
@@ -32,9 +46,23 @@ module.exports = {
           onDelete: 'CASCADE', // Ajouter la contrainte de suppression en cascade
       });
   },
-  down: async (queryInterface, Sequelize) => {
-      // Optionnel : instructions pour la migration inverse
-      await queryInterface.removeConstraint('private_messages', 'private_messages_channel_id_foreign_idx');
-      await queryInterface.removeConstraint('private_messages', 'private_messages_sender_id_foreign_idx');
+  down: async (queryInterface) => {
+      // Supprimer les contraintes si elles existent
+      const [constraints] = await queryInterface.sequelize.query(`
+        SELECT CONSTRAINT_NAME 
+        FROM information_schema.KEY_COLUMN_USAGE 
+        WHERE TABLE_NAME = 'private_messages' 
+        AND TABLE_SCHEMA = 'test_anonym';
+      `);
+
+      const constraintNames = constraints.map(row => row.CONSTRAINT_NAME);
+
+      if (constraintNames.includes('private_messages_sender_id_foreign_idx')) {
+          await queryInterface.removeConstraint('private_messages', 'private_messages_sender_id_foreign_idx');
+      }
+
+      if (constraintNames.includes('private_messages_channel_id_foreign_idx')) {
+          await queryInterface.removeConstraint('private_messages', 'private_messages_channel_id_foreign_idx');
+      }
   }
 };

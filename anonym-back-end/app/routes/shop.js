@@ -6,8 +6,8 @@ const multer = require('../middlewares/mutler.js')
 
 router.get('/', authMiddleware, shopCtrl.readAll);
 router.get('/:id', authMiddleware, shopCtrl.read);
-router.post('/', authMiddleware, multer, shopCtrl.create);
-router.put('/:id', authMiddleware, multer, shopCtrl.update);
-router.delete('/:id', authMiddleware, multer, shopCtrl.delete);
+router.post('/admin/', authMiddleware, multer, shopCtrl.create);
+router.put('/admin/:id', authMiddleware, multer, shopCtrl.update);
+router.delete('/admin/:id', authMiddleware, multer, shopCtrl.delete);
 
 module.exports = router;

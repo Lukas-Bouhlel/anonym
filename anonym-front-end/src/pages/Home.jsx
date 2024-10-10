@@ -1,9 +1,8 @@
-import { useEffect } from 'react';
 import SphereSvg from "../assets/images/icons/sphere.svg?react";
-import sphereAnimation from '../components/Animation/sphereAnimation';
+import useSphereAnimation  from '../components/Animation/useSphereAnimation';
 
 const Home = () => {
-  sphereAnimation();
+  useSphereAnimation ();
 
   return (
     <section className='page-home'>

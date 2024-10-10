@@ -3,7 +3,7 @@ const { Model } = require('sequelize');
 
 module.exports = (sequelize, DataTypes) => {
     class UserChannel extends Model {
-        static associate(models) {
+        static associate() {
             // Vous pouvez ajouter des associations ici si nécessaire
         }
     }

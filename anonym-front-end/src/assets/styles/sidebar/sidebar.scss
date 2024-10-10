@@ -9,31 +9,40 @@
     align-items: center;
     z-index: 1;
     height: 20px;
+
     img {
         height: 12px;
     }
 }
+
 .sidebar {
     background-color: $black;
+
     &-content {
         padding-top: 2rem !important;
+
         ul {
             gap: 3px;
+
             li {
                 width: 100%;
+
                 .active-link {
                     color: $white;
                     background-color: #575757;
                 }
+
                 .link-sidebar {
                     color: $white;
                     font-size: 14px;
                     text-decoration: none;
                     padding: 5px;
+
                     &:hover {
                         color: $white;
                         background-color: #575757;
                     }
+
                     span {
                         svg {
                             padding-right: 5px;
@@ -41,6 +50,7 @@
                         }
                     }
                 }
+
                 .message-mp {
                     color: #ebe6e1;
                     text-transform: uppercase;
@@ -48,11 +58,13 @@
                     display: flex;
                     align-items: center;
                     gap: 10px;
+
                     a {
                         text-decoration: none;
                         color: #ebe6e1;
                         font-size: 20px;
                     }
+
                     &:hover {
                         color: $white;
                         cursor: default;
@@ -61,30 +73,37 @@
             }
         }
     }
+
     &-profile {
         width: 100%;
         background-color: #1e1e1e;
         padding-top: 0.5rem;
+
         &-content {
             justify-content: space-between;
             width: 100%;
             gap: 1px;
+
             span {
                 font-size: 12px;
             }
+
             .open-params {
                 cursor: pointer;
                 transition: transform 0.3s ease-in-out; 
                 display: flex;
                 color: $white;
+
                 &:hover {
                     transform: rotate(90deg);
                 }
             }
+
             &-infos {
                 display: flex;
                 align-items: center;
                 gap: 7%;
+
                 .profile-content-infos-img{
                     height: 40px;
                     width: 40px;
@@ -93,9 +112,11 @@
         }
     }
 }
+
 .app-container {
-    margin: 20px 0 0 0 !important;
+    margin: 20px 0 0 !important;
     padding: 10px 30px !important;
+
     // border-radius: 10px;
     // border: 4px solid $black;
     background: #424242;

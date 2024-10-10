@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import { useEffect } from 'react';
 import Router from './router/Router.jsx';
 import './assets/styles/index.scss';
 import './assets/styles/base.scss';
@@ -23,7 +23,7 @@ const App = () => {
     // Charger le script Axeptio
     const script = document.createElement("script");
     script.async = true;
-    script.src = "//static.axept.io/sdk.js";
+    script.src = "https://static.axept.io/sdk.js";
     document.body.appendChild(script);
     window.axeptioSettings.debug = true;
     script.onerror = () => {

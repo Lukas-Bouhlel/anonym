@@ -1,80 +1,97 @@
 #account  {
     color: $white;
     width: 100%;
+
     .account-title {
         display: flex;
         justify-content: space-between;
+
         h1 {
             font-size: 16px;
         }
     }
+
     .account {
         display: flex;
         width: 100%;
         justify-content: flex-start;
         gap: 50px;
+
         &-content {
             max-width: 500px;
+            
+            input {
+                height: 31px;
+            }
+
+            &-footer-input {
+                button {
+                    font-size: 14px;
+                    height: 31px;
+                }
+
+                display: flex;
+                justify-content: flex-end;
+                gap: 20px;
+
+                &-submit {
+                    background-color: #7289da;
+                    color: $white;
+                }
+
+                &-reset {
+                    background-color: #575757;
+                    color: $white;
+                }
+            }
+
             form {
                 label {
                     color: #cacaca;
                     font-size: 12px;
                     text-transform: uppercase;
                 }
+
                 input {
                     font-size: 14px;
                     background-color: #313131 !important;
                     border: 1px solid #313131;
                     color: white;
                 }
+
                 p {
                     font-size: 14px;
                     margin-bottom: 0;
                     margin-top: 0.5rem;
                 }
+
                 .content-file-edit {
                     display: flex;
                     align-items: center;
                     gap: 10px;
+
                     .input-file {
                         min-width: 143px;
                         max-width: 143px;
                         font-size: 14px;
                     }
+
                     input {
                         background-color: #313131 !important;
                         border: 1px solid #313131;
                         color: $white;
                         font-size: 14px;
                     }
+
                     button {
                         color: $white;
                         font-size: 14px;
                     }
                 }
             }
-            input {
-                height: 31px;
-            }
-            &-footer-input {
-                button {
-                    font-size: 14px;
-                    height: 31px;
-                }
-                display: flex;
-                justify-content: flex-end;
-                gap: 20px;
-                &-submit {
-                    background-color: #7289da;
-                    color: $white;
-                }
-                &-reset {
-                    background-color: #575757;
-                    color: $white;
-                }
-            }
         }
     }
+
     .account-view {
         h2 {
             color: #cacaca;
@@ -82,13 +99,16 @@
             text-transform: uppercase;        
             margin-bottom: 0.5rem;
         }
+
         .profils-infos {
             background-color: $black;
             padding: 20px;
             border-radius: 5px;
             min-width: 300px;
+
             &-first {
                 padding-bottom: 30px;
+
                 .profile-content-infos-img {
                     height: 80px;
                     width: 80px;

@@ -1,0 +1,63 @@
+name: CI Workflow
+
+on: 
+  push:
+    branches:
+      - main
+
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    # Checkout the repository
+    - name: Checkout repository
+      uses: actions/checkout@v3
+
+    # Set up Node.js
+    - name: Set up Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '14'
+
+    # ---- Frontend: Lint, Test, and Build ----
+    - name: Install dependencies for Frontend
+      working-directory: ./anonym-front-end   # Path to your front-end folder
+      run: npm install
+
+    - name: Run Frontend Lint
+      working-directory: ./anonym-front-end   # Lint JavaScript files
+      run: npm run lint
+
+    - name: Run Frontend SCSS Lint
+      working-directory: ./anonym-front-end   # Lint SCSS files
+      run: npm run lint:scss
+
+    - name: Run Frontend Tests
+      working-directory: ./anonym-front-end
+      run: npm run test
+
+    - name: Build Frontend
+      working-directory: ./anonym-front-end
+      run: npm run build
+
+    # ---- Backend: Lint, Test, and Snyk Security Check ----
+    - name: Install dependencies for Backend
+      working-directory: ./anonym-back-end    # Path to your back-end folder
+      run: npm install
+
+    - name: Run Backend Lint
+      working-directory: ./anonym-back-end    # Lint JavaScript files in the back-end
+      run: npm run lint
+
+    - name: Run Backend Tests
+      working-directory: ./anonym-back-end
+      run: npm run test
+
+    - name: Run Snyk Security Check
+      working-directory: ./anonym-back-end
+      run: npx snyk test   # Run Snyk to check for vulnerabilities

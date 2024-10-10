@@ -5,6 +5,7 @@
     flex-direction: column;
     padding-bottom: 30px;
     text-align: center;
+
     &-content {
         padding-top: 69px;
         min-height: 200px;
@@ -19,8 +20,10 @@
         padding-left: 5%;
         padding-right: 5%;
     }
+
     &-container {
         width: 100%;
+
         // height: 100%;
         display: flex;
         justify-content: center;
@@ -28,14 +31,18 @@
         color: $white;
         padding-bottom: 2%;
         text-align: center;
+
         &-content {
             width: 70%;
+
             &-title {
                 margin-top: 2%;
+
                 h1 {
                     font-size: 1.5rem;
                 }
             }
+
             &-open-anonym {
                 color: $black;
                 background: $white;
@@ -46,6 +53,7 @@
             }
         }
     }
+
     .content-image-text {
         color: $black;
         display: flex;
@@ -53,44 +61,52 @@
         align-items: center;    
         justify-content: center;
         flex-direction: column-reverse;
+
         &-paragraph {
             width: 90%;
             margin-bottom: 5%;
+
             h2 {
                 text-transform: uppercase;
                 font-size: 1.5rem;
             }
         }
+
         .icon-tel {
             padding: 20px;
             max-width: 200px;
         }
+
         img {
             max-width: 250px;
         }
     }
 }
 
-@media (min-width: 992px) {
+@media (width >= 992px) {
     .page-discover {
         text-align: initial;
+
         .content-image-text {
             flex-direction: row !important;
+
             img {
                 max-width: 315px;
             }
         }
+
         .content-image-text-paragraph {
             width: 30% !important;
             margin-bottom: 0 !important;
         }
+
         .icon-tel {
             max-width: 250px;
         }
     }
 }
 
-@media (max-width: 400px) {
+@media (width <= 400px) {
     .page-discover-container {
         margin-bottom: 5%;
     }

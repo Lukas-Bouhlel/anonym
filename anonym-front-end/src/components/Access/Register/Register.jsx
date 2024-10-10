@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
+import PropTypes from 'prop-types';
 import axios from 'axios';
 import { useForm } from "react-hook-form";
 import { useMutation } from '@tanstack/react-query';
@@ -7,7 +8,7 @@ import { useAuth } from '../../../context/AuthContext';
 import { useUser } from '../../../context/UserContext';
 
 const Register = ({setStatusAccess}) => {
-  const { register, handleSubmit, watch, formState: { errors }, } = useForm();
+  const { register, handleSubmit, formState: { errors }, } = useForm();
   const { AnonymIsClose } = useAuth();
   const { registered } = useUser();
   const [showMessage, setShowMessage] = useState(false);
@@ -46,11 +47,11 @@ const Register = ({setStatusAccess}) => {
     <div className="form-container sign-up">
       <form onSubmit={handleSubmit(onSubmit)}>
         <h1>Créer un compte</h1>
-        <span>utilisez votre email pour l'inscription</span>
-        <input type="text" placeholder="Name" {...register("name", { required: "Le nom d'utilisateur est requis" })} />
-        <input type="email" placeholder="Email" {...register("email", { required: "L'adresse email est requise" })} />
-        <input type="password" placeholder="Password" {...register("password", { required: "Le mot de passe est requis" })} />
-        <button type="submit">S'inscrire</button>
+        <span>utilisez votre email pour l&apos;inscription</span>
+        <input aria-label={"Name"} aria-required="true" type="text" placeholder="Name" {...register("name", { required: "Le nom d'utilisateur est requis" })} />
+        <input aria-label={"Email"} aria-required="true" type="email" placeholder="Email" {...register("email", { required: "L'adresse email est requise" })} />
+        <input aria-label={"Mot de passe"} aria-required="true" type="password" placeholder="Mot de passe" {...register("password", { required: "Le mot de passe est requis" })} />
+        <button type="submit">S&apos;inscrire</button>
         <p onClick={() => setStatusAccess(false)} className='mobile-redirect-register-or-login'>Se connecter</p>
       </form>
       {/* Gestion de l'affichage des erreurs */}
@@ -67,6 +68,10 @@ const Register = ({setStatusAccess}) => {
       )}
     </div>
   );
+};
+
+Register.propTypes = {
+  setStatusAccess: PropTypes.func.isRequired,
 };
 
 export default Register;

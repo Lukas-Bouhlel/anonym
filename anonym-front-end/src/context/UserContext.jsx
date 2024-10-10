@@ -1,4 +1,5 @@
-import React, { createContext, useEffect, useState, useContext } from 'react';
+import { createContext, useEffect, useState, useContext } from 'react';
+import PropTypes from 'prop-types'; 
 import axios from 'axios';
 import { useApi } from '../context/ApiContext';
 import { useQuery } from '@tanstack/react-query';
@@ -17,16 +18,11 @@ export const UserProvider = ({ children }) => {
     const { api_url } = useApi();
 
     const fetchUser = async () => {
-        try {
           const response = await axios.get(`${api_url}/api/account`, {
             withCredentials: true,
           });
           setUser(response.data);
           return response.data;
-        } catch (error) {
-          console.error('Erreur lors de la récupération de l\'utilisateur:', error);
-          return null;
-        }
       };
 
     // Utilisation de react-query pour la récupération de l'utilisateur
@@ -58,12 +54,8 @@ export const UserProvider = ({ children }) => {
 
     // Fonction pour déconnecter l'utilisateur
     const logout = async () => {
-        try {
-            await axios.post(`${api_url}/api/auth/logout`, {}, { withCredentials: true });
-            setUser(null);
-        } catch (error) {
-            console.error("Erreur lors de la déconnexion:", error);
-        }
+        await axios.post(`${api_url}/api/auth/logout`, {}, { withCredentials: true });
+        setUser(null);
     };
 
     return (
@@ -71,4 +63,8 @@ export const UserProvider = ({ children }) => {
             {children}
         </UserContext.Provider>
     );
+};
+
+UserProvider.propTypes = {
+    children: PropTypes.node.isRequired,
 };

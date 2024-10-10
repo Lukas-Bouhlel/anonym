@@ -1,4 +1,5 @@
-import React, { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef } from 'react';
+import PropTypes from 'prop-types';
 import axios from 'axios';
 import { useQuery, useQueryClient  } from '@tanstack/react-query';
 import { useApi } from '../../context/ApiContext';
@@ -6,7 +7,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faUserPlus, faTrash } from '@fortawesome/free-solid-svg-icons';
 import { Modal, Button, Checkbox, CheckboxGroup, Tooltip, Whisper } from 'rsuite';
 
-const ChannelMessages = ({ user, socket, channel, page, setPage }) => {
+const ChannelMessages = ({ user, socket, channel, setPage }) => {
     const [messages, setMessages] = useState([]);
     const [newMessage, setNewMessage] = useState('');
     const { api_url } = useApi();
@@ -40,7 +41,7 @@ const ChannelMessages = ({ user, socket, channel, page, setPage }) => {
     };
 
     // Utilisation de React Query pour récupérer les messages
-    const { data: initialMessages = [], isLoading, isError } = useQuery({
+    const { data: initialMessages = [], isLoading } = useQuery({
         queryKey: ['messages', channelId],
         queryFn: fetchMessages,
         enabled: !!channelId, // Lancer la requête seulement si channelId est défini et que la page est bien canal
@@ -230,6 +231,7 @@ const ChannelMessages = ({ user, socket, channel, page, setPage }) => {
                 </div>
                 <div className='add-messages'>
                     <input
+                        aria-label="Écrire un message"
                         type="text"
                         value={newMessage}
                         onChange={(e) => setNewMessage(e.target.value)}
@@ -272,6 +274,21 @@ const ChannelMessages = ({ user, socket, channel, page, setPage }) => {
             </Modal>
         </div>
     );
+};
+
+ChannelMessages.propTypes = {
+    user: PropTypes.shape({
+        id: PropTypes.number.isRequired,
+        username: PropTypes.string.isRequired,
+        avatar: PropTypes.string,
+    }).isRequired,
+    socket: PropTypes.object.isRequired,
+    channel: PropTypes.shape({
+        channel_id: PropTypes.number.isRequired,
+        name: PropTypes.string.isRequired,
+        created_by: PropTypes.number.isRequired,
+    }).isRequired,
+    setPage: PropTypes.func.isRequired,
 };
 
 export default ChannelMessages;

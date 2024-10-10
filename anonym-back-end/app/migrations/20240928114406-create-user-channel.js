@@ -35,7 +35,7 @@ module.exports = {
   });
   },
 
-  async down (queryInterface, Sequelize) {
+  async down (queryInterface) {
     await queryInterface.dropTable('user_channels'); // Supprimer la table en cas de rollback
   }
 };

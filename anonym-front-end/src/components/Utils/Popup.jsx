@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
+import PropTypes from 'prop-types';
 
 const Popup = ({ showPopup, setShowPopup, text, setTextPopup, state, setState }) => {
     const [popupClass, setPopupClass] = useState('hidden');
@@ -21,7 +22,7 @@ const Popup = ({ showPopup, setShowPopup, text, setTextPopup, state, setState })
                 return () => clearTimeout(timer); // Nettoie le timer lorsque le composant est démonté
             }, 50);
         }
-    }, [showPopup]);
+    }, [showPopup, setShowPopup, setTextPopup, setState]);
 
     return (
         <div id="popup">
@@ -34,5 +35,14 @@ const Popup = ({ showPopup, setShowPopup, text, setTextPopup, state, setState })
         </div>
     )
 }
+
+Popup.propTypes = {
+    showPopup: PropTypes.bool, 
+    setShowPopup: PropTypes.func,
+    text: PropTypes.string, 
+    setTextPopup: PropTypes.func, 
+    state: PropTypes.any, 
+    setState: PropTypes.func, 
+};
 
 export default Popup;
