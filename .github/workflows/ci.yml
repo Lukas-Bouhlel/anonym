@@ -22,7 +22,7 @@ jobs:
     - name: Set up Node.js
       uses: actions/setup-node@v3
       with:
-        node-version: '14'
+        node-version: '20.16.0'
 
     # ---- Frontend: Lint, Test, and Build ----
     - name: Install dependencies for Frontend
