@@ -54,9 +54,12 @@ jobs:
       working-directory: ./anonym-back-end    # Lint JavaScript files in the back-end
       run: npm run lint
 
+    - name: Debug Environment Variables
+      run: printenv | grep DB_    # Affiche les variables d'environnement
+
     - name: Run Backend Tests
       working-directory: ./anonym-back-end
-      run: npm test
+      run: npm run test -- --ci
 
     - name: Run Snyk Security Check
       working-directory: ./anonym-back-end
