@@ -130,6 +130,9 @@ dist
 .yarn/install-state.gz
 .pnp.*
 
+#uploads
+anonym-back-end/uploads/
+
 #SSH
 server.crt
 server.key
