@@ -13,7 +13,7 @@ module.exports = (socket, next) => {
         socket.userId = decodedToken.userId; // Attache l'ID utilisateur au socket pour les événements futurs
 
         next(); // Appelle next() pour continuer si tout est correct
-    } catch (error) {
+    } catch {
         next(new Error('Authentication error'));
     }
 };
