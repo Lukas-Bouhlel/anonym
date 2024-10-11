@@ -17,8 +17,8 @@ export default defineConfig({
    strictPort: true,
    host: true,
    https: {
-    key: fs.readFileSync(path.resolve(__dirname, '../server.key')),
-    cert: fs.readFileSync(path.resolve(__dirname, '../server.crt')),
+    key: fs.readFileSync(path.resolve(__dirname, './server.key')),
+    cert: fs.readFileSync(path.resolve(__dirname, './server.crt')),
   },
   },
   css: {

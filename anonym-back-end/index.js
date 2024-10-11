@@ -8,8 +8,8 @@ const { Server } = require("socket.io");
 const initializeSocket = require('./app/utils/socket');
 
 const httpsOptions = {
-  key: fs.readFileSync(path.resolve(__dirname, '../server.key')), 
-  cert: fs.readFileSync(path.resolve(__dirname, '../server.crt')),
+  key: fs.readFileSync(path.resolve(__dirname, './server.key')), 
+  cert: fs.readFileSync(path.resolve(__dirname, './server.crt')),
 };
 
 const httpsServer = createServer(httpsOptions, app);

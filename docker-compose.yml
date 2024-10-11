@@ -26,6 +26,8 @@ services:
         condition: service_healthy
     volumes:
       - ./anonym-back-end:/app
+      - ../server.key:/app/server.key 
+      - ../server.crt:/app/server.crt 
     develop:
       watch:
         - action: sync
@@ -44,6 +46,10 @@ services:
       - 8080:8080
     depends_on:
       - backend
+    volumes:
+      - ./anonym-front-end:/app
+      - ../server.key:/app/server.key  # Monter le fichier server.key pour HTTPS
+      - ../server.crt:/app/server.crt
     develop:
       watch:
         - action: sync
