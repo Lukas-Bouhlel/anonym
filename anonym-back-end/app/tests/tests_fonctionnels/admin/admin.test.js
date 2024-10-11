@@ -55,29 +55,6 @@ describe('Admin Routes', () => {
         await sequelize.close(); // Fermer la connexion à la base de données après tous les tests
     });
 
-    // Test: Admin crée un nouvel utilisateur
-    // it('should allow admin to create a new user', async () => {
-    //     const newUser = {
-    //         datas: JSON.stringify({
-    //             username: 'JohnDoe',
-    //             email: 'JohnDoe@example.com',
-    //             password: 'Password123!',
-    //             roles: 'USER',
-    //         })
-    //     };
-
-    //     const response = await request(app)
-    //         .post('/api/admin/users')
-    //         .set('Cookie', `token=${adminToken}`) // Utilisation du token admin via les cookies
-    //         .send(newUser);
-    //     console.log(newUser)
-    //     console.log("REPONSE : " + response)
-
-    //     expect(response.status).toBe(201); // Créé
-    //     expect(response.body).toHaveProperty('username', 'JohnDoe');
-    //     createdUserId = response.body.id; // Stocker l'ID de l'utilisateur créé pour les tests suivants
-    // });
-
     // Test: Un utilisateur régulier ne peut pas créer un utilisateur
     it('should not allow regular users to create a new user', async () => {
         const newUser = {
@@ -98,24 +75,6 @@ describe('Admin Routes', () => {
         expect(response.body.message).toBe('You do not have permission to create a user.'); // Message d'erreur cohérent
     });
 
-    // Test: Admin met à jour un utilisateur existant
-    // it('should allow admin to update an existing user', async () => {
-    //     const updateData = {
-    //         datas: JSON.stringify({
-    //             username: 'testJohnUpdate',
-    //             roles: 'USER'
-    //         })
-    //     };
-
-    //     const response = await request(app)
-    //         .put(`/api/admin/users/${createdUserId}`)
-    //         .set('Cookie', `token=${adminToken}`) // Token de l'admin via cookie
-    //         .send(updateData);
-
-    //     expect(response.status).toBe(200); // OK
-    //     expect(response.body).toHaveProperty('username', 'testJohnUpdate');
-    // });
-
     // Test: Un utilisateur régulier ne peut pas mettre à jour un autre utilisateur
     it('should not allow regular users to update a user', async () => {
         const updateData = {
@@ -133,14 +92,4 @@ describe('Admin Routes', () => {
         expect(response.status).toBe(403); // Interdit
         expect(response.body.message).toBe('Il faut être admin pour accéder à cette page.');
     });
-
-    // Test: Admin supprime un utilisateur
-    // it('should allow admin to delete an existing user', async () => {
-    //     const response = await request(app)
-    //         .delete(`/api/admin/users/${createdUserId}`)
-    //         .set('Cookie', `token=${adminToken}`); // Token de l'admin via cookie
-
-    //     expect(response.status).toBe(200); // OK
-    //     expect(response.body.message).toBe('User deleted successfully.');
-    // });
 });
