@@ -3,7 +3,7 @@
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up (queryInterface, Sequelize) {
-    await queryInterface.addColumn('inventories', 'friend_id', {
+    await queryInterface.addColumn('Inventories', 'friend_id', {
       type: Sequelize.INTEGER,
       allowNull: true, // ou false si vous voulez que cette colonne soit obligatoire
       references: {
@@ -16,6 +16,6 @@ module.exports = {
   },
 
   async down (queryInterface) {
-    await queryInterface.removeColumn('inventories', 'friend_id');
+    await queryInterface.removeColumn('Inventories', 'friend_id');
   }
 };
