@@ -13,7 +13,7 @@ module.exports = {
         type: 'foreign key',
         name: 'channels_created_by_fk',
         references: {
-            table: 'users',
+            table: 'Users',
             field: 'id',
         },
         onDelete: 'CASCADE',  // Si l'utilisateur est supprimé, supprimer le canal

@@ -40,7 +40,7 @@ module.exports = {
           type: 'foreign key',
           name: 'private_messages_sender_id_foreign_idx',
           references: {
-              table: 'users',
+              table: 'Users',
               field: 'id',
           },
           onDelete: 'CASCADE', // Ajouter la contrainte de suppression en cascade

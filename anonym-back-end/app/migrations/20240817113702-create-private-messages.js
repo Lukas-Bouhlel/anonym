@@ -14,7 +14,7 @@ module.exports = {
           type: Sequelize.INTEGER,
           allowNull: false,
           references: {
-              model: 'users', // nom de la table des utilisateurs
+              model: 'Users', // nom de la table des utilisateurs
               key: 'id'
           },
           onDelete: 'CASCADE',
@@ -24,7 +24,7 @@ module.exports = {
           type: Sequelize.INTEGER,
           allowNull: false,
           references: {
-              model: 'users', // nom de la table des utilisateurs
+              model: 'Users', // nom de la table des utilisateurs
               key: 'id'
           },
           onDelete: 'CASCADE',
