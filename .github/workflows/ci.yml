@@ -10,6 +10,28 @@ on:
       - main
 
 jobs:
+  security:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Checkout the repository
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      # ---- Frontend Snyk Security Check ----
+      - name: Run Snyk on Frontend for vulnerabilities
+        working-directory: ./anonym-front-end
+        run: npx snyk test --severity-threshold=high
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+
+      # ---- Backend Snyk Security Check ----
+      - name: Run Snyk on Backend for vulnerabilities
+        working-directory: ./anonym-back-end
+        run: npx snyk test --severity-threshold=high
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+
   build:
     runs-on: ubuntu-latest
 
@@ -53,7 +75,3 @@ jobs:
     - name: Run Backend Lint
       working-directory: ./anonym-back-end    # Lint JavaScript files in the back-end
       run: npm run lint
-
-    # - name: Run Snyk Security Check
-    #   working-directory: ./anonym-back-end
-    #   run: npx snyk test   # Run Snyk to check for vulnerabilities
