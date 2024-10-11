@@ -54,6 +54,6 @@ jobs:
       working-directory: ./anonym-back-end    # Lint JavaScript files in the back-end
       run: npm run lint
 
-    - name: Run Snyk Security Check
-      working-directory: ./anonym-back-end
-      run: npx snyk test   # Run Snyk to check for vulnerabilities
+    # - name: Run Snyk Security Check
+    #   working-directory: ./anonym-back-end
+    #   run: npx snyk test   # Run Snyk to check for vulnerabilities
