@@ -79,7 +79,7 @@ jobs:
       # ---- Créer la base de données de test ----
     - name: Create Test Database
       working-directory: ./anonym-back-end
-      run: npx sequelize-cli db:create --env test
+      run: npx sequelize-cli db:create --env test --config ./app/config/config.js
       env:
         DB_TEST_USERNAME: root
         DB_TEST_PASSWORD: ""
@@ -90,7 +90,7 @@ jobs:
     # ---- Appliquer les migrations sur la base de données de test ----
     - name: Run Migrations on Test Database
       working-directory: ./anonym-back-end
-      run: npx sequelize-cli db:migrate --env test
+      run: npx sequelize-cli db:migrate --env test --config ./app/config/config.js
       env:
         DB_TEST_USERNAME: root
         DB_TEST_PASSWORD: ""
