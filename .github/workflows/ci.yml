@@ -42,7 +42,7 @@ jobs:
           MYSQL_ROOT_PASSWORD: password
           MYSQL_DATABASE: test_anonym
         ports:
-          - '8888:3306'
+          - '3306:3306'
         options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
 
     steps:
@@ -89,14 +89,14 @@ jobs:
     # Wait for MySQL to be ready
     - name: Wait for MySQL to be ready
       run: |
-        while ! mysqladmin ping -h 127.0.0.1 --port 8888 -u root -ppassword --silent; do
+        while ! mysqladmin ping -h 127.0.0.1 --port 3306 -u root -ppassword --silent; do
           sleep 1
         done
 
     # Create the test database
     - name: Create Test Database
       run: |
-        mysql -h 127.0.0.1 --port 8888 -u root -ppassword -e 'CREATE DATABASE IF NOT EXISTS test_anonym;'
+        mysql -h 127.0.0.1 --port 3306 -u root -ppassword -e 'CREATE DATABASE IF NOT EXISTS test_anonym;'
 
       # ---- Créer la base de données de test ----
     - name: Create Test Database
@@ -108,6 +108,7 @@ jobs:
         DB_TEST_DATABASE: test_anonym
         DB_TEST_HOST: 127.0.0.1
         DB_TEST_DIALECT: mysql
+        DB_PORT: 3306
   
     # ---- Appliquer les migrations sur la base de données de test ----
     - name: Run Migrations on Test Database
