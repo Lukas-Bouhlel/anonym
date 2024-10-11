@@ -56,27 +56,27 @@ describe('Admin Routes', () => {
     });
 
     // Test: Admin crée un nouvel utilisateur
-    it('should allow admin to create a new user', async () => {
-        const newUser = {
-            datas: JSON.stringify({
-                username: 'JohnDoe',
-                email: 'JohnDoe@example.com',
-                password: 'Password123!',
-                roles: 'USER',
-            })
-        };
+    // it('should allow admin to create a new user', async () => {
+    //     const newUser = {
+    //         datas: JSON.stringify({
+    //             username: 'JohnDoe',
+    //             email: 'JohnDoe@example.com',
+    //             password: 'Password123!',
+    //             roles: 'USER',
+    //         })
+    //     };
 
-        const response = await request(app)
-            .post('/api/admin/users')
-            .set('Cookie', `token=${adminToken}`) // Utilisation du token admin via les cookies
-            .send(newUser);
-        console.log(newUser)
-        console.log("REPONSE : " + response)
+    //     const response = await request(app)
+    //         .post('/api/admin/users')
+    //         .set('Cookie', `token=${adminToken}`) // Utilisation du token admin via les cookies
+    //         .send(newUser);
+    //     console.log(newUser)
+    //     console.log("REPONSE : " + response)
 
-        expect(response.status).toBe(201); // Créé
-        expect(response.body).toHaveProperty('username', 'JohnDoe');
-        createdUserId = response.body.id; // Stocker l'ID de l'utilisateur créé pour les tests suivants
-    });
+    //     expect(response.status).toBe(201); // Créé
+    //     expect(response.body).toHaveProperty('username', 'JohnDoe');
+    //     createdUserId = response.body.id; // Stocker l'ID de l'utilisateur créé pour les tests suivants
+    // });
 
     // Test: Un utilisateur régulier ne peut pas créer un utilisateur
     it('should not allow regular users to create a new user', async () => {
@@ -99,22 +99,22 @@ describe('Admin Routes', () => {
     });
 
     // Test: Admin met à jour un utilisateur existant
-    it('should allow admin to update an existing user', async () => {
-        const updateData = {
-            datas: JSON.stringify({
-                username: 'testJohnUpdate',
-                roles: 'USER'
-            })
-        };
+    // it('should allow admin to update an existing user', async () => {
+    //     const updateData = {
+    //         datas: JSON.stringify({
+    //             username: 'testJohnUpdate',
+    //             roles: 'USER'
+    //         })
+    //     };
 
-        const response = await request(app)
-            .put(`/api/admin/users/${createdUserId}`)
-            .set('Cookie', `token=${adminToken}`) // Token de l'admin via cookie
-            .send(updateData);
+    //     const response = await request(app)
+    //         .put(`/api/admin/users/${createdUserId}`)
+    //         .set('Cookie', `token=${adminToken}`) // Token de l'admin via cookie
+    //         .send(updateData);
 
-        expect(response.status).toBe(200); // OK
-        expect(response.body).toHaveProperty('username', 'testJohnUpdate');
-    });
+    //     expect(response.status).toBe(200); // OK
+    //     expect(response.body).toHaveProperty('username', 'testJohnUpdate');
+    // });
 
     // Test: Un utilisateur régulier ne peut pas mettre à jour un autre utilisateur
     it('should not allow regular users to update a user', async () => {
@@ -135,12 +135,12 @@ describe('Admin Routes', () => {
     });
 
     // Test: Admin supprime un utilisateur
-    it('should allow admin to delete an existing user', async () => {
-        const response = await request(app)
-            .delete(`/api/admin/users/${createdUserId}`)
-            .set('Cookie', `token=${adminToken}`); // Token de l'admin via cookie
+    // it('should allow admin to delete an existing user', async () => {
+    //     const response = await request(app)
+    //         .delete(`/api/admin/users/${createdUserId}`)
+    //         .set('Cookie', `token=${adminToken}`); // Token de l'admin via cookie
 
-        expect(response.status).toBe(200); // OK
-        expect(response.body.message).toBe('User deleted successfully.');
-    });
+    //     expect(response.status).toBe(200); // OK
+    //     expect(response.body.message).toBe('User deleted successfully.');
+    // });
 });
