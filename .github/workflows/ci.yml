@@ -82,19 +82,6 @@ jobs:
       working-directory: ./anonym-back-end
       run: npm install
 
-    # Wait for MySQL to be ready using a more robust check
-    - name: Wait for MySQL to be ready
-      run: |
-        for i in {1..30}; do
-          if mysqladmin ping -h 127.0.0.1 --port 3306 --password=password --silent; then
-            echo "MySQL is ready!"
-            break
-          else
-            echo "Waiting for MySQL..."
-            sleep 2
-          fi
-        done
-
     - name: Create Test Database
       working-directory: ./anonym-back-end
       run: npx sequelize-cli db:create --env test --config ./app/config/config.js
