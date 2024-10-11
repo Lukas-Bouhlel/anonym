@@ -93,6 +93,11 @@ jobs:
         DB_TEST_DATABASE: test_anonym
         DB_TEST_HOST: 127.0.0.1
         DB_TEST_DIALECT: mysql
+        DB_USERNAME: root
+        DB_PASSWORD: ""
+        DB_DATABASE: anonym
+        DB_HOST: 127.0.0.1
+        DB_DIALECT: mysql
 
     # Run Backend Tests
     - name: Run Backend Tests
