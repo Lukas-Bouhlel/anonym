@@ -109,7 +109,7 @@ jobs:
 
     - name: Run Migrations on Test Database
       working-directory: ./anonym-back-end
-      run: npx sequelize-cli db:migrate --env test --config ./app/config/config.js
+      run: npx sequelize-cli db:migrate --env test --config ./app/config/config.js --migrations-path ./app/migrations
       env:
         NODE_ENV: test
         DB_TEST_USERNAME: root
