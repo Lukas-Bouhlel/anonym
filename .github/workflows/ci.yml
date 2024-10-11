@@ -111,8 +111,11 @@ jobs:
       env:
         NODE_ENV: test
         JWT_SECRET: 6894c44d10c4a55ab91a786cae418a2f8364b874adb07d7978697fb3ccaf5fb4
+        STRIPE_SECRET_KEY: sk_test_51Q15NmFPITrWrb6B9imNAfjOoIl5SNBbaI01rradJ4BveHTnwDZ4flcsxdDwbg4Wtmp5tz4Qkfm76dB7k8DwMqSG00U8KnfKgA
         DB_TEST_USERNAME: root
         DB_TEST_PASSWORD: password
         DB_TEST_DATABASE: test_anonym
         DB_TEST_HOST: 127.0.0.1
         DB_TEST_DIALECT: mysql
+        MAIL_USER: lukas.bouhlel@gmail.com
+        MAIL_PASS: vcqkzqwmgoejkmuo
