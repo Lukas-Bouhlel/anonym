@@ -70,6 +70,8 @@ describe('Admin Routes', () => {
             .post('/api/admin/users')
             .set('Cookie', `token=${adminToken}`) // Utilisation du token admin via les cookies
             .send(newUser);
+        console.log(newUser)
+        console.log("REPONSE : " + response)
 
         expect(response.status).toBe(201); // Créé
         expect(response.body).toHaveProperty('username', 'JohnDoe');
