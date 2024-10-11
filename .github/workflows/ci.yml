@@ -110,6 +110,7 @@ jobs:
       run: npm run test
       env:
         NODE_ENV: test
+        JWT_SECRET: 6894c44d10c4a55ab91a786cae418a2f8364b874adb07d7978697fb3ccaf5fb4
         DB_TEST_USERNAME: root
         DB_TEST_PASSWORD: password
         DB_TEST_DATABASE: test_anonym
