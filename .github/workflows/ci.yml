@@ -84,10 +84,6 @@ jobs:
         docker run --name mysql -e MYSQL_ROOT_PASSWORD=root -e MYSQL_DATABASE=test_anonym -p 3306:3306 -d mysql:5.7
         sleep 15 # Wait for MySQL to initialize
 
-    # Copy the .env file (or define variables directly)
-    - name: Copy .env file
-      run: cp ./anonym-back-end/.env ./anonym-back-end/.env.example
-
     # Définir les variables d'environnement directement dans le workflow
     - name: Run Backend Tests
       working-directory: ./anonym-back-end
