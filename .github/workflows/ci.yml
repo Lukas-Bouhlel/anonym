@@ -67,13 +67,22 @@ jobs:
     #   working-directory: ./anonym-front-end
     #   run: npm run build
 
+    # ---- Backend: Lint, Test, Database Setup, and Test Execution ----
+    - name: Install dependencies for Backend
+      working-directory: ./anonym-back-end
+      run: npm install
+
+    # ---- Installer sequelize-cli ----
+    - name: Install sequelize-cli globally
+      run: npm install sequelize-cli -g
+
     # Start MySQL container
     - name: Set up MySQL for testing
       uses: docker/setup-buildx-action@v2
 
     - name: Start MySQL container
       run: |
-        docker run --name mysql -e MYSQL_ROOT_PASSWORD=root -e MYSQL_DATABASE=test_anonym -p 3306:3306 -d mysql:5.7
+        docker run --name mysql -e MYSQL_ROOT_PASSWORD= -e MYSQL_DATABASE=test_anonym -p 3306:3306 -d mysql:5.7
         # Wait for MySQL to be ready
         sleep 15
 
