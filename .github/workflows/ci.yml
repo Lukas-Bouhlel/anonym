@@ -43,7 +43,7 @@ jobs:
           MYSQL_DATABASE: test_anonym
         ports:
           - '3306:3306'
-        options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
+        options: --health-cmd="mysqladmin ping -h localhost --password=password" --health-interval=10s --health-timeout=5s --health-retries=5
 
     steps:
     # Checkout the repository
@@ -96,7 +96,7 @@ jobs:
         done
 
     - name: Create Test Database
-      working-directory: ./anonym-back-end/app
+      working-directory: ./anonym-back-end
       run: npx sequelize-cli db:create --env test --config ./app/config/config.js
       env:
         NODE_ENV: test
@@ -108,7 +108,7 @@ jobs:
         DB_PORT: 3306
 
     - name: Run Migrations on Test Database
-      working-directory: ./anonym-back-end/app
+      working-directory: ./anonym-back-end
       run: npx sequelize-cli db:migrate --env test --config ./app/config/config.js
       env:
         NODE_ENV: test
