@@ -89,14 +89,14 @@ jobs:
     # Wait for MySQL to be ready
     - name: Wait for MySQL to be ready
       run: |
-        while ! mysqladmin ping -h 127.0.0.1 --port 3306 -u root -ppassword --silent; do
+        while ! mysqladmin ping -h 127.0.0.1 --port 3306 -u root -p password --silent; do
           sleep 1
         done
 
     # Create the test database
     - name: Create Test Database
       run: |
-        mysql -h 127.0.0.1 --port 3306 -u root -ppassword -e 'CREATE DATABASE IF NOT EXISTS test_anonym;'
+        mysql -h 127.0.0.1 --port 3306 -u root -p password -e 'CREATE DATABASE IF NOT EXISTS test_anonym;'
 
       # ---- Créer la base de données de test ----
     - name: Create Test Database
@@ -104,7 +104,7 @@ jobs:
       run: npx sequelize-cli db:create --env test --config ./app/config/config.js
       env:
         DB_TEST_USERNAME: root
-        DB_TEST_PASSWORD: ""
+        DB_TEST_PASSWORD: "password"
         DB_TEST_DATABASE: test_anonym
         DB_TEST_HOST: 127.0.0.1
         DB_TEST_DIALECT: mysql
@@ -116,7 +116,7 @@ jobs:
       run: npx sequelize-cli db:migrate --env test --config ./app/config/config.js
       env:
         DB_TEST_USERNAME: root
-        DB_TEST_PASSWORD: ""
+        DB_TEST_PASSWORD: "password"
         DB_TEST_DATABASE: test_anonym
         DB_TEST_HOST: 127.0.0.1
         DB_TEST_DIALECT: mysql
