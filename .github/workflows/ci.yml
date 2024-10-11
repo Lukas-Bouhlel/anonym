@@ -76,6 +76,14 @@ jobs:
     - name: Set up MySQL for testing
       uses: docker/setup-buildx-action@v2
 
+     # ---- Installer MySQL ----
+    - name: Set up MySQL
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y mysql-server
+        sudo service mysql start
+        mysql -e 'CREATE DATABASE IF NOT EXISTS test_anonym;'
+
       # ---- Créer la base de données de test ----
     - name: Create Test Database
       working-directory: ./anonym-back-end
