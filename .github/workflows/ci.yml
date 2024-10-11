@@ -96,7 +96,7 @@ jobs:
         done
 
     - name: Create Test Database
-      working-directory: ./anonym-back-end
+      working-directory: ./anonym-back-end/app
       run: npx sequelize-cli db:create --env test --config ./app/config/config.js
       env:
         NODE_ENV: test
@@ -108,7 +108,7 @@ jobs:
         DB_PORT: 3306
 
     - name: Run Migrations on Test Database
-      working-directory: ./anonym-back-end
+      working-directory: ./anonym-back-end/app
       run: npx sequelize-cli db:migrate --env test --config ./app/config/config.js
       env:
         NODE_ENV: test
