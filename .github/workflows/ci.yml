@@ -76,41 +76,36 @@ jobs:
     - name: Set up MySQL for testing
       uses: docker/setup-buildx-action@v2
 
-    - name: Start MySQL container
-      run: |
-        docker run --name mysql -e MYSQL_ROOT_PASSWORD= -e MYSQL_DATABASE=test_anonym -p 3306:3306 -d mysql:5.7
-        # Wait for MySQL to be ready
-        sleep 15
-
-    # ---- Appliquer les migrations Sequelize ----
-    - name: Run Sequelize Migrations
+      # ---- Créer la base de données de test ----
+    - name: Create Test Database
       working-directory: ./anonym-back-end
-      run: npx sequelize-cli db:migrate --config ./anonym-back-end/app/config/config.js
+      run: npx sequelize-cli db:create --env test
       env:
-        NODE_ENV: test
         DB_TEST_USERNAME: root
         DB_TEST_PASSWORD: ""
         DB_TEST_DATABASE: test_anonym
         DB_TEST_HOST: 127.0.0.1
         DB_TEST_DIALECT: mysql
-        DB_USERNAME: root
-        DB_PASSWORD: ""
-        DB_DATABASE: anonym
-        DB_HOST: 127.0.0.1
-        DB_DIALECT: mysql
+  
+    # ---- Appliquer les migrations sur la base de données de test ----
+    - name: Run Migrations on Test Database
+      working-directory: ./anonym-back-end
+      run: npx sequelize-cli db:migrate --env test
+      env:
+        DB_TEST_USERNAME: root
+        DB_TEST_PASSWORD: ""
+        DB_TEST_DATABASE: test_anonym
+        DB_TEST_HOST: 127.0.0.1
+        DB_TEST_DIALECT: mysql
 
-    # Run Backend Tests
+    # ---- Lancer les tests backend ----
     - name: Run Backend Tests
       working-directory: ./anonym-back-end
+      run: npm run test
       env:
+        NODE_ENV: test
         DB_TEST_USERNAME: root
         DB_TEST_PASSWORD: ""
         DB_TEST_DATABASE: test_anonym
         DB_TEST_HOST: 127.0.0.1
         DB_TEST_DIALECT: mysql
-        JWT_SECRET: "6894c44d10c4a55ab91a786cae418a2f8364b874adb07d7978697fb3ccaf5fb4"
-        STRIPE_SECRET_KEY: "sk_test_51Q15NmFPITrWrb6B9imNAfjOoIl5SNBbaI01rradJ4BveHTnwDZ4flcsxdDwbg4Wtmp5tz4Qkfm76dB7k8DwMqSG00U8KnfKgA"
-        MAIL_USER: "lukas.bouhlel@gmail.com"
-        MAIL_PASS: "vcqkzqwmgoejkmuo"
-        NODE_ENV: test
-      run: npm run test
