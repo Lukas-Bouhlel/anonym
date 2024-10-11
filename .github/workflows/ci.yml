@@ -72,10 +72,6 @@ jobs:
       working-directory: ./anonym-back-end
       run: npm install
 
-    # ---- Installer sequelize-cli ----
-    - name: Install sequelize-cli globally
-      run: npm install sequelize-cli -g
-
     # Start MySQL container
     - name: Set up MySQL for testing
       uses: docker/setup-buildx-action@v2
@@ -89,7 +85,7 @@ jobs:
     # Apply Sequelize migrations to create tables in the test database
     - name: Run Sequelize Migrations
       working-directory: ./anonym-back-end
-      run: npx sequelize-cli db:migrate
+      run: npx sequelize-cli db:migrate --config ./app/config/config.js
       env:
         DB_TEST_USERNAME: root
         DB_TEST_PASSWORD: ""
