@@ -85,7 +85,7 @@ jobs:
     # ---- Appliquer les migrations Sequelize ----
     - name: Run Sequelize Migrations
       working-directory: ./anonym-back-end
-      run: npx sequelize-cli db:migrate --config ./app/config/config.js
+      run: npx sequelize-cli db:migrate --config ./anonym-back-end/app/config/config.js
       env:
         NODE_ENV: test
         DB_TEST_USERNAME: root
