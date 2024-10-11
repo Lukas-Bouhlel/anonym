@@ -75,3 +75,27 @@ jobs:
     - name: Run Backend Lint
       working-directory: ./anonym-back-end    # Lint JavaScript files in the back-end
       run: npm run lint
+
+    # Start a MySQL service (Docker)
+    - name: Set up MySQL for testing
+      uses: docker/setup-buildx-action@v2
+    - name: Start MySQL
+      run: |
+        docker run --name mysql -e MYSQL_ROOT_PASSWORD=root -e MYSQL_DATABASE=test_anonym -p 3306:3306 -d mysql:5.7
+        sleep 15 # Wait for MySQL to initialize
+
+    # Copy the .env file (or define variables directly)
+    - name: Copy .env file
+      run: cp ./anonym-back-end/.env ./anonym-back-end/.env.example
+
+    # Run Backend Tests
+    - name: Run Backend Tests
+      working-directory: ./anonym-back-end
+      env:
+        DB_TEST_USERNAME: root
+        DB_TEST_PASSWORD: ""
+        DB_TEST_DATABASE: test_anonym
+        DB_TEST_HOST: 127.0.0.1
+        DB_TEST_DIALECT: mysql
+        NODE_ENV: test
+      run: npm run test
