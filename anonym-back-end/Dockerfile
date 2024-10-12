@@ -1,11 +1,11 @@
-FROM node:20.11.1
+FROM node:20.16.0
 
 WORKDIR /app
 
 COPY package*.json ./
 
-RUN npm install
 RUN npm install -g nodemon
+RUN npm install
 
 COPY . .
 

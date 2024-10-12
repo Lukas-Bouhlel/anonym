@@ -13,7 +13,7 @@ services:
       timeout: 5s
       retries: 5
     ports:
-      - 3306:3306
+      - 3307:3036
   backend:
     build:
       context: ./anonym-back-end
@@ -26,8 +26,9 @@ services:
         condition: service_healthy
     volumes:
       - ./anonym-back-end:/app
-      - ../server.key:/app/server.key 
-      - ../server.crt:/app/server.crt 
+      - /app/node_modules
+      - ./anonym-back-end/server.crt
+      - ./anonym-back-end/server.key
     develop:
       watch:
         - action: sync
@@ -48,15 +49,16 @@ services:
       - backend
     volumes:
       - ./anonym-front-end:/app
-      - ../server.key:/app/server.key  # Monter le fichier server.key pour HTTPS
-      - ../server.crt:/app/server.crt
+      - /app/node_modules
+      - ./anonym-front-end/server.crt
+      - ./anonym-front-end/server.key
     develop:
       watch:
         - action: sync
           path: ./anonym-front-end/
           target: /app/
           ignore:
-            - node_modules/
+            - node_modules
         - action: rebuild
           path: ./anonym-front-end/package.json
     extra_hosts:

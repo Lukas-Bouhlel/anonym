@@ -17,8 +17,8 @@ export default defineConfig({
    strictPort: true,
    host: true,
    https: {
-    key: fs.readFileSync(path.resolve(__dirname, '../server.key')),
-    cert: fs.readFileSync(path.resolve(__dirname, '../server.crt')),
+    key: fs.readFileSync(path.resolve(__dirname, 'server.key')),
+    cert: fs.readFileSync(path.resolve(__dirname, 'server.crt')),
   },
   },
   css: {
@@ -28,15 +28,4 @@ export default defineConfig({
       }
     }
   },
-  build: {
-    rollupOptions: {
-      output: {
-        manualChunks(id) {
-          if (id.includes('node_modules')) {
-            return id.toString().split('node_modules/')[1].split('/')[0].toString(); 
-          }
-        }
-      }
-    }
-  }
 });
