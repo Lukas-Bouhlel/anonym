@@ -10,27 +10,27 @@ on:
       - main
 
 jobs:
-  # security:
-  #   runs-on: ubuntu-latest
+  security:
+    runs-on: ubuntu-latest
 
-  #   steps:
-  #     # Checkout the repository
-  #     - name: Checkout repository
-  #       uses: actions/checkout@v3
+    steps:
+      # Checkout the repository
+      - name: Checkout repository
+        uses: actions/checkout@v3
 
-  #     # ---- Frontend Snyk Security Check ----
-  #     - name: Run Snyk on Frontend for vulnerabilities
-  #       working-directory: ./anonym-front-end
-  #       run: npx snyk test --severity-threshold=high
-  #       env:
-  #         SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+      # ---- Frontend Snyk Security Check ----
+      - name: Run Snyk on Frontend for vulnerabilities
+        working-directory: ./anonym-front-end
+        run: npx snyk test --severity-threshold=high
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
 
-  #     # ---- Backend Snyk Security Check ----
-  #     - name: Run Snyk on Backend for vulnerabilities
-  #       working-directory: ./anonym-back-end
-  #       run: npx snyk test --severity-threshold=high
-  #       env:
-  #         SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+      # ---- Backend Snyk Security Check ----
+      - name: Run Snyk on Backend for vulnerabilities
+        working-directory: ./anonym-back-end
+        run: npx snyk test --severity-threshold=high
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
 
   build:
     runs-on: ubuntu-latest
@@ -40,7 +40,7 @@ jobs:
         image: mysql:8.0
         env:
           MYSQL_ROOT_PASSWORD: ${{ secrets.DB_TEST_PASSWORD }}
-          MYSQL_DATABASE: test_anonym
+          MYSQL_DATABASE: ${{ secrets.DB_TEST_DATABASE }}
         ports:
           - '3306:3306'
         options: --health-cmd="mysqladmin ping -h localhost --password=password" --health-interval=10s --health-timeout=5s --health-retries=5
@@ -56,26 +56,26 @@ jobs:
       with:
         node-version: '20.16.0'
 
-    # # ---- Frontend: Lint, Test, and Build ----
-    # - name: Install dependencies for Frontend
-    #   working-directory: ./anonym-front-end   # Path to your front-end folder
-    #   run: npm install
+    # ---- Frontend: Lint, Test, and Build ----
+    - name: Install dependencies for Frontend
+      working-directory: ./anonym-front-end   # Path to your front-end folder
+      run: npm install
 
-    # - name: Run Frontend Lint
-    #   working-directory: ./anonym-front-end   # Lint JavaScript files
-    #   run: npm run lint
+    - name: Run Frontend Lint
+      working-directory: ./anonym-front-end   # Lint JavaScript files
+      run: npm run lint
 
-    # - name: Run Frontend SCSS Lint
-    #   working-directory: ./anonym-front-end   # Lint SCSS files
-    #   run: npm run lint:scss
+    - name: Run Frontend SCSS Lint
+      working-directory: ./anonym-front-end   # Lint SCSS files
+      run: npm run lint:scss
 
-    # - name: Run Frontend Tests
-    #   working-directory: ./anonym-front-end
-    #   run: npm run test -- --ci
+    - name: Run Frontend Tests
+      working-directory: ./anonym-front-end
+      run: npm run test -- --ci
 
-    # - name: Build Frontend
-    #   working-directory: ./anonym-front-end
-    #   run: npm run build
+    - name: Build Frontend
+      working-directory: ./anonym-front-end
+      run: npm run build
 
     # ---- Backend: Lint, Test, Database Setup, and Test Execution ----
     - name: Install dependencies for Backend
