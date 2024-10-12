@@ -39,7 +39,7 @@ jobs:
       mysql:
         image: mysql:8.0
         env:
-          MYSQL_ROOT_PASSWORD: password
+          MYSQL_ROOT_PASSWORD: ${{ secrets.DB_TEST_PASSWORD }}
           MYSQL_DATABASE: test_anonym
         ports:
           - '3306:3306'
@@ -86,47 +86,49 @@ jobs:
       working-directory: ./anonym-back-end
       run: npx sequelize-cli db:create --env test --config ./app/config/config.js
       env:
-        NODE_ENV: test
-        JWT_SECRET: 6894c44d10c4a55ab91a786cae418a2f8364b874adb07d7978697fb3ccaf5fb4
-        STRIPE_SECRET_KEY: sk_test_51Q15NmFPITrWrb6B9imNAfjOoIl5SNBbaI01rradJ4BveHTnwDZ4flcsxdDwbg4Wtmp5tz4Qkfm76dB7k8DwMqSG00U8KnfKgA
-        DB_TEST_USERNAME: root
-        DB_TEST_PASSWORD: password
-        DB_TEST_DATABASE: test_anonym
-        DB_TEST_HOST: 127.0.0.1
-        DB_TEST_DIALECT: mysql
-        MAIL_USER: lukas.bouhlel@gmail.com
-        MAIL_PASS: vcqkzqwmgoejkmuo
-        BACK_END_ORIGIN: https://localhost:5000
-        ORIGIN: https://localhost:8080
+        NODE_ENV: ${{ secrets.NODE_ENV }}
+        JWT_SECRET: ${{ secrets.JWT_SECRET }}
+        STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
+        DB_TEST_USERNAME: ${{ secrets.DB_TEST_USERNAME }}
+        DB_TEST_PASSWORD: ${{ secrets.DB_TEST_PASSWORD }}
+        DB_TEST_DATABASE: ${{ secrets.DB_TEST_DATABASE }}
+        DB_TEST_HOST: ${{ secrets.DB_TEST_HOST }}
+        DB_TEST_DIALECT: ${{ secrets.DB_TEST_DIALECT }}
+        MAIL_USER: ${{ secrets.MAIL_USER }}
+        MAIL_PASS: ${{ secrets.MAIL_PASS }}
+        BACK_END_ORIGIN: ${{ secrets.BACK_END_ORIGIN }}
+        ORIGIN: ${{ secrets.ORIGIN }}
 
     - name: Run Migrations on Test Database
       working-directory: ./anonym-back-end
       run: npx sequelize-cli db:migrate --env test --config ./app/config/config.js --migrations-path ./app/migrations
       env:
-        NODE_ENV: test
-        JWT_SECRET: 6894c44d10c4a55ab91a786cae418a2f8364b874adb07d7978697fb3ccaf5fb4
-        STRIPE_SECRET_KEY: sk_test_51Q15NmFPITrWrb6B9imNAfjOoIl5SNBbaI01rradJ4BveHTnwDZ4flcsxdDwbg4Wtmp5tz4Qkfm76dB7k8DwMqSG00U8KnfKgA
-        DB_TEST_USERNAME: root
-        DB_TEST_PASSWORD: password
-        DB_TEST_DATABASE: test_anonym
-        DB_TEST_HOST: 127.0.0.1
-        DB_TEST_DIALECT: mysql
-        MAIL_USER: lukas.bouhlel@gmail.com
-        MAIL_PASS: vcqkzqwmgoejkmuo
-        ORIGIN: https://localhost:8080
+        NODE_ENV: ${{ secrets.NODE_ENV }}
+        JWT_SECRET: ${{ secrets.JWT_SECRET }}
+        STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
+        DB_TEST_USERNAME: ${{ secrets.DB_TEST_USERNAME }}
+        DB_TEST_PASSWORD: ${{ secrets.DB_TEST_PASSWORD }}
+        DB_TEST_DATABASE: ${{ secrets.DB_TEST_DATABASE }}
+        DB_TEST_HOST: ${{ secrets.DB_TEST_HOST }}
+        DB_TEST_DIALECT: ${{ secrets.DB_TEST_DIALECT }}
+        MAIL_USER: ${{ secrets.MAIL_USER }}
+        MAIL_PASS: ${{ secrets.MAIL_PASS }}
+        BACK_END_ORIGIN: ${{ secrets.BACK_END_ORIGIN }}
+        ORIGIN: ${{ secrets.ORIGIN }}
 
     - name: Run Backend Tests
       working-directory: ./anonym-back-end
       run: npm run test
       env:
-        NODE_ENV: test
-        JWT_SECRET: 6894c44d10c4a55ab91a786cae418a2f8364b874adb07d7978697fb3ccaf5fb4
-        STRIPE_SECRET_KEY: sk_test_51Q15NmFPITrWrb6B9imNAfjOoIl5SNBbaI01rradJ4BveHTnwDZ4flcsxdDwbg4Wtmp5tz4Qkfm76dB7k8DwMqSG00U8KnfKgA
-        DB_TEST_USERNAME: root
-        DB_TEST_PASSWORD: password
-        DB_TEST_DATABASE: test_anonym
-        DB_TEST_HOST: 127.0.0.1
-        DB_TEST_DIALECT: mysql
-        MAIL_USER: lukas.bouhlel@gmail.com
-        MAIL_PASS: vcqkzqwmgoejkmuo
-        ORIGIN: https://localhost:8080
+        NODE_ENV: ${{ secrets.NODE_ENV }}
+        JWT_SECRET: ${{ secrets.JWT_SECRET }}
+        STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
+        DB_TEST_USERNAME: ${{ secrets.DB_TEST_USERNAME }}
+        DB_TEST_PASSWORD: ${{ secrets.DB_TEST_PASSWORD }}
+        DB_TEST_DATABASE: ${{ secrets.DB_TEST_DATABASE }}
+        DB_TEST_HOST: ${{ secrets.DB_TEST_HOST }}
+        DB_TEST_DIALECT: ${{ secrets.DB_TEST_DIALECT }}
+        MAIL_USER: ${{ secrets.MAIL_USER }}
+        MAIL_PASS: ${{ secrets.MAIL_PASS }}
+        BACK_END_ORIGIN: ${{ secrets.BACK_END_ORIGIN }}
+        ORIGIN: ${{ secrets.ORIGIN }}
