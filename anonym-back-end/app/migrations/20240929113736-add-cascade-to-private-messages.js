@@ -26,7 +26,7 @@ module.exports = {
       await queryInterface.addConstraint('private_messages', {
           fields: ['channel_id'],
           type: 'foreign key',
-          name: 'private_messages_channel_id_foreign_idx',
+          name: 'private_messages_channel_id_foreign_new_idx',
           references: {
               table: 'channels',
               field: 'channel_id',

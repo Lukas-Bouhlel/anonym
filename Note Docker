@@ -1,0 +1,5 @@
+Première commande : docker-compose exec backend npx sequelize-cli db:migrate --config app/config/config.js --migrations-path app/migrations
+Deuxième commande pour le premier user uniquement : docker exec -it db-anonym bash
+Troisemen commande : mysql -u root -p
+Quatrieme commande : Use anonym;
+Cinquième commande : UPDATE Users SET roles = 'SUPER_ADMIN' WHERE id = 1;

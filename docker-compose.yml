@@ -13,8 +13,10 @@ services:
       timeout: 5s
       retries: 5
     ports:
-      - 3307:3036
+      - 3307:3306
   backend:
+    env_file:
+      - ./anonym-back-end/.env
     build:
       context: ./anonym-back-end
       dockerfile: Dockerfile
@@ -27,8 +29,6 @@ services:
     volumes:
       - ./anonym-back-end:/app
       - /app/node_modules
-      - ./anonym-back-end/server.crt
-      - ./anonym-back-end/server.key
     develop:
       watch:
         - action: sync
@@ -39,6 +39,8 @@ services:
         - action: rebuild
           path: ./anonym-back-end/package.json
   frontend:
+    env_file:
+    - ./anonym-front-end/.env
     build:
       context: ./anonym-front-end
       dockerfile: Dockerfile
@@ -50,8 +52,6 @@ services:
     volumes:
       - ./anonym-front-end:/app
       - /app/node_modules
-      - ./anonym-front-end/server.crt
-      - ./anonym-front-end/server.key
     develop:
       watch:
         - action: sync
