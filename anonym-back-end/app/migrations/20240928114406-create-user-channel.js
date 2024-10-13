@@ -7,7 +7,7 @@ module.exports = {
       user_id: {
           type: Sequelize.INTEGER,
           references: {
-              model: 'Users', // Nom de la table des utilisateurs
+              model: 'users', // Nom de la table des utilisateurs
               key: 'id'
           },
           onDelete: 'CASCADE', // Supprimer les relations si l'utilisateur est supprimé

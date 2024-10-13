@@ -3,7 +3,7 @@
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up (queryInterface, Sequelize) {
-    await queryInterface.addColumn('Users', 'roles', {
+    await queryInterface.addColumn('users', 'roles', {
       type: Sequelize.ENUM('USER', 'ADMIN', 'SUPER_ADMIN'),
       allowNull: false,
       defaultValue: 'USER'
@@ -11,6 +11,6 @@ module.exports = {
   },
 
   async down (queryInterface) {
-    await queryInterface.removeColumn('Users', 'roles');
+    await queryInterface.removeColumn('users', 'roles');
   }
 };

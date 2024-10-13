@@ -8,7 +8,6 @@ module.exports = {
         SELECT CONSTRAINT_NAME 
         FROM information_schema.KEY_COLUMN_USAGE 
         WHERE TABLE_NAME = 'private_messages' 
-        AND TABLE_SCHEMA = 'test_anonym';
       `);
 
       // Supprimer les contraintes seulement si elles existent
@@ -26,7 +25,7 @@ module.exports = {
       await queryInterface.addConstraint('private_messages', {
           fields: ['channel_id'],
           type: 'foreign key',
-          name: 'private_messages_channel_id_foreign_new_idx',
+          name: 'private_messages_channel_id_foreign_idx',
           references: {
               table: 'channels',
               field: 'channel_id',
@@ -40,7 +39,7 @@ module.exports = {
           type: 'foreign key',
           name: 'private_messages_sender_id_foreign_idx',
           references: {
-              table: 'Users',
+              table: 'users',
               field: 'id',
           },
           onDelete: 'CASCADE', // Ajouter la contrainte de suppression en cascade
@@ -51,8 +50,7 @@ module.exports = {
       const [constraints] = await queryInterface.sequelize.query(`
         SELECT CONSTRAINT_NAME 
         FROM information_schema.KEY_COLUMN_USAGE 
-        WHERE TABLE_NAME = 'private_messages' 
-        AND TABLE_SCHEMA = 'test_anonym';
+        WHERE TABLE_NAME = 'private_messages'
       `);
 
       const constraintNames = constraints.map(row => row.CONSTRAINT_NAME);

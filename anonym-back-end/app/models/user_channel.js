@@ -12,7 +12,7 @@ module.exports = (sequelize, DataTypes) => {
         user_id: {
             type: DataTypes.INTEGER,
             references: {
-                model: 'Users', // Modèle User
+                model: 'users', // Modèle User
                 key: 'id'
             },
             onDelete: 'CASCADE' // Supprimer les liaisons quand un utilisateur est supprimé

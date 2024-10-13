@@ -101,6 +101,7 @@ module.exports = (sequelize, DataTypes) => {
   }, {
     sequelize,
     modelName: 'User',
+    tableName: 'users',
     hooks: {
       beforeCreate: async (user) => {
         // Normalize the email

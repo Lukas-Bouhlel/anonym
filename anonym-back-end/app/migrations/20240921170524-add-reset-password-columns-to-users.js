@@ -3,18 +3,18 @@
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
     up: async (queryInterface, Sequelize) => {
-        await queryInterface.addColumn('Users', 'resetPasswordToken', {
+        await queryInterface.addColumn('users', 'resetPasswordToken', {
             type: Sequelize.STRING,
             allowNull: true,
         });
-        await queryInterface.addColumn('Users', 'resetPasswordExpires', {
+        await queryInterface.addColumn('users', 'resetPasswordExpires', {
             type: Sequelize.DATE,
             allowNull: true,
         });
     },
 
     down: async (queryInterface) => {
-        await queryInterface.removeColumn('Users', 'resetPasswordToken');
-        await queryInterface.removeColumn('Users', 'resetPasswordExpires');
+        await queryInterface.removeColumn('users', 'resetPasswordToken');
+        await queryInterface.removeColumn('users', 'resetPasswordExpires');
     }
 };

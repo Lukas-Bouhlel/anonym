@@ -33,6 +33,7 @@ module.exports = (sequelize, DataTypes) => {
   }, {
     sequelize,
     modelName: 'Inventory',
+    tableName: 'inventories',
     indexes: [
         {
           unique: true,
