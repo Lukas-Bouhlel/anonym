@@ -69,10 +69,7 @@ const Shop = ({ shop, refetch }) => {
     }
 
     try {
-      const response = await axios.put(
-        `${api_url}/api/shop/admin/${selectedArticle.article_id}`,
-        formData,
-        {
+        await axios.put(`${api_url}/api/shop/admin/${selectedArticle.article_id}`, formData, {
           withCredentials: true,
           headers: {
             "Content-Type": "multipart/form-data",
