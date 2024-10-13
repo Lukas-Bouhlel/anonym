@@ -56,7 +56,9 @@ describe('Private Messages Routes', () => {
     afterAll(async () => {
         await Channel.destroy({ where: {} });
         await PrivateMessage.destroy({ where: {} });
-        await sequelize.close();
+        if(sequelize) {
+            await sequelize.close();
+        }
     });
 
     // Test pour mettre à jour un message
@@ -105,7 +107,6 @@ describe('Private Messages Routes', () => {
 
     // Test pour essayer de supprimer un message d'un autre utilisateur
     test('User should not be able to delete a message they did not send', async () => {
-        // Créons un nouveau message par "otherUser"
         const privateMessage = await PrivateMessage.create({
             content: 'Another user\'s private message',
             sender_id: otherUser.id,

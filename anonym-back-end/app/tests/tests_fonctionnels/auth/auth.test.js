@@ -6,7 +6,6 @@ describe('Authentication Routes', () => {
     let user;
 
     beforeAll(async () => {
-        // Création d'un utilisateur de test global
         user = {
             username: 'testuser',
             email: 'testuser@example.com',
@@ -22,9 +21,10 @@ describe('Authentication Routes', () => {
     });
 
     afterAll(async () => {
-        // Suppression des utilisateurs et fermeture de la connexion à la BDD
         await User.destroy({ where: {} });
-        await sequelize.close(); 
+        if(sequelize) {
+            await sequelize.close(); 
+        }
     });
 
     it('User should sign up successfully (unique email)', async () => {

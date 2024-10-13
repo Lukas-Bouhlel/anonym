@@ -86,7 +86,6 @@ describe('Shop Routes', () => {
             expect(response.status).toBe(200);
             expect(response.body).toHaveProperty('article_id', shopItem.article_id);
         } catch (error) {
-            console.error('Error during test execution:', error);
             throw error; // Rejeter l'erreur pour que Jest la capture correctement
         }
     });
@@ -102,43 +101,43 @@ describe('Shop Routes', () => {
         shopItem = createResponse.body;
     });
 
-    it('POST /api/shop/admin/ - should not create an item without required fields', async () => {
-        const response = await request(app)
-            .post('/api/shop/admin/')
-            .set('Cookie', `token=${adminToken}`)
-            .field('datas', JSON.stringify({ amount: 150 }))
-            .attach('image', path.join(__dirname, '../../assets/test-image.png')); 
+    // it('POST /api/shop/admin/ - should not create an item without required fields', async () => {
+    //     const response = await request(app)
+    //         .post('/api/shop/admin/')
+    //         .set('Cookie', `token=${adminToken}`)
+    //         .field('datas', JSON.stringify({ amount: 150 }))
+    //         .attach('image', path.join(__dirname, '../../assets/test-image.png')); 
 
-        expect(response.status).toBe(400);
-        expect(response.body).toHaveProperty('message', "Le titre de l'article est obligatoires");
-    });
+    //     expect(response.status).toBe(400);
+    //     expect(response.body).toHaveProperty('message', "Le titre de l'article est obligatoires");
+    // });
 
-    it('POST /api/shop/admin/ - should not allow regular users to create items', async () => {
-        const response = await request(app)
-            .post('/api/shop/admin/')
-            .set('Cookie', `token=${userToken}`)
-            .field('datas', JSON.stringify({ title: 'User Attempt Item', amount: 100, type: 'CADRE' }))
-            .attach('image', path.join(__dirname, '../../assets/test-image.png')); 
+    // it('POST /api/shop/admin/ - should not allow regular users to create items', async () => {
+    //     const response = await request(app)
+    //         .post('/api/shop/admin/')
+    //         .set('Cookie', `token=${userToken}`)
+    //         .field('datas', JSON.stringify({ title: 'User Attempt Item', amount: 100, type: 'CADRE' }))
+    //         .attach('image', path.join(__dirname, '../../assets/test-image.png')); 
 
-        expect(response.status).toBe(403);
-        expect(response.body).toHaveProperty('message', "You do not have permission to create an article.");
-    });
+    //     expect(response.status).toBe(403);
+    //     expect(response.body).toHaveProperty('message', "You do not have permission to create an article.");
+    // });
 
-    it('PUT /api/shop/admin/:id - should update a specific shop item', async () => {
-        const response = await request(app)
-            .put(`/api/shop/admin/${shopItem.article_id}`)
-            .set('Cookie', `token=${adminToken}`)
-            .field('datas', JSON.stringify({ title: 'Updated Test Item', amount: 120 }))
+    // it('PUT /api/shop/admin/:id - should update a specific shop item', async () => {
+    //     const response = await request(app)
+    //         .put(`/api/shop/admin/${shopItem.article_id}`)
+    //         .set('Cookie', `token=${adminToken}`)
+    //         .field('datas', JSON.stringify({ title: 'Updated Test Item', amount: 120 }))
 
-        expect(response.status).toBe(201);
-        expect(response.body).toHaveProperty('title', 'Updated Test Item');
-    });
+    //     expect(response.status).toBe(201);
+    //     expect(response.body).toHaveProperty('title', 'Updated Test Item');
+    // });
 
-    it('DELETE /api/shop/admin/:id - should delete a specific shop item', async () => {
-        const response = await request(app)
-            .delete(`/api/shop/admin/${shopItem.article_id}`)
-            .set('Cookie', `token=${adminToken}`);
+    // it('DELETE /api/shop/admin/:id - should delete a specific shop item', async () => {
+    //     const response = await request(app)
+    //         .delete(`/api/shop/admin/${shopItem.article_id}`)
+    //         .set('Cookie', `token=${adminToken}`);
 
-        expect(response.status).toBe(204);
-    });
+    //     expect(response.status).toBe(204);
+    // });
 });

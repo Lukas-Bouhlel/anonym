@@ -34,17 +34,23 @@ describe('Account Routes', () => {
     });
 
     afterEach(() => {
-        jest.clearAllMocks(); // Nettoyer les mocks après chaque test
+        jest.clearAllTimers();
         jest.resetModules();
+        jest.resetAllMocks();
     });
 
     afterAll(async () => {
-        await User.destroy({ where: {} }); // Nettoyer la base avant de commencer
-        await sequelize.close(); // Fermer la connexion à la base de données après tous les tests
+        await User.destroy({ where: {} });
+        if (sequelize) {
+            await sequelize.close(); // Fermer la connexion à la base de données
+        }
     });
 
     it('GET /api/account - should retrieve account info', async () => {
-        const response = await request(app).get('/api/account').set('Cookie', `token=${token}`);
+        const response = await request(app)
+            .get('/api/account')
+            .set('Cookie', `token=${token}`);
+
         expect(response.status).toBe(200);
         expect(response.body).toHaveProperty('username', user.username);
         expect(response.body).toHaveProperty('email', user.email);

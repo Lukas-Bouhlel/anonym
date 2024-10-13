@@ -6,8 +6,8 @@ module.exports = {
       // Vérifier si la contrainte existe avant de la supprimer
       const [constraints] = await queryInterface.sequelize.query(`
         SELECT CONSTRAINT_NAME 
-        FROM information_schema.KEY_COLUMN_USAGE 
-        WHERE TABLE_NAME = 'private_messages' 
+        FROM information_schema.TABLE_CONSTRAINTS 
+        WHERE TABLE_NAME = 'private_messages' AND CONSTRAINT_TYPE = 'FOREIGN KEY';
       `);
 
       // Supprimer les contraintes seulement si elles existent
@@ -49,8 +49,8 @@ module.exports = {
       // Supprimer les contraintes si elles existent
       const [constraints] = await queryInterface.sequelize.query(`
         SELECT CONSTRAINT_NAME 
-        FROM information_schema.KEY_COLUMN_USAGE 
-        WHERE TABLE_NAME = 'private_messages'
+        FROM information_schema.TABLE_CONSTRAINTS 
+        WHERE TABLE_NAME = 'private_messages' AND CONSTRAINT_TYPE = 'FOREIGN KEY';
       `);
 
       const constraintNames = constraints.map(row => row.CONSTRAINT_NAME);
