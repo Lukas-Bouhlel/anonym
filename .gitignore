@@ -132,3 +132,7 @@ dist
 
 #uploads
 anonym-back-end/uploads/
+
+#SSL
+server.crt
+server.key
