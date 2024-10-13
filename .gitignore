@@ -134,5 +134,7 @@ dist
 anonym-back-end/uploads/
 
 #SSL
-server.crt
-server.key
+/anonym-front-end/server.key
+/anonym-front-end/server.crt
+/anonym-back-end/server.key
+/anonym-back-end/server.crt
