@@ -138,5 +138,10 @@ anonym-back-end/uploads/profiles/avatars
 server.key
 server.crt
 
-anonym-front-end\docs
-anonym-back-end\docs
+# Ignorer les docs générés
+anonym-backend/docs
+anonym-frontend/docs
+
+# Ignorer les fichiers temporaires
+.DS_Store
+Thumbs.db
