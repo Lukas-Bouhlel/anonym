@@ -131,7 +131,8 @@ dist
 .pnp.*
 
 #uploads
-anonym-back-end/uploads/
+anonym-back-end/uploads/articles
+anonym-back-end/uploads/profiles/avatars
 
 #SSL
 server.key

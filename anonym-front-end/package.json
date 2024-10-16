@@ -11,7 +11,7 @@
     "preview": "vite preview",
     "test": "jest --runInBand",
     "cov": "jest --coverage --collectCoverageFrom='src/**/*.{js,jsx}'",
-    "generate-docs": "jsdoc -c jsdoc.json"
+    "generate-doc": "jsdoc -c jsdoc.json"
   },
   "dependencies": {
     "@fortawesome/fontawesome-svg-core": "^6.6.0",
