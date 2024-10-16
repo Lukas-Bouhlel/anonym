@@ -137,3 +137,6 @@ anonym-back-end/uploads/profiles/avatars
 #SSL
 server.key
 server.crt
+
+anonym-front-end\docs
+anonym-back-end\docs
