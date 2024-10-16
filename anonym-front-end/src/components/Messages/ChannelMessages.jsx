@@ -7,10 +7,23 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faUserPlus, faTrash } from '@fortawesome/free-solid-svg-icons';
 import { Modal, Button, Checkbox, CheckboxGroup, Tooltip, Whisper } from 'rsuite';
 
+/**
+ * Composant ChannelMessages pour afficher et gérer les messages d'un canal.
+ *
+ * Ce composant utilise WebSocket pour recevoir des messages en temps réel et permet aux utilisateurs 
+ * d'envoyer des messages, d'inviter des amis et de supprimer le canal. 
+ *
+ * @param {Object} props - Les propriétés du composant.
+ * @param {Object} props.user - Les informations de l'utilisateur connecté.
+ * @param {Object} props.socket - L'instance de socket.io pour la communication en temps réel.
+ * @param {Object} props.channel - Les informations sur le canal actuel.
+ * @param {Function} props.setPage - Fonction pour changer la page affichée.
+ * @returns {JSX.Element} - Le rendu du composant ChannelMessages.
+ */
 const ChannelMessages = ({ user, socket, channel, setPage }) => {
     const [messages, setMessages] = useState([]);
     const [newMessage, setNewMessage] = useState('');
-    const { api_url } = useApi();
+    const { api_url } = useApi();// Utilise le contexte pour obtenir l'URL de l'API
     const channelId = channel.channel_id;
     const messagesEndRef = useRef(null);
     const [inviteModalVisible, setInviteModalVisible] = useState(false);
@@ -28,7 +41,11 @@ const ChannelMessages = ({ user, socket, channel, setPage }) => {
         </Tooltip>
     );
 
-    // Fonction pour récupérer les messages
+     /**
+     * Fonction pour récupérer les messages d'un canal via API.
+     * Utilise axios pour faire une requête GET à l'API.
+     * @returns {Promise<Array>} - Retourne les messages récupérés.
+     */
     const fetchMessages = async () => {
         try {
             const response = await axios.get(`${api_url}/api/channels/${channelId}/messages`, {
@@ -40,11 +57,10 @@ const ChannelMessages = ({ user, socket, channel, setPage }) => {
         }
     };
 
-    // Utilisation de React Query pour récupérer les messages
     const { data: initialMessages = [], isLoading } = useQuery({
         queryKey: ['messages', channelId],
         queryFn: fetchMessages,
-        enabled: !!channelId, // Lancer la requête seulement si channelId est défini et que la page est bien canal
+        enabled: !!channelId, // Lancer la requête seulement si channelId est défini
     });
 
     // Mettre à jour les messages lorsque la requête est terminée
@@ -65,21 +81,25 @@ const ChannelMessages = ({ user, socket, channel, setPage }) => {
                 socket.off('newMessage'); // Nettoyage
             };
         }
-    }, [socket]); // Écoute seulement les changements de socket
+    }, [socket]);
 
-    // Rejoindre le canal et écouter les messages
+    // Rejoindre le chanal et écouter les messages
     useEffect(() => {
         if (channelId && socket) {
-            // Rejoindre le canal
+            // Rejoindre le chanal
             socket.emit('joinChannel', { channelId, userId: user.id });
 
+            // Leave le channel
             return () => {
                 socket.emit('leaveChannel', { channelId, userId: user.id });
             };
         }
-    }, [channelId, socket, user.id]); // Inclut channelId et user.id
+    }, [channelId, socket, user.id]);
 
-    // Envoyer un message
+    /**
+     * Fonction pour envoyer un message via WebSocket.
+     * Vérifie si le champ de message n'est pas vide avant d'envoyer.
+     */
     const handleSendMessage = () => {
         if (newMessage) {
             socket.emit('privateMessage', {
@@ -91,7 +111,10 @@ const ChannelMessages = ({ user, socket, channel, setPage }) => {
         }
     };
 
-    // Envoyer un message en appuyant sur "Entrée"
+    /**
+     * Gérer l'événement de pression de touche pour envoyer un message.
+     * @param {KeyboardEvent} e - Événement de pression de touche.
+     */
     const handleKeyDown = (e) => {
         if (e.key === 'Enter') {
             handleSendMessage();
@@ -105,7 +128,10 @@ const ChannelMessages = ({ user, socket, channel, setPage }) => {
         }
     }, [messages]);
 
-    // Fonction pour récupérer la liste des amis
+    /**
+     * Fonction pour récupérer la liste des amis via API.
+     * @returns {Promise<Array>} - Retourne les amis récupérés.
+     */
     const fetchFriends = async () => {
         try {
             const response = await axios.get(`${api_url}/api/friends`, {
@@ -118,7 +144,10 @@ const ChannelMessages = ({ user, socket, channel, setPage }) => {
         }
     };
 
-    // Fonction pour récupérer les membres du canal
+    /**
+     * Fonction pour récupérer les membres du canal via API.
+     * @returns {Promise<Array>} - Retourne les membres du canal récupérés.
+     */
     const fetchChannelMembers = async () => {
         try {
             const response = await axios.get(`${api_url}/api/channels/${channelId}/users`, {
@@ -130,7 +159,6 @@ const ChannelMessages = ({ user, socket, channel, setPage }) => {
         }
     };
 
-    // Utilisation de React Query pour récupérer les amis
     const { data: friends = [] } = useQuery({
         queryKey: ['friends'],
         queryFn: fetchFriends
@@ -146,7 +174,10 @@ const ChannelMessages = ({ user, socket, channel, setPage }) => {
         !channelMembers.some(member => member.id === friend.friend_id)
     );
 
-    // Gestion de la sélection des amis
+     /**
+     * Fonction pour inviter des amis à rejoindre le canal.
+     * Envoie une requête POST pour chaque ami sélectionné.
+     */
     const handleInviteFriends = async () => {
         try {
             // Faire une requête pour chaque utilisateur sélectionné
@@ -166,7 +197,10 @@ const ChannelMessages = ({ user, socket, channel, setPage }) => {
         }
     };
 
-    // Fonction pour supprimer le canal
+    /**
+     * Fonction pour supprimer le canal via API.
+     * Si la suppression est réussie, redirige l'utilisateur vers la page des amis.
+     */
     const handleDeleteChannel = async () => {
         try {
             await axios.delete(`${api_url}/api/channels/${channelId}`, {
@@ -180,6 +214,11 @@ const ChannelMessages = ({ user, socket, channel, setPage }) => {
         }
     };
 
+    /**
+     * Fonction pour formater une date en chaîne de caractères.
+     * @param {string} dateString - La chaîne de caractères de la date à formater.
+     * @returns {string} - La date formatée en chaîne de caractères.
+     */
     const formatDate = (dateString) => {
         const options = { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Europe/Paris' };
         const date = new Date(dateString);

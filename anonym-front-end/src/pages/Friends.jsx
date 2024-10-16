@@ -8,6 +8,13 @@ import { faUser, faEllipsisVertical } from '@fortawesome/free-solid-svg-icons';
 import { Tooltip, Whisper } from 'rsuite';
 import Popup from "../components/Utils/Popup";
 
+/**
+ * Composant Friends qui gère la liste d'amis d'un utilisateur.
+ * Permet de récupérer, ajouter, supprimer et bloquer des amis.
+ *
+ * @component
+ * @returns {React.ReactElement} - L'interface de gestion des amis de l'utilisateur.
+ */
 const Friends = () => {
     const { api_url } = useApi();
     const [choiceFriendsType, setChoiceFriendsType] = useState('online');
@@ -17,6 +24,11 @@ const Friends = () => {
     const [showPopup, setShowPopup] = useState(false);
     const [messagePopup, setMessagePopup] = useState('');
 
+    /**
+     * Fonction pour récupérer la liste des amis.
+     *
+     * @returns {Promise<Array>} - Liste des amis de l'utilisateur.
+     */
     const fetchFriends = async () => {
         try {
             const response = await axios.get(`${api_url}/api/friends`, {
@@ -31,11 +43,15 @@ const Friends = () => {
 
     // Utilisation de react-query pour la récupération des amis
     const { data: friends, isLoading, isError, refetch } = useQuery({
-        queryKey: ['friends'], // Clé de la requête pour le caching
-        queryFn: fetchFriends, // Fonction de récupération des amis
+        queryKey: ['friends'],
+        queryFn: fetchFriends
     });
 
-    // Mutation pour envoyer une demande d'ami
+    /**
+     * Envoie une demande d'ami à un utilisateur.
+     *
+     * @param {string} username - Le nom d'utilisateur à ajouter.
+     */
     const { mutate: sendFriendRequest, isLoading: isSending } = useMutation({
         mutationFn: async (username) => {
             try {
@@ -48,8 +64,8 @@ const Friends = () => {
                 throw error;
             }
         },
+        // Afficher le nom d'utilisateur et l'ajouté dans le message de succès
         onSuccess: () => {
-            // Afficher le nom d'utilisateur ajouté dans le message de succès
             setAddStatus('Success');
             setMessageStatus(`Ta demande d'ami a été envoyée à ${usernameToAdd} !`);
             refetch();
@@ -60,7 +76,11 @@ const Friends = () => {
         }
     });
 
-    // Mutation pour supprimer un ami
+     /**
+     * Supprime un ami de la liste.
+     *
+     * @param {Object} friend - L'ami à supprimer.
+     */
     const { mutate: deleteFriend } = useMutation({
         mutationFn: async (friend) => {
             try {
@@ -74,12 +94,19 @@ const Friends = () => {
                 throw error;
             }
         },
+        // Rafraîchit la liste des amis après suppression
         onSuccess: () => {
-            refetch(); // Rafraîchit la liste des amis après suppression
+            refetch(); 
         }
     });
 
-    // Mutation pour mettre à jour le status d'un ami
+    /**
+     * Met à jour le statut d'un ami (bloquer/débloquer).
+     *
+     * @param {Object} params - Contient l'ami et le nouveau statut.
+     * @param {Object} params.friend - L'ami à mettre à jour.
+     * @param {string} params.status - Le nouveau statut de l'ami.
+     */
     const { mutate: updateFriend } = useMutation({
         mutationFn: async ({ friend, status }) => {
             try {
@@ -93,12 +120,17 @@ const Friends = () => {
                 throw error;
             }
         },
+        // Rafraîchit la liste des amis après suppression
         onSuccess: () => {
-            refetch(); // Rafraîchit la liste des amis après suppression
+            refetch(); 
         }
     });
-
-    // Fonction de gestion du formulaire d'ajout d'amis
+    
+    /**
+     * Fonction de gestion du formulaire d'ajout d'amis.
+     *
+     * @param {Object} e - L'événement de soumission du formulaire.
+     */
     const handleAddFriend = (e) => {
         e.preventDefault();
         if (usernameToAdd) {
@@ -106,7 +138,12 @@ const Friends = () => {
         }
     };
 
-    // Fonction pour filtrer les amis en fonction du statut sélectionné
+     /**
+     * Filtre la liste des amis en fonction du type sélectionné.
+     *
+     * @param {Array} friendsList - La liste des amis à filtrer.
+     * @returns {Array} - La liste filtrée des amis.
+     */
     const filterFriends = (friendsList) => {
         if (!friendsList) {
             return [];
@@ -122,11 +159,11 @@ const Friends = () => {
                 return friendsList;
         }
     };
-
+    // Affiche un indicateur de chargement
     if (isLoading) {
-        return <div>Chargement...</div>; // Affiche un indicateur de chargement
+        return <div>Chargement...</div>; 
     }
-
+    // Affiche un message d'erreur si l'appel de la liste d'amis à échouer
     if (isError) {
         return <div>Erreur lors du chargement des amis.</div>; // Gestion des erreurs
     }
@@ -134,7 +171,13 @@ const Friends = () => {
     // Filtrer les amis en fonction du choix sélectionné
     const filteredFriends = filterFriends(friends);
 
-    // Fonction pour faire le rendu du tooltip avec la suppression
+    /**
+     * Fonction pour faire le rendu du tooltip avec la suppression.
+     *
+     * @param {Object} friend - L'ami à afficher dans le tooltip.
+     * @param {string} status - Le statut de l'ami.
+     * @returns {React.ReactNode} - Le tooltip à afficher.
+     */
     const renderTooltip = (friend, status) => (
         <Tooltip>
             <div
@@ -145,7 +188,7 @@ const Friends = () => {
             </div>
             <div
                 className="update-friend"
-                onClick={() => updateFriend({ friend, status })} // Appelle la fonction de suppression avec l'ID de l'ami
+                onClick={() => updateFriend({ friend, status })} // Appelle la fonction de la mise à jour avec l'ID de l'ami
             >
                 {choiceFriendsType === 'bloqued' ? (
                     <>Débloquer l&apos;utilisateur</>
@@ -223,7 +266,7 @@ const Friends = () => {
                                         setUsernameToAdd(e.target.value);
                                         setAddStatus('');
                                         setMessageStatus('');
-                                    }} // Gérer l'état du nom d'utilisateur
+                                    }}
                                 />
                                 <button className="button add-friends-form-submit" type="submit" disabled={isSending}>
                                     {isSending ? 'Envoi en cours...' : 'Envoyer une demande d\'ami'}

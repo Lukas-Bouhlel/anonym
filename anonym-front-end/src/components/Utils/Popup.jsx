@@ -1,6 +1,18 @@
 import { useEffect, useState } from "react";
 import PropTypes from 'prop-types';
 
+/**
+ * Composant Popup qui affiche un message contextuel pour une durée déterminée.
+ *
+ * @param {Object} props - Les propriétés du composant.
+ * @param {boolean} props.showPopup - Indique si la pop-up doit être affichée.
+ * @param {function} props.setShowPopup - Fonction pour mettre à jour l'état d'affichage de la pop-up.
+ * @param {string} props.text - Le texte à afficher dans la pop-up.
+ * @param {function} props.setTextPopup - Fonction pour mettre à jour le texte de la pop-up.
+ * @param {any} props.state - L'état pour déterminer le style ou le type de message de la pop-up.
+ * @param {function} props.setState - Fonction pour mettre à jour l'état.
+ * @returns {JSX.Element} - Le rendu du composant Popup.
+ */
 const Popup = ({ showPopup, setShowPopup, text, setTextPopup, state, setState }) => {
     const [popupClass, setPopupClass] = useState('hidden');
 
@@ -8,18 +20,16 @@ const Popup = ({ showPopup, setShowPopup, text, setTextPopup, state, setState })
     useEffect(() => {
         if (showPopup) {
             setTimeout(() => {
-                // Afficher la pop-up
                 setPopupClass('active'); 
                 const timer = setTimeout(() => {
-                    setPopupClass('hidden'); // Active l'animation de sortie (repartir vers -50px)
+                    setPopupClass('hidden');// Active l'animation de sortie (repartir vers -50px)
                     setTimeout(() => {
                         setShowPopup(false)
-                        setTextPopup(''); // Cache la pop-up après l'animation de sortie
+                        setTextPopup('');// Cache la pop-up après l'animation de sortie
                         setState('');
-                    }, 500); // Correspond à la durée de l'animation CSS (0.5s)
-                }, 5000); // La pop-up reste visible 5 secondes
-    
-                return () => clearTimeout(timer); // Nettoie le timer lorsque le composant est démonté
+                    }, 500);// Correspond à la durée de l'animation CSS (0.5s)
+                }, 5000);// La pop-up reste visible 5 secondes
+                return () => clearTimeout(timer);// Nettoie le timer lorsque le composant est démonté
             }, 50);
         }
     }, [showPopup, setShowPopup, setTextPopup, setState]);

@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: components/Profile/Account.jsx</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: components/Profile/Account.jsx</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>import { useEffect, useState } from "react";
+import PropTypes from 'prop-types'; 
+import axios from "axios";
+import { useForm } from "react-hook-form";
+import { useApi } from '../../context/ApiContext';
+import Popup from "../Utils/Popup";
+
+/**
+ * Composant Account pour gérer et afficher les informations du profil utilisateur.
+ *
+ * @param {Object} props - Les propriétés du composant.
+ * @param {Object} props.user - Les informations de l'utilisateur, y compris l'avatar et le nom d'utilisateur.
+ * @param {Function} props.setUser - Fonction pour mettre à jour les informations de l'utilisateur dans l'état parent.
+ * @returns {JSX.Element} - Le rendu du composant Account.
+ */
+const Account = ({ user, setUser }) => {
+    const [avatarFile, setAvatarFile] = useState(null);
+    const [previewUsername, setPreviewUsername] = useState(user?.username || "");
+    const [previewAvatar, setPreviewAvatar] = useState(user?.avatar || "");
+    const [showPopup, setShowPopup] = useState(false);
+    const { api_url } = useApi();// Utilise le contexte pour obtenir l'URL de l'API
+
+    const { register, handleSubmit, setValue, reset, formState: { errors } } = useForm({
+        defaultValues: {
+            username: user.username || "",
+            email: user?.email || ""
+        }
+    });
+
+    // Mettre à jour les valeurs du formulaire et les aperçus après une mise à jour du compte (user)
+    useEffect(() => {
+        reset({
+            username: user?.username || "",
+            email: user?.email || ""
+        });
+        setPreviewUsername(user?.username || "");
+    }, [user, reset]);
+
+    /**
+     * Fonction soumise lors de l'envoi du formulaire.
+     * Cette fonction prépare les données du formulaire et effectue un appel API pour mettre à jour le profil de l'utilisateur.
+     * 
+     * @param {Object} data - Les données du formulaire contenant le nom d'utilisateur, l'email et l'avatar.
+     */
+    const onSubmit = async (data) => {
+        const formData = new FormData();
+
+        const jsonData = {
+            username: data.username,
+            email: data.email,
+        };
+
+         // Si l'avatar est supprimé, l'ajouter dans le JSON
+        if (data.avatar === "delete") {
+            jsonData.avatar = "delete";
+        }
+
+        // Ajouter l'objet JSON sous forme de chaîne dans formData
+        formData.append('datas', JSON.stringify(jsonData));
+    
+        if (avatarFile) {
+            formData.append('image', avatarFile); // Ajouter l'avatar
+        }
+        
+        //Appel api pour mettre à jour le profil
+        try {
+            const response = await axios.put(`${api_url}/api/account/update`, formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                },
+                withCredentials: true
+            });
+            setShowPopup(true);
+            setUser(response.data);
+            reset(); // Réinitialise les champs du formulaire
+            setAvatarFile(null); // Réinitialise le fichier local
+            setPreviewAvatar(""); // Supprime l'avatar dans l'aperçu
+        } catch (error) {
+            console.error("Erreur lors de la soumission du formulaire :", error);
+        }
+    };
+
+    /**
+     * Fonction pour gérer l'upload de fichier.
+     * @param {Event} e - L'événement de changement de fichier.
+     */
+    const handleFileChange = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            setAvatarFile(file); // Enregistre le fichier dans l'état
+            setPreviewAvatar(URL.createObjectURL(file)); // Met à jour l'aperçu de l'avatar
+        }
+    };
+
+    /**
+     * Fonction pour gérer la suppression de l'avatar.
+     */
+    const handleDeleteAvatar = () => {
+        setValue('avatar', 'delete'); // Définit la valeur avatar à 'delete'
+        setAvatarFile(null); // Réinitialise le fichier local
+        setPreviewAvatar(""); // Supprime l'avatar dans l'aperçu
+    };
+
+    /**
+     * Fonction pour mettre à jour le nom d'utilisateur en temps réel.
+     * @param {Event} e - L'événement de changement de valeur.
+     */
+    const handleUsernameChange = (e) => {
+        setPreviewUsername(e.target.value); // Met à jour l'aperçu du nom d'utilisateur
+    };
+
+    /**
+     * Fonction pour gérer le reset du formulaire et des états locaux.
+     */
+    const handleReset = () => {
+        reset(); // Réinitialise les champs du formulaire
+        setPreviewUsername(user?.username || ""); // Réinitialise le nom d'utilisateur à sa valeur initiale
+        setPreviewAvatar(user?.avatar || ""); // Réinitialise l'avatar à sa valeur initiale
+        setAvatarFile(null); // Réinitialise le fichier local de l'avatar
+    };
+
+    return (
+        &lt;div id="account">
+            &lt;Popup showPopup={showPopup} setShowPopup={setShowPopup} text={'Votre profil a bien été mis à jour !'} state={'update'}/>
+            &lt;div className="account-title">
+                &lt;h1>Profils&lt;/h1>
+            &lt;/div>
+            &lt;div className="account">
+                &lt;div className="account-content">
+                    &lt;form onSubmit={handleSubmit(onSubmit)}>
+                        &lt;div className="mb-3">
+                            &lt;label htmlFor="username" className="form-label">Nom d&amp;apos;utilisateur&lt;/label>
+                            &lt;input
+                                type="text"
+                                className="form-control"
+                                id="username"
+                                aria-required="true" 
+                                aria-label="Nom d'utilisateur"
+                                {...register("username", { required: "Le nom d'utilisateur est requis" })}
+                                onChange={handleUsernameChange}
+                            />
+                            {errors.username &amp;&amp; &lt;span className="text-danger">{errors.username.message}&lt;/span>}
+                        &lt;/div>
+
+                        &lt;div className="mb-3">
+                            &lt;label htmlFor="email" className="form-label">E-mail&lt;/label>
+                            &lt;input
+                                type="email"
+                                className="form-control"
+                                aria-required="true" 
+                                aria-label="E-mail"
+                                id="email"
+                                {...register("email", {
+                                    required: "L'email est requis",
+                                    pattern: {
+                                        value: /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$/,
+                                        message: "Le format de l'email est incorrect"
+                                    }
+                                })}
+                            />
+                            {errors.email &amp;&amp; &lt;span className="text-danger">{errors.email.message}&lt;/span>}
+                        &lt;/div>
+
+                        &lt;div className="mb-3">
+                            &lt;label htmlFor="avatar" className="form-label">Avatar&lt;/label>
+                            &lt;div className="content-file-edit">
+                                &lt;input
+                                    aria-label="Avatar"
+                                    type="file"
+                                    className="form-control input-file"
+                                    id="avatar"
+                                    onChange={handleFileChange}
+                                />
+                                &lt;button
+                                    type="button"
+                                    className="btn"
+                                    onClick={handleDeleteAvatar}
+                                >
+                                    Supprimer l&amp;apos;avatar
+                                &lt;/button>
+                            &lt;/div>
+                            {avatarFile &amp;&amp; &lt;p>Avatar sélectionné : {avatarFile.name}&lt;/p>}
+                        &lt;/div>
+                        &lt;div className="account-content-footer-input">
+                            &lt;button type="button" className="btn account-content-footer-input-reset" onClick={() => handleReset()}>
+                                Réinitialiser
+                            &lt;/button>
+                            &lt;button type="submit" className="btn account-content-footer-input-submit">
+                                Enregistrer
+                            &lt;/button>
+                        &lt;/div>
+                    &lt;/form>
+                &lt;/div>
+                &lt;div className="account-view">
+                    &lt;h2>Aperçu&lt;/h2>
+                    &lt;div className="profils-infos">
+                        &lt;div className="profils-infos-first">
+                            &lt;div className="profile-content-infos-img">
+                                {user?.Inventories?.[0]?.Shop?.content &amp;&amp; (
+                                    &lt;img className="avatar-profile decoration-profile" src={`${user.Inventories[0].Shop.content}`} alt="hugenerd" width="80" height="80"/>
+                                )}
+                                &lt;img className="rounded-circle avatar-profile image-profile" src={`${previewAvatar || user.avatar}`} alt="hugenerd" width="80" height="80" />
+                            &lt;/div>
+                        &lt;/div>
+                        &lt;div className="profils-infos-content">
+                            &lt;div className="profils-infos-content-item">
+                                &lt;div>
+                                    &lt;span>{previewUsername}&lt;/span>
+                                &lt;/div>
+                            &lt;/div>
+                        &lt;/div>
+                    &lt;/div>
+                &lt;/div>
+            &lt;/div>
+        &lt;/div >
+    )
+}
+
+Account.propTypes = {
+    user: PropTypes.shape({
+        avatar: PropTypes.string,
+        username: PropTypes.string.isRequired,
+        email: PropTypes.string.isRequired,
+        Inventories: PropTypes.arrayOf(
+            PropTypes.shape({
+                Shop: PropTypes.shape({
+                    content: PropTypes.string
+                })
+            })
+        )
+    }).isRequired,
+    setUser: PropTypes.func.isRequired,
+};
+
+export default Account;</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Global</h3><ul><li><a href="global.html#Access">Access</a></li><li><a href="global.html#Account">Account</a></li><li><a href="global.html#Admin">Admin</a></li><li><a href="global.html#ApiProvider">ApiProvider</a></li><li><a href="global.html#App">App</a></li><li><a href="global.html#AuthProvider">AuthProvider</a></li><li><a href="global.html#ChannelForm">ChannelForm</a></li><li><a href="global.html#ChannelMessages">ChannelMessages</a></li><li><a href="global.html#Discover">Discover</a></li><li><a href="global.html#Footer">Footer</a></li><li><a href="global.html#Friends">Friends</a></li><li><a href="global.html#Home">Home</a></li><li><a href="global.html#Inventory">Inventory</a></li><li><a href="global.html#Invoices">Invoices</a></li><li><a href="global.html#Layout">Layout</a></li><li><a href="global.html#Login">Login</a></li><li><a href="global.html#Navbar">Navbar</a></li><li><a href="global.html#Popup">Popup</a></li><li><a href="global.html#PopupProvider">PopupProvider</a></li><li><a href="global.html#PrivateRoute">PrivateRoute</a></li><li><a href="global.html#Profile">Profile</a></li><li><a href="global.html#Profils">Profils</a></li><li><a href="global.html#Register">Register</a></li><li><a href="global.html#Router">Router</a></li><li><a href="global.html#Shop">Shop</a></li><li><a href="global.html#Sidebar">Sidebar</a></li><li><a href="global.html#SocketProvider">SocketProvider</a></li><li><a href="global.html#Success">Success</a></li><li><a href="global.html#Support">Support</a></li><li><a href="global.html#UserProvider">UserProvider</a></li><li><a href="global.html#Users">Users</a></li><li><a href="global.html#fetchShop">fetchShop</a></li><li><a href="global.html#fetchUsers">fetchUsers</a></li><li><a href="global.html#mutationFn">mutationFn</a></li><li><a href="global.html#useApi">useApi</a></li><li><a href="global.html#useAuth">useAuth</a></li><li><a href="global.html#usePopup">usePopup</a></li><li><a href="global.html#useSocket">useSocket</a></li><li><a href="global.html#useSphereAnimation">useSphereAnimation</a></li><li><a href="global.html#useUser">useUser</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.3</a> on Thu Oct 17 2024 00:21:52 GMT+0200 (heure d’été d’Europe centrale)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

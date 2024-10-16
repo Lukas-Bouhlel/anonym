@@ -3,6 +3,19 @@ const bcrypt = require('bcrypt');
 const fs = require('fs');
 const path = require('path');
 
+/**
+ * @module UserController
+ */
+
+/**
+ * Récupère les informations du compte de l'utilisateur connecté, y compris l'inventaire actif.
+ *
+ * @function readAccount
+ * @async
+ * @param {Object} req - La requête HTTP.
+ * @param {Object} res - La réponse HTTP.
+ * @throws {Error} En cas d'erreur lors de la récupération des informations de l'utilisateur.
+ */
 exports.readAccount = async (req, res) => {
     try {
         const userId = req.auth.userId;// Récupérer l'ID de l'utilisateur depuis les paramètres JWT
@@ -37,6 +50,15 @@ exports.readAccount = async (req, res) => {
     }
 };
 
+/**
+ * Récupère les informations d'un utilisateur par son ID.
+ *
+ * @function read
+ * @async
+ * @param {Object} req - La requête HTTP.
+ * @param {Object} res - La réponse HTTP.
+ * @throws {Error} En cas d'erreur lors de la récupération de l'utilisateur.
+ */
 exports.read = async (req, res) => {
     try {
         const userId = req.params.id;
@@ -57,6 +79,15 @@ exports.read = async (req, res) => {
     }
 };
 
+/**
+ * Récupère tous les utilisateurs, en excluant le champ 'password'.
+ *
+ * @function readAll
+ * @async
+ * @param {Object} req - La requête HTTP.
+ * @param {Object} res - La réponse HTTP.
+ * @throws {Error} En cas d'erreur lors de la récupération des utilisateurs.
+ */
 exports.readAll = async (req, res) => {
     try {
         const users = await User.findAll({
@@ -75,6 +106,26 @@ exports.readAll = async (req, res) => {
     }
 };
 
+/**
+ * Met à jour les informations d'un utilisateur.
+ *
+ * @function update
+ * @async
+ * @param {Object} req - La requête HTTP.
+ * @param {Object} res - La réponse HTTP.
+ * @throws {Error} En cas d'erreur lors de la mise à jour de l'utilisateur.
+ *
+ * @example
+ * // Exemple de requête
+ * PATCH /api/users/update
+ * {
+ *   "datas": {
+ *     "username": "nouveau_nom",
+ *     "email": "nouvel_email@example.com",
+ *     "avatar": "delete"
+ *   }
+ * }
+ */
 exports.update = async (req, res) => {
     try {
         const userId = req.auth.userId;// Récupérer l'ID de l'utilisateur depuis les paramètres JWT
@@ -161,6 +212,15 @@ exports.update = async (req, res) => {
     }
 };
 
+/**
+ * Met à jour le mot de passe d'un utilisateur.
+ *
+ * @function updatePassword
+ * @async
+ * @param {Object} req - La requête HTTP.
+ * @param {Object} res - La réponse HTTP.
+ * @throws {Error} En cas d'erreur lors de la mise à jour du mot de passe.
+ */
 exports.updatePassword = async (req, res) => {
     try {
         const userId = req.auth.userId; // Récupérer l'ID de l'utilisateur via JWT
@@ -210,6 +270,15 @@ exports.updatePassword = async (req, res) => {
     }
 };
 
+/**
+ * Supprime un utilisateur et son avatar.
+ *
+ * @function delete
+ * @async
+ * @param {Object} req - La requête HTTP.
+ * @param {Object} res - La réponse HTTP.
+ * @throws {Error} En cas d'erreur lors de la suppression de l'utilisateur.
+ */
 exports.delete = async (req, res) => {
     try {
         const userId = req.auth.userId;// Récupérer l'ID de l'utilisateur depuis les paramètres JWT

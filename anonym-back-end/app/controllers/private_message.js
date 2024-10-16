@@ -1,6 +1,21 @@
 const { PrivateMessage } = require('../models');
 
-// Mettre à jour un message
+/**
+ * @module privateMessageController
+ * @description Ce module contient des fonctions pour gérer les messages privés, y compris la mise à jour et la suppression des messages.
+ */
+
+/**
+ * Mettre à jour un message.
+ *
+ * @async
+ * @function update
+ * @param {Object} req - L'objet de requête.
+ * @param {Object} res - L'objet de réponse.
+ * @throws {Object} 404 - Non trouvé si le message n'existe pas ou si l'utilisateur n'est pas l'expéditeur.
+ * @returns {Object} 200 - Le message mis à jour.
+ * @returns {Object} 500 - Erreur interne du serveur si une erreur se produit lors de la mise à jour du message.
+ */
 exports.update = async (req, res) => {
     try {
         const { message_id } = req.params;
@@ -21,7 +36,17 @@ exports.update = async (req, res) => {
     }
 };
 
-// Supprimer un message
+/**
+ * Supprimer un message.
+ *
+ * @async
+ * @function delete
+ * @param {Object} req - L'objet de requête.
+ * @param {Object} res - L'objet de réponse.
+ * @throws {Object} 404 - Non trouvé si le message n'existe pas ou si l'utilisateur n'est pas l'expéditeur.
+ * @returns {Object} 200 - Un message de confirmation que le message a été supprimé avec succès.
+ * @returns {Object} 500 - Erreur interne du serveur si une erreur se produit lors de la suppression du message.
+ */
 exports.delete = async (req, res) => {
     try {
         const { message_id } = req.params;

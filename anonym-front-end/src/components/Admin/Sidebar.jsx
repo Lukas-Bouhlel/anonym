@@ -5,14 +5,27 @@ import {useApi} from '../../context/ApiContext';
 import { faGlobe, faChartLine, faBars, faInfo } from '@fortawesome/free-solid-svg-icons';
 import logo from '../../assets/images/logos/anonym-logo-white.svg';
 
+/**
+ * Composant Sidebar affichant un menu latéral pour la navigation.
+ * Permet de naviguer vers différentes sections de l'application et d'accéder à la documentation de l'API.
+ * 
+ * @returns {JSX.Element} Le composant Sidebar.
+ */
 const Sidebar = () => {
-    const [isOpen, setIsOpen] = useState(true);  // State to track sidebar open/close
-    const {api_url} = useApi();
+    const [isOpen, setIsOpen] = useState(true);
+    const {api_url} = useApi();// Utilise le contexte pour obtenir l'URL de l'API
 
+    /**
+     * Gère l'ouverture et la fermeture de la barre latérale.
+     */
     const toggleSidebar = () => {
-        setIsOpen(!isOpen);  // Toggle the sidebar state
+        setIsOpen(!isOpen);
     };
 
+    /**
+     * Ouvre la documentation de l'API dans un nouvel onglet.
+     * @param {Event} event - L'événement de clic sur le lien de la documentation.
+     */
     const handleLinkClick = (event) => {
         event.preventDefault();
         window.open(api_url + '/api/admin/api-docs', '_blank', 'noopener,noreferrer');

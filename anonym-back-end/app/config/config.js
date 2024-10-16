@@ -18,6 +18,33 @@ const {
   DB_PROD_DIALECT
 } = process.env;
 
+/**
+ * Configuration de la base de données pour différents environnements.
+ * 
+ * @module databaseConfig
+ * @type {Object}
+ * @property {Object} development - Configuration de la base de données pour l'environnement de développement.
+ * @property {string} development.username - Nom d'utilisateur de la base de données pour le développement.
+ * @property {string} development.password - Mot de passe de la base de données pour le développement.
+ * @property {string} development.database - Nom de la base de données pour le développement.
+ * @property {string} development.host - Hôte de la base de données pour le développement.
+ * @property {string} development.dialect - Dialecte de la base de données pour le développement.
+ * 
+ * @property {Object} test - Configuration de la base de données pour l'environnement de test.
+ * @property {string} test.username - Nom d'utilisateur de la base de données pour le test.
+ * @property {string} test.password - Mot de passe de la base de données pour le test.
+ * @property {string} test.database - Nom de la base de données pour le test.
+ * @property {string} test.host - Hôte de la base de données pour le test.
+ * @property {string} test.dialect - Dialecte de la base de données pour le test.
+ * 
+ * @property {Object} production - Configuration de la base de données pour l'environnement de production.
+ * @property {string} production.username - Nom d'utilisateur de la base de données pour la production.
+ * @property {string} production.password - Mot de passe de la base de données pour la production.
+ * @property {string} production.database - Nom de la base de données pour la production.
+ * @property {string} production.host - Hôte de la base de données pour la production.
+ * @property {string} production.dialect - Dialecte de la base de données pour la production.
+ */
+
 module.exports = {
   development: {
     username: DB_USERNAME,

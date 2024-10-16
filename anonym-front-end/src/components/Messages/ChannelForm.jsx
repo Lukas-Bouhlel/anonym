@@ -5,11 +5,23 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import axios from 'axios';
 import { useApi } from '../../context/ApiContext';
 
+/**
+ * Composant ChannelForm pour créer un nouveau canal.
+ *
+ * @param {Object} props - Les propriétés du composant.
+ * @param {boolean} props.show - Indique si la modal doit être affichée.
+ * @param {Function} props.onClose - Fonction appelée pour fermer la modal.
+ * @returns {JSX.Element} - Le rendu du composant ChannelForm.
+ */
 const ChannelForm = ({ show, onClose }) => {
-    const { api_url } = useApi();
+    const { api_url } = useApi();// Utilise le contexte pour obtenir l'URL de l'API
     const queryClient = useQueryClient();
     const { register, handleSubmit, formState: { errors }, reset } = useForm();
 
+    /**
+     * Appel API pour créer un canal.
+     * Utilise useMutation pour gérer l'état de la requête.
+     */
     const mutation = useMutation({
         mutationFn: async (newChannel) => {
             const response = await axios.post(`${api_url}/api/channels`, {
@@ -28,7 +40,11 @@ const ChannelForm = ({ show, onClose }) => {
         }
     });
 
-    // Gestion de la soumission du formulaire
+    /**
+     * Gestion de la soumission du formulaire.
+     *
+     * @param {Object} data - Les données soumises du formulaire.
+     */
     const onSubmit = (data) => {
         mutation.mutate(data); 
     };
@@ -86,8 +102,8 @@ const ChannelForm = ({ show, onClose }) => {
 };
 
 ChannelForm.propTypes = {
-    show: PropTypes.bool.isRequired, // Expecting show to be a boolean and required
-    onClose: PropTypes.func.isRequired // Expecting onClose to be a function and required
+    show: PropTypes.bool.isRequired, 
+    onClose: PropTypes.func.isRequired
 };
 
 export default ChannelForm;

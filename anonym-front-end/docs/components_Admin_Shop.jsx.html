@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: components/Admin/Shop.jsx</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: components/Admin/Shop.jsx</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>import { useState } from "react";
+import PropTypes from "prop-types";
+import axios from "axios";
+import { Modal, Button } from "rsuite";
+import { useApi } from "../../context/ApiContext";
+import { usePopup } from "../../context/PopupContext";
+
+/**
+ * Composant Shop qui gère l'affichage, la création, la modification et la suppression
+ * d'articles dans un magasin pour les admins.
+ *
+ * @component
+ * @param {Object} shop - Les données du magasin.
+ * @param {Function} refetch - Fonction pour rafraîchir les données après une modification.
+ * @example
+ * const shopData = {
+ *   data: [
+ *     { article_id: 1, title: "Article 1", amount: 100, type: "CADRE", createdAt: "2024-01-01", updatedAt: "2024-01-01", content: "image_url" }
+ *   ]
+ * };
+ * &lt;Shop shop={shopData} refetch={fetchShopData} />
+ */
+const Shop = ({ shop, refetch }) => {
+  const data = shop.data || []; 
+  const { api_url } = useApi();// Utilise le contexte pour obtenir l'URL de l'API
+  const [selectedArticle, setSelectedArticle] = useState({});
+  const [open, setOpen] = useState(false);
+  const [createOpen, setCreateOpen] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
+  const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
+  const { setOpenPopup, setTextPopup, setState } = usePopup();
+  const [newArticle, setNewArticle] = useState({
+    title: "",
+    amount: "",
+    type: "CADRE",
+    image: null, // Ajout de l'image pour la création
+  });
+  const [selectedImage, setSelectedImage] = useState(null); // Pour les images modifiées
+
+  /**
+   * Gère le changement d'image lors de l'édition ou de la création d'un article.
+   * @param {Event} e - L'événement de changement d'image.
+   */
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    if (open) {
+      // Pour la modification
+      setSelectedImage(file);
+    } else {
+      // Pour la création
+      setNewArticle({
+        ...newArticle,
+        image: file,
+      });
+    }
+  };
+
+  /**
+   * Ouvre le modal pour éditer un article sélectionné.
+   * @param {Object} article - L'article à éditer.
+   */
+  const handleOpen = (article) => {
+    setSelectedArticle(article);
+    setOpen(true);
+  };
+
+  /**
+   * Ferme le modal d'édition ou de création et réinitialise les champs.
+   */
+  const handleClose = () => {
+    setSelectedArticle({});
+    setOpen(false);
+    setShowDeleteConfirmation(false);
+    setErrorMessage("");
+    setNewArticle({ title: "", amount: "", type: "CADRE", image: null }); // Réinitialise pour la création
+    setSelectedImage(null); // Réinitialise l'image sélectionnée
+  };
+
+  /**
+   * Soumet l'édition d'un article.
+   * @param {Event} e - L'événement de soumission du formulaire.
+   * @returns {Promise&lt;void>} - Retourne une promesse.
+   */
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    const formData = new FormData();
+    formData.append(
+      "datas",
+      JSON.stringify({
+        title: selectedArticle.title,
+        amount: selectedArticle.amount,
+        type: selectedArticle.type,
+      })
+    );
+
+    if (selectedImage) {
+      formData.append("image", selectedImage);
+    }
+
+    // Appel api pour modifier un article
+    try {
+        await axios.put(`${api_url}/api/shop/admin/${selectedArticle.article_id}`, formData, {
+          withCredentials: true,
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        }
+      );
+      setOpenPopup(true);
+      setTextPopup("L'article à bien été modifier");
+      setState("update");
+      handleClose();
+      refetch();
+    } catch (error) {
+      setErrorMessage(
+        error.response?.data?.message || "Une erreur est survenue."
+      );
+    }
+  };
+
+  /**
+   * Crée un nouvel article via une requête API.
+   * @param {Event} e - L'événement de soumission du formulaire.
+   * @returns {Promise&lt;void>} - Retourne une promesse.
+   */
+  const handleCreateArticle = async (e) => {
+    e.preventDefault();
+    const formData = new FormData();
+    formData.append(
+      "datas",
+      JSON.stringify({
+        title: newArticle.title,
+        amount: newArticle.amount,
+        type: newArticle.type,
+      })
+    );
+
+    formData.append("image", newArticle.image);
+
+    try {
+      await axios.post(`${api_url}/api/shop/admin`, formData, {
+        withCredentials: true,
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
+      setOpenPopup(true);
+      setTextPopup("L'article à bien été créer");
+      setState("success");
+      setCreateOpen(false);
+      handleClose();
+      refetch();
+    } catch (error) {
+      setErrorMessage(
+        error.response?.data?.message ||
+          "Une erreur est survenue lors de la création."
+      );
+    }
+  };
+
+  /**
+   * Gère le changement des champs d'édition et de création d'article.
+   * @param {Event} e - L'événement de changement de champ.
+   */
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    if (createOpen) {
+      setNewArticle({
+        ...newArticle,
+        [name]: value,
+      });
+    } else {
+      setSelectedArticle({
+        ...selectedArticle,
+        [name]: value,
+      });
+    }
+  };
+
+  /**
+   * Supprime un article via une requête API.
+   * @returns {Promise&lt;void>} - Retourne une promesse.
+   */
+  const handleDeleteArticle = async () => {
+    try {
+      await axios.delete(
+        `${api_url}/api/shop/admin/${selectedArticle.article_id}`,
+        {
+          withCredentials: true,
+        }
+      );
+      setOpenPopup(true);
+      setTextPopup("L'article à bien été supprimer");
+      setState("success");
+      handleClose();
+      refetch();
+    } catch (error) {
+      setErrorMessage(
+        error.response?.data?.message ||
+          "Une erreur est survenue lors de la suppression."
+      );
+    }
+  };
+
+  return (
+    &lt;div className="content-admin-container-item">
+      &lt;div className="content-admin-container-item-head">
+        &lt;h1>Articles&lt;/h1>
+        &lt;Button onClick={() => setCreateOpen(true)} className="mb-3">
+          Créer un article
+        &lt;/Button>
+      &lt;/div>
+      {shop &amp;&amp; data.length > 0 ? (
+        &lt;div className="table-responsive-scroll">
+          &lt;table className="table align-middle mb-0 bg-white">
+            &lt;thead className="bg-light">
+              &lt;tr>
+                &lt;th>id&lt;/th>
+                &lt;th>contenu&lt;/th>
+                &lt;th>titre&lt;/th>
+                &lt;th>Montant&lt;/th>
+                &lt;th>createdAt&lt;/th>
+                &lt;th>updatedAt&lt;/th>
+                &lt;th>type&lt;/th>
+                &lt;th>Actions&lt;/th>
+              &lt;/tr>
+            &lt;/thead>
+            &lt;tbody>
+              {data.map((article, index) => (
+                &lt;tr key={index}>
+                  &lt;td>{article.article_id}&lt;/td>
+                  &lt;td>
+                    &lt;div className="d-flex align-items-center">
+                      &lt;img
+                        src={article.content}
+                        alt=""
+                        className="rounded-circle"
+                        style={{ width: "50px", height: "50px" }}
+                      />
+                    &lt;/div>
+                  &lt;/td>
+                  &lt;td>{article.title}&lt;/td>
+                  &lt;td>{article.amount}&lt;/td>
+                  &lt;td>{new Date(article.createdAt).toLocaleDateString()}&lt;/td>
+                  &lt;td>{new Date(article.updatedAt).toLocaleDateString()}&lt;/td>
+                  &lt;td>{article.type}&lt;/td>
+                  &lt;td>
+                    &lt;button
+                      onClick={() => handleOpen(article)}
+                      type="button"
+                      className="btn btn-link btn-sm btn-rounded"
+                    >
+                      Edit
+                    &lt;/button>
+                  &lt;/td>
+                &lt;/tr>
+              ))}
+            &lt;/tbody>
+          &lt;/table>
+        &lt;/div>
+      ) : (
+        &lt;p>Chargement...&lt;/p>
+      )}
+      {/* Modal pour éditer l'article */}
+      &lt;Modal open={open} onClose={handleClose}>
+        &lt;Modal.Header>
+          &lt;Modal.Title>Editer l&amp;apos;article&lt;/Modal.Title>
+        &lt;/Modal.Header>
+        &lt;Modal.Body>
+          {errorMessage &amp;&amp; (
+            &lt;div className="error-message" style={{ color: "red" }}>
+              {errorMessage}
+            &lt;/div>
+          )}
+          &lt;form onSubmit={handleSubmit}>
+            &lt;div className="mb-3">
+              &lt;label htmlFor="title" className="form-label">
+                Nom de l&amp;apos;article
+              &lt;/label>
+              &lt;input
+                aria-required="true"
+                aria-label="Nom de l'article"
+                type="text"
+                className="form-control"
+                id="title"
+                name="title"
+                value={selectedArticle.title || ""}
+                onChange={handleChange}
+              />
+            &lt;/div>
+            &lt;div className="mb-3">
+              &lt;label htmlFor="amount" className="form-label">
+                Montant
+              &lt;/label>
+              &lt;input
+                aria-required="true"
+                aria-label="Montant"
+                type="number"
+                className="form-control"
+                id="amount"
+                name="amount"
+                value={selectedArticle.amount || ""}
+                onChange={handleChange}
+              />
+            &lt;/div>
+            &lt;div className="mb-3">
+              &lt;label htmlFor="type" className="form-label">
+                Type
+              &lt;/label>
+              &lt;select
+                aria-label="Type"
+                className="form-select"
+                id="type"
+                name="type"
+                value={selectedArticle.type || "CADRE"}
+                onChange={handleChange}
+              >
+                &lt;option value="CADRE">CADRE&lt;/option>
+                &lt;option value="SUBSCRIPTION">SUBSCRIPTION&lt;/option>
+                &lt;option value="COLOR">COLOR&lt;/option>
+              &lt;/select>
+            &lt;/div>
+            &lt;div className="mb-3">
+              &lt;label htmlFor="image" className="form-label">
+                Télécharger une image
+              &lt;/label>
+              &lt;input
+                aria-label="Télécharger une image"
+                type="file"
+                className="form-control"
+                id="image"
+                name="image"
+                accept="image/*"
+                onChange={handleImageChange}
+              />
+            &lt;/div>
+            &lt;Modal.Footer>
+              &lt;Button onClick={handleClose} appearance="subtle">
+                Annuler
+              &lt;/Button>
+              &lt;Button type="submit" className="btn btn-primary">
+                Enregistrer
+              &lt;/Button>
+              &lt;Button
+                color="red"
+                appearance="subtle"
+                onClick={() => setShowDeleteConfirmation(true)}
+              >
+                Supprimer l&amp;apos;article
+              &lt;/Button>
+            &lt;/Modal.Footer>
+          &lt;/form>
+        &lt;/Modal.Body>
+      &lt;/Modal>
+
+      {/* Modal de création d'article */}
+      &lt;Modal open={createOpen} onClose={() => setCreateOpen(false)}>
+        &lt;Modal.Header>
+          &lt;Modal.Title>Créer un nouvel article&lt;/Modal.Title>
+        &lt;/Modal.Header>
+        &lt;Modal.Body>
+          {errorMessage &amp;&amp; (
+            &lt;div className="error-message" style={{ color: "red" }}>
+              {errorMessage}
+            &lt;/div>
+          )}
+          &lt;form onSubmit={handleCreateArticle}>
+            &lt;div className="mb-3">
+              &lt;label htmlFor="title" className="form-label">
+                Nom de l&amp;apos;article
+              &lt;/label>
+              &lt;input
+                type="text"
+                className="form-control"
+                id="title"
+                name="title"
+                value={newArticle.title}
+                onChange={handleChange}
+                required
+              />
+            &lt;/div>
+            &lt;div className="mb-3">
+              &lt;label htmlFor="amount" className="form-label">
+                Montant
+              &lt;/label>
+              &lt;input
+                type="number"
+                className="form-control"
+                id="amount"
+                name="amount"
+                value={newArticle.amount}
+                onChange={handleChange}
+                required
+              />
+            &lt;/div>
+            &lt;div className="mb-3">
+              &lt;label htmlFor="type" className="form-label">
+                Type
+              &lt;/label>
+              &lt;select
+                className="form-select"
+                id="type"
+                name="type"
+                value={newArticle.type}
+                onChange={handleChange}
+              >
+                &lt;option value="CADRE">CADRE&lt;/option>
+                &lt;option value="SUBSCRIPTION">SUBSCRIPTION&lt;/option>
+                &lt;option value="COLOR">COLOR&lt;/option>
+              &lt;/select>
+            &lt;/div>
+            &lt;div className="mb-3">
+              &lt;label htmlFor="image" className="form-label">
+                Télécharger une image
+              &lt;/label>
+              &lt;input
+                type="file"
+                className="form-control"
+                id="image"
+                name="image"
+                accept="image/*"
+                onChange={handleImageChange}
+              />
+            &lt;/div>
+            &lt;Modal.Footer>
+              &lt;Button onClick={() => setCreateOpen(false)} appearance="subtle">
+                Annuler
+              &lt;/Button>
+              &lt;Button type="submit" className="btn btn-primary">
+                Créer
+              &lt;/Button>
+            &lt;/Modal.Footer>
+          &lt;/form>
+        &lt;/Modal.Body>
+      &lt;/Modal>
+
+      {/* Modal de confirmation de suppression */}
+      {showDeleteConfirmation &amp;&amp; (
+        &lt;Modal
+          open={showDeleteConfirmation}
+          onClose={() => setShowDeleteConfirmation(false)}
+        >
+          &lt;Modal.Header>
+            &lt;Modal.Title>Confirmation de Suppression&lt;/Modal.Title>
+          &lt;/Modal.Header>
+          &lt;Modal.Body>
+            Êtes-vous sûr de vouloir supprimer cet article ? Cette action est
+            irréversible.
+          &lt;/Modal.Body>
+          &lt;Modal.Footer>
+            &lt;Button
+              onClick={() => setShowDeleteConfirmation(false)}
+              appearance="subtle"
+            >
+              Annuler
+            &lt;/Button>
+            &lt;Button
+              color="red"
+              appearance="subtle"
+              onClick={handleDeleteArticle}
+            >
+              Supprimer
+            &lt;/Button>
+          &lt;/Modal.Footer>
+        &lt;/Modal>
+      )}
+    &lt;/div>
+  );
+};
+
+Shop.propTypes = {
+  shop: PropTypes.shape({
+    data: PropTypes.array, // Expecting data to be an array
+  }).isRequired, // shop is required
+  refetch: PropTypes.func.isRequired, // refetch is required and should be a function
+};
+
+export default Shop;
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Global</h3><ul><li><a href="global.html#Access">Access</a></li><li><a href="global.html#Account">Account</a></li><li><a href="global.html#Admin">Admin</a></li><li><a href="global.html#ApiProvider">ApiProvider</a></li><li><a href="global.html#App">App</a></li><li><a href="global.html#AuthProvider">AuthProvider</a></li><li><a href="global.html#ChannelForm">ChannelForm</a></li><li><a href="global.html#ChannelMessages">ChannelMessages</a></li><li><a href="global.html#Discover">Discover</a></li><li><a href="global.html#Footer">Footer</a></li><li><a href="global.html#Friends">Friends</a></li><li><a href="global.html#Home">Home</a></li><li><a href="global.html#Inventory">Inventory</a></li><li><a href="global.html#Invoices">Invoices</a></li><li><a href="global.html#Layout">Layout</a></li><li><a href="global.html#Login">Login</a></li><li><a href="global.html#Navbar">Navbar</a></li><li><a href="global.html#Popup">Popup</a></li><li><a href="global.html#PopupProvider">PopupProvider</a></li><li><a href="global.html#PrivateRoute">PrivateRoute</a></li><li><a href="global.html#Profile">Profile</a></li><li><a href="global.html#Profils">Profils</a></li><li><a href="global.html#Register">Register</a></li><li><a href="global.html#Router">Router</a></li><li><a href="global.html#Shop">Shop</a></li><li><a href="global.html#Sidebar">Sidebar</a></li><li><a href="global.html#SocketProvider">SocketProvider</a></li><li><a href="global.html#Success">Success</a></li><li><a href="global.html#Support">Support</a></li><li><a href="global.html#UserProvider">UserProvider</a></li><li><a href="global.html#Users">Users</a></li><li><a href="global.html#fetchShop">fetchShop</a></li><li><a href="global.html#fetchUsers">fetchUsers</a></li><li><a href="global.html#mutationFn">mutationFn</a></li><li><a href="global.html#useApi">useApi</a></li><li><a href="global.html#useAuth">useAuth</a></li><li><a href="global.html#usePopup">usePopup</a></li><li><a href="global.html#useSocket">useSocket</a></li><li><a href="global.html#useSphereAnimation">useSphereAnimation</a></li><li><a href="global.html#useUser">useUser</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.3</a> on Thu Oct 17 2024 00:21:52 GMT+0200 (heure d’été d’Europe centrale)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

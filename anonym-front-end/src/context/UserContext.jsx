@@ -5,18 +5,32 @@ import { useApi } from '../context/ApiContext';
 import { useQuery } from '@tanstack/react-query';
 import { usePopup } from './PopupContext';
 
-// Créez le contexte
+// Créez le context
 const UserContext = createContext();
 
-// Hook personnalisé pour accéder facilement au contexte utilisateur
+/**
+ * Hook personnalisé pour accéder facilement au contexte utilisateur.
+ * @returns {Object} - L'objet contenant les informations de l'utilisateur et les fonctions associées.
+ */
 export const useUser = () => useContext(UserContext);
 
-// Fournisseur de contexte utilisateur
+/**
+ * Fournisseur de contexte pour les utilisateurs.
+ * Gère la connexion, l'inscription et la déconnexion des utilisateurs.
+ *
+ * @param {Object} props - Les propriétés du composant.
+ * @param {React.ReactNode} props.children - Les enfants à rendre.
+ * @returns {React.ReactElement} - Le fournisseur de contexte.
+ */
 export const UserProvider = ({ children }) => {
     const [user, setUser] = useState(null); // Stocke les informations de l'utilisateur connecté
     const { setTextPopup, setOpenPopup, setState } = usePopup();
     const { api_url } = useApi();
 
+    /**
+     * Fonction pour récupérer les informations de l'utilisateur.
+     * @returns {Promise<Object>} - Les données de l'utilisateur.
+     */
     const fetchUser = async () => {
           const response = await axios.get(`${api_url}/api/account`, {
             withCredentials: true,
@@ -40,11 +54,18 @@ export const UserProvider = ({ children }) => {
         }
     }, [data]);
 
-    // Fonction pour mettre à jour les informations de l'utilisateur
+    /**
+     * Fonction pour mettre à jour les informations de l'utilisateur après login.
+     * @param {Object} userData - Les données de l'utilisateur.
+     */
     const login = (userData) => {
         setUser(userData);
     };
 
+    /**
+     * Fonction pour gérer l'inscription d'un nouvel utilisateur.
+     * @param {Object} userData - Les données de l'utilisateur enregistré.
+     */
     const registered = (userData) => {
         setUser(userData);
         setOpenPopup(true);
@@ -52,7 +73,10 @@ export const UserProvider = ({ children }) => {
         setTextPopup('Votre compte a été créé avec succès. Vous trouverez une confirmation envoyée par e-mail !');
     };
 
-    // Fonction pour déconnecter l'utilisateur
+     /**
+     * Fonction pour déconnecter l'utilisateur.
+     * @returns {Promise<void>}
+     */
     const logout = async () => {
         await axios.post(`${api_url}/api/auth/logout`, {}, { withCredentials: true });
         setUser(null);

@@ -1,0 +1,22 @@
+{
+    "source": {
+        "include": [
+            "./src/App.jsx",
+            "./src/components",
+            "./src/context",
+            "./src/pages",
+            "./src/router"
+        ],
+        "includePattern": ".+\\.(js|jsx|doc|x)?$",
+        "excludePattern": "(node_modules|\\.git)" 
+    },
+    "opts": {
+        "destination": "./docs", 
+        "recurse": true    
+    },
+    "plugins": ["plugins/markdown"], 
+    "templates": {
+        "cleverLinks": false,
+        "monospaceLinks": false
+    }
+}

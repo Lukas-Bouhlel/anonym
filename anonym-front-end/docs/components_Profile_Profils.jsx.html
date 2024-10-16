@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: components/Profile/Profils.jsx</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: components/Profile/Profils.jsx</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>import { useState } from "react";
+import PropTypes from 'prop-types';
+import axios from "axios";
+import { useNavigate  } from "react-router-dom";
+import { Modal, Button } from 'rsuite';
+import { useApi } from '../../context/ApiContext';
+import Popup from "../Utils/Popup";
+import { usePopup } from '../../context/PopupContext';
+
+/**
+ * Composant Profils pour gérer les informations de l'utilisateur et les actions de compte.
+ *
+ * @param {Object} props - Les propriétés du composant.
+ * @param {Object} props.user - Les informations de l'utilisateur.
+ * @param {Function} props.setTypeProfils - Fonction pour changer le type de profil.
+ * @param {Function} props.setUser - Fonction pour mettre à jour l'utilisateur.
+ * @returns {JSX.Element} - Le rendu du composant Profils.
+ */
+const Profils = ({user, setTypeProfils, setUser}) => {
+    const [open, setOpen] = useState(false);
+    const [size, setSize] = useState();
+    const [deleteModalOpen, setDeleteModalOpen] = useState(false); 
+    const [currentPassword, setCurrentPassword] = useState("");
+    const [newPassword, setNewPassword] = useState("");
+    const [confirmNewPassword, setConfirmNewPassword] = useState("");
+    const [errorMessage, setErrorMessage] = useState("");
+    const [showPopup, setShowPopup] = useState(false);
+    const { setOpenPopup, setTextPopup, setState } = usePopup();// Utilise le contexte pour gérer la popup
+    const { api_url } = useApi();// Utilise le contexte pour obtenir l'URL de l'API
+    const navigate = useNavigate(); 
+
+    /**
+     * Ouvre la modal pour changer le mot de passe.
+     * @param {string} value - La taille de la modal.
+     */
+    const handleOpen = value => {
+      setSize(value);
+      setOpen(true);
+    };
+
+    /**
+     * Ferme la modal pour changer le mot de passe.
+     */
+    const handleClose = () => setOpen(false);
+
+    /**
+     * Supprime le compte de l'utilisateur via l'API.
+     */
+    const handleDeleteAccount = async () => {
+        try {
+            await axios.delete(`${api_url}/api/account/delete`, {
+                withCredentials: true
+            });
+            setUser(null);
+            setOpenPopup(true);
+            setTextPopup('Votre compte a été supprimé. Nous espérons vous revoir bientôt sur notre plateforme !');
+            setState('error');
+            navigate('/');
+        } catch (error) {
+            console.error("Erreur lors de la suppression du compte:", error);
+        }
+    };
+
+    /**
+     * Met à jour le mot de passe de l'utilisateur via l'API.
+     * @param {Object} e - L'événement de soumission du formulaire.
+     */
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+
+        if (newPassword !== confirmNewPassword) {
+            setErrorMessage("Les nouveaux mots de passe ne correspondent pas.");
+            return;
+        }
+
+        try {
+            const response = await axios.put(`${api_url}/api/account/password`, {
+                currentPassword,
+                newPassword,
+                confirmNewPassword
+            }, {
+                withCredentials: true // Pour inclure les cookies JWT
+            });
+
+            if (response.status === 200) {
+                handleClose();
+                setShowPopup(true);
+            }
+        } catch (error) {
+            setErrorMessage(error.response?.data?.message || "Une erreur est survenue.");
+        }
+    };
+
+    return (
+        &lt;div id="profils">
+            &lt;Popup showPopup={showPopup} setShowPopup={setShowPopup} text={'Votre mot de passe a bien été mis à jour !'} state={'update'}/>
+            &lt;div className="profils-title">
+                &lt;h1>Mon Compte&lt;/h1>
+            &lt;/div>
+            &lt;div className="profils-infos">
+                &lt;div className="profils-infos-first">
+                    &lt;div className="profile-content-infos-img">
+                        {user?.Inventories?.[0]?.Shop?.content &amp;&amp; (
+                            &lt;img className="avatar-profile decoration-profile" src={`${user.Inventories[0].Shop.content}`} alt="hugenerd" width="80" height="80"/>
+                        )}
+                        &lt;img src={`${user.avatar}`} alt="hugenerd" width="80" height="80" className="rounded-circle avatar-profile" />
+                    &lt;/div>
+                    &lt;button onClick={() => setTypeProfils('Account')} className="profils-infos-button">Modifier profil d&amp;apos;utilisateur&lt;/button>
+                &lt;/div>
+                &lt;div className="profils-infos-content">
+                    &lt;div className="profils-infos-content-item">
+                        &lt;div>
+                            &lt;h3>Nom d&amp;apos;utilisateur&lt;/h3>
+                            &lt;span>{user.username}&lt;/span>
+                        &lt;/div>
+                        &lt;button onClick={() => setTypeProfils('Account')} >Modifier&lt;/button>
+                    &lt;/div>
+                    &lt;div className="profils-infos-content-item">
+                        &lt;div>
+                            &lt;h3>E-mail&lt;/h3>
+                            &lt;span>{user.email}&lt;/span>
+                        &lt;/div>
+                        &lt;button onClick={() => setTypeProfils('Account')} >Modifier&lt;/button>
+                    &lt;/div>
+                &lt;/div>
+            &lt;/div>
+            &lt;div className="profils-password">
+                &lt;h3>Mot de passe et authentification&lt;/h3>
+                &lt;button onClick={() => handleOpen('xs')} className="profils-infos-button">Changer le mot de passe&lt;/button>
+            &lt;/div>
+            &lt;div className="profils-delete">
+                &lt;h4>Suppression du compte&lt;/h4>
+                &lt;button onClick={() => setDeleteModalOpen(true)} className="profils-infos-button">Supprimer le compte&lt;/button>
+            &lt;/div>
+            {/* Modal pour changement de mot de passe */}
+            &lt;Modal size={size} open={open} onClose={handleClose}>
+                &lt;Modal.Header>
+                &lt;Modal.Title>Mets ton mot de passe à jour&lt;/Modal.Title>
+                Saisis ton mot de passe actuel puis le nouveau
+                &lt;/Modal.Header>
+                &lt;Modal.Body>
+                    {errorMessage &amp;&amp; &lt;div className="error-message" style={{ color: "red" }}>{errorMessage}&lt;/div>}
+                    &lt;form onSubmit={handleSubmit}>
+                        &lt;div className="mb-3">
+                            &lt;label htmlFor="currentPassword" className="form-label">Mot de passe actuel&lt;/label>
+                            &lt;input aria-required="true" aria-label="Mot de passe actuel" type="password" className="form-control" id="currentPassword" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} required />
+                        &lt;/div>
+                        &lt;div className="mb-3">
+                            &lt;label htmlFor="newPassword" className="form-label">Nouveau mot de passe&lt;/label>
+                            &lt;input aria-required="true" aria-label="Nouveau mot de passe" type="password" className="form-control" id="newPassword" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} required />
+                        &lt;/div>
+                        &lt;div className="mb-3">
+                            &lt;label htmlFor="confirmNewPassword" className="form-label">Confirmer le nouveau mot de passe&lt;/label>
+                            &lt;input aria-required="true" aria-label="Confirmer le nouveau mot de passe" type="password" className="form-control" id="confirmNewPassword" value={confirmNewPassword} onChange={(e) => setConfirmNewPassword(e.target.value)} required />
+                        &lt;/div>
+                        &lt;Modal.Footer>
+                            &lt;Button onClick={handleClose} appearance="subtle">
+                                Annuler
+                            &lt;/Button>
+                            &lt;Button type="submit" className="btn btn-primary" onClick={handleSubmit}>
+                                Terminé
+                            &lt;/Button>
+                        &lt;/Modal.Footer>
+                    &lt;/form>
+                &lt;/Modal.Body>
+            &lt;/Modal>
+            {/* Modal pour la suppression du compte */}
+            &lt;Modal open={deleteModalOpen} onClose={() => setDeleteModalOpen(false)} size="xs">
+                &lt;Modal.Header>
+                    &lt;Modal.Title>Confirmation de suppression&lt;/Modal.Title>
+                &lt;/Modal.Header>
+                &lt;Modal.Body>
+                    Êtes-vous sûr de vouloir supprimer votre compte ? Cette action est irréversible.
+                &lt;/Modal.Body>
+                &lt;Modal.Footer>
+                    &lt;Button onClick={handleDeleteAccount} color="red">
+                        Supprimer
+                    &lt;/Button>
+                    &lt;Button onClick={() => setDeleteModalOpen(false)} appearance="subtle">
+                        Annuler
+                    &lt;/Button>
+                &lt;/Modal.Footer>
+            &lt;/Modal>
+        &lt;/div>
+    )
+}
+
+Profils.propTypes = {
+    user: PropTypes.shape({
+        avatar: PropTypes.string,
+        username: PropTypes.string,
+        email: PropTypes.string,
+        Inventories: PropTypes.arrayOf(
+            PropTypes.shape({
+                Shop: PropTypes.shape({
+                    content: PropTypes.string
+                })
+            })
+        )
+    }).isRequired,
+    setTypeProfils: PropTypes.func.isRequired,
+    setUser: PropTypes.func.isRequired
+};
+
+export default Profils;</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Global</h3><ul><li><a href="global.html#Access">Access</a></li><li><a href="global.html#Account">Account</a></li><li><a href="global.html#Admin">Admin</a></li><li><a href="global.html#ApiProvider">ApiProvider</a></li><li><a href="global.html#App">App</a></li><li><a href="global.html#AuthProvider">AuthProvider</a></li><li><a href="global.html#ChannelForm">ChannelForm</a></li><li><a href="global.html#ChannelMessages">ChannelMessages</a></li><li><a href="global.html#Discover">Discover</a></li><li><a href="global.html#Footer">Footer</a></li><li><a href="global.html#Friends">Friends</a></li><li><a href="global.html#Home">Home</a></li><li><a href="global.html#Inventory">Inventory</a></li><li><a href="global.html#Invoices">Invoices</a></li><li><a href="global.html#Layout">Layout</a></li><li><a href="global.html#Login">Login</a></li><li><a href="global.html#Navbar">Navbar</a></li><li><a href="global.html#Popup">Popup</a></li><li><a href="global.html#PopupProvider">PopupProvider</a></li><li><a href="global.html#PrivateRoute">PrivateRoute</a></li><li><a href="global.html#Profile">Profile</a></li><li><a href="global.html#Profils">Profils</a></li><li><a href="global.html#Register">Register</a></li><li><a href="global.html#Router">Router</a></li><li><a href="global.html#Shop">Shop</a></li><li><a href="global.html#Sidebar">Sidebar</a></li><li><a href="global.html#SocketProvider">SocketProvider</a></li><li><a href="global.html#Success">Success</a></li><li><a href="global.html#Support">Support</a></li><li><a href="global.html#UserProvider">UserProvider</a></li><li><a href="global.html#Users">Users</a></li><li><a href="global.html#fetchShop">fetchShop</a></li><li><a href="global.html#fetchUsers">fetchUsers</a></li><li><a href="global.html#mutationFn">mutationFn</a></li><li><a href="global.html#useApi">useApi</a></li><li><a href="global.html#useAuth">useAuth</a></li><li><a href="global.html#usePopup">usePopup</a></li><li><a href="global.html#useSocket">useSocket</a></li><li><a href="global.html#useSphereAnimation">useSphereAnimation</a></li><li><a href="global.html#useUser">useUser</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.3</a> on Thu Oct 17 2024 00:21:52 GMT+0200 (heure d’été d’Europe centrale)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

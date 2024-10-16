@@ -1,5 +1,12 @@
 const LegalNotices = () => {
-
+  /**
+   * Composant LegalNotices qui représente la page des mentions légales de l'application.
+   * Il fournit des informations sur le propriétaire du site, l'hébergement, la propriété intellectuelle, 
+   * la responsabilité, les données personnelles, et d'autres informations légales.
+   *
+   * @component
+   * @returns {React.ReactElement} - L'interface de la page des mentions légales.
+   */
   return (
     <section className='page-legal-notices'>
       <div className="page-legal-notices-content">

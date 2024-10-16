@@ -18,6 +18,13 @@ import Success from "../pages/Success.jsx";
 import Reset from "../components/Access/Reset/Reset.jsx";
 import Admin from "../pages/Admin.jsx";
 
+/**
+ * Composant Router qui gère les routes de l'application avec `react-router-dom`.
+ * Utilise des contextes pour gérer l'authentification, les utilisateurs, les API et les popups.
+ * Définit des routes publiques et privées. Les routes privées sont protégées par le composant `PrivateRoute`.
+ * 
+ * @component
+ */
 const Router = () => {
   return (
     <BrowserRouter>
@@ -27,6 +34,7 @@ const Router = () => {
             <UserProvider>
               <Layout>
                 <Routes>
+                  {/* Routes publique */} 
                   <Route path="/" element={<Home />} />
                   <Route path="/discover" element={<Discover />} />
                   <Route path="/reputation" element={<Reputation />} />

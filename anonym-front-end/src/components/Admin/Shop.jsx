@@ -5,10 +5,25 @@ import { Modal, Button } from "rsuite";
 import { useApi } from "../../context/ApiContext";
 import { usePopup } from "../../context/PopupContext";
 
+/**
+ * Composant Shop qui gère l'affichage, la création, la modification et la suppression
+ * d'articles dans un magasin pour les admins.
+ *
+ * @component
+ * @param {Object} shop - Les données du magasin.
+ * @param {Function} refetch - Fonction pour rafraîchir les données après une modification.
+ * @example
+ * const shopData = {
+ *   data: [
+ *     { article_id: 1, title: "Article 1", amount: 100, type: "CADRE", createdAt: "2024-01-01", updatedAt: "2024-01-01", content: "image_url" }
+ *   ]
+ * };
+ * <Shop shop={shopData} refetch={fetchShopData} />
+ */
 const Shop = ({ shop, refetch }) => {
-  const data = shop.data || []; // Définit data par défaut à un tableau vide
-  const { api_url } = useApi();
-  const [selectedArticle, setSelectedArticle] = useState({}); // Initialise selectedArticle à un objet vide
+  const data = shop.data || []; 
+  const { api_url } = useApi();// Utilise le contexte pour obtenir l'URL de l'API
+  const [selectedArticle, setSelectedArticle] = useState({});
   const [open, setOpen] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
@@ -21,8 +36,11 @@ const Shop = ({ shop, refetch }) => {
     image: null, // Ajout de l'image pour la création
   });
   const [selectedImage, setSelectedImage] = useState(null); // Pour les images modifiées
-  console.log(createOpen);
-  // Gérer le changement d'image (pour l'édition et la création)
+
+  /**
+   * Gère le changement d'image lors de l'édition ou de la création d'un article.
+   * @param {Event} e - L'événement de changement d'image.
+   */
   const handleImageChange = (e) => {
     const file = e.target.files[0];
     if (open) {
@@ -37,13 +55,20 @@ const Shop = ({ shop, refetch }) => {
     }
   };
 
+  /**
+   * Ouvre le modal pour éditer un article sélectionné.
+   * @param {Object} article - L'article à éditer.
+   */
   const handleOpen = (article) => {
     setSelectedArticle(article);
     setOpen(true);
   };
 
+  /**
+   * Ferme le modal d'édition ou de création et réinitialise les champs.
+   */
   const handleClose = () => {
-    setSelectedArticle({}); // Réinitialise selectedArticle à un objet vide
+    setSelectedArticle({});
     setOpen(false);
     setShowDeleteConfirmation(false);
     setErrorMessage("");
@@ -51,7 +76,11 @@ const Shop = ({ shop, refetch }) => {
     setSelectedImage(null); // Réinitialise l'image sélectionnée
   };
 
-  // Soumettre l'édition d'article
+  /**
+   * Soumet l'édition d'un article.
+   * @param {Event} e - L'événement de soumission du formulaire.
+   * @returns {Promise<void>} - Retourne une promesse.
+   */
   const handleSubmit = async (e) => {
     e.preventDefault();
     const formData = new FormData();
@@ -68,6 +97,7 @@ const Shop = ({ shop, refetch }) => {
       formData.append("image", selectedImage);
     }
 
+    // Appel api pour modifier un article
     try {
         await axios.put(`${api_url}/api/shop/admin/${selectedArticle.article_id}`, formData, {
           withCredentials: true,
@@ -88,7 +118,11 @@ const Shop = ({ shop, refetch }) => {
     }
   };
 
-  // Soumettre la création d'article
+  /**
+   * Crée un nouvel article via une requête API.
+   * @param {Event} e - L'événement de soumission du formulaire.
+   * @returns {Promise<void>} - Retourne une promesse.
+   */
   const handleCreateArticle = async (e) => {
     e.preventDefault();
     const formData = new FormData();
@@ -124,7 +158,10 @@ const Shop = ({ shop, refetch }) => {
     }
   };
 
-  // Gérer le changement des champs (édition et création)
+  /**
+   * Gère le changement des champs d'édition et de création d'article.
+   * @param {Event} e - L'événement de changement de champ.
+   */
   const handleChange = (e) => {
     const { name, value } = e.target;
     if (createOpen) {
@@ -140,7 +177,10 @@ const Shop = ({ shop, refetch }) => {
     }
   };
 
-  // Gérer la suppression d'article
+  /**
+   * Supprime un article via une requête API.
+   * @returns {Promise<void>} - Retourne une promesse.
+   */
   const handleDeleteArticle = async () => {
     try {
       await axios.delete(

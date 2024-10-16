@@ -9,26 +9,44 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faXmark, faDoorOpen } from "@fortawesome/free-solid-svg-icons";
 import { Modal, Button } from 'rsuite';
 
+/**
+ * Composant Profile qui représente la page de profil de l'utilisateur.
+ * Il permet à l'utilisateur de gérer ses informations de profil, de facturation, et d'inventaire,
+ * ainsi que de se déconnecter de l'application.
+ *
+ * @component
+ * @returns {React.ReactElement} - L'interface de la page de profil.
+ */
 const Profile = () => {
     const { user, logout, setUser } = useUser();
     const [typeProfils, setTypeProfils] = useState('Profils');
     const [deleteModalOpen, setDeleteModalOpen] = useState(false); 
-    const [isSidebarOpen, setIsSidebarOpen] = useState(false); // État pour savoir si la sidebar est ouverte
-    const [isDragging, setIsDragging] = useState(false); // État pour savoir si l'utilisateur glisse
+    const [isSidebarOpen, setIsSidebarOpen] = useState(false); 
+    const [isDragging, setIsDragging] = useState(false);
     const sidebarRef = useRef(null);
-    const navigate = useNavigate(); // Hook pour rediriger après la déconnexion
+    const navigate = useNavigate();
     const roles = ["ADMIN", "SUPER_ADMIN"];
     const hasRole = user && roles.includes(user.roles);
 
+    /**
+     * Gère la déconnexion de l'utilisateur en appelant la fonction logout et redirige vers la page d'accueil.
+     */
     const handleLogout = async () => {
-        await logout(); // Appelle la fonction logout
-        navigate('/');  // Redirige vers la page d'accueil après la déconnexion
+        await logout(); 
+        navigate('/'); 
     };
 
+    /**
+     * Gère le début du glissement pour ouvrir ou fermer la barre latérale.
+     */
     const handleTouchStart = () => {
         setIsDragging(true);
     };
 
+    /**
+     * Gère le mouvement du touché pour déterminer s'il faut ouvrir ou fermer la barre latérale.
+     * @param {TouchEvent} e - L'événement de touché.
+     */
     const handleTouchMove = (e) => {
         if (isDragging) {
             const touch = e.touches[0];
@@ -42,6 +60,9 @@ const Profile = () => {
         }
     };
 
+    /**
+     * Gère la fin du glissement.
+     */
     const handleTouchEnd = () => {
         setIsDragging(false);
     };

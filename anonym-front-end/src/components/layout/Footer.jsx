@@ -2,6 +2,18 @@ import { useLocation  } from 'react-router-dom';
 import { Link } from 'react-router-dom';
 import '../../assets/styles/footer/footer.scss';
 
+/**
+ * Composant Footer qui affiche des liens vers des pages importantes.
+ *
+ * Ce composant utilise le chemin de l'emplacement actuel pour appliquer
+ * des styles conditionnels au footer.
+ *
+ * @component
+ * @example
+ * return (
+ *   <Footer />
+ * )
+ */
 const Footer = () => {
     const location = useLocation();
 

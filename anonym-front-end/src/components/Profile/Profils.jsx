@@ -7,6 +7,15 @@ import { useApi } from '../../context/ApiContext';
 import Popup from "../Utils/Popup";
 import { usePopup } from '../../context/PopupContext';
 
+/**
+ * Composant Profils pour gérer les informations de l'utilisateur et les actions de compte.
+ *
+ * @param {Object} props - Les propriétés du composant.
+ * @param {Object} props.user - Les informations de l'utilisateur.
+ * @param {Function} props.setTypeProfils - Fonction pour changer le type de profil.
+ * @param {Function} props.setUser - Fonction pour mettre à jour l'utilisateur.
+ * @returns {JSX.Element} - Le rendu du composant Profils.
+ */
 const Profils = ({user, setTypeProfils, setUser}) => {
     const [open, setOpen] = useState(false);
     const [size, setSize] = useState();
@@ -16,20 +25,29 @@ const Profils = ({user, setTypeProfils, setUser}) => {
     const [confirmNewPassword, setConfirmNewPassword] = useState("");
     const [errorMessage, setErrorMessage] = useState("");
     const [showPopup, setShowPopup] = useState(false);
-    const { setOpenPopup, setTextPopup, setState } = usePopup();
-    const { api_url } = useApi();
+    const { setOpenPopup, setTextPopup, setState } = usePopup();// Utilise le contexte pour gérer la popup
+    const { api_url } = useApi();// Utilise le contexte pour obtenir l'URL de l'API
     const navigate = useNavigate(); 
 
+    /**
+     * Ouvre la modal pour changer le mot de passe.
+     * @param {string} value - La taille de la modal.
+     */
     const handleOpen = value => {
       setSize(value);
       setOpen(true);
     };
 
+    /**
+     * Ferme la modal pour changer le mot de passe.
+     */
     const handleClose = () => setOpen(false);
 
+    /**
+     * Supprime le compte de l'utilisateur via l'API.
+     */
     const handleDeleteAccount = async () => {
         try {
-            // Appel API pour supprimer le compte
             await axios.delete(`${api_url}/api/account/delete`, {
                 withCredentials: true
             });
@@ -43,6 +61,10 @@ const Profils = ({user, setTypeProfils, setUser}) => {
         }
     };
 
+    /**
+     * Met à jour le mot de passe de l'utilisateur via l'API.
+     * @param {Object} e - L'événement de soumission du formulaire.
+     */
     const handleSubmit = async (e) => {
         e.preventDefault();
 

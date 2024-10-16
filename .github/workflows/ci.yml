@@ -70,6 +70,10 @@ jobs:
       working-directory: ./anonym-front-end   # Path to your front-end folder
       run: npm install
 
+    - name: Generate Documentation
+      working-directory: ./anonym-front-end
+      run: npm run generate-doc
+
     - name: Run Frontend Lint
       working-directory: ./anonym-front-end   # Lint JavaScript files
       run: npm run lint
@@ -90,6 +94,14 @@ jobs:
     - name: Install dependencies for Backend
       working-directory: ./anonym-back-end
       run: npm install
+
+    - name: Generate Documentation
+      working-directory: ./anonym-back-end
+      run: npm run generate-doc
+
+    - name: Run Backend Lint 
+      working-directory: ./anonym-back-end
+      run: npm run lint
 
     - name: Create Test Database
       working-directory: ./anonym-back-end

@@ -1,7 +1,21 @@
 const { Shop } = require('../models');
 const fs = require('fs');
 
-// Lister tous les articles
+/**
+ * @module shopController
+ * @description Ce module contient des fonctions pour gérer les articles dans la boutique, y compris la création, la lecture, la mise à jour et la suppression d'articles.
+ */
+
+/**
+ * Lister tous les articles.
+ *
+ * @async
+ * @function readAll
+ * @param {Object} req - L'objet de requête.
+ * @param {Object} res - L'objet de réponse.
+ * @returns {Object} 200 - Liste des articles de la boutique.
+ * @returns {Object} 500 - Erreur interne du serveur si une erreur se produit lors de la récupération des articles.
+ */
 exports.readAll = async (req, res) => {
     try {
         const shopItems  = await Shop.findAll();
@@ -11,7 +25,17 @@ exports.readAll = async (req, res) => {
     }
 };
 
-// Lire un article spécifique par ID
+/**
+ * Lire un article spécifique par ID.
+ *
+ * @async
+ * @function read
+ * @param {Object} req - L'objet de requête.
+ * @param {Object} res - L'objet de réponse.
+ * @throws {Object} 404 - Non trouvé si l'article de la boutique n'existe pas.
+ * @returns {Object} 200 - L'article de la boutique demandé.
+ * @returns {Object} 500 - Erreur interne du serveur si une erreur se produit lors de la récupération de l'article.
+ */
 exports.read = async (req, res) => {
     try {
         const shopItem  = await Shop.findByPk(req.params.id);
@@ -24,7 +48,18 @@ exports.read = async (req, res) => {
     }
 };
 
-// Créer un nouvel article
+/**
+ * Créer un nouvel article.
+ *
+ * @async
+ * @function create
+ * @param {Object} req - L'objet de requête.
+ * @param {Object} res - L'objet de réponse.
+ * @throws {Object} 403 - Interdit si l'utilisateur n'a pas la permission de créer un article.
+ * @throws {Object} 400 - Mauvaise requête si des champs requis sont manquants ou invalides.
+ * @returns {Object} 201 - L'article de la boutique créé.
+ * @returns {Object} 500 - Erreur interne du serveur si une erreur se produit lors de la création de l'article.
+ */
 exports.create = async (req, res) => {
     try {
         if (req.auth.userRole === 'USER') {
@@ -61,7 +96,19 @@ exports.create = async (req, res) => {
     }
 };
 
-// Mettre à jour un article spécifique par ID
+/**
+ * Mettre à jour un article spécifique par ID.
+ *
+ * @async
+ * @function update
+ * @param {Object} req - L'objet de requête.
+ * @param {Object} res - L'objet de réponse.
+ * @throws {Object} 403 - Interdit si l'utilisateur n'a pas la permission de mettre à jour l'article.
+ * @throws {Object} 404 - Non trouvé si l'article de la boutique n'existe pas.
+ * @throws {Object} 400 - Mauvaise requête si des champs requis sont invalides.
+ * @returns {Object} 201 - L'article de la boutique mis à jour.
+ * @returns {Object} 500 - Erreur interne du serveur si une erreur se produit lors de la mise à jour de l'article.
+ */
 exports.update = async (req, res) => {
     try {
         // Vérifier que l'utilisateur est soit ADMIN, soit SUPER_ADMIN
@@ -104,7 +151,18 @@ exports.update = async (req, res) => {
     }
 };
 
-// Supprimer un article spécifique par ID
+/**
+ * Supprimer un article spécifique par ID.
+ *
+ * @async
+ * @function delete
+ * @param {Object} req - L'objet de requête.
+ * @param {Object} res - L'objet de réponse.
+ * @throws {Object} 403 - Interdit si l'utilisateur n'a pas la permission de supprimer un article.
+ * @throws {Object} 404 - Non trouvé si l'article de la boutique n'existe pas.
+ * @returns {Object} 204 - Aucune content, indique que l'article a été supprimé.
+ * @returns {Object} 500 - Erreur interne du serveur si une erreur se produit lors de la suppression de l'article.
+ */
 exports.delete = async (req, res) => {
     try {
         // Vérifier que l'utilisateur est soit ADMIN, soit SUPER_ADMIN

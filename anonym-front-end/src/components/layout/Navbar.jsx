@@ -9,14 +9,27 @@ import logo from '../../assets/images/logos/anonym-logo-white.svg';
 import { usePopup } from '../../context/PopupContext';
 import Popup from '../Utils/Popup';
 
+/**
+ * Composant Navbar pour l'application.
+ *
+ * Ce composant rend la barre de navigation avec des liens vers différentes sections de l'application.
+ * Il gère l'authentification de l'utilisateur et affiche une popup si nécessaire.
+ *
+ * @component
+ * @example
+ * return (
+ *   <Navbar />
+ * )
+ */
 const Navbar = () => {
-    const { AnonymIsOpen } = useAuth();
-    const { user } = useUser();
+    const { AnonymIsOpen } = useAuth();//Ouvrir le modal d'accès
+    const { user } = useUser();//Récupérer l'utilisateur connecter à l'aide du context
     const { openPopup, setOpenPopup, textPopup, setTextPopup, state, setState } = usePopup();
     const location = useLocation();
     const navigate = useNavigate();
     const [isOpenMenu, setIsOpenMenu] = useState();
 
+    //Animation sidebar mobile
     useEffect(() => {
         const contentContainer = document.getElementById('content');
         const logo = document.getElementById('navbar-mobile-logo');
@@ -40,7 +53,7 @@ const Navbar = () => {
         if (user) {
             navigate('/app'); // Redirige vers /app si l'utilisateur est connecté
         } else {
-            AnonymIsOpen(); // Appel de la fonction AnonymIsOpen si non connecté
+            AnonymIsOpen(); // Appel de la fonction AnonymIsOpen du context si non connecté
         }
     };
 

@@ -6,6 +6,33 @@ const path = require('path')
 const { Op } = require('sequelize');
 const CryptoJS = require('crypto-js');
 
+/**
+ * @module UserController
+ */
+
+/**
+ * Inscrit un nouvel utilisateur et envoie un e-mail de confirmation.
+ *
+ * @function signup
+ * @async
+ * @param {Object} req - La requête HTTP.
+ * @param {Object} res - La réponse HTTP.
+ * @throws {Error} En cas d'erreur lors de la création de l'utilisateur ou de l'envoi de l'e-mail.
+ *
+ * @example
+ * // Exemple de requête
+ * POST /api/auth/signup
+ * {
+ *   "username": "nouvel_utilisateur",
+ *   "email": "utilisateur@example.com",
+ *   "password": "MotDePasse123!",
+ *   "avatarData": {
+ *     "circleColor": "#ff0000",
+ *     "pathColor": "#00ff00",
+ *     "uniqueAvatarName": "avatar.svg"
+ *   }
+ * }
+ */
 exports.signup = async (req, res) => {
     try {
         // Créer l'utilisateur avec l'avatar (soit celui téléchargé, soit la copie du défaut)
@@ -88,6 +115,23 @@ exports.signup = async (req, res) => {
     }
 }
 
+/**
+ * Authentifie un utilisateur et renvoie un token JWT.
+ *
+ * @function login
+ * @async
+ * @param {Object} req - La requête HTTP.
+ * @param {Object} res - La réponse HTTP.
+ * @throws {Error} En cas d'erreur d'authentification.
+ *
+ * @example
+ * // Exemple de requête
+ * POST /api/auth/login
+ * {
+ *   "identifier": "utilisateur@example.com",
+ *   "password": "MotDePasse123!"
+ * }
+ */
 exports.login = async (req, res) => {
     try {
         const { identifier, password } = req.body;
@@ -144,6 +188,18 @@ exports.login = async (req, res) => {
     }
 }
 
+/**
+ * Déconnecte l'utilisateur en invalidant le cookie JWT.
+ *
+ * @function logout
+ * @param {Object} req - La requête HTTP.
+ * @param {Object} res - La réponse HTTP.
+ * @throws {Error} En cas d'erreur lors de la déconnexion.
+ *
+ * @example
+ * // Exemple de requête
+ * POST /api/auth/logout
+ */
 exports.logout = (req, res) => {
     try {
         // Invalider le cookie contenant le token JWT
@@ -160,6 +216,22 @@ exports.logout = (req, res) => {
     }
 };
 
+/**
+ * Demande une réinitialisation de mot de passe en envoyant un e-mail avec un lien de réinitialisation.
+ *
+ * @function requestPasswordReset
+ * @async
+ * @param {Object} req - La requête HTTP.
+ * @param {Object} res - La réponse HTTP.
+ * @throws {Error} En cas d'erreur lors de l'envoi de l'e-mail.
+ *
+ * @example
+ * // Exemple de requête
+ * POST /api/auth/request-password-reset
+ * {
+ *   "email": "utilisateur@example.com"
+ * }
+ */
 exports.requestPasswordReset = async (req, res) => {
     try {
         const { email } = req.body;
@@ -207,6 +279,23 @@ exports.requestPasswordReset = async (req, res) => {
     }
 };
 
+/**
+ * Réinitialise le mot de passe de l'utilisateur.
+ *
+ * @function resetPassword
+ * @async
+ * @param {Object} req - La requête HTTP.
+ * @param {Object} res - La réponse HTTP.
+ * @throws {Error} En cas d'erreur lors de la réinitialisation du mot de passe.
+ *
+ * @example
+ * // Exemple de requête
+ * POST /api/auth/reset-password?token=<TOKEN>
+ * {
+ *   "password": "NouveauMotDePasse123!",
+ *   "confirmPassword": "NouveauMotDePasse123!"
+ * }
+ */
 exports.resetPassword = async (req, res) => {
     try {
         const { token } = req.query;

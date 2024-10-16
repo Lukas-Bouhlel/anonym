@@ -1,5 +1,12 @@
 const TermsConditions = () => {
 
+    /**
+     * Composant représentant les Conditions Générales de Vente (CGV) et d'Utilisation (CGU).
+     * Ce composant affiche les termes juridiques régissant l'utilisation du site Anonym.
+     *
+     * @component
+     * @returns {React.ReactElement} - Le composant des conditions générales.
+     */
     return (
         <section className='page-terms-conditions'>
             <div className="page-terms-conditions-content">

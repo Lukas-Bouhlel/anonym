@@ -8,12 +8,28 @@ import { useApi } from '../../context/ApiContext';
 import { useQuery } from '@tanstack/react-query';
 import axios from 'axios';
 
+/**
+ * Composant Sidebar pour afficher la barre latérale de navigation de l'application.
+ *
+ * Ce composant permet à l'utilisateur de naviguer entre différentes pages, de gérer ses canaux de messages,
+ * de quitter des canaux et d'accéder à son profil.
+ *
+ * @param {Object} props - Les propriétés du composant.
+ * @param {Object} props.user - Les informations de l'utilisateur connecté.
+ * @param {string} props.page - La page actuelle affichée.
+ * @param {Function} props.setPage - Fonction pour changer la page affichée.
+ * @param {Function} props.setModalVisible - Fonction pour gérer la visibilité du modal de création de canal.
+ * @param {Object} props.canal - Les informations sur le canal actuel.
+ * @param {Function} props.setChannel - Fonction pour définir le canal actuel.
+ * @param {Object} props.socket - L'instance de socket.io pour la communication en temps réel.
+ * @returns {JSX.Element} - Le rendu du composant Sidebar.
+ */
 const Sidebar = ({ user, page, setPage, setModalVisible, canal, setChannel, socket }) => {
-    const { api_url } = useApi();
+    const { api_url } = useApi();// Utilise le contexte pour obtenir l'URL de l'API
     const [leaveChannelModalVisible, setLeaveChannelModalVisible] = useState(false);
     const [currentChannelId, setCurrentChannelId] = useState(null);
     const [isSidebarOpen, setIsSidebarOpen] = useState(false); // État pour savoir si la sidebar est ouverte
-    const [isDragging, setIsDragging] = useState(false); // État pour savoir si l'utilisateur glisse
+    const [isDragging, setIsDragging] = useState(false); // État pour savoir si l'utilisateur ouvre la sidebar en mobile
     const sidebarRef = useRef(null);
 
     const tooltip = (
@@ -22,6 +38,10 @@ const Sidebar = ({ user, page, setPage, setModalVisible, canal, setChannel, sock
         </Tooltip>
     );
 
+    /**
+     * Fonction pour récupérer les canaux de l'utilisateur via l'API.
+     * @returns {Promise<Array>} - Liste des canaux de l'utilisateur.
+     */
     const fetchUserChannels = async () => {
         try {
             const response = await axios.get(`${api_url}/api/channels/user`, {
@@ -34,10 +54,14 @@ const Sidebar = ({ user, page, setPage, setModalVisible, canal, setChannel, sock
     };
 
     const { data: channels = [], isLoading, refetch } = useQuery({
-        queryKey: ['channels'], // Clé de la requête pour le caching
-        queryFn: fetchUserChannels, // Fonction de récupération des canaux
+        queryKey: ['channels'], 
+        queryFn: fetchUserChannels,
     });
 
+    /**
+     * Fonction pour quitter un canal.
+     * Envoie une requête DELETE à l'API et émet un événement pour le socket.
+     */
     const confirmLeaveChannel = async () => {
         try {
             await axios.delete(`${api_url}/api/channels/leave/${currentChannelId}`, {
@@ -53,11 +77,19 @@ const Sidebar = ({ user, page, setPage, setModalVisible, canal, setChannel, sock
         }
     };
 
+    /**
+     * Fonction pour gérer la demande de sortie d'un canal.
+     * @param {string} channelId - ID du canal à quitter.
+     */
     const handleLeaveChannel = (channelId) => {
         setCurrentChannelId(channelId);
         setLeaveChannelModalVisible(true); // Ouvre la modal de confirmation
     };
 
+    /**
+     * Fonction pour rejoindre un canal.
+     * @param {Object} channel - Les informations du canal à rejoindre.
+     */
     const handleJoinChannel = (channel) => {
         setPage('canal');
         setChannel(channel);

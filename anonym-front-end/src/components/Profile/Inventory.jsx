@@ -6,13 +6,23 @@ import { useApi } from "../../context/ApiContext";
 import Popup from "../Utils/Popup";
 import spaceman from "../../assets/images/icons/spaceman.svg"
 
+/**
+ * Composant Inventory pour afficher et gérer l'inventaire de l'utilisateur.
+ *
+ * @param {Object} props - Les propriétés du composant.
+ * @param {Object} props.user - Les informations de l'utilisateur, y compris l'avatar.
+ * @returns {JSX.Element} - Le rendu du composant Inventory.
+ */
 const Inventory = ({ user }) => {
-    const { api_url } = useApi();
+    const { api_url } = useApi();// Utilise le contexte pour obtenir l'URL de l'API
     const queryClient = useQueryClient();
     const [showPopup, setShowPopup] = useState(false); 
     const [messageError, setMessageError] = useState('');
 
-    // Fonction pour récupérer l'inventaire
+    /**
+     * Fonction pour récupérer l'inventaire de l'utilisateur.
+     * @returns {Promise<Object>} - Les données de l'inventaire.
+     */
     const fetchInventory = async () => {
         try {
             const response = await axios.get(`${api_url}/api/inventory`, {
@@ -24,13 +34,17 @@ const Inventory = ({ user }) => {
         }
     };
 
-    // Récupération de l'inventaire via react-query
     const inventory = useQuery({
-        queryKey: ['inventory'], // Clé de la requête pour le caching
-        queryFn: fetchInventory, // Fonction de récupération de l'inventaire
+        queryKey: ['inventory'], 
+        queryFn: fetchInventory,
     });
 
-    // Mutation pour mettre à jour l'état "active" de l'item
+    /**
+     * Mutation pour mettre à jour l'état "active" d'un item de l'inventaire.
+     * @param {Object} item - L'objet de l'item à modifier.
+     * @param {boolean} currentState - L'état actuel de l'item.
+     * @returns {Promise<Object|null>} - Les données mises à jour de l'item ou null en cas d'erreur.
+     */   
     const toggleActiveMutation = useMutation({
         mutationFn: async ({itemId, currentState}) => {
             try {
@@ -52,7 +66,11 @@ const Inventory = ({ user }) => {
         },
     });
 
-    // Fonction pour gérer le clic sur le bouton "Activer"
+    /**
+     * Fonction pour gérer le clic sur le bouton "Activer" ou "Désactiver".
+     * @param {number} itemId - L'identifiant de l'item à modifier.
+     * @param {boolean} currentState - L'état actuel de l'item.
+     */
     const handleToggleActive = (itemId, currentState) => {
         toggleActiveMutation.mutate({ itemId, currentState });
     };

@@ -1,4 +1,12 @@
 const PrivacyPolicy = () => {
+  /**
+   * Composant PrivacyPolicy qui représente la page de la politique de confidentialité de l'application.
+   * Il informe les utilisateurs sur la collecte, l'utilisation, et la protection de leurs données personnelles
+   * conformément au Règlement Général sur la Protection des Données (RGPD).
+   *
+   * @component
+   * @returns {React.ReactElement} - L'interface de la page de politique de confidentialité.
+   */
   return (
     <section className='page-privacy-policy'>
       <div className="page-privacy-policy-content">

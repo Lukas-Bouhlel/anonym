@@ -7,12 +7,22 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faCheck } from "@fortawesome/free-solid-svg-icons";
 import Popup from "../Utils/Popup";
 
+/**
+ * Composant Shop qui affiche une boutique d'articles et gère les achats d'articles.
+ *
+ * @param {Object} props - Les propriétés du composant.
+ * @param {Object} props.user - Les informations de l'utilisateur, y compris l'avatar.
+ * @returns {JSX.Element} - Le rendu du composant Shop.
+ */
 const Shop = ({ user }) => {
-    const { api_url } = useApi();
+    const { api_url } = useApi();// Utilise le contexte pour obtenir l'URL de l'API
     const queryClient = useQueryClient(); 
     const [showPopup, setShowPopup] = useState(false); 
 
-    // Fonction pour récupérer l'inventaire
+    /**
+     * Fonction pour récupérer les articles de la boutique via l'API.
+     * @returns {Promise<Array>} - Une promesse contenant la liste des articles de la boutique.
+     */
     const fetchShop = async () => {
         try {
             const response = await axios.get(`${api_url}/api/shop`, {
@@ -24,8 +34,11 @@ const Shop = ({ user }) => {
         }
     };
 
-     // Fonction pour récupérer l'inventaire
-     const fetchInventory = async () => {
+    /**
+     * Fonction pour récupérer les items de l'inventaire via l'API.
+     * @returns {Promise<Array>} - Une promesse contenant la liste des items de l'inventaire.
+     */
+    const fetchInventory = async () => {
         try {
             const response = await axios.get(`${api_url}/api/inventory`, {
                 withCredentials: true,
@@ -36,8 +49,13 @@ const Shop = ({ user }) => {
         }
     };
 
-    // Mutation pour mettre à jour l'état "active" de l'item
+    // Mutation pour mettre à jour l'état "active" d'un item de l'inventaire
     const toggleActiveMutation = useMutation({
+        /**
+         * Fonction pour mettre à jour l'état d'un item de l'inventaire via l'API.
+         * @param {number} itemId - L'ID de l'item à mettre à jour.
+         * @returns {Promise<Object|null>} - Une promesse contenant les données de l'item mis à jour ou null en cas d'erreur.
+         */
         mutationFn: async (itemId) => {
             try {
                 const response = await axios.put(`${api_url}/api/inventory/${itemId}`, 
@@ -56,7 +74,10 @@ const Shop = ({ user }) => {
         },
     });
 
-    // Fonction pour gérer l'achat d'un article
+    /**
+     * Fonction pour gérer l'achat d'un article via l'API.
+     * @param {number} articleId - L'ID de l'article à acheter.
+     */
     const handlePurchase = async (articleId) => {
         try {
             const response = await axios.post(`${api_url}/api/payment`, 
@@ -70,24 +91,29 @@ const Shop = ({ user }) => {
         }
     };
     
-    // Récupération de l'inventaire via react-query
     const shop = useQuery({
-        queryKey: ['shop'], // Clé de la requête pour le caching
-        queryFn: fetchShop, // Fonction de récupération de l'inventaire
+        queryKey: ['shop'],
+        queryFn: fetchShop,
     });
 
-    // Récupération de l'inventaire via react-query
     const inventory = useQuery({
-        queryKey: ['inventory'], // Clé de la requête pour le caching
-        queryFn: fetchInventory, // Fonction de récupération de l'inventaire
+        queryKey: ['inventory'],
+        queryFn: fetchInventory,
     });
 
-    // Fonction pour vérifier si un article est déjà acheté
+    /**
+     * Fonction pour vérifier si un article est déjà acheté.
+     * @param {number} articleId - L'ID de l'article à vérifier.
+     * @returns {boolean} - Retourne true si l'article est acheté, sinon false.
+     */
     const isArticlePurchased = (articleId) => {
         return inventory.data && inventory.data.some(item => item.article_id === articleId);
     };
 
-    // Fonction pour gérer le clic sur le bouton "Activer"
+    /**
+     * Fonction pour gérer le clic sur le bouton "Activer".
+     * @param {number} articleId - L'ID de l'article à activer.
+     */
     const handleToggleActive = (articleId) => {
         const item = inventory.data && inventory.data.find(item => item.article_id === articleId);
         if (item) {

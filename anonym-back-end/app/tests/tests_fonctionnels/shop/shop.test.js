@@ -69,25 +69,21 @@ describe('Shop Routes', () => {
     });
 
     it('GET /api/shop/:id - should retrieve a specific shop item', async () => {
-        try {
-            const createResponse = await request(app)
-                .post('/api/shop/admin/')
-                .set('Cookie', `token=${adminToken}`)
-                .field('datas', JSON.stringify({ title: 'Test Item', amount: 100, type: 'CADRE' }))
-                .attach('image', path.join(__dirname, '../../assets/test-image.png')); 
-            
-            expect(createResponse.status).toBe(201);
-            shopItem = createResponse.body;
+        const createResponse = await request(app)
+            .post('/api/shop/admin/')
+            .set('Cookie', `token=${adminToken}`)
+            .field('datas', JSON.stringify({ title: 'Test Item', amount: 100, type: 'CADRE' }))
+            .attach('image', path.join(__dirname, '../../assets/test-image.png')); 
+        
+        expect(createResponse.status).toBe(201);
+        shopItem = createResponse.body;
+
+        const response = await request(app)
+            .get(`/api/shop/${shopItem.article_id}`)
+            .set('Cookie', `token=${adminToken}`);
     
-            const response = await request(app)
-                .get(`/api/shop/${shopItem.article_id}`)
-                .set('Cookie', `token=${adminToken}`);
-     
-            expect(response.status).toBe(200);
-            expect(response.body).toHaveProperty('article_id', shopItem.article_id);
-        } catch (error) {
-            throw error; // Rejeter l'erreur pour que Jest la capture correctement
-        }
+        expect(response.status).toBe(200);
+        expect(response.body).toHaveProperty('article_id', shopItem.article_id);
     });
 
     it('POST /api/shop/admin/ - should create a new shop item', async () => {

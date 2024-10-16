@@ -12,7 +12,10 @@ const mutler = require('../middlewares/mutler.js');
 const generateAvatar = require('../middlewares/generateAvatar');
 const authorizeAdminMiddleware = require("../middlewares/authorizeAdmin.js"); // Importez le middleware d'autorisation
 
-
+/**
+ * @module routes/account
+ * @description Ce module gère les routes relatives aux comptes utilisateurs, y compris la lecture, la mise à jour, et la suppression de comptes.
+ */
 router.post('/users', authMiddleware, normalizeEmailMiddleware, mutler, generateAvatar, usersCtrl.create);
 router.put('/users/:id', authMiddleware, normalizeEmailMiddleware, mutler, generateAvatar, usersCtrl.update);
 router.delete('/users/:id', authMiddleware, usersCtrl.delete);

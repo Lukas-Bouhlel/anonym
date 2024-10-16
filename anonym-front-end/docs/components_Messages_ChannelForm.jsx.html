@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: components/Messages/ChannelForm.jsx</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: components/Messages/ChannelForm.jsx</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>import { useForm } from 'react-hook-form';
+import PropTypes from 'prop-types';
+import { Modal, Button } from 'rsuite'; 
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import axios from 'axios';
+import { useApi } from '../../context/ApiContext';
+
+/**
+ * Composant ChannelForm pour créer un nouveau canal.
+ *
+ * @param {Object} props - Les propriétés du composant.
+ * @param {boolean} props.show - Indique si la modal doit être affichée.
+ * @param {Function} props.onClose - Fonction appelée pour fermer la modal.
+ * @returns {JSX.Element} - Le rendu du composant ChannelForm.
+ */
+const ChannelForm = ({ show, onClose }) => {
+    const { api_url } = useApi();// Utilise le contexte pour obtenir l'URL de l'API
+    const queryClient = useQueryClient();
+    const { register, handleSubmit, formState: { errors }, reset } = useForm();
+
+    /**
+     * Appel API pour créer un canal.
+     * Utilise useMutation pour gérer l'état de la requête.
+     */
+    const mutation = useMutation({
+        mutationFn: async (newChannel) => {
+            const response = await axios.post(`${api_url}/api/channels`, {
+                name: newChannel.channelName,
+                description: newChannel.description,
+            }, { withCredentials: true });
+            return response.data;
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries('channels'); // Rafraîchir les canaux
+            reset(); // Réinitialiser le formulaire après création
+            onClose(); // Fermer la modal
+        },
+        onError: (error) => {
+            console.error('Erreur lors de la création du canal :', error);
+        }
+    });
+
+    /**
+     * Gestion de la soumission du formulaire.
+     *
+     * @param {Object} data - Les données soumises du formulaire.
+     */
+    const onSubmit = (data) => {
+        mutation.mutate(data); 
+    };
+
+    return (
+        &lt;div id='channelform'>
+            &lt;Modal open={show} onClose={onClose} size="xs">
+                &lt;Modal.Header>
+                    &lt;Modal.Title>Créer un nouveau canal&lt;/Modal.Title>
+                &lt;/Modal.Header>
+                &lt;Modal.Body>
+                    &lt;form onSubmit={handleSubmit(onSubmit)}>
+                        &lt;div className="form-group mb-3">
+                            &lt;label htmlFor="channelName" className='form-label'>Nom du canal&lt;/label>
+                            &lt;input aria-required="true" aria-label="Nom du canal" id="channelName" type="text" className={`form-control ${errors.channelName ? 'is-invalid' : ''}`}
+                                {...register('channelName', { required: 'Le nom du canal est requis' })}
+                            />
+                            {errors.channelName &amp;&amp; (
+                                &lt;div className="invalid-feedback">{errors.channelName.message}&lt;/div>
+                            )}
+                        &lt;/div>
+
+                        &lt;div className="form-group">
+                            &lt;label htmlFor="description" className='form-label'>Description&lt;/label>
+                            &lt;input
+                                id="description"
+                                type="text"
+                                aria-required="true" 
+                                aria-label="Description"
+                                className={`form-control ${errors.description ? 'is-invalid' : ''}`}
+                                {...register('description', { required: 'La description est requise' })}
+                            />
+                            {errors.description &amp;&amp; (
+                                &lt;div className="invalid-feedback">{errors.description.message}&lt;/div>
+                            )}
+                        &lt;/div>
+                    &lt;/form>
+                &lt;/Modal.Body>
+                &lt;Modal.Footer>
+                    &lt;Button
+                        onClick={handleSubmit(onSubmit)}
+                        appearance="primary"
+                        loading={mutation.isLoading} // Utilisation de mutation.isLoading pour l'état de soumission
+                    >
+                        {mutation.isLoading ? 'Création...' : 'Créer'}
+                    &lt;/Button>
+                    &lt;Button onClick={onClose} appearance="subtle">
+                        Annuler
+                    &lt;/Button>
+                &lt;/Modal.Footer>
+                {mutation.isError &amp;&amp; &lt;div className="text-danger">Une erreur est survenue lors de la création du canal.&lt;/div>}
+            &lt;/Modal>  
+        &lt;/div>
+    );
+};
+
+ChannelForm.propTypes = {
+    show: PropTypes.bool.isRequired, 
+    onClose: PropTypes.func.isRequired
+};
+
+export default ChannelForm;</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Global</h3><ul><li><a href="global.html#Access">Access</a></li><li><a href="global.html#Account">Account</a></li><li><a href="global.html#Admin">Admin</a></li><li><a href="global.html#ApiProvider">ApiProvider</a></li><li><a href="global.html#App">App</a></li><li><a href="global.html#AuthProvider">AuthProvider</a></li><li><a href="global.html#ChannelForm">ChannelForm</a></li><li><a href="global.html#ChannelMessages">ChannelMessages</a></li><li><a href="global.html#Discover">Discover</a></li><li><a href="global.html#Footer">Footer</a></li><li><a href="global.html#Friends">Friends</a></li><li><a href="global.html#Home">Home</a></li><li><a href="global.html#Inventory">Inventory</a></li><li><a href="global.html#Invoices">Invoices</a></li><li><a href="global.html#Layout">Layout</a></li><li><a href="global.html#Login">Login</a></li><li><a href="global.html#Navbar">Navbar</a></li><li><a href="global.html#Popup">Popup</a></li><li><a href="global.html#PopupProvider">PopupProvider</a></li><li><a href="global.html#PrivateRoute">PrivateRoute</a></li><li><a href="global.html#Profile">Profile</a></li><li><a href="global.html#Profils">Profils</a></li><li><a href="global.html#Register">Register</a></li><li><a href="global.html#Router">Router</a></li><li><a href="global.html#Shop">Shop</a></li><li><a href="global.html#Sidebar">Sidebar</a></li><li><a href="global.html#SocketProvider">SocketProvider</a></li><li><a href="global.html#Success">Success</a></li><li><a href="global.html#Support">Support</a></li><li><a href="global.html#UserProvider">UserProvider</a></li><li><a href="global.html#Users">Users</a></li><li><a href="global.html#fetchShop">fetchShop</a></li><li><a href="global.html#fetchUsers">fetchUsers</a></li><li><a href="global.html#mutationFn">mutationFn</a></li><li><a href="global.html#useApi">useApi</a></li><li><a href="global.html#useAuth">useAuth</a></li><li><a href="global.html#usePopup">usePopup</a></li><li><a href="global.html#useSocket">useSocket</a></li><li><a href="global.html#useSphereAnimation">useSphereAnimation</a></li><li><a href="global.html#useUser">useUser</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.3</a> on Thu Oct 17 2024 00:21:52 GMT+0200 (heure d’été d’Europe centrale)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

@@ -8,11 +8,27 @@ import Shop from "../components/Admin/Shop";
 import { usePopup } from "../context/PopupContext";
 import Popup from "../components/Utils/Popup";
 
+/**
+ * Composant de la page d'administration.
+ * Ce composant permet à l'administrateur de gérer les utilisateurs et la boutique.
+ * Il utilise `react-query` pour effectuer les appels API afin de récupérer les données des utilisateurs et des articles de la boutique.
+ * Affiche également des popups pour les notifications ou messages importants.
+ * 
+ * @component
+ * @returns {React.ReactElement} - Page d'administration.
+ */
 const Admin = () => {
     const { user } = useUser();
     const { api_url } = useApi();
     const { openPopup, setOpenPopup, textPopup, setTextPopup, state, setState } = usePopup();
 
+    /**
+     * Récupère la liste des utilisateurs depuis l'API.
+     * 
+     * @async
+     * @function fetchUsers
+     * @returns {Promise<Object[]|null>} - Retourne la liste des utilisateurs ou null en cas d'erreur.
+     */
     const fetchUsers = async () => {
         try {
             const response = await axios.get(`${api_url}/api/account/users`, {
@@ -20,17 +36,24 @@ const Admin = () => {
             });
             return response.data;
         } catch (error) {
-            console.error('Erreur lors de la récupération des amis:', error);
+            console.error('Erreur lors de la récupération des utilisateurs:', error);
             return null;
         }
     };
 
-    // Utilisation de react-query pour la récupération des amis
+    // Utilisation de react-query pour la récupération des utilisateurs
     const users = useQuery({
-        queryKey: ['users'], // Clé de la requête pour le caching
-        queryFn: fetchUsers, // Fonction de récupération des amis
+        queryKey: ['users'],
+        queryFn: fetchUsers,
     });
 
+    /**
+     * Récupère la liste des articles de la boutique depuis l'API.
+     * 
+     * @async
+     * @function fetchShop
+     * @returns {Promise<Object[]|null>} - Retourne la liste des articles ou null en cas d'erreur.
+     */
     const fetchShop = async () => {
         try {
             const response = await axios.get(`${api_url}/api/shop`, {
@@ -38,15 +61,15 @@ const Admin = () => {
             });
             return response.data;
         } catch (error) {
-            console.error('Erreur lors de la récupération des amis:', error);
+            console.error('Erreur lors de la récupération des articles:', error);
             return null;
         }
     };
 
-    // Utilisation de react-query pour la récupération des amis
+    // Utilisation de react-query pour la récupération des articles
     const shop = useQuery({
-        queryKey: ['shop'], // Clé de la requête pour le caching
-        queryFn: fetchShop, // Fonction de récupération des amis
+        queryKey: ['shop'], 
+        queryFn: fetchShop, 
     });
 
     return (

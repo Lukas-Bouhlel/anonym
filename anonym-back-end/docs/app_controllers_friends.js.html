@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: app/controllers/friends.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: app/controllers/friends.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>const { Friend, User, Inventory, Shop  } = require('../models');
+
+/**
+ * @module friendController
+ * @description Ce module gère les opérations liées aux amis des utilisateurs, y compris la lecture, l'ajout, la mise à jour et la suppression des relations d'amitié.
+ */
+
+/**
+ * Lire tous les amis d'un utilisateur, y compris leurs inventaires actifs.
+ *
+ * @async
+ * @function readAll
+ * @param {Object} req - L'objet de requête contenant les détails de l'utilisateur connecté.
+ * @param {Object} res - L'objet de réponse.
+ * @returns {Object} 200 - Liste des amis de l'utilisateur avec leurs détails et inventaires actifs.
+ * @throws {Object} 500 - Erreur interne du serveur si une erreur se produit lors de la récupération des amis.
+ */
+exports.readAll = async (req, res) => {
+    try {
+        const userId = req.auth.userId;
+        const friends = await Friend.findAll({
+            where: { user_id: userId },
+            include: [
+                {
+                    model: User, // L'ami
+                    as: 'FriendDetails',
+                    attributes: ['id', 'username', 'email', 'avatar'], // Attributs de l'ami
+                    include: [
+                        {
+                            model: Inventory, // Inclure l'inventaire
+                            where: { active: true }, // Ne récupérer que les articles actifs
+                            attributes: ['item_id', 'article_id', 'active'],
+                            include: [
+                                {
+                                    model: Shop, // Détails de l'article
+                                    attributes: ['title', 'type', 'content', 'amount']
+                                }
+                            ],
+                            required: false // Rendre l'inventaire facultatif, récupérer même s'il n'y a pas d'articles actifs
+                        }
+                    ]
+                }
+            ]
+        });
+
+        res.status(200).json(friends);
+    } catch (error) {
+        res.status(500).json({ message: error.message || 'An error occurred while retrieving friends.' });
+    }
+};
+
+/**
+ * Lire un ami spécifique d'un utilisateur.
+ *
+ * @async
+ * @function read
+ * @param {Object} req - L'objet de requête contenant l'ID de l'ami à lire.
+ * @param {Object} res - L'objet de réponse.
+ * @returns {Object} 200 - Détails de l'ami demandé.
+ * @throws {Object} 404 - Non trouvé si l'ami n'existe pas.
+ * @throws {Object} 500 - Erreur interne du serveur si une erreur se produit lors de la récupération de l'ami.
+ */
+exports.read = async (req, res) => {
+    try {
+        const friendId = req.params.id;
+        const friend = await Friend.findOne({
+            where: { user_id: req.auth.userId, friend_id: friendId },
+            include: { model: User, as: 'FriendDetails', attributes: ['id', 'username', 'email', 'avatar'] }
+        });
+
+        if (!friend) {
+            return res.status(404).json({ message: "Ami non trouvé." });
+        }
+
+        res.status(200).json(friend);
+    } catch (error) {
+        res.status(500).json({ message: error.message || 'An error occurred while retrieving the friend.' });
+    }
+};
+
+/**
+ * Ajouter un nouvel ami à la liste d'amis de l'utilisateur.
+ *
+ * @async
+ * @function addFriend
+ * @param {Object} req - L'objet de requête contenant le nom d'utilisateur de l'ami à ajouter.
+ * @param {Object} res - L'objet de réponse.
+ * @returns {Object} 201 - Détails de la nouvelle relation d'amitié créée.
+ * @throws {Object} 404 - Non trouvé si l'utilisateur à ajouter n'existe pas.
+ * @throws {Object} 400 - Mauvaise requête si l'utilisateur essaie de s'ajouter lui-même ou si la relation d'amitié existe déjà.
+ * @throws {Object} 500 - Erreur interne du serveur si une erreur se produit lors de l'ajout de l'ami.
+ */
+exports.addFriend = async (req, res) => {
+    try {
+        const userId = req.auth.userId; // ID de l'utilisateur actuel
+        const friendUsername = req.params.username; // Récupérer le nom d'utilisateur de l'ami à ajouter
+
+        // Rechercher l'ami par son nom d'utilisateur
+        const friend = await User.findOne({
+            where: {
+                username: friendUsername
+            }
+        });
+
+        // Vérifier si l'utilisateur existe
+        if (!friend) {
+            return res.status(404).json({ message: "Utilisateur introuvable" });
+        }
+
+        const friendId = friend.id; // ID de l'ami trouvé
+
+        // Vérifier que l'utilisateur ne s'ajoute pas lui-même en ami
+        if (userId === friendId) {
+            return res.status(400).json({ message: "Vous ne pouvez pas vous ajouter comme ami" });
+        }
+
+        // Vérifier si la relation d'amitié existe déjà
+        const existingFriend = await Friend.findOne({
+            where: {
+                user_id: userId,
+                friend_id: friendId
+            }
+        });
+
+        if (existingFriend) {
+            return res.status(400).json({ message: "Cet utilisateur est déjà votre ami" });
+        }
+
+        // Créer la relation d'amitié
+        const newFriend = await Friend.create({
+            user_id: userId,
+            friend_id: friendId,
+            status: 'ACTIVE'
+        });
+
+        res.status(201).json(newFriend);
+    } catch (error) {
+        res.status(500).json({ message: error.message || "An error occurred while adding the friend." });
+    }
+};
+
+/**
+ * Mettre à jour le statut d'une relation d'amitié.
+ *
+ * @async
+ * @function update
+ * @param {Object} req - L'objet de requête contenant l'ID de l'ami et le nouveau statut.
+ * @param {Object} res - L'objet de réponse.
+ * @returns {Object} 200 - La relation d'amitié mise à jour.
+ * @throws {Object} 404 - Non trouvé si la relation d'amitié n'existe pas.
+ * @throws {Object} 400 - Mauvaise requête si le statut est invalide.
+ * @throws {Object} 500 - Erreur interne du serveur si une erreur se produit lors de la mise à jour du statut de l'ami.
+ */
+exports.update = async (req, res) => {
+    try {
+        const friendId = req.params.id;
+        const { status } = req.body;
+        
+        const friendship = await Friend.findOne({
+            where: { user_id: req.auth.userId, friend_id: friendId }
+        });
+
+        if (!friendship) {
+            return res.status(404).json({ message: "Friendship not found." });
+        }
+
+        if (status &amp;&amp; ['ACTIVE', 'BLOQUED'].includes(status)) {
+            friendship.status = status;
+            await friendship.save();
+            return res.status(200).json(friendship);
+        } else {
+            return res.status(400).json({ message: "Invalid status." });
+        }
+    } catch (error) {
+        res.status(500).json({ message: error.message || 'An error occurred while updating the friend status.' });
+    }
+};
+
+/**
+ * Supprimer une relation d'amitié.
+ *
+ * @async
+ * @function delete
+ * @param {Object} req - L'objet de requête contenant l'ID de l'ami à supprimer.
+ * @param {Object} res - L'objet de réponse.
+ * @returns {Object} 204 - Message de succès indiquant que la relation d'amitié a été supprimée.
+ * @throws {Object} 404 - Non trouvé si la relation d'amitié n'existe pas.
+ * @throws {Object} 500 - Erreur interne du serveur si une erreur se produit lors de la suppression de la relation d'amitié.
+ */
+exports.delete = async (req, res) => {
+    try {
+        const friendId = req.params.id;
+
+        const friendship = await Friend.findOne({
+            where: { user_id: req.auth.userId, friend_id: friendId }
+        });
+
+        if (!friendship) {
+            return res.status(404).json({ message: "Friendship not found." });
+        }
+
+        await friendship.destroy();
+
+        res.status(204).json({ message: "Friendship deleted successfully." });
+    } catch (error) {
+        res.status(500).json({ message: error.message || 'An error occurred while deleting the friendship.' });
+    }
+};</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-UserController.html">UserController</a></li><li><a href="module-channelController.html">channelController</a></li><li><a href="module-databaseConfig.html">databaseConfig</a></li><li><a href="module-friendController.html">friendController</a></li><li><a href="module-inventoryController.html">inventoryController</a></li><li><a href="module-invoiceController.html">invoiceController</a></li><li><a href="module-middlewares_auth.html">middlewares/auth</a></li><li><a href="module-middlewares_authorizeAdmin.html">middlewares/authorizeAdmin</a></li><li><a href="module-middlewares_generateAvatar.html">middlewares/generateAvatar</a></li><li><a href="module-paymentController.html">paymentController</a></li><li><a href="module-privateMessageController.html">privateMessageController</a></li><li><a href="module-routes.html">routes</a></li><li><a href="module-routes_account.html">routes/account</a></li><li><a href="module-routes_admin_inventory.html">routes/admin/inventory</a></li><li><a href="module-routes_admin_invoice.html">routes/admin/invoice</a></li><li><a href="module-routes_admin_shop.html">routes/admin/shop</a></li><li><a href="module-routes_auth.html">routes/auth</a></li><li><a href="module-routes_channel.html">routes/channel</a></li><li><a href="module-routes_friends.html">routes/friends</a></li><li><a href="module-routes_inventory.html">routes/inventory</a></li><li><a href="module-routes_invoice.html">routes/invoice</a></li><li><a href="module-routes_payment.html">routes/payment</a></li><li><a href="module-routes_privateMessage.html">routes/privateMessage</a></li><li><a href="module-routes_shop.html">routes/shop</a></li><li><a href="module-shopController.html">shopController</a></li><li><a href="module-userController_.html">userController</a></li></ul><h3>Events</h3><ul><li><a href="global.html#event:deleteChannel">deleteChannel</a></li><li><a href="global.html#event:disconnect">disconnect</a></li><li><a href="global.html#event:joinChannel">joinChannel</a></li><li><a href="global.html#event:leaveChannel">leaveChannel</a></li><li><a href="global.html#event:privateMessage">privateMessage</a></li></ul><h3>Global</h3><ul><li><a href="global.html#cors">cors</a></li><li><a href="global.html#createMailer">createMailer</a></li><li><a href="global.html#createServer">createServer</a></li><li><a href="global.html#destination">destination</a></li><li><a href="global.html#drawTable">drawTable</a></li><li><a href="global.html#filename">filename</a></li><li><a href="global.html#generateInvoice">generateInvoice</a></li><li><a href="global.html#getUnreadMessageCount">getUnreadMessageCount</a></li><li><a href="global.html#helmet">helmet</a></li><li><a href="global.html#httpsOptions">httpsOptions</a></li><li><a href="global.html#initializeSocket">initializeSocket</a></li><li><a href="global.html#io">io</a></li><li><a href="global.html#listen">listen</a></li><li><a href="global.html#mailer">mailer</a></li><li><a href="global.html#markMessagesAsRead">markMessagesAsRead</a></li><li><a href="global.html#normalizeEmail">normalizeEmail</a></li><li><a href="global.html#rateLimit">rateLimit</a></li><li><a href="global.html#router">router</a></li><li><a href="global.html#sendEmail">sendEmail</a></li><li><a href="global.html#slowDown">slowDown</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.3</a> on Wed Oct 16 2024 22:55:54 GMT+0200 (heure d’été d’Europe centrale)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

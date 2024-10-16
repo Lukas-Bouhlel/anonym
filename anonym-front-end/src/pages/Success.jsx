@@ -7,13 +7,24 @@ import { faCheck } from '@fortawesome/free-solid-svg-icons';
 import logo from '../assets/images/logos/anonym-logo-white.svg';
 import Confetti from 'react-confetti-boom';
 
+/**
+ * Composant Success qui affiche une page de confirmation de paiement.
+ * Il affiche un message de succès avec les détails de la transaction.
+ *
+ * @component
+ * @returns {React.ReactElement} - La page de succès du paiement.
+ */
 const Success = () => {
     const location = useLocation();
     const { api_url } = useApi();
     const navigate = useNavigate();
     const sessionId = new URLSearchParams(location.search).get('session_id');
 
-    // Fonction pour récupérer l'inventaire
+     /**
+     * Fonction pour confirmer le paiement via une API.
+     * Elle envoie une requête GET pour vérifier l'état du paiement.
+     * @returns {Promise<Object>} - Les données de la réponse si le paiement est confirmé.
+     */
     const confirmPayment = async () => {
         if (!sessionId) return;
         try {
@@ -32,9 +43,14 @@ const Success = () => {
         enabled: !!sessionId,
     });
 
+    /**
+     * Formate une date en chaîne de caractères au format français.
+     * @param {string} dateString - La date à formater.
+     * @returns {string} - La date formatée.
+     */
     const formatDate = (dateString) => {
         const date = new Date(dateString);
-        return date.toLocaleDateString('fr-FR'); // Format MM/DD/YYYY
+        return date.toLocaleDateString('fr-FR');
     };
 
     return (

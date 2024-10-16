@@ -11,7 +11,11 @@ const MIME_TYPES = {
 "image/svg+xml": "svg"
 };
 
-//On crée le dossier uploads s'il n'existe pas
+/**
+ * Crée le dossier de téléchargement s'il n'existe pas.
+ *
+ * @function
+ */
 if (!fs.existsSync('uploads')) {
     fs.mkdirSync('uploads');
 }
@@ -25,6 +29,13 @@ const createDirectory = (dir) => {
 
 // diskStorage => destination du fichier / générer un nom de fichier unique
 const storage = multer.diskStorage({
+     /**
+     * Définit la destination de sauvegarde du fichier.
+     *
+     * @param {Object} req - L'objet de requête Express.
+     * @param {Object} file - L'objet fichier.
+     * @param {Function} callback - La fonction de rappel pour indiquer la destination.
+     */
     destination: (req, file, callback) => {
         // Détecter le contexte de la route pour déterminer le dossier
         let folder = 'uploads';  // dossier par défaut
@@ -40,6 +51,13 @@ const storage = multer.diskStorage({
         createDirectory(folder);  // créer le dossier si nécessaire
         callback(null, folder);
     },
+     /**
+     * Définit le nom du fichier à sauvegarder.
+     *
+     * @param {Object} req - L'objet de requête Express.
+     * @param {Object} file - L'objet fichier.
+     * @param {Function} callback - La fonction de rappel pour indiquer le nom de fichier.
+     */
     filename: (req, file, callback) => {
         const name = file.originalname.split(" ").join("_").split(".")[0]
         const extension = MIME_TYPES[file.mimetype]

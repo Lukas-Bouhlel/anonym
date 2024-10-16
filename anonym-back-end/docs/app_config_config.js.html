@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: app/config/config.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: app/config/config.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>require('dotenv').config({path: '../.env'});
+
+const {
+  DB_USERNAME,
+  DB_PASSWORD,
+  DB_DATABASE,
+  DB_HOST,
+  DB_DIALECT,
+  DB_TEST_USERNAME,
+  DB_TEST_PASSWORD,
+  DB_TEST_DATABASE,
+  DB_TEST_HOST,
+  DB_TEST_DIALECT,
+  DB_PROD_DATABASE,
+  DB_PROD_USERNAME,
+  DB_PROD_PASSWORD,
+  DB_PROD_HOST,
+  DB_PROD_DIALECT
+} = process.env;
+
+/**
+ * Configuration de la base de données pour différents environnements.
+ * 
+ * @module databaseConfig
+ * @type {Object}
+ * @property {Object} development - Configuration de la base de données pour l'environnement de développement.
+ * @property {string} development.username - Nom d'utilisateur de la base de données pour le développement.
+ * @property {string} development.password - Mot de passe de la base de données pour le développement.
+ * @property {string} development.database - Nom de la base de données pour le développement.
+ * @property {string} development.host - Hôte de la base de données pour le développement.
+ * @property {string} development.dialect - Dialecte de la base de données pour le développement.
+ * 
+ * @property {Object} test - Configuration de la base de données pour l'environnement de test.
+ * @property {string} test.username - Nom d'utilisateur de la base de données pour le test.
+ * @property {string} test.password - Mot de passe de la base de données pour le test.
+ * @property {string} test.database - Nom de la base de données pour le test.
+ * @property {string} test.host - Hôte de la base de données pour le test.
+ * @property {string} test.dialect - Dialecte de la base de données pour le test.
+ * 
+ * @property {Object} production - Configuration de la base de données pour l'environnement de production.
+ * @property {string} production.username - Nom d'utilisateur de la base de données pour la production.
+ * @property {string} production.password - Mot de passe de la base de données pour la production.
+ * @property {string} production.database - Nom de la base de données pour la production.
+ * @property {string} production.host - Hôte de la base de données pour la production.
+ * @property {string} production.dialect - Dialecte de la base de données pour la production.
+ */
+
+module.exports = {
+  development: {
+    username: DB_USERNAME,
+    password: DB_PASSWORD,
+    database: DB_DATABASE,
+    host: DB_HOST,
+    dialect: DB_DIALECT
+  },
+  test: {
+    username: DB_TEST_USERNAME,
+    password: DB_TEST_PASSWORD,
+    database: DB_TEST_DATABASE,
+    host: DB_TEST_HOST,
+    dialect: DB_TEST_DIALECT
+  },
+  production: {
+    username: DB_PROD_USERNAME,
+    password: DB_PROD_PASSWORD,
+    database: DB_PROD_DATABASE,
+    host: DB_PROD_HOST,
+    dialect: DB_PROD_DIALECT
+  }
+};</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-UserController.html">UserController</a></li><li><a href="module-channelController.html">channelController</a></li><li><a href="module-databaseConfig.html">databaseConfig</a></li><li><a href="module-friendController.html">friendController</a></li><li><a href="module-inventoryController.html">inventoryController</a></li><li><a href="module-invoiceController.html">invoiceController</a></li><li><a href="module-middlewares_auth.html">middlewares/auth</a></li><li><a href="module-middlewares_authorizeAdmin.html">middlewares/authorizeAdmin</a></li><li><a href="module-middlewares_generateAvatar.html">middlewares/generateAvatar</a></li><li><a href="module-paymentController.html">paymentController</a></li><li><a href="module-privateMessageController.html">privateMessageController</a></li><li><a href="module-routes.html">routes</a></li><li><a href="module-routes_account.html">routes/account</a></li><li><a href="module-routes_admin_inventory.html">routes/admin/inventory</a></li><li><a href="module-routes_admin_invoice.html">routes/admin/invoice</a></li><li><a href="module-routes_admin_shop.html">routes/admin/shop</a></li><li><a href="module-routes_auth.html">routes/auth</a></li><li><a href="module-routes_channel.html">routes/channel</a></li><li><a href="module-routes_friends.html">routes/friends</a></li><li><a href="module-routes_inventory.html">routes/inventory</a></li><li><a href="module-routes_invoice.html">routes/invoice</a></li><li><a href="module-routes_payment.html">routes/payment</a></li><li><a href="module-routes_privateMessage.html">routes/privateMessage</a></li><li><a href="module-routes_shop.html">routes/shop</a></li><li><a href="module-shopController.html">shopController</a></li><li><a href="module-userController_.html">userController</a></li></ul><h3>Events</h3><ul><li><a href="global.html#event:deleteChannel">deleteChannel</a></li><li><a href="global.html#event:disconnect">disconnect</a></li><li><a href="global.html#event:joinChannel">joinChannel</a></li><li><a href="global.html#event:leaveChannel">leaveChannel</a></li><li><a href="global.html#event:privateMessage">privateMessage</a></li></ul><h3>Global</h3><ul><li><a href="global.html#cors">cors</a></li><li><a href="global.html#createMailer">createMailer</a></li><li><a href="global.html#createServer">createServer</a></li><li><a href="global.html#destination">destination</a></li><li><a href="global.html#drawTable">drawTable</a></li><li><a href="global.html#filename">filename</a></li><li><a href="global.html#generateInvoice">generateInvoice</a></li><li><a href="global.html#getUnreadMessageCount">getUnreadMessageCount</a></li><li><a href="global.html#helmet">helmet</a></li><li><a href="global.html#httpsOptions">httpsOptions</a></li><li><a href="global.html#initializeSocket">initializeSocket</a></li><li><a href="global.html#io">io</a></li><li><a href="global.html#listen">listen</a></li><li><a href="global.html#mailer">mailer</a></li><li><a href="global.html#markMessagesAsRead">markMessagesAsRead</a></li><li><a href="global.html#normalizeEmail">normalizeEmail</a></li><li><a href="global.html#rateLimit">rateLimit</a></li><li><a href="global.html#router">router</a></li><li><a href="global.html#sendEmail">sendEmail</a></li><li><a href="global.html#slowDown">slowDown</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.3</a> on Wed Oct 16 2024 22:55:54 GMT+0200 (heure d’été d’Europe centrale)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

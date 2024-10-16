@@ -1,7 +1,15 @@
 import SphereSvg from "../assets/images/icons/sphere.svg?react";
 import useSphereAnimation  from '../components/Animation/useSphereAnimation';
 
+/**
+ * Composant Home qui représente la page d'accueil de l'application.
+ * Il affiche une animation de sphère et des informations sur le réseau social.
+ *
+ * @component
+ * @returns {React.ReactElement} - L'interface de la page d'accueil.
+ */
 const Home = () => {
+  // Animation de la sphere pour la Home page
   useSphereAnimation ();
 
   return (

@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: components/Access/Login/Login.jsx</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: components/Access/Login/Login.jsx</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>import { useState } from 'react';
+import PropTypes from 'prop-types';
+import axios from 'axios';
+import { useForm } from "react-hook-form";
+import { useMutation  } from '@tanstack/react-query';
+import { useApi } from '../../../context/ApiContext';
+import { useUser } from '../../../context/UserContext'; 
+import { useNavigate } from 'react-router-dom';
+
+/**
+ * Composant Login.
+ * Ce composant gère le formulaire de connexion pour les utilisateurs existants.
+ *
+ * @param {Object} props - Les propriétés du composant.
+ * @param {Function} props.setStatusForm - Fonction pour changer le statut du formulaire (connexion ou réinitialisation du mot de passe).
+ * @param {Function} props.setStatusAccess - Fonction pour changer le statut d'accès (connexion ou inscription).
+ * @returns {JSX.Element} Le rendu du formulaire de connexion.
+ */
+const Login = ({setStatusForm, setStatusAccess}) => {
+    const { register, handleSubmit, formState: { errors }, } = useForm();
+    const [showMessage, setShowMessage] = useState(false);
+    const [messageError, setMessageError] = useState('');
+    const { login } = useUser();// Utilise le contexte pour effectuer le login
+    const { api_url } = useApi();// Utilise le contexte pour obtenir l'URL de l'API
+    const navigate = useNavigate();
+
+    const mutation = useMutation({
+         /**
+         * Fonction pour gérer la requête de connexion de l'utilisateur.
+         * @param {Object} data - Les données de connexion de l'utilisateur.
+         * @param {string} data.email - L'email de l'utilisateur.
+         * @param {string} data.password - Le mot de passe de l'utilisateur.
+         * @returns {Promise&lt;Object>} - Les données de l'utilisateur connecté.
+         */
+        mutationFn: async (data) => {
+            const response = await axios.post(`${api_url}/api/auth/login`, {
+                identifier: data.email,
+                password: data.password,
+            }, { withCredentials: true });
+            return response.data;
+        },
+        onSuccess: (data) => {
+            login(data.user);
+            navigate(`/app`);
+            setShowMessage(false);
+            setMessageError('');
+        },
+        onError: (data) => {
+            setShowMessage(true);
+            setMessageError(data.response.data.message);
+        }
+    });
+
+    // Gestion de la soumission du formulaire
+    const onSubmit = (data) => {
+        mutation.mutate(data); // Lancer la mutation avec les données du formulaire
+    };
+
+    return ( 
+        &lt;div className="form-container sign-in">
+            &lt;form onSubmit={handleSubmit(onSubmit)}>
+                &lt;h1>Se connecter&lt;/h1>
+                &lt;span>utilisez votre e-mail et votre mot de passe&lt;/span>
+                &lt;input  aria-label={"Email"} aria-required="true" type="text" placeholder="Email" {...register("email", { required: "L'adresse email est requise." })}/>
+                &lt;input aria-label={"Mot de passe"} aria-required="true" type="password" placeholder="Mot de passe" {...register("password", { required: "Le mot de passe est requis" })}/>
+                &lt;a className="link-login-or-password-reset" onClick={() => setStatusForm('resetPassword')}>Mot de passe oublié ?&lt;/a>
+                &lt;button>Se connecter&lt;/button>
+                {/* Gestion de l'affichage des erreurs */}
+                &lt;p className='error-message-form' aria-live="assertive">
+                    {(showMessage || (errors.email || errors.password)) &amp;&amp; 
+                        !errors.email &amp;&amp; !errors.password &amp;&amp; ( 
+                            messageError
+                    )}
+                    
+                    {(errors.email || errors.password) &amp;&amp; (
+                        errors.email?.message || errors.password?.message
+                    )}
+                &lt;/p>
+                &lt;p onClick={() => setStatusAccess(true)}className='mobile-redirect-register-or-login'>S&amp;apos;inscrire&lt;/p>
+            &lt;/form>
+        &lt;/div>
+    )
+}
+
+Login.propTypes = {
+    setStatusForm: PropTypes.func.isRequired,
+    setStatusAccess: PropTypes.func.isRequired, 
+};
+
+export default Login;</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Global</h3><ul><li><a href="global.html#Access">Access</a></li><li><a href="global.html#Account">Account</a></li><li><a href="global.html#Admin">Admin</a></li><li><a href="global.html#ApiProvider">ApiProvider</a></li><li><a href="global.html#App">App</a></li><li><a href="global.html#AuthProvider">AuthProvider</a></li><li><a href="global.html#ChannelForm">ChannelForm</a></li><li><a href="global.html#ChannelMessages">ChannelMessages</a></li><li><a href="global.html#Discover">Discover</a></li><li><a href="global.html#Footer">Footer</a></li><li><a href="global.html#Friends">Friends</a></li><li><a href="global.html#Home">Home</a></li><li><a href="global.html#Inventory">Inventory</a></li><li><a href="global.html#Invoices">Invoices</a></li><li><a href="global.html#Layout">Layout</a></li><li><a href="global.html#Login">Login</a></li><li><a href="global.html#Navbar">Navbar</a></li><li><a href="global.html#Popup">Popup</a></li><li><a href="global.html#PopupProvider">PopupProvider</a></li><li><a href="global.html#PrivateRoute">PrivateRoute</a></li><li><a href="global.html#Profile">Profile</a></li><li><a href="global.html#Profils">Profils</a></li><li><a href="global.html#Register">Register</a></li><li><a href="global.html#Router">Router</a></li><li><a href="global.html#Shop">Shop</a></li><li><a href="global.html#Sidebar">Sidebar</a></li><li><a href="global.html#SocketProvider">SocketProvider</a></li><li><a href="global.html#Success">Success</a></li><li><a href="global.html#Support">Support</a></li><li><a href="global.html#UserProvider">UserProvider</a></li><li><a href="global.html#Users">Users</a></li><li><a href="global.html#fetchShop">fetchShop</a></li><li><a href="global.html#fetchUsers">fetchUsers</a></li><li><a href="global.html#mutationFn">mutationFn</a></li><li><a href="global.html#useApi">useApi</a></li><li><a href="global.html#useAuth">useAuth</a></li><li><a href="global.html#usePopup">usePopup</a></li><li><a href="global.html#useSocket">useSocket</a></li><li><a href="global.html#useSphereAnimation">useSphereAnimation</a></li><li><a href="global.html#useUser">useUser</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.3</a> on Thu Oct 17 2024 00:21:52 GMT+0200 (heure d’été d’Europe centrale)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

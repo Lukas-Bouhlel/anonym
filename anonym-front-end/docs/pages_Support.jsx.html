@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: pages/Support.jsx</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: pages/Support.jsx</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>import { useState } from 'react';
+import axios from 'axios';
+import { Accordion } from 'rsuite';
+import { useForm } from "react-hook-form";
+import { useMutation } from '@tanstack/react-query';
+import { useApi } from '../context/ApiContext';
+import { usePopup } from '../context/PopupContext';
+
+/**
+ * Composant Support qui gère la soumission des rapports d'assistance
+ * et affiche des informations sur le fonctionnement de la plateforme.
+ *
+ * @component
+ * @returns {React.ReactElement} - Le composant de support.
+ */
+const Support = () => {
+  const { register, handleSubmit, formState: { errors } } = useForm();
+  const [messageError, setMessageError] = useState('');
+  const [showMessage, setShowMessage] = useState(false);
+  const { setOpenPopup, setTextPopup, setState } = usePopup();
+  const { api_url } = useApi();
+
+  const reportMutation = useMutation({
+    /**
+     * Fonction pour l'envoi du rapport
+     * Elle envoie une requête POST avec les informations du rapport et est envoyé au support par mail.
+     * @param {Object} data - Les données à envoyer (email, type, message)
+     * @returns {Promise&lt;Object>} - Les données de la réponse si l'envoi du rapport est confirmé.
+     */
+    mutationFn: async (data) => {
+      return await axios.post(`${api_url}/api/admin/report`, {
+        email: data.email,
+        type: data.type,
+        content: data.message
+      }, { withCredentials: true });
+    },
+    onSuccess: () => {
+      setOpenPopup(true);
+      setTextPopup('Email envoyé, votre demande sera traitée dans les plus brefs délais !');
+      setState('success');
+      setShowMessage(false);
+      setMessageError('');
+    },
+    onError: (error) => {
+      setShowMessage(true);
+      setMessageError(error.response.data.message);
+    }
+  });
+
+  // Gestion de la soumission du formulaire
+  const onSubmit = (data) => {
+    reportMutation.mutate(data);
+  };
+
+  return (
+    &lt;section className='page-support'>
+      &lt;div className='page-support-content'>
+        &lt;h1>Centre d&amp;apos;aide&lt;/h1>
+      &lt;/div>
+      &lt;div className='page-support-container'>
+        &lt;div className='page-support-container-content'>
+          &lt;div className='page-support-container-content-title'>
+            &lt;Accordion defaultActiveKey={1} bordered>
+              &lt;Accordion.Panel header="⚠️ Comment signaler un problème ?" eventKey={1}>
+                &lt;p>Pour signaler un problème, que ce soit sur la plateforme Anonym ou avec un autre utilisateur lors d&amp;apos;une discussion, ou pour nous faire part de tout autre souci lié à notre plateforme, vous pouvez le faire via ce formulaire.&lt;/p>
+                &lt;p>❗Tout abus de signalement sera sanctionné par l&amp;apos;équipe Anonym.&lt;/p>
+              &lt;/Accordion.Panel>
+              &lt;Accordion.Panel header="Comment fonctionne le système de réputation ?" eventKey={2}>
+                &lt;p>Le système de réputation se base sur le nombre de messages envoyés à d&amp;apos;autres utilisateurs.&lt;/p>
+                &lt;p>Pour obtenir un multiplicateur de réputation, il est nécessaire d&amp;apos;acquérir un élément de personnalisation depuis la boutique.&lt;/p>
+              &lt;/Accordion.Panel>
+              &lt;Accordion.Panel header="Je n'arrive plus à me connecter, comment faire ?" eventKey={3}>
+                &lt;p>Si vous rencontrez des problèmes lors de votre connexion, que vous n&amp;apos;avez reçu aucun message de notre part ou qu&amp;apos;aucun message n&amp;apos;apparaît lorsque vous saisissez vos identifiants, n&amp;apos;hésitez pas à nous envoyer un message via ce formulaire.&lt;/p>
+                &lt;p>❗Tout abus de signalement sera sanctionné par l&amp;apos;équipe Anonym.&lt;/p>
+              &lt;/Accordion.Panel>
+              &lt;Accordion.Panel header="Quelles sont les informations recueillies par Anonym ?" eventKey={4}>
+                &lt;p>Nous pouvons collecter les types de données suivants :&lt;/p>
+                &lt;ul>
+                  &lt;li>Données de connexion : nom d&amp;apos;utilisateur, adresse e-mail, mot de passe.&lt;/li>
+                  &lt;li>Données de paiement : factures.&lt;/li>
+                  &lt;li>Données de navigation : pages visitées, clics, préférences.&lt;/li>
+                &lt;/ul>
+                &lt;p>Pour plus d&amp;apos;informations, n&amp;apos;hésitez pas à consulter notre page : Politique de confidentialité.&lt;/p>
+              &lt;/Accordion.Panel>
+              &lt;Accordion.Panel header="🖖 Comment soutenir l'équipe Anonym ?" eventKey={5}>
+                &lt;p>Pour soutenir l&amp;apos;équipe Anonym, vous pouvez nous envoyer un don qui sera reversé à l&amp;apos;équipe de développement du projet.&lt;/p>
+                &lt;p>Si vous souhaitez vraiment soutenir Anonym, n&amp;apos;hésitez pas à acheter un élément de personnalisation pour votre profil.&lt;/p>
+              &lt;/Accordion.Panel>
+            &lt;/Accordion>
+          &lt;/div>
+          &lt;div className="form-container report-in">
+            &lt;form onSubmit={handleSubmit(onSubmit)}>
+              &lt;h1 className='report-in-title'>Envoyer une demande&lt;/h1>
+              &lt;span>❗Formulaire pour nous signaler un problème&lt;/span>
+              &lt;input aria-required="true" aria-label="Email" className="input-report" type="email" placeholder="Email" {...register("email", { required: "L'adresse email est requise" })} />
+              &lt;select aria-label="Type" className="select-report" type='select'  {...register("type", { required: "Le type de demande est requis" })}>
+                &lt;option value="">Type de demande&lt;/option>
+                &lt;option value="Signalement d'utilisateur">Signalement d&amp;apos;utilisateur&lt;/option>
+                &lt;option value="Problème sur la plateforme">Problème sur la plateforme&lt;/option>
+                &lt;option value="autres">Autres&lt;/option>
+              &lt;/select>
+              &lt;textarea className="textarea-report" type="text" placeholder="Message" {...register("message", { required: "Le contenu de votre demande est requis" })} />
+              &lt;button className='submit-report'>Submit&lt;/button>
+            &lt;/form>
+            {/* Gestion de l'affichage des erreurs */}
+            {(showMessage || (errors.email || errors.type || errors.message)) &amp;&amp;
+              !errors.email &amp;&amp; !errors.password &amp;&amp; (
+                &lt;p className='error-message-form'>{messageError}&lt;/p>
+            )}
+            {/* Affichage des messages d'erreur si tous les champs sont remplis */}
+            {(errors.email || errors.type || errors.message) &amp;&amp; (
+              &lt;p className='error-message-form'>
+                {errors.email?.message || errors.type?.message || errors.message?.message}
+              &lt;/p>
+            )}
+          &lt;/div>
+        &lt;/div>
+      &lt;/div>
+    &lt;/section>
+  );
+};
+
+export default Support;</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Global</h3><ul><li><a href="global.html#Access">Access</a></li><li><a href="global.html#Account">Account</a></li><li><a href="global.html#Admin">Admin</a></li><li><a href="global.html#ApiProvider">ApiProvider</a></li><li><a href="global.html#App">App</a></li><li><a href="global.html#AuthProvider">AuthProvider</a></li><li><a href="global.html#ChannelForm">ChannelForm</a></li><li><a href="global.html#ChannelMessages">ChannelMessages</a></li><li><a href="global.html#Discover">Discover</a></li><li><a href="global.html#Footer">Footer</a></li><li><a href="global.html#Friends">Friends</a></li><li><a href="global.html#Home">Home</a></li><li><a href="global.html#Inventory">Inventory</a></li><li><a href="global.html#Invoices">Invoices</a></li><li><a href="global.html#Layout">Layout</a></li><li><a href="global.html#Login">Login</a></li><li><a href="global.html#Navbar">Navbar</a></li><li><a href="global.html#Popup">Popup</a></li><li><a href="global.html#PopupProvider">PopupProvider</a></li><li><a href="global.html#PrivateRoute">PrivateRoute</a></li><li><a href="global.html#Profile">Profile</a></li><li><a href="global.html#Profils">Profils</a></li><li><a href="global.html#Register">Register</a></li><li><a href="global.html#Router">Router</a></li><li><a href="global.html#Shop">Shop</a></li><li><a href="global.html#Sidebar">Sidebar</a></li><li><a href="global.html#SocketProvider">SocketProvider</a></li><li><a href="global.html#Success">Success</a></li><li><a href="global.html#Support">Support</a></li><li><a href="global.html#UserProvider">UserProvider</a></li><li><a href="global.html#Users">Users</a></li><li><a href="global.html#fetchShop">fetchShop</a></li><li><a href="global.html#fetchUsers">fetchUsers</a></li><li><a href="global.html#mutationFn">mutationFn</a></li><li><a href="global.html#useApi">useApi</a></li><li><a href="global.html#useAuth">useAuth</a></li><li><a href="global.html#usePopup">usePopup</a></li><li><a href="global.html#useSocket">useSocket</a></li><li><a href="global.html#useSphereAnimation">useSphereAnimation</a></li><li><a href="global.html#useUser">useUser</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.3</a> on Thu Oct 17 2024 00:21:52 GMT+0200 (heure d’été d’Europe centrale)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

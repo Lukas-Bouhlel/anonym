@@ -7,8 +7,15 @@ import { faXmark } from '@fortawesome/free-solid-svg-icons';
 import { useLocation  } from 'react-router-dom';
 import PasswordReset from './Reset/PasswordReset';
 
+/**
+ * Composant Access.
+ * Ce composant gère l'affichage du formulaire de connexion, d'inscription et de réinitialisation de mot de passe.
+ * Il utilise le contexte d'authentification pour gérer l'état d'ouverture du modal.
+ *
+ * @returns {JSX.Element} Le rendu du composant Access.
+ */
 const Access = () => {
-    const { isAnonymOpen, AnonymIsClose } = useAuth();
+    const { isAnonymOpen, AnonymIsClose } = useAuth();// Utilise le contexte pour ouvrir et fermer le modal d'accès
     const [statusAccess, setStatusAccess] = useState(false);
     const [statusForm, setStatusForm] = useState('login');
     const location = useLocation();
@@ -20,6 +27,11 @@ const Access = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [location]); 
 
+    /**
+     * Gère le changement de statut d'accès (connexion ou inscription).
+     * 
+     * @param {boolean} status - Le nouveau statut d'accès.
+     */
     const handleClick = (status) => {
         setStatusAccess(status);
     };

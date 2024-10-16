@@ -7,16 +7,32 @@ import { useApi } from '../../../context/ApiContext';
 import { useAuth } from '../../../context/AuthContext';
 import { useUser } from '../../../context/UserContext';
 
+/**
+ * Composant Register.
+ * Ce composant gère le formulaire d'inscription pour les nouveaux utilisateurs.
+ *
+ * @param {Object} props - Les propriétés du composant.
+ * @param {Function} props.setStatusAccess - Fonction pour changer le statut d'accès (connexion ou inscription).
+ * @returns {JSX.Element} Le rendu du formulaire d'inscription.
+ */
 const Register = ({setStatusAccess}) => {
   const { register, handleSubmit, formState: { errors }, } = useForm();
-  const { AnonymIsClose } = useAuth();
-  const { registered } = useUser();
+  const { AnonymIsClose } = useAuth();// Utilise le contexte pour fermer le modal d'inscription
+  const { registered } = useUser();// Utilise le contexte pour effectuer le register
+  const { api_url } = useApi();// Utilise le contexte pour obtenir l'URL de l'API
   const [showMessage, setShowMessage] = useState(false);
   const [messageError, setMessageError] = useState('');
-  const { api_url } = useApi();// Utilise le contexte pour obtenir l'URL de l'API
 
-  // Utiliser `useMutation` pour gérer la requête de login
+  // Utiliser `useMutation` pour gérer la requête d'inscription
   const mutation = useMutation({
+    /**
+     * Fonction pour gérer la requête d'inscription de l'utilisateur.
+     * @param {Object} data - Les données d'inscription de l'utilisateur.
+     * @param {string} data.name - Le nom d'utilisateur.
+     * @param {string} data.email - L'adresse email de l'utilisateur.
+     * @param {string} data.password - Le mot de passe de l'utilisateur.
+     * @returns {Promise<Object>} - Les données de l'utilisateur inscrit.
+     */
     mutationFn: async (data) => {
       const response = await axios.post(`${api_url}/api/auth/signup`, {
         username: data.name,
@@ -26,7 +42,6 @@ const Register = ({setStatusAccess}) => {
       return response.data;
     },
     onSuccess: (data) => {
-      // Appeler la fonction `login` du contexte pour stocker l'utilisateur
       registered(data.user);
       AnonymIsClose();
       setShowMessage(false);

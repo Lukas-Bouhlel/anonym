@@ -3,6 +3,23 @@ const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const fs = require('fs');
 const path = require('path');
 
+/**
+ * @module paymentController
+ * @description Ce module gère les paiements via Stripe, y compris la création de sessions de paiement et le traitement des confirmations de paiement.
+ */
+
+/**
+ * Créer une session de paiement pour un article.
+ *
+ * @async
+ * @function create
+ * @param {Object} req - L'objet de requête contenant les détails de l'article à acheter.
+ * @param {Object} res - L'objet de réponse.
+ * @throws {Object} 400 - Mauvaise requête si l'ID de l'article est manquant ou si l'utilisateur a déjà acheté cet article.
+ * @throws {Object} 404 - Non trouvé si l'article n'existe pas.
+ * @returns {Object} 200 - URL de la session de paiement Stripe.
+ * @returns {Object} 500 - Erreur interne du serveur si une erreur se produit lors de la création de la session de paiement.
+ */
 exports.create = async (req, res) => {
     try {
         const { article_id } = req.body; // ID du produit acheté
@@ -61,7 +78,19 @@ exports.create = async (req, res) => {
         });
     }
 };
-// Route de succès après le paiement
+
+/**
+ * Traiter la confirmation d'un paiement réussi.
+ *
+ * @async
+ * @function success
+ * @param {Object} req - L'objet de requête contenant l'ID de la session de paiement.
+ * @param {Object} res - L'objet de réponse.
+ * @throws {Object} 400 - Mauvaise requête si l'ID de session est manquant ou si le paiement n'est pas complet.
+ * @throws {Object} 404 - Non trouvé si l'article ou la facture existe déjà.
+ * @returns {Object} 200 - Message de succès avec les détails de la facture créée.
+ * @returns {Object} 500 - Erreur interne du serveur si une erreur se produit lors du traitement de la confirmation du paiement.
+ */
 exports.success = async (req, res) => {
     try {
         const session_id = req.query.session_id;  // Récupérer session_id depuis la requête

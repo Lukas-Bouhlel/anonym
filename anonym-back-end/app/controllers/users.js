@@ -3,6 +3,23 @@ const bcrypt = require('bcrypt');
 const fs = require('fs');
 const path = require('path');
 
+/**
+ * @module userController
+ * @description Ce module contient des fonctions pour gérer les données des utilisateurs, y compris la création, la mise à jour, la suppression d'utilisateurs et l'envoi de rapports.
+ */
+
+/**
+ * Créer un nouvel utilisateur.
+ * 
+ * @async
+ * @function create
+ * @param {Object} req - L'objet de requête.
+ * @param {Object} res - L'objet de réponse.
+ * @throws {Object} 403 - Interdit si l'utilisateur n'a pas la permission de créer un utilisateur.
+ * @throws {Object} 400 - Mauvaise requête si des champs requis sont manquants ou invalides.
+ * @returns {Object} 201 - Objet utilisateur créé.
+ * @returns {Object} 500 - Erreur interne du serveur si une erreur se produit lors de la création de l'utilisateur.
+ */
 exports.create = async (req, res) => {
     try {
         const datas = JSON.parse(req.body.datas);
@@ -83,6 +100,19 @@ exports.create = async (req, res) => {
     }
 };
 
+/**
+ * Mettre à jour un utilisateur existant.
+ * 
+ * @async
+ * @function update
+ * @param {Object} req - L'objet de requête.
+ * @param {Object} res - L'objet de réponse.
+ * @throws {Object} 403 - Interdit si l'utilisateur n'a pas la permission d'accéder à cette page.
+ * @throws {Object} 404 - Non trouvé si l'utilisateur n'existe pas.
+ * @throws {Object} 400 - Mauvaise requête si des champs requis sont invalides.
+ * @returns {Object} 200 - Objet utilisateur mis à jour.
+ * @returns {Object} 500 - Erreur interne du serveur si une erreur se produit lors de la mise à jour de l'utilisateur.
+ */
 exports.update = async (req, res) => {
     try {
         const userId = req.params.id;
@@ -181,6 +211,18 @@ exports.update = async (req, res) => {
     }
 };
 
+/**
+ * Supprimer un utilisateur existant.
+ * 
+ * @async
+ * @function deleteUser
+ * @param {Object} req - L'objet de requête.
+ * @param {Object} res - L'objet de réponse.
+ * @throws {Object} 403 - Interdit si l'utilisateur n'a pas la permission de supprimer un utilisateur.
+ * @throws {Object} 404 - Non trouvé si l'utilisateur n'existe pas.
+ * @returns {Object} 200 - Message de succès indiquant que l'utilisateur a été supprimé.
+ * @returns {Object} 500 - Erreur interne du serveur si une erreur se produit lors de la suppression de l'utilisateur.
+ */
 exports.delete = async (req, res) => {
     try {
         const userId = req.params.id;
@@ -218,6 +260,17 @@ exports.delete = async (req, res) => {
     }
 };
 
+/**
+ * Envoyer un rapport sur un utilisateur.
+ * 
+ * @async
+ * @function reportUser
+ * @param {Object} req - L'objet de requête.
+ * @param {Object} res - L'objet de réponse.
+ * @throws {Object} 404 - Non trouvé si l'utilisateur à signaler n'existe pas.
+ * @returns {Object} 200 - Message de succès confirmant que le rapport a été envoyé.
+ * @returns {Object} 500 - Erreur interne du serveur si une erreur se produit lors de l'envoi du rapport.
+ */
 exports.report = async (req, res) => {
     const { email, type, content } = req.body;
     try {

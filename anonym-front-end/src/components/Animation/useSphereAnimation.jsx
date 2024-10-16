@@ -1,14 +1,25 @@
 import { useEffect, useRef } from 'react';
 import anime from 'animejs';
 
+/**
+ * Hook personnalisé pour gérer l'animation d'une sphère avec la bibliothèque anime.js.
+ * 
+ * @returns {Object} Référence aux animations en cours, permettant un accès direct si nécessaire.
+ */
 const useSphereAnimation  = () => {
   const animationsRef = useRef([]);
-
+  //Animation de la sphère avec la library anime.js
   useEffect(() => {
     const sphereEl = document.querySelector('.sphere-animation');
     const spherePathEls = sphereEl?.querySelectorAll('.sphere path') || [];
     const pathLength = spherePathEls.length;
 
+    /**
+     * Ajuste la taille de l'élément à son parent en fonction du padding.
+     * 
+     * @param {HTMLElement} el - L'élément à ajuster.
+     * @param {number} [padding=0] - Le padding à appliquer lors de l'ajustement.
+     */
     function fitElementToParent(el, padding) {
       let timeout = null;
       function resize() {

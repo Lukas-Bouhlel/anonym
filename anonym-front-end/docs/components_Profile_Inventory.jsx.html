@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: components/Profile/Inventory.jsx</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: components/Profile/Inventory.jsx</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>import { useState } from "react";
+import PropTypes from 'prop-types';
+import axios from "axios";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useApi } from "../../context/ApiContext";
+import Popup from "../Utils/Popup";
+import spaceman from "../../assets/images/icons/spaceman.svg"
+
+/**
+ * Composant Inventory pour afficher et gérer l'inventaire de l'utilisateur.
+ *
+ * @param {Object} props - Les propriétés du composant.
+ * @param {Object} props.user - Les informations de l'utilisateur, y compris l'avatar.
+ * @returns {JSX.Element} - Le rendu du composant Inventory.
+ */
+const Inventory = ({ user }) => {
+    const { api_url } = useApi();// Utilise le contexte pour obtenir l'URL de l'API
+    const queryClient = useQueryClient();
+    const [showPopup, setShowPopup] = useState(false); 
+    const [messageError, setMessageError] = useState('');
+
+    /**
+     * Fonction pour récupérer l'inventaire de l'utilisateur.
+     * @returns {Promise&lt;Object>} - Les données de l'inventaire.
+     */
+    const fetchInventory = async () => {
+        try {
+            const response = await axios.get(`${api_url}/api/inventory`, {
+                withCredentials: true,
+            });
+            return response.data;
+        } catch (error) {
+            setMessageError(error.response.data.message)
+        }
+    };
+
+    const inventory = useQuery({
+        queryKey: ['inventory'], 
+        queryFn: fetchInventory,
+    });
+
+    /**
+     * Mutation pour mettre à jour l'état "active" d'un item de l'inventaire.
+     * @param {Object} item - L'objet de l'item à modifier.
+     * @param {boolean} currentState - L'état actuel de l'item.
+     * @returns {Promise&lt;Object|null>} - Les données mises à jour de l'item ou null en cas d'erreur.
+     */   
+    const toggleActiveMutation = useMutation({
+        mutationFn: async ({itemId, currentState}) => {
+            try {
+                const response = await axios.put(
+                    `${api_url}/api/inventory/${itemId}`,
+                    { active: !currentState }, // On inverse l'état actuel
+                    { withCredentials: true }
+                );
+                return response.data;
+            } catch (error) {
+                console.error("Erreur lors de la mise à jour de l'état actif:", error);
+                return null;
+            }
+        },
+        onSuccess: () => {
+            setShowPopup(true);
+            // Invalider et refetch l'inventaire après la mutation
+            queryClient.invalidateQueries(['inventory']);
+        },
+    });
+
+    /**
+     * Fonction pour gérer le clic sur le bouton "Activer" ou "Désactiver".
+     * @param {number} itemId - L'identifiant de l'item à modifier.
+     * @param {boolean} currentState - L'état actuel de l'item.
+     */
+    const handleToggleActive = (itemId, currentState) => {
+        toggleActiveMutation.mutate({ itemId, currentState });
+    };
+
+    return (
+        &lt;div id="inventory">
+            &lt;Popup showPopup={showPopup} setShowPopup={setShowPopup} text={'Ta décoration d\'avatar a été mise à jour !'}/>
+            &lt;div className="inventory-title">
+                &lt;h1>Inventaire&lt;/h1>
+            &lt;/div>
+            {!inventory.isLoading &amp;&amp; (
+                &lt;div className="inventory">
+                    &lt;div className="card-deck">
+                        {inventory.data &amp;&amp; inventory.data.length > 0 ? (
+                            inventory.data.map((item, index) => (
+                                &lt;div className="card inventory-card-content" key={index}>
+                                    &lt;div className="inventory-card-content-header">
+                                        &lt;img className="card-img-top inventory-card-content-header-first" src={item.Shop.content} alt="Card image cap" />
+                                        &lt;img className="card-img-top inventory-card-content-header-last" src={user.avatar} alt="Card image cap" />
+                                    &lt;/div>
+                                    &lt;div className="card-footer inventory-card-content-footer">
+                                        &lt;p className="card-text">{item.Shop.title}&lt;/p>
+                                        &lt;small className="text-muted">
+                                            &lt;button
+                                                className={`${item.active ? 'button-active' : 'button-no-active'}`}
+                                                onClick={() => handleToggleActive(item.item_id, item.active)}
+                                            >
+                                                {item.active ? 'Désactiver' : 'Activer'}
+                                            &lt;/button>
+                                        &lt;/small>
+                                    &lt;/div>
+                                &lt;/div>
+                            ))
+                        ) : (
+                            &lt;div className="no-inventory-found">
+                                &lt;img className="icon-spaceman" src={spaceman} alt='icon-spaceman' />
+                                {messageError}
+                            &lt;/div>
+                        )}
+                    &lt;/div>
+                &lt;/div>
+            )}
+        &lt;/div>
+    );
+};
+
+Inventory.propTypes = {
+    user: PropTypes.shape({
+        avatar: PropTypes.string.isRequired, // user.avatar should be a string
+    }).isRequired, // user should be an object containing avatar
+};
+
+export default Inventory;</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Global</h3><ul><li><a href="global.html#Access">Access</a></li><li><a href="global.html#Account">Account</a></li><li><a href="global.html#Admin">Admin</a></li><li><a href="global.html#ApiProvider">ApiProvider</a></li><li><a href="global.html#App">App</a></li><li><a href="global.html#AuthProvider">AuthProvider</a></li><li><a href="global.html#ChannelForm">ChannelForm</a></li><li><a href="global.html#ChannelMessages">ChannelMessages</a></li><li><a href="global.html#Discover">Discover</a></li><li><a href="global.html#Footer">Footer</a></li><li><a href="global.html#Friends">Friends</a></li><li><a href="global.html#Home">Home</a></li><li><a href="global.html#Inventory">Inventory</a></li><li><a href="global.html#Invoices">Invoices</a></li><li><a href="global.html#Layout">Layout</a></li><li><a href="global.html#Login">Login</a></li><li><a href="global.html#Navbar">Navbar</a></li><li><a href="global.html#Popup">Popup</a></li><li><a href="global.html#PopupProvider">PopupProvider</a></li><li><a href="global.html#PrivateRoute">PrivateRoute</a></li><li><a href="global.html#Profile">Profile</a></li><li><a href="global.html#Profils">Profils</a></li><li><a href="global.html#Register">Register</a></li><li><a href="global.html#Router">Router</a></li><li><a href="global.html#Shop">Shop</a></li><li><a href="global.html#Sidebar">Sidebar</a></li><li><a href="global.html#SocketProvider">SocketProvider</a></li><li><a href="global.html#Success">Success</a></li><li><a href="global.html#Support">Support</a></li><li><a href="global.html#UserProvider">UserProvider</a></li><li><a href="global.html#Users">Users</a></li><li><a href="global.html#fetchShop">fetchShop</a></li><li><a href="global.html#fetchUsers">fetchUsers</a></li><li><a href="global.html#mutationFn">mutationFn</a></li><li><a href="global.html#useApi">useApi</a></li><li><a href="global.html#useAuth">useAuth</a></li><li><a href="global.html#usePopup">usePopup</a></li><li><a href="global.html#useSocket">useSocket</a></li><li><a href="global.html#useSphereAnimation">useSphereAnimation</a></li><li><a href="global.html#useUser">useUser</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.3</a> on Thu Oct 17 2024 00:21:52 GMT+0200 (heure d’été d’Europe centrale)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

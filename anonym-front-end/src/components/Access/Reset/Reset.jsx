@@ -8,7 +8,7 @@ import { usePopup } from '../../../context/PopupContext';
 
 const Reset = () => {
     const { register, handleSubmit, formState: { errors }, } = useForm();
-    const { api_url } = useApi();
+    const { api_url } = useApi();// Utilise le contexte pour obtenir l'URL de l'API
     const navigate = useNavigate();
     const [token, setToken] = useState('');
     const { setOpenPopup, setTextPopup, setState } = usePopup();

@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: app/utils/socket.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: app/utils/socket.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>const { PrivateMessage, User, Inventory, Shop, Channel } = require('../models');
+const { Op } = require('sequelize'); // Assurez-vous d'importer Op pour les requêtes
+
+
+/**
+ * Récupère le nombre de messages non lus dans un canal donné, pour un utilisateur spécifique.
+ * 
+ * @async
+ * @function getUnreadMessageCount
+ * @param {number} channelId - L'identifiant du canal de discussion.
+ * @param {number} userId - L'identifiant de l'utilisateur.
+ * @returns {Promise&lt;number>} - Le nombre de messages non lus.
+ */
+const getUnreadMessageCount = async (channelId, userId) => {
+    return await PrivateMessage.count({
+        where: {
+            channel_id: channelId,
+            status: 'unread', 
+            sender_id: {
+                [Op.ne]: userId // Exclure les messages envoyés par l'utilisateur
+            }
+        }
+    });
+};
+
+
+/**
+ * Marque tous les messages non lus dans un canal comme lus pour un utilisateur.
+ * 
+ * @async
+ * @function markMessagesAsRead
+ * @param {number} channelId - L'identifiant du canal de discussion.
+ * @param {number} userId - L'identifiant de l'utilisateur.
+ * @returns {Promise&lt;number[]>} - Le nombre de lignes affectées.
+ */
+const markMessagesAsRead = async (channelId, userId) => {
+    return await PrivateMessage.update(
+        { status: 'read' }, // Met à jour le statut à 'lu'
+        {
+            where: {
+                channel_id: channelId,
+                status: 'unread', // Cibler uniquement les messages non lus
+                sender_id: {
+                    [Op.ne]: userId // Exclure les messages envoyés par l'utilisateur
+                }
+            }
+        }
+    );
+};
+
+
+/**
+ * Initialise la connexion Socket.IO et gère les événements de messagerie.
+ *
+ * @function initializeSocket
+ * @param {Object} io - L'instance Socket.IO.
+ */
+const initializeSocket = (io) => {
+    io.on('connection', (socket) => {
+
+         /**
+         * Gère l'événement lorsque l'utilisateur rejoint un canal.
+         * 
+         * @event joinChannel
+         * @param {Object} data - Les données de l'événement.
+         * @param {number} data.channelId - L'identifiant du canal.
+         * @param {number} data.userId - L'identifiant de l'utilisateur.
+         */
+        socket.on('joinChannel', async (data) => {
+            const { channelId, userId } = data; 
+            
+            // Marquer les messages non lus comme lus
+            await markMessagesAsRead(channelId, userId);
+            
+            // Mettre à jour le compte des messages non lus après que l'utilisateur a rejoint
+            const unreadCount = await getUnreadMessageCount(channelId, userId);
+            io.to(channelId).emit('unreadCount', { count: unreadCount });
+            
+            socket.join(channelId);
+        });
+
+         /**
+         * Gère l'envoi d'un message privé dans un canal.
+         * 
+         * @event privateMessage
+         * @param {Object} data - Les données du message privé.
+         * @param {number} data.senderId - L'identifiant de l'expéditeur.
+         * @param {string} data.content - Le contenu du message.
+         * @param {number} data.channelId - L'identifiant du canal.
+         */
+        socket.on('privateMessage', async ({ senderId, content, channelId }) => {
+            try {
+                // Créer le message dans la base de données
+                const message = await PrivateMessage.create({
+                    sender_id: senderId,
+                    content,
+                    channel_id: channelId,
+                    status: 'unread',
+                    createdAt: new Date()
+                });
+
+                const sender = await User.findByPk(senderId, { 
+                    attributes: ['id', 'username', 'avatar'],
+                    include: [
+                        {
+                            model: Inventory, // Inclure l'inventaire de l'utilisateur
+                            where: { active: true }, // Filtrer uniquement les articles actifs
+                            attributes: ['item_id', 'article_id', 'active'],
+                            include: [
+                                {
+                                    model: Shop, // Inclure les détails de l'article
+                                    attributes: ['title', 'type', 'content', 'amount']
+                                }
+                            ],
+                            required: false // Assurer que même si pas d'inventaire, le message passe
+                        }
+                    ]
+                });
+
+                 // Envoyer le message au canal spécifique
+                io.to(channelId).emit('newMessage', {
+                    id: message.message_id,
+                    content: message.content,
+                    sender: sender,
+                    createdAt: message.createdAt
+                });
+                 // Mettre à jour le compte des messages non lus pour tous les utilisateurs
+                 const unreadCount = await getUnreadMessageCount(channelId, senderId);
+                 io.to(channelId).emit('unreadCount', { count: unreadCount });
+            } catch (error) {
+                console.error('Error sending private message:', error.message);
+            }
+        });
+
+         /**
+         * Gère l'événement de départ de l'utilisateur d'un canal.
+         * 
+         * @event leaveChannel
+         * @param {Object} data - Les données de l'événement.
+         * @param {number} data.channelId - L'identifiant du canal quitté.
+         */
+        socket.on('leaveChannel', async ({channelId}) => {
+            socket.leave(channelId);
+        });
+
+        /**
+         * Gère la suppression d'un canal.
+         * 
+         * @event deleteChannel
+         * @param {number} channelId - L'identifiant du canal à supprimer.
+         */
+        socket.on('deleteChannel', async (channelId) => {
+            // Ici, tu devrais ajouter une vérification pour voir si l'utilisateur est le créateur
+            try {
+                await Channel.destroy({ where: { id: channelId } });
+                io.to(channelId).emit('channelDeleted', channelId);
+            } catch (error) {
+                console.error('Error deleting channel:', error.message);
+            }
+        });
+
+        /**
+         * Gère la déconnexion de l'utilisateur du socket.
+         * 
+         * @event disconnect
+         */
+        socket.on('disconnect', () => {
+            console.log(`Client disconnected: ${socket.id}`);
+        });
+    });
+};
+
+module.exports = initializeSocket;</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-UserController.html">UserController</a></li><li><a href="module-channelController.html">channelController</a></li><li><a href="module-databaseConfig.html">databaseConfig</a></li><li><a href="module-friendController.html">friendController</a></li><li><a href="module-inventoryController.html">inventoryController</a></li><li><a href="module-invoiceController.html">invoiceController</a></li><li><a href="module-middlewares_auth.html">middlewares/auth</a></li><li><a href="module-middlewares_authorizeAdmin.html">middlewares/authorizeAdmin</a></li><li><a href="module-middlewares_generateAvatar.html">middlewares/generateAvatar</a></li><li><a href="module-paymentController.html">paymentController</a></li><li><a href="module-privateMessageController.html">privateMessageController</a></li><li><a href="module-routes.html">routes</a></li><li><a href="module-routes_account.html">routes/account</a></li><li><a href="module-routes_admin_inventory.html">routes/admin/inventory</a></li><li><a href="module-routes_admin_invoice.html">routes/admin/invoice</a></li><li><a href="module-routes_admin_shop.html">routes/admin/shop</a></li><li><a href="module-routes_auth.html">routes/auth</a></li><li><a href="module-routes_channel.html">routes/channel</a></li><li><a href="module-routes_friends.html">routes/friends</a></li><li><a href="module-routes_inventory.html">routes/inventory</a></li><li><a href="module-routes_invoice.html">routes/invoice</a></li><li><a href="module-routes_payment.html">routes/payment</a></li><li><a href="module-routes_privateMessage.html">routes/privateMessage</a></li><li><a href="module-routes_shop.html">routes/shop</a></li><li><a href="module-shopController.html">shopController</a></li><li><a href="module-userController_.html">userController</a></li></ul><h3>Events</h3><ul><li><a href="global.html#event:deleteChannel">deleteChannel</a></li><li><a href="global.html#event:disconnect">disconnect</a></li><li><a href="global.html#event:joinChannel">joinChannel</a></li><li><a href="global.html#event:leaveChannel">leaveChannel</a></li><li><a href="global.html#event:privateMessage">privateMessage</a></li></ul><h3>Global</h3><ul><li><a href="global.html#cors">cors</a></li><li><a href="global.html#createMailer">createMailer</a></li><li><a href="global.html#createServer">createServer</a></li><li><a href="global.html#destination">destination</a></li><li><a href="global.html#drawTable">drawTable</a></li><li><a href="global.html#filename">filename</a></li><li><a href="global.html#generateInvoice">generateInvoice</a></li><li><a href="global.html#getUnreadMessageCount">getUnreadMessageCount</a></li><li><a href="global.html#helmet">helmet</a></li><li><a href="global.html#httpsOptions">httpsOptions</a></li><li><a href="global.html#initializeSocket">initializeSocket</a></li><li><a href="global.html#io">io</a></li><li><a href="global.html#listen">listen</a></li><li><a href="global.html#mailer">mailer</a></li><li><a href="global.html#markMessagesAsRead">markMessagesAsRead</a></li><li><a href="global.html#normalizeEmail">normalizeEmail</a></li><li><a href="global.html#rateLimit">rateLimit</a></li><li><a href="global.html#router">router</a></li><li><a href="global.html#sendEmail">sendEmail</a></li><li><a href="global.html#slowDown">slowDown</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.3</a> on Wed Oct 16 2024 22:55:54 GMT+0200 (heure d’été d’Europe centrale)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

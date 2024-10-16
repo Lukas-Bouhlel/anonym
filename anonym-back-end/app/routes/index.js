@@ -11,6 +11,11 @@ const friendsRoutes = require('./friends.js');
 const privateMessagesRoutes = require('./private_message.js');
 const channelRoutes = require('./channel');
 
+/**
+ * Les différentes routes de l'application sont définies ici et reliées à leur fichier respectif.
+ * 
+ * @module routes
+ */
 router.use("/auth", authRoutes);
 router.use("/account", accountRoutes);
 router.use("/admin", adminRoutes);

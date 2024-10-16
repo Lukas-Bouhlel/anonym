@@ -5,12 +5,20 @@ import { useForm } from "react-hook-form";
 import { useApi } from '../../context/ApiContext';
 import Popup from "../Utils/Popup";
 
+/**
+ * Composant Account pour gérer et afficher les informations du profil utilisateur.
+ *
+ * @param {Object} props - Les propriétés du composant.
+ * @param {Object} props.user - Les informations de l'utilisateur, y compris l'avatar et le nom d'utilisateur.
+ * @param {Function} props.setUser - Fonction pour mettre à jour les informations de l'utilisateur dans l'état parent.
+ * @returns {JSX.Element} - Le rendu du composant Account.
+ */
 const Account = ({ user, setUser }) => {
     const [avatarFile, setAvatarFile] = useState(null);
     const [previewUsername, setPreviewUsername] = useState(user?.username || "");
     const [previewAvatar, setPreviewAvatar] = useState(user?.avatar || "");
     const [showPopup, setShowPopup] = useState(false);
-    const { api_url } = useApi();
+    const { api_url } = useApi();// Utilise le contexte pour obtenir l'URL de l'API
 
     const { register, handleSubmit, setValue, reset, formState: { errors } } = useForm({
         defaultValues: {
@@ -28,6 +36,12 @@ const Account = ({ user, setUser }) => {
         setPreviewUsername(user?.username || "");
     }, [user, reset]);
 
+    /**
+     * Fonction soumise lors de l'envoi du formulaire.
+     * Cette fonction prépare les données du formulaire et effectue un appel API pour mettre à jour le profil de l'utilisateur.
+     * 
+     * @param {Object} data - Les données du formulaire contenant le nom d'utilisateur, l'email et l'avatar.
+     */
     const onSubmit = async (data) => {
         const formData = new FormData();
 
@@ -38,18 +52,18 @@ const Account = ({ user, setUser }) => {
 
          // Si l'avatar est supprimé, l'ajouter dans le JSON
         if (data.avatar === "delete") {
-            jsonData.avatar = "delete"; // Indiquer dans le JSON que l'avatar est supprimé
+            jsonData.avatar = "delete";
         }
 
         // Ajouter l'objet JSON sous forme de chaîne dans formData
         formData.append('datas', JSON.stringify(jsonData));
     
         if (avatarFile) {
-            formData.append('image', avatarFile); // Ajouter l'avatar en tant que fichier
+            formData.append('image', avatarFile); // Ajouter l'avatar
         }
         
+        //Appel api pour mettre à jour le profil
         try {
-            // Envoi du formulaire
             const response = await axios.put(`${api_url}/api/account/update`, formData, {
                 headers: {
                     'Content-Type': 'multipart/form-data',
@@ -66,7 +80,10 @@ const Account = ({ user, setUser }) => {
         }
     };
 
-    // Fonction pour gérer l'upload de fichier
+    /**
+     * Fonction pour gérer l'upload de fichier.
+     * @param {Event} e - L'événement de changement de fichier.
+     */
     const handleFileChange = (e) => {
         const file = e.target.files[0];
         if (file) {
@@ -75,19 +92,26 @@ const Account = ({ user, setUser }) => {
         }
     };
 
-    // Fonction pour gérer la suppression de l'avatar
+    /**
+     * Fonction pour gérer la suppression de l'avatar.
+     */
     const handleDeleteAvatar = () => {
         setValue('avatar', 'delete'); // Définit la valeur avatar à 'delete'
         setAvatarFile(null); // Réinitialise le fichier local
         setPreviewAvatar(""); // Supprime l'avatar dans l'aperçu
     };
 
-    // Mise à jour du username en temps réel
+    /**
+     * Fonction pour mettre à jour le nom d'utilisateur en temps réel.
+     * @param {Event} e - L'événement de changement de valeur.
+     */
     const handleUsernameChange = (e) => {
         setPreviewUsername(e.target.value); // Met à jour l'aperçu du nom d'utilisateur
     };
 
-    // Fonction pour gérer le reset du formulaire et des états locaux
+    /**
+     * Fonction pour gérer le reset du formulaire et des états locaux.
+     */
     const handleReset = () => {
         reset(); // Réinitialise les champs du formulaire
         setPreviewUsername(user?.username || ""); // Réinitialise le nom d'utilisateur à sa valeur initiale

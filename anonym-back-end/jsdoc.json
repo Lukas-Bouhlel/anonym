@@ -1,0 +1,25 @@
+{
+    "source": {
+        "include": [
+            "index.js",
+            "app.js",
+            "./app/config",
+            "./app/controllers",
+            "./app/middlewares",
+            "./app/routes",
+            "./app/utils/mailer.js",
+            "./app/utils/socket.js"   
+        ],
+        "includePattern": ".+\\.js(doc|x)?$",
+        "excludePattern": "(node_modules|\\.git)"
+    },
+    "opts": {
+        "destination": "./docs", 
+        "recurse": true 
+    },
+    "plugins": ["plugins/markdown"], 
+    "templates": {
+        "cleverLinks": false,
+        "monospaceLinks": false
+    }
+}

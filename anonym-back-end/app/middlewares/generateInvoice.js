@@ -8,6 +8,15 @@ const path = require('path');
 const window = new JSDOM('').window;
 const purify = DOMPurify(window);
 
+/**
+ * Dessine un tableau dans le document PDF.
+ * 
+ * @param {PDFDocument} doc - L'objet PDFDocument dans lequel dessiner le tableau.
+ * @param {number} startX - La position X de départ pour le tableau.
+ * @param {number} startY - La position Y de départ pour le tableau.
+ * @param {string[]} headers - Les en-têtes des colonnes du tableau.
+ * @param {string[][]} rows - Les lignes de données pour le tableau.
+ */
 const drawTable = (doc, startX, startY, headers, rows) => {
     const rowHeight = 25;
     const colWidth = (doc.page.width - 100) / headers.length; 
@@ -32,6 +41,40 @@ const drawTable = (doc, startX, startY, headers, rows) => {
     doc.moveTo(startX, startY + rowHeight).lineTo(startX + (colWidth * headers.length), startY + rowHeight).stroke();
 };
 
+
+/**
+ * Génère un document PDF de facture à partir des données fournies.
+ * 
+ * @param {Object} invoiceData - Les données de la facture à inclure dans le PDF.
+ * @param {string} invoiceData.id - L'ID de la facture.
+ * @param {string} invoiceData.username - Le nom de l'utilisateur à facturer.
+ * @param {string} invoiceData.email - L'email de l'utilisateur à facturer.
+ * @param {Date} invoiceData.createdAt - La date de création de la facture.
+ * @param {string} invoiceData.content - Le contenu de la facture (articles).
+ * @param {number} invoiceData.amount - Le montant de l'article.
+ * @param {number} invoiceData.quantity - La quantité de l'article.
+ * 
+ * @returns {Promise<Buffer>} Un buffer contenant les données PDF générées.
+ * 
+ * @example
+ * const invoiceData = {
+ *     id: '12345',
+ *     username: 'John Doe',
+ *     email: 'john@example.com',
+ *     createdAt: new Date(),
+ *     content: 'Product XYZ',
+ *     amount: 150,
+ *     quantity: 2,
+ * };
+ * 
+ * generateInvoice(invoiceData)
+ *     .then(pdfBuffer => {
+ *         // Utiliser le buffer PDF (par exemple, l'enregistrer ou le renvoyer au client)
+ *     })
+ *     .catch(error => {
+ *         console.error('Error generating invoice:', error);
+ *     });
+ */
 const generateInvoice = async (invoiceData) => {
     return new Promise((resolve) => {
         const doc = new PDFDocument();

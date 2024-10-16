@@ -7,16 +7,31 @@ import { useApi } from '../../../context/ApiContext';
 import { useUser } from '../../../context/UserContext'; 
 import { useNavigate } from 'react-router-dom';
 
+/**
+ * Composant Login.
+ * Ce composant gère le formulaire de connexion pour les utilisateurs existants.
+ *
+ * @param {Object} props - Les propriétés du composant.
+ * @param {Function} props.setStatusForm - Fonction pour changer le statut du formulaire (connexion ou réinitialisation du mot de passe).
+ * @param {Function} props.setStatusAccess - Fonction pour changer le statut d'accès (connexion ou inscription).
+ * @returns {JSX.Element} Le rendu du formulaire de connexion.
+ */
 const Login = ({setStatusForm, setStatusAccess}) => {
     const { register, handleSubmit, formState: { errors }, } = useForm();
     const [showMessage, setShowMessage] = useState(false);
     const [messageError, setMessageError] = useState('');
-    const { login } = useUser(); 
+    const { login } = useUser();// Utilise le contexte pour effectuer le login
     const { api_url } = useApi();// Utilise le contexte pour obtenir l'URL de l'API
     const navigate = useNavigate();
 
-    // Utiliser `useMutation` pour gérer la requête de login
     const mutation = useMutation({
+         /**
+         * Fonction pour gérer la requête de connexion de l'utilisateur.
+         * @param {Object} data - Les données de connexion de l'utilisateur.
+         * @param {string} data.email - L'email de l'utilisateur.
+         * @param {string} data.password - Le mot de passe de l'utilisateur.
+         * @returns {Promise<Object>} - Les données de l'utilisateur connecté.
+         */
         mutationFn: async (data) => {
             const response = await axios.post(`${api_url}/api/auth/login`, {
                 identifier: data.email,
@@ -68,8 +83,8 @@ const Login = ({setStatusForm, setStatusAccess}) => {
 }
 
 Login.propTypes = {
-    setStatusForm: PropTypes.func.isRequired, // Function to set form status
-    setStatusAccess: PropTypes.func.isRequired, // Function to set access status
+    setStatusForm: PropTypes.func.isRequired,
+    setStatusAccess: PropTypes.func.isRequired, 
 };
 
 export default Login;

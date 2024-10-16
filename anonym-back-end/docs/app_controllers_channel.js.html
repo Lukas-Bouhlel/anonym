@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: app/controllers/channel.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: app/controllers/channel.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>const { Channel, PrivateMessage, User, UserChannel, Inventory, Shop } = require('../models');
+const { Op } = require('sequelize');
+
+/**
+ * @module channelController
+ * @description Ce module gère les opérations liées aux canaux, y compris la création, l'invitation d'utilisateurs, la récupération de messages, etc.
+ */
+
+/**
+ * Récupérer le nombre de messages non lus dans un channel spécifique.
+ *
+ * @async
+ * @function getUnreadMessageCount
+ * @param {number} channelId - L'ID du channel à vérifier.
+ * @param {number} userId - L'ID de l'utilisateur pour exclure ses messages.
+ * @returns {Promise&lt;number>} - Le nombre de messages non lus.
+ */
+const getUnreadMessageCount = async (channelId, userId) => {
+    return await PrivateMessage.count({
+        where: {
+            channel_id: channelId,
+            status: 'unread',
+            sender_id: {
+                [Op.ne]: userId
+            }
+        }
+    });
+};
+
+/**
+ * Créer un nouveau channel.
+ *
+ * @async
+ * @function create
+ * @param {Object} req - L'objet de requête contenant le nom et la description du channel.
+ * @param {Object} res - L'objet de réponse.
+ * @returns {Object} 201 - Détails du channel créé.
+ * @throws {Object} 400 - Mauvaise requête si le nom du channel est manquant.
+ * @throws {Object} 500 - Erreur interne du serveur si une erreur se produit lors de la création du channel.
+ */
+exports.create = async (req, res) => {
+    try {
+        const { name, description } = req.body;
+        const userId = req.auth.userId; 
+
+        if(!name) {
+            return res.status(400).json({ message: 'Le nom du groupe est requis' });
+        }
+
+        // Créer le channel
+        const channel = await Channel.create({ 
+            name, 
+            description,
+            created_by: userId
+        });
+
+        // Associer le channel au créateur (utilisateur actuel)
+        await UserChannel.create({ user_id: userId, channel_id: channel.channel_id });
+
+        res.status(201).json(channel);
+    } catch (error) {
+        res.status(500).json({ message: error.message || 'Une erreur est survenue lors de la création du channel.' });
+    }
+};
+
+/**
+ * Inviter un utilisateur à un channel.
+ *
+ * @async
+ * @function invite
+ * @param {Object} req - L'objet de requête contenant l'ID du channel et l'ID de l'utilisateur à inviter.
+ * @param {Object} res - L'objet de réponse.
+ * @returns {Object} 200 - Message de succès indiquant que l'utilisateur a été ajouté au channel.
+ * @throws {Object} 400 - Mauvaise requête si l'utilisateur est déjà membre du channel.
+ * @throws {Object} 500 - Erreur interne du serveur si une erreur se produit lors de l'ajout de l'utilisateur au channel.
+ */
+exports.invite = async (req, res) => {
+    try {
+        const { channelId, userId } = req.body;
+
+        // Vérifier si l'utilisateur est déjà membre du channel
+        const existingUserChannel = await UserChannel.findOne({
+            where: { user_id: userId, channel_id: channelId }
+        });
+
+        if (existingUserChannel) {
+            return res.status(400).json({ message: 'Cet utilisateur est déjà membre de ce channel.' });
+        }
+
+        // Ajouter l'utilisateur au channel
+        await UserChannel.create({ user_id: userId, channel_id: channelId });
+
+        res.status(200).json({ message: 'Utilisateur ajouté au channel avec succès.' });
+    } catch (error) {
+        res.status(500).json({ message: error.message || 'Erreur lors de l\'ajout de l\'utilisateur au channel.' });
+    }
+};
+
+/**
+ * Obtenir le nombre de messages non lus dans un channel spécifique.
+ *
+ * @async
+ * @function getUnreadMessageCount
+ * @param {Object} req - L'objet de requête contenant l'ID du channel.
+ * @param {Object} res - L'objet de réponse.
+ * @returns {Object} 200 - Le nombre de messages non lus dans le channel.
+ * @throws {Object} 500 - Erreur interne du serveur si une erreur se produit lors de la récupération du compteur.
+ */
+exports.getUnreadMessageCount = async (req, res) => {
+    const channelId = req.params.id; 
+    const userId = req.auth.userId;
+
+    try {
+        const unreadCount = await getUnreadMessageCount(channelId, userId);
+        res.status(200).json({ count: unreadCount });
+    } catch (error) {
+        res.status(500).json({ message: error.message || 'Erreur lors de la récupération du compteur de messages non lus.' });
+    }
+}
+
+/**
+ * Récupérer les channels associés à un utilisateur.
+ *
+ * @async
+ * @function getUserChannels
+ * @param {Object} req - L'objet de requête.
+ * @param {Object} res - L'objet de réponse.
+ * @returns {Object} 200 - Liste des canaux avec le nombre de messages non lus.
+ * @throws {Object} 404 - Non trouvé si l'utilisateur n'existe pas.
+ * @throws {Object} 500 - Erreur interne du serveur si une erreur se produit lors de la récupération des canaux.
+ */
+exports.getUserChannels = async (req, res) => {
+    try {
+        const userId = req.auth.userId;
+
+        // Récupérer les canaux associés à cet utilisateur
+        const user = await User.findByPk(userId, {
+            include: [{ model: Channel, as: 'Channels' }] // Inclure les canaux associés
+        });
+
+        if (!user) {
+            return res.status(404).json({ message: 'Utilisateur non trouvé.' });
+        }
+
+        const channelsWithUnreadCount = await Promise.all(user.Channels.map(async (channel) => {
+            const unreadCount = await getUnreadMessageCount(channel.channel_id, userId);
+            return {
+                channel_id: channel.channel_id,
+                name: channel.name, // Assurez-vous que cette propriété existe
+                unreadCount: unreadCount,
+                created_by: channel.created_by
+            };
+        }));
+
+        res.status(200).json(channelsWithUnreadCount);
+    } catch (error) {
+        res.status(500).json({ message: error.message || 'Erreur lors de la récupération des canaux.' });
+    }
+};
+
+/**
+ * Récupérer les utilisateurs d'un channel spécifique.
+ *
+ * @async
+ * @function getChannelUsers
+ * @param {Object} req - L'objet de requête contenant l'ID du channel.
+ * @param {Object} res - L'objet de réponse.
+ * @returns {Object} 200 - Liste des utilisateurs dans le channel.
+ * @throws {Object} 403 - Accès interdit si l'utilisateur n'est pas membre du channel.
+ * @throws {Object} 404 - Non trouvé si aucun utilisateur n'est trouvé dans le channel.
+ * @throws {Object} 500 - Erreur interne du serveur si une erreur se produit lors de la récupération des utilisateurs.
+ */
+exports.getChannelUsers = async (req, res) => {
+    try {
+        const { id } = req.params; // ID du channel
+        const userId = req.auth.userId; // ID de l'utilisateur connecté
+
+        // Vérifier si l'utilisateur fait partie du channel
+        const userChannel = await UserChannel.findOne({
+            where: {
+                user_id: userId,
+                channel_id: id,
+            },
+        });
+
+        if (!userChannel) {
+            return res.status(403).json({ message: "Vous n'avez pas accès aux utilisateurs de ce channel." });
+        }
+
+        // Récupérer les utilisateurs du channel
+        const users = await User.findAll({
+            include: [{
+                model: Channel,
+                where: { channel_id: id }, // Filtrer les utilisateurs par channel
+                attributes: [] // On ne veut pas les informations de la table de jonction
+            }],
+            attributes: ['id', 'username', 'avatar'] // Limiter les attributs renvoyés
+        });
+
+        if (!users.length) {
+            return res.status(404).json({ message: "Aucun utilisateur trouvé dans ce channel." });
+        }
+
+        res.status(200).json(users);
+    } catch (error) {
+        res.status(500).json({ message: error.message || "Erreur lors de la récupération des utilisateurs du channel." });
+    }
+};
+
+
+/**
+ * Obtenir les messages d'un channel spécifique.
+ *
+ * @async
+ * @function getChannelMessages
+ * @param {Object} req - L'objet de requête contenant l'ID du channel.
+ * @param {Object} res - L'objet de réponse.
+ * @returns {Object} 200 - Liste des messages dans le channel.
+ * @throws {Object} 404 - Non trouvé si le channel n'existe pas.
+ * @throws {Object} 500 - Erreur interne du serveur si une erreur se produit lors de la récupération des messages.
+ */
+exports.getChannelMessages = async (req, res) => {
+    try {
+        const { id } = req.params;
+        // Vérifier si le channel existe
+        const channel = await Channel.findByPk(id);
+        if (!channel) {
+            return res.status(404).json({ message: "Channel non trouvé." });
+        }
+        // Récupérer les messages du channel
+        const messages = await PrivateMessage.findAll({
+            where: { channel_id: id },
+            order: [['createdAt', 'ASC']], // Trier les messages par date croissante
+            include: [
+                {
+                    model: User, // Associe les messages aux utilisateurs pour récupérer leurs infos
+                    attributes: ['username', 'avatar'], // On ne sélectionne que ces attributs
+                    include: [
+                        {
+                            model: Inventory, // Inclure l'inventaire de l'utilisateur
+                            where: { active: true }, // Filtrer uniquement les articles actifs
+                            attributes: ['item_id', 'article_id', 'active'],
+                            include: [
+                                {
+                                    model: Shop, // Détails de l'article
+                                    attributes: ['title', 'type', 'content', 'amount']
+                                }
+                            ],
+                            required: false // L'inventaire est facultatif, l'utilisateur sera récupéré même s'il n'a pas d'articles actifs
+                        }
+                    ]
+                }
+            ]
+        });
+
+        if (!messages.length) {
+            return res.status(200).json({ message: "Aucun message trouvé dans ce channel." });
+        }
+
+        res.status(200).json(messages);
+    } catch (error) {
+        res.status(500).json({ message: error.message || 'Une erreur est survenue lors de la récupération des messages.' });
+    }
+};
+
+/**
+ * Quitter un channel.
+ *
+ * @async
+ * @function leaveChannel
+ * @param {Object} req - L'objet de requête contenant l'ID du channel à quitter.
+ * @param {Object} res - L'objet de réponse.
+ * @returns {Object} 200 - Message de succès indiquant que l'utilisateur a quitté le channel.
+ * @throws {Object} 404 - Non trouvé si le channel ou l'utilisateur n'est pas membre du channel.
+ * @throws {Object} 500 - Erreur interne du serveur si une erreur se produit lors de la tentative de quitter le channel.
+ */
+exports.leaveChannel = async (req, res) => {
+    try {
+        const { id } = req.params; // ID du channel à quitter
+        const userId = req.auth.userId; // ID de l'utilisateur connecté
+
+        const channel = await Channel.findByPk(id);
+        if (!channel) {
+            return res.status(404).json({ message: "Channel non trouvé." });
+        }
+        // Vérifier si l'utilisateur fait partie du channel
+        const userChannel = await UserChannel.findOne({
+            where: {
+                user_id: userId,
+                channel_id: id,
+            },
+        });
+
+        if (!userChannel) {
+            return res.status(404).json({ message: "Vous ne faites pas partie de ce channel." });
+        }
+
+        // Supprimer l'utilisateur du channel
+        await UserChannel.destroy({
+            where: {
+                user_id: userId,
+                channel_id: id,
+            },
+        });
+
+        res.status(200).json({ message: "Vous avez quitté le channel avec succès." });
+    } catch (error) {
+        res.status(500).json({ message: error.message || "Une erreur est survenue lors de la tentative de quitter le channel." });
+    }
+};
+
+/**
+ * Supprimer un channel.
+ *
+ * @async
+ * @function deleteChannel
+ * @param {Object} req - L'objet de requête contenant l'ID du channel à supprimer.
+ * @param {Object} res - L'objet de réponse.
+ * @returns {Object} 200 - Message de succès indiquant que le channel a été supprimé.
+ * @throws {Object} 404 - Non trouvé si le channel n'existe pas.
+ * @throws {Object} 403 - Accès interdit si l'utilisateur n'est pas le créateur du channel.
+ * @throws {Object} 500 - Erreur interne du serveur si une erreur se produit lors de la suppression du channel.
+ */
+exports.deleteChannel = async (req, res) => {
+    try {
+        const { id } = req.params; // ID du channel à supprimer
+        const userId = req.auth.userId; // ID de l'utilisateur connecté
+
+        // Vérifier si le channel existe
+        const channel = await Channel.findByPk(id);
+        if (!channel) {
+            return res.status(404).json({ message: "Channel non trouvé." });
+        }
+
+        // Vérifier si l'utilisateur est le créateur du channel
+        if (channel.created_by !== userId) {
+            return res.status(403).json({ message: "Vous n'avez pas la permission de supprimer ce channel." });
+        }
+
+        // Supprimer également toutes les associations dans UserChannel
+        await UserChannel.destroy({ where: { channel_id: id } });
+        
+        // Supprimer le channel
+        await Channel.destroy({ where: { channel_id: id } });
+
+        res.status(200).json({ message: "Channel supprimé avec succès." });
+    } catch (error) {
+        res.status(500).json({ message: error.message || "Une erreur est survenue lors de la tentative de supprimer le channel." });
+    }
+};
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-UserController.html">UserController</a></li><li><a href="module-channelController.html">channelController</a></li><li><a href="module-databaseConfig.html">databaseConfig</a></li><li><a href="module-friendController.html">friendController</a></li><li><a href="module-inventoryController.html">inventoryController</a></li><li><a href="module-invoiceController.html">invoiceController</a></li><li><a href="module-middlewares_auth.html">middlewares/auth</a></li><li><a href="module-middlewares_authorizeAdmin.html">middlewares/authorizeAdmin</a></li><li><a href="module-middlewares_generateAvatar.html">middlewares/generateAvatar</a></li><li><a href="module-paymentController.html">paymentController</a></li><li><a href="module-privateMessageController.html">privateMessageController</a></li><li><a href="module-routes.html">routes</a></li><li><a href="module-routes_account.html">routes/account</a></li><li><a href="module-routes_admin_inventory.html">routes/admin/inventory</a></li><li><a href="module-routes_admin_invoice.html">routes/admin/invoice</a></li><li><a href="module-routes_admin_shop.html">routes/admin/shop</a></li><li><a href="module-routes_auth.html">routes/auth</a></li><li><a href="module-routes_channel.html">routes/channel</a></li><li><a href="module-routes_friends.html">routes/friends</a></li><li><a href="module-routes_inventory.html">routes/inventory</a></li><li><a href="module-routes_invoice.html">routes/invoice</a></li><li><a href="module-routes_payment.html">routes/payment</a></li><li><a href="module-routes_privateMessage.html">routes/privateMessage</a></li><li><a href="module-routes_shop.html">routes/shop</a></li><li><a href="module-shopController.html">shopController</a></li><li><a href="module-userController_.html">userController</a></li></ul><h3>Events</h3><ul><li><a href="global.html#event:deleteChannel">deleteChannel</a></li><li><a href="global.html#event:disconnect">disconnect</a></li><li><a href="global.html#event:joinChannel">joinChannel</a></li><li><a href="global.html#event:leaveChannel">leaveChannel</a></li><li><a href="global.html#event:privateMessage">privateMessage</a></li></ul><h3>Global</h3><ul><li><a href="global.html#cors">cors</a></li><li><a href="global.html#createMailer">createMailer</a></li><li><a href="global.html#createServer">createServer</a></li><li><a href="global.html#destination">destination</a></li><li><a href="global.html#drawTable">drawTable</a></li><li><a href="global.html#filename">filename</a></li><li><a href="global.html#generateInvoice">generateInvoice</a></li><li><a href="global.html#getUnreadMessageCount">getUnreadMessageCount</a></li><li><a href="global.html#helmet">helmet</a></li><li><a href="global.html#httpsOptions">httpsOptions</a></li><li><a href="global.html#initializeSocket">initializeSocket</a></li><li><a href="global.html#io">io</a></li><li><a href="global.html#listen">listen</a></li><li><a href="global.html#mailer">mailer</a></li><li><a href="global.html#markMessagesAsRead">markMessagesAsRead</a></li><li><a href="global.html#normalizeEmail">normalizeEmail</a></li><li><a href="global.html#rateLimit">rateLimit</a></li><li><a href="global.html#router">router</a></li><li><a href="global.html#sendEmail">sendEmail</a></li><li><a href="global.html#slowDown">slowDown</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.3</a> on Wed Oct 16 2024 22:55:54 GMT+0200 (heure d’été d’Europe centrale)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

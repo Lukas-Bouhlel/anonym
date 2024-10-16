@@ -6,15 +6,27 @@ import { useMutation } from '@tanstack/react-query';
 import { useApi } from '../context/ApiContext';
 import { usePopup } from '../context/PopupContext';
 
+/**
+ * Composant Support qui gère la soumission des rapports d'assistance
+ * et affiche des informations sur le fonctionnement de la plateforme.
+ *
+ * @component
+ * @returns {React.ReactElement} - Le composant de support.
+ */
 const Support = () => {
-  const { register, handleSubmit, formState: { errors } } = useForm(); // Capture des erreurs du formulaire
+  const { register, handleSubmit, formState: { errors } } = useForm();
   const [messageError, setMessageError] = useState('');
   const [showMessage, setShowMessage] = useState(false);
   const { setOpenPopup, setTextPopup, setState } = usePopup();
   const { api_url } = useApi();
 
-  // Mutation pour l'envoi du rapport
   const reportMutation = useMutation({
+    /**
+     * Fonction pour l'envoi du rapport
+     * Elle envoie une requête POST avec les informations du rapport et est envoyé au support par mail.
+     * @param {Object} data - Les données à envoyer (email, type, message)
+     * @returns {Promise<Object>} - Les données de la réponse si l'envoi du rapport est confirmé.
+     */
     mutationFn: async (data) => {
       return await axios.post(`${api_url}/api/admin/report`, {
         email: data.email,
@@ -37,7 +49,7 @@ const Support = () => {
 
   // Gestion de la soumission du formulaire
   const onSubmit = (data) => {
-    reportMutation.mutate(data); // Lancer la mutation
+    reportMutation.mutate(data);
   };
 
   return (
@@ -94,8 +106,7 @@ const Support = () => {
             {(showMessage || (errors.email || errors.type || errors.message)) &&
               !errors.email && !errors.password && (
                 <p className='error-message-form'>{messageError}</p>
-              )}
-
+            )}
             {/* Affichage des messages d'erreur si tous les champs sont remplis */}
             {(errors.email || errors.type || errors.message) && (
               <p className='error-message-form'>

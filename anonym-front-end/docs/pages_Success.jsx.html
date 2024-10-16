@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: pages/Success.jsx</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: pages/Success.jsx</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>import { useLocation, useNavigate, Link } from 'react-router-dom';
+import axios from 'axios';
+import { useApi } from '../context/ApiContext';
+import { useQuery } from '@tanstack/react-query';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faCheck } from '@fortawesome/free-solid-svg-icons';
+import logo from '../assets/images/logos/anonym-logo-white.svg';
+import Confetti from 'react-confetti-boom';
+
+/**
+ * Composant Success qui affiche une page de confirmation de paiement.
+ * Il affiche un message de succès avec les détails de la transaction.
+ *
+ * @component
+ * @returns {React.ReactElement} - La page de succès du paiement.
+ */
+const Success = () => {
+    const location = useLocation();
+    const { api_url } = useApi();
+    const navigate = useNavigate();
+    const sessionId = new URLSearchParams(location.search).get('session_id');
+
+     /**
+     * Fonction pour confirmer le paiement via une API.
+     * Elle envoie une requête GET pour vérifier l'état du paiement.
+     * @returns {Promise&lt;Object>} - Les données de la réponse si le paiement est confirmé.
+     */
+    const confirmPayment = async () => {
+        if (!sessionId) return;
+        try {
+            const response = await axios.get(`${api_url}/api/payment/confirm?session_id=${sessionId}`, {
+                withCredentials: true,
+            });
+            return response.data;
+        } catch (error) {
+           navigate('/app')
+        }
+    };
+
+    const payment = useQuery({
+        queryKey: ['payment', sessionId],
+        queryFn: confirmPayment,
+        enabled: !!sessionId,
+    });
+
+    /**
+     * Formate une date en chaîne de caractères au format français.
+     * @param {string} dateString - La date à formater.
+     * @returns {string} - La date formatée.
+     */
+    const formatDate = (dateString) => {
+        const date = new Date(dateString);
+        return date.toLocaleDateString('fr-FR');
+    };
+
+    return (
+        &lt;>
+            {!payment.isLoading &amp;&amp; payment.data?.invoice &amp;&amp; (
+                &lt;div id='success'>
+                    &lt;Confetti mode="boom" particleCount={30} colors={['#88CD7D', '#757575', '#FFF9F4']} shapeSize={12} />
+                    &lt;div className="navbar-logo-anonym">
+                        &lt;img src={logo} alt='logo-anonym' />nonym
+                    &lt;/div>
+                    &lt;div className='card-success'>
+                        &lt;span className='card-success-icon'>&lt;FontAwesomeIcon icon={faCheck} />&lt;/span>
+                        &lt;p className='card-success-super'>Super!&lt;/p>
+                        &lt;h1 className='card-success-title'>Paiement confirmées&lt;/h1>
+                        &lt;p className='card-success-subtitle'>Merci pour votre achat!&lt;/p>
+                        &lt;hr className='card-success-line' />
+                        &lt;p className='card-success-resume'>Votre résumé&lt;/p>
+                        &lt;div className='card-success-product'>
+                            &lt;div className='card-success-product-content'>
+                                &lt;p>{payment.data.invoice.content}&lt;/p>
+                            &lt;/div>
+                        &lt;/div>
+                        &lt;p className='card-success-total'>Total&lt;/p>
+                        &lt;p className='card-success-amount'>{payment.data.invoice.amount}€&lt;/p>
+                        &lt;p className='card-success-date'>Le {formatDate(payment.data.invoice.createdAt)}&lt;/p>
+                        &lt;Link to="/app" className='card-success-button'>Retourn sur Anonym&lt;/Link>
+                    &lt;/div>
+                &lt;/div>
+            )}
+        &lt;/>
+    )
+}
+export default Success</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Global</h3><ul><li><a href="global.html#Access">Access</a></li><li><a href="global.html#Account">Account</a></li><li><a href="global.html#Admin">Admin</a></li><li><a href="global.html#ApiProvider">ApiProvider</a></li><li><a href="global.html#App">App</a></li><li><a href="global.html#AuthProvider">AuthProvider</a></li><li><a href="global.html#ChannelForm">ChannelForm</a></li><li><a href="global.html#ChannelMessages">ChannelMessages</a></li><li><a href="global.html#Discover">Discover</a></li><li><a href="global.html#Footer">Footer</a></li><li><a href="global.html#Friends">Friends</a></li><li><a href="global.html#Home">Home</a></li><li><a href="global.html#Inventory">Inventory</a></li><li><a href="global.html#Invoices">Invoices</a></li><li><a href="global.html#Layout">Layout</a></li><li><a href="global.html#Login">Login</a></li><li><a href="global.html#Navbar">Navbar</a></li><li><a href="global.html#Popup">Popup</a></li><li><a href="global.html#PopupProvider">PopupProvider</a></li><li><a href="global.html#PrivateRoute">PrivateRoute</a></li><li><a href="global.html#Profile">Profile</a></li><li><a href="global.html#Profils">Profils</a></li><li><a href="global.html#Register">Register</a></li><li><a href="global.html#Router">Router</a></li><li><a href="global.html#Shop">Shop</a></li><li><a href="global.html#Sidebar">Sidebar</a></li><li><a href="global.html#SocketProvider">SocketProvider</a></li><li><a href="global.html#Success">Success</a></li><li><a href="global.html#Support">Support</a></li><li><a href="global.html#UserProvider">UserProvider</a></li><li><a href="global.html#Users">Users</a></li><li><a href="global.html#fetchShop">fetchShop</a></li><li><a href="global.html#fetchUsers">fetchUsers</a></li><li><a href="global.html#mutationFn">mutationFn</a></li><li><a href="global.html#useApi">useApi</a></li><li><a href="global.html#useAuth">useAuth</a></li><li><a href="global.html#usePopup">usePopup</a></li><li><a href="global.html#useSocket">useSocket</a></li><li><a href="global.html#useSphereAnimation">useSphereAnimation</a></li><li><a href="global.html#useUser">useUser</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.3</a> on Thu Oct 17 2024 00:21:52 GMT+0200 (heure d’été d’Europe centrale)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

@@ -2,6 +2,12 @@ import { useAuth } from '../context/AuthContext';
 import persona from '../assets/images/icons/persona.svg';
 import tel from '../assets/images/icons/tel.svg';
 
+/**
+ * Composant Discover qui présente les fonctionnalités de la plateforme Anonym.
+ * 
+ * @component
+ * @returns {React.ReactElement} - L'interface de découverte de la plateforme Anonym.
+ */
 const Discover = () => {
   const { AnonymIsOpen } = useAuth();
 

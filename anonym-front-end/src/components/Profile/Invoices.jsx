@@ -6,11 +6,20 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faAngleUp, faAngleDown } from "@fortawesome/free-solid-svg-icons";
 import Popup from "../Utils/Popup";
 
+/**
+ * Composant Invoices pour afficher l'historique des transactions.
+ *
+ * @returns {JSX.Element} - Le rendu du composant Invoices.
+ */
 const Invoices = () => {
-    const { api_url } = useApi();
+    const { api_url } = useApi();// Utilise le contexte pour obtenir l'URL de l'API
     const [expandedRows, setExpandedRows] = useState([]);
     const [showPopup, setShowPopup] = useState(false); 
 
+    /**
+     * Fonction pour récupérer les factures de l'utilisateur.
+     * @returns {Promise<Object>} - Les données des factures.
+     */
     const fetchInvoices = async () => {
         try {
             const response = await axios.get(`${api_url}/api/invoice`, {
@@ -23,18 +32,26 @@ const Invoices = () => {
         }
     };
 
-    // Utilisation de react-query pour la récupération de l'utilisateur
     const invoices = useQuery({
-        queryKey: ['invoices'], // Clé de la requête pour le caching
-        queryFn: fetchInvoices, // Fonction de récupération de l'utilisateur
+        queryKey: ['invoices'],
+        queryFn: fetchInvoices,
     });
 
-    // Fonction pour formater la date
+    /**
+     * Fonction pour formater une date en chaîne de caractères.
+     * @param {string} dateString - La date à formater.
+     * @returns {string} - La date formatée.
+     */
     const formatDate = (dateString) => {
         const date = new Date(dateString);
-        return date.toLocaleDateString('fr-FR'); // Format MM/DD/YYYY
+        return date.toLocaleDateString('fr-FR');
     };
 
+    /**
+     * Fonction pour calculer le nombre de jours depuis une date donnée.
+     * @param {string} dateString - La date de référence.
+     * @returns {number} - Le nombre de jours écoulés depuis la date donnée.
+     */
     const formatDays = (dateString) => {
         const givenDate = new Date(dateString);
         const currentDate = new Date();
@@ -48,7 +65,10 @@ const Invoices = () => {
         return differenceInDays;
     };
 
-    // Fonction pour basculer l'expansion des lignes
+    /**
+     * Fonction pour basculer l'expansion des lignes pour la table.
+     * @param {number} index - L'index de la ligne à basculer.
+     */
     const toggleRowExpansion = (index) => {
         const isExpanded = expandedRows.includes(index);
         if (isExpanded) {
@@ -58,7 +78,10 @@ const Invoices = () => {
         }
     };
 
-   // Fonction pour générer et envoyer la facture par email
+   /**
+     * Fonction pour générer et envoyer la facture par email.
+     * @param {number} id - L'identifiant de la facture à générer.
+     */
     const generateInvoice = async (id) => {
         try {
             await axios.get(`${api_url}/api/invoice/${id}`, {

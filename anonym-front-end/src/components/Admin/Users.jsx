@@ -5,10 +5,19 @@ import { Modal, Button } from 'rsuite';
 import { useApi } from "../../context/ApiContext";
 import { usePopup } from "../../context/PopupContext";
 
+/**
+ * Composant Users permettant de gérer les utilisateurs.
+ * Il offre la possibilité d'afficher, de créer, d'éditer et de supprimer des utilisateurs.
+ * 
+ * @param {Object} props - Les propriétés du composant.
+ * @param {Object} props.users - Les données des utilisateurs à afficher.
+ * @param {Function} props.refetch - Fonction de rappel pour rafraîchir la liste des utilisateurs après une action.
+ * @returns {JSX.Element} Le composant Users.
+ */
 const Users = ({ users, refetch }) => {
-    const data = users.data || []; // Définit data par défaut à un tableau vide
-    const { api_url } = useApi();
-    const [selectedUser, setSelectedUser] = useState({}); // Initialise selectedUser à un objet vide
+    const data = users.data || [];
+    const { api_url } = useApi();// Utilise le contexte pour obtenir l'URL de l'API
+    const [selectedUser, setSelectedUser] = useState({});
     const [open, setOpen] = useState(false);
     const [createOpen, setCreateOpen] = useState(false);
     const [errorMessage, setErrorMessage] = useState("");
@@ -21,11 +30,18 @@ const Users = ({ users, refetch }) => {
         roles: 'USER'
     });
 
+    /**
+     * Ouvre le modal pour éditer un utilisateur sélectionné.
+     * @param {Object} user - L'utilisateur à éditer.
+     */
     const handleOpen = (user) => {
         setSelectedUser(user);
         setOpen(true);
     };
 
+    /**
+     * Ferme le modal d'édition ou de création et réinitialise les champs.
+     */
     const handleClose = () => {
         setErrorMessage("");
         setNewUser({ username: '', email: '', password: '', roles: 'USER' }); 
@@ -34,6 +50,10 @@ const Users = ({ users, refetch }) => {
         setShowDeleteConfirmation(false);
     };
 
+    /**
+     * Soumet les modifications apportées à un utilisateur via une requête API.
+     * @param {Event} e - L'événement de soumission du formulaire.
+     */
     const handleSubmit = async (e) => {
         e.preventDefault();
         const formData = new FormData();
@@ -64,6 +84,9 @@ const Users = ({ users, refetch }) => {
         }
     };
 
+    /**
+     * Supprime le compte d'un utilisateur via une requête API.
+     */
     const handleDeleteAccount = async () => {
         try {
             await axios.delete(`${api_url}/api/admin/users/${selectedUser.id}`, {
@@ -80,6 +103,10 @@ const Users = ({ users, refetch }) => {
         }
     };
 
+    /**
+     * Crée un nouvel utilisateur via une requête API.
+     * @param {Event} e - L'événement de soumission du formulaire.
+     */
     const handleCreateAccount = async (e) => {
         e.preventDefault(); 
         const formData = new FormData();
@@ -101,10 +128,12 @@ const Users = ({ users, refetch }) => {
         }
     };
     
-
+    /**
+     * Gère le changement de valeur des champs d'entrée.
+     * @param {Event} e - L'événement de changement de champ.
+     */
     const handleChange = (e) => {
         const { name, value } = e.target;
-    
         if (createOpen) {
             setNewUser({
                 ...newUser,
@@ -125,7 +154,7 @@ const Users = ({ users, refetch }) => {
                 <h1>Utilisateurs</h1>
                 <Button onClick={() => setCreateOpen(true)} className="mb-3">Créer un utilisateur</Button>
             </div>
-            {users && data.length > 0 ? ( // Vérifie que data a des utilisateurs
+            {users && data.length > 0 ? ( 
                 <div className="table-responsive-scroll">
                     <table className="table align-middle mb-0 bg-white">
                         <thead className="bg-light">
@@ -198,7 +227,7 @@ const Users = ({ users, refetch }) => {
                                         id="roles"
                                         name="roles"
                                         aria-label="Type"
-                                        value={selectedUser.roles || 'USER'} // Utilise 'USER' par défaut si selectedUser.roles est indéfini
+                                        value={selectedUser.roles || 'USER'}
                                         onChange={handleChange}
                                     >
                                         <option value="USER">USER</option>
@@ -283,9 +312,9 @@ const Users = ({ users, refetch }) => {
 
 Users.propTypes = {
     users: PropTypes.shape({
-        data: PropTypes.array // Expecting data to be an array
-    }).isRequired, // users is required
-    refetch: PropTypes.func.isRequired // refetch is required and should be a function
+        data: PropTypes.array
+    }).isRequired,
+    refetch: PropTypes.func.isRequired
 };
 
 export default Users;

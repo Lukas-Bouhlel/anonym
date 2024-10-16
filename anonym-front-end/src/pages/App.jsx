@@ -9,6 +9,14 @@ import Shop from "../components/Shop/Shop";
 import ChannelForm from "../components/Messages/ChannelForm";
 import ChannelMessages from "../components/Messages/ChannelMessages";
 
+/**
+ * Composant principal de l'application.
+ * Il gère la navigation entre les différentes sections comme les amis, la boutique et les messages.
+ * Ce composant utilise le contexte utilisateur et le contexte socket pour gérer les informations de l'utilisateur et la connexion WebSocket.
+ * 
+ * @component
+ * @returns {React.ReactElement} - L'interface principale de l'application.
+ */
 const App = () => {
   const { user } = useUser();
   const { socket } = useSocket();
@@ -39,6 +47,7 @@ const App = () => {
                 setChannel={setChannel}
                 socket={socket}
               />
+              {/* Contenu principal selon la page sélectionnée */}
               <div
                 className={`col ${
                   page !== "canal" ? "app-container" : "app-message"
