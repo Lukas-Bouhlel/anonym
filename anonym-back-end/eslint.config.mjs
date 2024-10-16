@@ -16,4 +16,7 @@ export default [
     },
   },
   pluginJs.configs.recommended,
+  {
+    ignores: ['app/tests/**', 'docs/**'],
+  }
 ];

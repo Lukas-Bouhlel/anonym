@@ -7,7 +7,7 @@
     "build": "build",
     "test": "jest --runInBand",
     "start": "nodemon --legacy-watch index.js",
-    "lint": "eslint . --ignore-pattern app/tests/** --ignore-pattern docs/**",
+    "lint": "eslint .",
     "generate-doc": "jsdoc -c jsdoc.json"
   },
   "jest": {
