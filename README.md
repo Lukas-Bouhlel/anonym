@@ -9,7 +9,6 @@ Ce projet propose un système de messagerie privée basé sur IRC ainsi qu'un m�
 2. [Guide d'installation Docker](#docker)
 3. [Guide CI](#guide-ci)
 4. [Guide pour récupérer les différentes documentations jsDocs et Swagger](#documentations)
-5. [Contact](#contact)
 
 ## Guide d'installation local
 1. Assurez-vous d'avoir [Node.js](https://nodejs.org/), npm, Sequelize, et MySQL avec un serveur. 
