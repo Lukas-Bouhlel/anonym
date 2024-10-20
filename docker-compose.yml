@@ -84,7 +84,7 @@ services:
     networks:
       - anonym-network
     extra_hosts:
-      - "ano-nym.local=127.0.0.1"
+      - "ano-nym.fr=127.0.0.1"
 
   nginx:
     image: nginx:latest
