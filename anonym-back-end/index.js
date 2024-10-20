@@ -3,30 +3,17 @@ const app = require("./app.js");
 const port = process.env.PORT;
 const fs = require('fs');
 const path = require('path');
-const { createServer } = require("https");
+const { createServer } = require("http");
 const { Server } = require("socket.io");
 const initializeSocket = require('./app/utils/socket');
-
-/**
- * Chargement des options HTTPS en utilisant les certificats SSL
- * 
- * @constant {Object} httpsOptions - Options nécessaires pour créer un serveur HTTPS.
- * @property {Buffer} key - Clé privée SSL pour le serveur HTTPS, chargée depuis 'server.key'.
- * @property {Buffer} cert - Certificat SSL pour le serveur HTTPS, chargé depuis 'server.crt'.
- */
-const httpsOptions = {
-  key: fs.readFileSync(path.resolve(__dirname, 'server.key')), 
-  cert: fs.readFileSync(path.resolve(__dirname, 'server.crt')),
-};
 
 /**
  * Création du serveur HTTPS
  * 
  * @function createServer
- * @param {Object} httpsOptions - Les options HTTPS définies, incluant la clé et le certificat SSL.
  * @param {Object} app - L'application Express à utiliser avec le serveur HTTPS.
  */
-const httpsServer = createServer(httpsOptions, app);
+const httpServer = createServer(app);
 
 /**
  * Configuration du serveur Socket.IO
@@ -38,7 +25,7 @@ const httpsServer = createServer(httpsOptions, app);
  * @property {Array<string>} cors.methods - Méthodes HTTP autorisées par CORS.
  * @property {Array<string>} cors.allowedHeaders - Headers autorisés dans les requêtes CORS.
  */
-const io = new Server(httpsServer, {
+const io = new Server(httpServer, {
   cors: {
       origin: process.env.ORIGIN, 
       credentials: true,
@@ -53,7 +40,7 @@ const io = new Server(httpsServer, {
  * @function listen
  * @param {number} port - Port sur lequel l'application et Socket.IO écouteront les connexions (défini via la variable d'environnement `PORT`).
  */
-httpsServer.listen(port, () => {
+httpServer.listen(port, () => {
   console.log(`App and Socket.IO listening on port ${port}`);
 });
 

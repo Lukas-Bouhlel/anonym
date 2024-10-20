@@ -141,5 +141,7 @@ server.crt
 # Ignorer les fichiers temporaires
 .DS_Store
 Thumbs.db
+
+# Ignorer les docs générés
 /anonym-back-end/docs
 /anonym-front-end/docs

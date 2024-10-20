@@ -24,14 +24,14 @@ services:
       PMA_USER: root
       PMA_PASSWORD: anonym
     depends_on:
-      - mysql-db  # Attendre que le service MySQL soit opérationnel
+      - mysql-db 
   backend:
     env_file:
       - ./anonym-back-end/.env
     build:
       context: ./anonym-back-end
       dockerfile: Dockerfile
-    container_name: node-backend
+    container_name: anonym-back-end
     ports:
       - 5000:5000
     depends_on:
@@ -56,7 +56,7 @@ services:
     build:
       context: ./anonym-front-end
       dockerfile: Dockerfile
-    container_name: node-frontend
+    container_name: anonym-front-end
     ports:
       - 8080:8080
     depends_on:
@@ -74,6 +74,26 @@ services:
         - action: rebuild
           path: ./anonym-front-end/package.json
     extra_hosts:
-      - "anonym.local=127.0.0.1"
+      - "ano-nym.local=127.0.0.1"
+
+  nginx:
+    image: nginx:latest
+    container_name: nginx-proxy
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf
+      - ./certs:/etc/nginx/certs
+    depends_on:
+      - frontend
+      - backend
+    networks:
+      - anonym-network
+
+networks:
+  anonym-network:
+    driver: bridge
+
 volumes:
   db-anonym:
