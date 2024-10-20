@@ -14,6 +14,8 @@ services:
       retries: 5
     ports:
       - 3307:3306
+    networks:
+      - anonym-network
   phpmyadmin:
     image: phpmyadmin/phpmyadmin
     restart: always
@@ -25,6 +27,8 @@ services:
       PMA_PASSWORD: anonym
     depends_on:
       - mysql-db 
+    networks:
+      - anonym-network
   backend:
     env_file:
       - ./anonym-back-end/.env
@@ -50,6 +54,8 @@ services:
             - node_modules/
         - action: rebuild
           path: ./anonym-back-end/package.json
+    networks:
+      - anonym-network
   frontend:
     env_file:
     - ./anonym-front-end/.env
@@ -59,6 +65,8 @@ services:
     container_name: anonym-front-end
     ports:
       - 8080:8080
+    environment:
+      - NODE_ENV=production
     depends_on:
       - backend
     volumes:
@@ -73,6 +81,8 @@ services:
             - node_modules
         - action: rebuild
           path: ./anonym-front-end/package.json
+    networks:
+      - anonym-network
     extra_hosts:
       - "ano-nym.local=127.0.0.1"
 

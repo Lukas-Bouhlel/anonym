@@ -19,7 +19,7 @@ export const useApi = () => useContext(ApiContext);
  * @returns {React.ReactElement} - Le fournisseur de contexte.
  */
 export const ApiProvider = ({ children }) => {
-    const api_url = import.meta.env.VITE_API_URL; // Récupération de l'url par variable d'environnement 
+    const api_url = import.meta.env.VITE_API_URL;
 
     return (
         <ApiContext.Provider value={{api_url}}>

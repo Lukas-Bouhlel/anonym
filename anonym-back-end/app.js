@@ -9,6 +9,7 @@ const router = require("./app/routes/index.js");
 const db = require("./app/models/index.js");
 const path = require('path');
 const createMailer = require('./app/utils/mailer.js');
+const env = process.env.NODE_ENV || 'development';
 
 /**
  * Connexion à la base de données avec Sequelize.
@@ -101,11 +102,11 @@ app.use(helmet({
     contentSecurityPolicy: {
         directives: {
             defaultSrc: ["'self'"],  // Autoriser les ressources provenant de la même origine
-            imgSrc: ["'self'",  process.env.BACK_END_ORIGIN, "data:"],  // Permettre le chargement d'images depuis localhost:5000 et les données inline (pour les avatars par ex)
-            scriptSrc: ["'self'", process.env.BACK_END_ORIGIN],  // Permettre les scripts depuis localhost:5000
+            imgSrc: ["'self'",  env === 'production' ? process.env.ORIGIN_PROD : process.env.ORIGIN, "data:"],  // Permettre le chargement d'images depuis localhost:5000 et les données inline (pour les avatars par ex)
+            scriptSrc: ["'self'", env === 'production' ? process.env.ORIGIN_PROD : process.env.ORIGIN],  // Permettre les scripts depuis localhost:5000
             styleSrc: ["'self'", "'unsafe-inline'"],  // Permet les styles inline (facultatif)
-            fontSrc: ["'self'", process.env.BACK_END_ORIGIN],  // Permettre les polices de caractères depuis localhost:5000
-            connectSrc: ["'self'", process.env.BACK_END_ORIGIN], // Autoriser les connexions à localhost:5000 (pour les API, WebSocket, etc.)
+            fontSrc: ["'self'", env === 'production' ? process.env.ORIGIN_PROD : process.env.ORIGIN],  // Permettre les polices de caractères depuis localhost:5000
+            connectSrc: ["'self'", env === 'production' ? process.env.ORIGIN_PROD : process.env.ORIGIN], // Autoriser les connexions à localhost:5000 (pour les API, WebSocket, etc.)
             objectSrc: ["'none'"], // Bloquer les objets embarqués, par exemple Flash (sécurité)
             frameSrc: ["'none'"],  // Bloquer les iframes externes (sécurité)
         },
@@ -125,7 +126,7 @@ app.use(helmet({
  * @returns {Function} Middleware pour gérer les requêtes cross-origin.
  */
 app.use(cors({
-    origin: process.env.ORIGIN, 
+    origin: env === 'production' ? process.env.ORIGIN_PROD : process.env.ORIGIN, 
     credentials: true,  // Permet les cookies
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
     allowedHeaders: ['Content-Type', 'Authorization']
@@ -140,7 +141,7 @@ app.use(cookieParser());
  * @returns {Function} Middleware pour servir les fichiers statiques.
  */
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
-
+app.set('trust proxy', true);
 /**
  * Routeur principal pour les API.
  * @function router

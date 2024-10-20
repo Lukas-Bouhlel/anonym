@@ -4,6 +4,7 @@ const port = process.env.PORT;
 const { createServer } = require("http");
 const { Server } = require("socket.io");
 const initializeSocket = require('./app/utils/socket');
+const env = process.env.NODE_ENV || 'development';
 
 /**
  * Création du serveur HTTPS
@@ -25,7 +26,7 @@ const httpServer = createServer(app);
  */
 const io = new Server(httpServer, {
   cors: {
-      origin: process.env.ORIGIN, 
+      origin: env === 'production' ? process.env.ORIGIN_PROD : process.env.ORIGIN, 
       credentials: true,
       methods: ['GET', 'POST', 'PUT', 'DELETE'],
       allowedHeaders: ['Content-Type', 'Authorization']

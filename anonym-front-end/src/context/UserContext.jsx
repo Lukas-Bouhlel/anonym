@@ -26,7 +26,6 @@ export const UserProvider = ({ children }) => {
     const [user, setUser] = useState(null); // Stocke les informations de l'utilisateur connecté
     const { setTextPopup, setOpenPopup, setState } = usePopup();
     const { api_url } = useApi();
-
     /**
      * Fonction pour récupérer les informations de l'utilisateur.
      * @returns {Promise<Object>} - Les données de l'utilisateur.
