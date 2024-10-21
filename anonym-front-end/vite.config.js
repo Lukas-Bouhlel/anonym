@@ -21,8 +21,5 @@ export default defineConfig({
         api: 'modern-compiler'
       }
     }
-  },
-  build: {
-    minify: false, // Désactive la minification
-  },
+  }
 });

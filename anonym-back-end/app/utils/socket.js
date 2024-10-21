@@ -57,7 +57,6 @@ const markMessagesAsRead = async (channelId, userId) => {
  */
 const initializeSocket = (io) => {
     io.on('connection', (socket) => {
-        console.log("Nouvelle connexion:", socket.id);
          /**
          * Gère l'événement lorsque l'utilisateur rejoint un canal.
          * 

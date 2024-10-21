@@ -23,7 +23,7 @@ export const useSocket = () =>  useContext(SocketContext);
 export const SocketProvider = ({ children }) => {
     const { api_url } = useApi();// api url venant du context d'api
     const [socket, setSocket] = useState(null); // Stocke les informations du socket
-    console.log(socket)
+
     useEffect(() => {
         const newSocket = io(api_url, {
             withCredentials: true
