@@ -2,6 +2,7 @@ const { Invoice, Shop, Inventory } = require('../models');
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const fs = require('fs');
 const path = require('path');
+const env = process.env.NODE_ENV || 'development';
 
 /**
  * @module paymentController
@@ -62,8 +63,8 @@ exports.create = async (req, res) => {
                 quantity: 1,
             }],
             mode: 'payment',
-            success_url: `${process.env.ORIGIN}/app/success?session_id={CHECKOUT_SESSION_ID}`,
-            cancel_url: `${process.env.ORIGIN}/app`,
+            success_url: `${env === 'production' ? process.env.ORIGIN_PROD : process.env.ORIGIN}/app/success?session_id={CHECKOUT_SESSION_ID}`,
+            cancel_url: `${env === 'production' ? process.env.ORIGIN_PROD : process.env.ORIGIN}/app`,
             metadata: {
                 userId: userId, // Inclure le userId
                 articleId: article_id // Inclure l'article ID

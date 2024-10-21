@@ -62,6 +62,7 @@ app.use(express.json());
 const limiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
     max: 500, // Limite chaque IP à 500 requêtes par fenêtre
+    validate: {trustProxy: false},
     message: {
         message: "Trop de requêtes effectuées depuis cette adresse IP, veuillez réessayer plus tard.",
     },
@@ -82,6 +83,7 @@ const speedLimiter = slowDown({
     windowMs: 15 * 60 * 1000, // Période de 15 minutes
     delayAfter: 50, // Commence à ralentir les requêtes après 50 requêtes dans la fenêtre
     delayMs: () => 500, // Délai fixe de 500 ms par requête supplémentaire
+    validate: {trustProxy: false}
 });
 
 app.use(speedLimiter);

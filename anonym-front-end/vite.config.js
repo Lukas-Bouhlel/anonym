@@ -22,4 +22,7 @@ export default defineConfig({
       }
     }
   },
+  build: {
+    minify: false, // Désactive la minification
+  },
 });

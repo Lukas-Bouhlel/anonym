@@ -5,6 +5,7 @@ const fs = require('fs');
 const path = require('path')
 const { Op } = require('sequelize');
 const CryptoJS = require('crypto-js');
+const env = process.env.NODE_ENV || 'development';
 
 /**
  * @module UserController
@@ -258,7 +259,7 @@ exports.requestPasswordReset = async (req, res) => {
         await user.save();
 
         // Créer un lien de réinitialisation
-        const resetLink = `${process.env.ORIGIN}/reset/?token=${token}`;
+        const resetLink = `${env === 'production' ? process.env.ORIGIN_PROD : process.env.ORIGIN}/reset/?token=${token}`;
 
         // Lire le template d'email
         const emailTemplatePath = path.join(__dirname, '../../templates/reset-password-email.html');
