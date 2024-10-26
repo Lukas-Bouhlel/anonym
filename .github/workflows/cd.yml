@@ -1,0 +1,23 @@
+name: CD Workflow
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+        # Checkout the repository
+        - name: Checkout repository
+          uses: actions/checkout@v3
+
+        # Déployer sur le serveur de production
+        - name: Deploy to Production
+          run: |
+            ssh-agent bash -c 'ssh-add <(echo "${{ secrets.PROD_SSH_KEY }}"); ssh -o StrictHostKeyChecking=no ${{ secrets.PROD_SSH_USER }}@${{ secrets.PROD_SSH_HOST }} << EOF
+                git pull origin main
+                docker-compose up --build -d
+            EOF'

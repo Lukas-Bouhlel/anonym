@@ -1,3 +1,5 @@
+version: '3.8'
+
 services:
   mysql-db:
     image: mysql:latest
@@ -5,8 +7,8 @@ services:
     volumes:
       - db-anonym:/var/lib/mysql
     environment:
-      MYSQL_ROOT_PASSWORD: anonym
-      MYSQL_DATABASE: anonym
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
       interval: 10s
@@ -16,6 +18,7 @@ services:
       - 3307:3306
     networks:
       - anonym-network
+
   phpmyadmin:
     image: phpmyadmin/phpmyadmin
     restart: always
@@ -24,11 +27,12 @@ services:
     environment:
       PMA_HOST: mysql-db
       PMA_USER: root
-      PMA_PASSWORD: anonym
+      PMA_PASSWORD: ${PMA_PASSWORD}
     depends_on:
       - mysql-db 
     networks:
       - anonym-network
+
   backend:
     env_file:
       - ./anonym-back-end/.env
@@ -44,21 +48,13 @@ services:
     volumes:
       - ./anonym-back-end:/app
       - /app/node_modules
-    command: sh -c "npx sequelize-cli db:migrate --config app/config/config.js --migrations-path app/migrations && npm start" 
-    develop:
-      watch:
-        - action: sync
-          path: ./anonym-back-end/
-          target: /app/
-          ignore:
-            - node_modules/
-        - action: rebuild
-          path: ./anonym-back-end/package.json
+    command: sh -c "npx sequelize-cli db:migrate --config app/config/config.js --migrations-path app/migrations && npm start"
     networks:
       - anonym-network
+
   frontend:
     env_file:
-    - ./anonym-front-end/.env
+      - ./anonym-front-end/.env
     build:
       context: ./anonym-front-end
       dockerfile: Dockerfile
@@ -72,15 +68,6 @@ services:
     volumes:
       - ./anonym-front-end:/app
       - /app/node_modules
-    develop:
-      watch:
-        - action: sync
-          path: ./anonym-front-end/
-          target: /app/
-          ignore:
-            - node_modules
-        - action: rebuild
-          path: ./anonym-front-end/package.json
     networks:
       - anonym-network
     extra_hosts:
