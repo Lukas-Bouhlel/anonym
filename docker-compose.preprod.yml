@@ -1,0 +1,107 @@
+version: '3.8'
+
+services:
+  mysql-db-preprod:
+    image: mysql:latest
+    container_name: db-anonym-preprod
+    volumes:
+      - db-anonym-preprod:/var/lib/mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    ports:
+      - 3305:3305
+    networks:
+      - anonym-network-preprod
+
+  phpmyadmin-preprod:
+    image: phpmyadmin/phpmyadmin
+    restart: always
+    ports:
+      - "8085:85"
+    environment:
+      PMA_HOST: mysql-db-preprod
+      PMA_USER: root
+      PMA_PASSWORD: ${PMA_PASSWORD}
+    depends_on:
+      - mysql-db-preprod
+    networks:
+      - anonym-network-preprod
+
+  backend-preprod:
+    env_file:
+      - ./anonym-back-end/.env
+    build:
+      context: ./anonym-back-end
+      dockerfile: Dockerfile
+    container_name: anonym-back-end-preprod
+    ports:
+      - 5500:5500
+    environment:
+      - NODE_ENV=preprod
+    depends_on:
+      mysql-db-preprod:
+        condition: service_healthy
+    volumes:
+      - ./anonym-back-end:/app
+      - /app/node_modules
+    command: sh -c "npx sequelize-cli db:migrate --config app/config/config.js --migrations-path app/migrations && npm start"
+    networks:
+      - anonym-network-preprod
+
+  frontend-preprod:
+    env_file:
+      - ./anonym-front-end/.env
+    build:
+      context: ./anonym-front-end
+      dockerfile: Dockerfile
+    container_name: anonym-front-end-preprod
+    ports:
+      - 8100:8100
+    environment:
+      - NODE_ENV=preprod
+    depends_on:
+      - backend-preprod
+    volumes:
+      - ./anonym-front-end:/app
+      - /app/node_modules
+    networks:
+      - anonym-network-preprod
+
+  nginx-preprod:
+    image: nginx:latest
+    container_name: nginx-proxy-preprod
+    ports:
+      - "8082:80"
+      - "8443:443"
+    volumes:
+      - ./nginx/nginx.preprod.conf:/etc/nginx/nginx.conf
+      - ./certbot/www:/var/www/certbot
+      - ./nginx/ssl:/etc/letsencrypt
+    depends_on:
+      - frontend-preprod
+      - backend-preprod
+    networks:
+      - anonym-network-preprod
+
+  certbot-preprod:
+    image: certbot/certbot:latest
+    container_name: certbot-preprod
+    volumes:
+      - ./nginx/ssl:/etc/letsencrypt
+      - ./certbot/www:/var/www/certbot
+    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew --webroot -w /var/www/certbot; sleep 12h; done'"
+    networks:
+      - anonym-network-preprod
+
+networks:
+  anonym-network-preprod:
+    driver: bridge
+
+volumes:
+  db-anonym-preprod:

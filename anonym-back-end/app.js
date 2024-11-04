@@ -104,11 +104,11 @@ app.use(helmet({
     contentSecurityPolicy: {
         directives: {
             defaultSrc: ["'self'"],  // Autoriser les ressources provenant de la même origine
-            imgSrc: ["'self'",  env === 'production' ? process.env.ORIGIN_PROD : process.env.ORIGIN, "data:"],  // Permettre le chargement d'images depuis localhost:5000 et les données inline (pour les avatars par ex)
-            scriptSrc: ["'self'", env === 'production' ? process.env.ORIGIN_PROD : process.env.ORIGIN],  // Permettre les scripts depuis localhost:5000
+            imgSrc: ["'self'", env === 'production' || env === 'preprod' ? process.env.ORIGIN_PROD : process.env.ORIGIN, "data:"],  // Permettre le chargement d'images depuis localhost:5000 et les données inline (pour les avatars par ex)
+            scriptSrc: ["'self'", env === 'production' || env === 'preprod' ? process.env.ORIGIN_PROD : process.env.ORIGIN],  // Permettre les scripts depuis localhost:5000
             styleSrc: ["'self'", "'unsafe-inline'"],  // Permet les styles inline (facultatif)
-            fontSrc: ["'self'", env === 'production' ? process.env.ORIGIN_PROD : process.env.ORIGIN],  // Permettre les polices de caractères depuis localhost:5000
-            connectSrc: ["'self'", env === 'production' ? process.env.ORIGIN_PROD : process.env.ORIGIN], // Autoriser les connexions à localhost:5000 (pour les API, WebSocket, etc.)
+            fontSrc: ["'self'", env === 'production' || env === 'preprod' ? process.env.ORIGIN_PROD : process.env.ORIGIN],  // Permettre les polices de caractères depuis localhost:5000
+            connectSrc: ["'self'", env === 'production' || env === 'preprod' ? process.env.ORIGIN_PROD : process.env.ORIGIN], // Autoriser les connexions à localhost:5000 (pour les API, WebSocket, etc.)
             objectSrc: ["'none'"], // Bloquer les objets embarqués, par exemple Flash (sécurité)
             frameSrc: ["'none'"],  // Bloquer les iframes externes (sécurité)
         },
@@ -128,7 +128,7 @@ app.use(helmet({
  * @returns {Function} Middleware pour gérer les requêtes cross-origin.
  */
 app.use(cors({
-    origin: env === 'production' ? process.env.ORIGIN_PROD : process.env.ORIGIN, 
+    origin: env === 'production' || env === 'preprod' ? process.env.ORIGIN_PROD : process.env.ORIGIN, 
     credentials: true,  // Permet les cookies
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
     allowedHeaders: ['Content-Type', 'Authorization']

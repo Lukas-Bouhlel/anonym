@@ -1,11 +1,11 @@
 require('dotenv').config();
 const app = require("./app.js");
-const port = process.env.PORT;
 const { createServer } = require("http");
 const { Server } = require("socket.io");
 const initializeSocket = require('./app/utils/socket');
 const env = process.env.NODE_ENV || 'development';
-
+const port = process.env.NODE_ENV === 'preprod' ? process.env.PORT_PREPROD : process.env.PORT;
+console.log(env)
 /**
  * Création du serveur HTTPS
  * 
@@ -26,7 +26,7 @@ const httpServer = createServer(app);
  */
 const io = new Server(httpServer, {
   cors: {
-      origin: env === 'production' ? process.env.ORIGIN_PROD : process.env.ORIGIN, 
+      origin: env === 'production' || env === 'preprod' ? process.env.ORIGIN_PROD : process.env.ORIGIN, 
       credentials: true,
       methods: ['GET', 'POST', 'PUT', 'DELETE'],
       allowedHeaders: ['Content-Type', 'Authorization']

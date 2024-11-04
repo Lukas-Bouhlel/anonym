@@ -11,6 +11,11 @@ const {
   DB_TEST_DATABASE,
   DB_TEST_HOST,
   DB_TEST_DIALECT,
+  DB_PREPROD_DATABASE,
+  DB_PREPROD_USERNAME,
+  DB_PREPROD_PASSWORD,
+  DB_PREPROD_HOST,
+  DB_PREPROD_DIALECT,
   DB_PROD_DATABASE,
   DB_PROD_USERNAME,
   DB_PROD_PASSWORD,
@@ -59,6 +64,13 @@ module.exports = {
     database: DB_TEST_DATABASE,
     host: DB_TEST_HOST,
     dialect: DB_TEST_DIALECT
+  },
+  preprod: {
+    username: DB_PREPROD_USERNAME,
+    password: DB_PREPROD_PASSWORD,
+    database: DB_PREPROD_DATABASE,
+    host: DB_PREPROD_HOST,
+    dialect: DB_PREPROD_DIALECT
   },
   production: {
     username: DB_PROD_USERNAME,
