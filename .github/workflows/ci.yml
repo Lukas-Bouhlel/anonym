@@ -140,16 +140,25 @@ jobs:
     #     MAIL_PASS: ${{ secrets.MAIL_PASS }}
     #     BACK_END_ORIGIN: ${{ secrets.BACK_END_ORIGIN }}
     #     ORIGIN: ${{ secrets.ORIGIN }}
-    - name: Test SSH Connection
-      run: ssh -p 53339 -o StrictHostKeyChecking=no ${{ secrets.PROD_SSH_USER }}@${{ secrets.PROD_SSH_HOST }} "echo Connection successful"
 
-    - name: Deploy to Preproduction
-      run: |
-        ssh-agent bash -c 'ssh-add <(echo "${{ secrets.PROD_SSH_KEY }}"); ssh -p 53339 -o StrictHostKeyChecking=no ${{ secrets.PROD_SSH_USER }}@${{ secrets.PROD_SSH_HOST }} << EOF
-          echo "Connection successful"
-          git pull origin preprod
-          cd anonym-front-end
-          npm run build
-          cd ..
-          docker-compose -f docker-compose.preprod.yml --env-file .env.preprod up -d --build
-        EOF'
+      - name: Set up SSH key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.PROD_SSH_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          echo "${{ secrets.PROD_SSH_PASSPHRASE }}" | ssh-add ~/.ssh/id_rsa
+
+      - name: Test SSH Connection
+        run: |
+          ssh-agent bash -c 'ssh-add ~/.ssh/id_rsa; ssh -p 53339 -o StrictHostKeyChecking=no ${{ secrets.PROD_SSH_USER }}@${{ secrets.PROD_SSH_HOST }} "echo Connection successful"'
+
+      - name: Deploy to Preproduction
+        run: |
+          ssh-agent bash -c 'ssh-add ~/.ssh/id_rsa; ssh -p 53339 -o StrictHostKeyChecking=no ${{ secrets.PROD_SSH_USER }}@${{ secrets.PROD_SSH_HOST }} << EOF
+            echo "Connection successful"
+            git pull origin preprod
+            cd anonym-front-end
+            npm run build
+            cd ..
+            docker-compose -f docker-compose.preprod.yml --env-file .env.preprod up -d --build
+          EOF'
