@@ -1,36 +1,48 @@
 name: Deploy to Production
 
 on:
-  workflow_dispatch: # Permet de déclencher manuellement le workflow
+  workflow_dispatch:
+
+name: CD Prod Workflow
+
+on: 
+  workflow_run:
+    workflows: ["CD Preprod Workflow"]
+    types:
+      - completed
+    branches:
+      - main 
 
 jobs:
-  prod-deploy:
-    # Le workflow ne démarre que si la PR vers `main` a été fusionnée
-    if: github.event.pull_request.merged == true
+  prod-build-deploy:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
+      - name: Checkout code
+        uses: actions/checkout@v2
 
-      - name: Run Production Tests
-        run: |
-          # Exécutez tous les tests de production pour s'assurer que tout fonctionne avant de déployer
-          npm run lint && npm test
+      - name: Create SSH directory
+        run: mkdir -p ~/.ssh
 
-      - name: Approval required
-        if: success() # Cette étape n'apparaît que si les tests ont réussi
-        uses: hmarr/auto-approve-action@v2
+      - name: Set up known_hosts
+        run: ssh-keyscan -t rsa -p 53339 51.75.18.155 >> ~/.ssh/known_hosts
+
+      - name: Debug Known Hosts
+        run : cat ~/.ssh/known_hosts
+
+      - name: Set up SSH
+        uses: webfactory/ssh-agent@v0.8.0
         with:
-          secret: "${{ secrets.GITHUB_TOKEN }}"
+          ssh-private-key: ${{ secrets.LUKAS_KEY_PRIVATE }}
 
-      # Déploiement manuel en production
-      - name: Deploy to Production
-        if: github.event.pull_request.merged == true && success() # Exécute uniquement après validation manuelle
+      - name: Deploy to VPS
         run: |
-          ssh-agent bash -c 'ssh-add <(echo "${{ secrets.PROD_SSH_KEY }}"); ssh -o StrictHostKeyChecking=no ${{ secrets.PROD_USER }}@${{ secrets.PROD_HOST }} << EOF
-            git pull origin main
-            cd anonym-front-end
-            npm run build
-            docker-compose -f docker-compose.prod.yml --env-file .env.prod up -d --build
-          EOF'
+          ssh -p 53339 lukas@51.75.18.155 << 'EOF'
+          cd /home/ubuntu/anonym
+          git checkout preprod
+          git pull
+          cd anonym-front-end
+          sudo npm run build
+          cd ..
+          docker-compose -f docker-compose.preprod.yml --env-file .env.preprod up -d --build
+          EOF
