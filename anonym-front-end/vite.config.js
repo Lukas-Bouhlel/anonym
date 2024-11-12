@@ -1,11 +1,11 @@
-import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react-swc'
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react-swc';
 import svgr from "vite-plugin-svgr";
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => {
   
-  console.log(mode)
+  console.log(mode);
 
   if (mode === 'production') {
     return {
@@ -26,10 +26,10 @@ export default defineConfig(({ mode }) => {
       css: {
         preprocessorOptions: {
           scss: {
-            api: 'modern-compiler'
-          }
-        }
-      }
+            api: 'modern-compiler',
+          },
+        },
+      },
     };
   }
 
@@ -39,7 +39,8 @@ export default defineConfig(({ mode }) => {
       define: {
         'process.env.VITE_API_URL': process.env.VITE_API_URL_PREPROD,
       },
-      // Vous pouvez ajouter d'autres options de configuration spécifiques à la préprodbase: "/",
+      // Vous pouvez ajouter d'autres options de configuration spécifiques à la préprod
+      base: "/",
       plugins: [react(), svgr()],
       preview: {
         port: 8100,
@@ -53,12 +54,12 @@ export default defineConfig(({ mode }) => {
       css: {
         preprocessorOptions: {
           scss: {
-            api: 'modern-compiler'
-          }
-        }
-      }
+            api: 'modern-compiler',
+          },
+        },
+      },
     }
-  };
+  }
 
   return {
     define: {
@@ -78,9 +79,9 @@ export default defineConfig(({ mode }) => {
     css: {
       preprocessorOptions: {
         scss: {
-          api: 'modern-compiler'
-        }
-      }
-    }
-  }
+          api: 'modern-compiler',
+        },
+      },
+    },
+  };
 });

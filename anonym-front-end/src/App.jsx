@@ -60,10 +60,6 @@ const App = () => {
         console.error("Error loading Axeptio script");
       };
     }
-
-    return () => {
-      document.body.removeChild(script);
-    };
   }, []);
 
   /**
