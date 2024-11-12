@@ -18,3 +18,13 @@ jobs:
         run: |
           # Exécutez tous les tests de production pour s'assurer que tout fonctionne avant de déployer
           npm run lint && npm test
+
+      # Deploy to Production
+      - name: Deploy to Production
+        run: |
+          ssh-agent bash -c 'ssh-add <(echo "${{ secrets.PROD_SSH_KEY }}"); ssh -o StrictHostKeyChecking=no ${{ secrets.PROD_USER }}@${{ secrets.PROD_HOST }} << EOF
+            git pull origin main
+            cd anonym-front-end
+            npm run build
+            docker-compose -f docker-compose.prod.yml --env-file .env.prod up -d --build
+          EOF'
