@@ -50,9 +50,9 @@ const PasswordReset = ({setStatusForm}) => {
                     placeholder='Email'
                     {...register("email", { required: 'L\'adresse email est requise' })}
                 />
-                <a className="link-login-or-password-reset" onClick={() => setStatusForm('login')}>
+                <span className="link-login-or-password-reset" onClick={() => setStatusForm('login')}>
                     Se connecter ?
-                </a>
+                </span>
                 <button>Réinitialiser</button>
             </form>
 

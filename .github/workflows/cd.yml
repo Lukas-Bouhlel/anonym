@@ -19,6 +19,9 @@ jobs:
           run: |
             ssh-agent bash -c 'ssh-add <(echo "${{ secrets.PROD_SSH_KEY }}"); ssh -o StrictHostKeyChecking=no ${{ secrets.PROD_SSH_USER }}@${{ secrets.PROD_SSH_HOST }} << EOF
                 git pull origin main
-                docker-compose -f docker-compose.prod.yml --env-file .env.prod up -d
-                docker-compose -f docker-compose.preprod.yml --env-file .env.preprod up -d
+                npm run build-preprod
+                https://preprod.ano-nym.fr:8443/
+                docker-compose -f docker-compose.preprod.yml --env-file .env.preprod up -d --build
+                npm run build
+                docker-compose -f docker-compose.prod.yml --env-file .env.production up -d --build
             EOF'

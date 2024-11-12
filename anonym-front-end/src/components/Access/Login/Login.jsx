@@ -63,8 +63,8 @@ const Login = ({setStatusForm, setStatusAccess}) => {
                 <span>utilisez votre e-mail et votre mot de passe</span>
                 <input  aria-label={"Email"} aria-required="true" type="text" placeholder="Email" {...register("email", { required: "L'adresse email est requise." })}/>
                 <input aria-label={"Mot de passe"} aria-required="true" type="password" placeholder="Mot de passe" {...register("password", { required: "Le mot de passe est requis" })}/>
-                <a className="link-login-or-password-reset" onClick={() => setStatusForm('resetPassword')}>Mot de passe oublié ?</a>
-                <button>Se connecter</button>
+                <span className="link-login-or-password-reset" onClick={() => setStatusForm('resetPassword')}>Mot de passe oublié ?</span>
+                <button className="login-submit">Se connecter</button>
                 {/* Gestion de l'affichage des erreurs */}
                 <p className='error-message-form' aria-live="assertive">
                     {(showMessage || (errors.email || errors.password)) && 
