@@ -145,11 +145,11 @@ jobs:
 
     - name: Deploy to Preproduction
       run: |
-        # Replace these commands with actual deployment commands for your environmen
-        ssh-agent bash -c 'ssh-add <(echo "${{ secrets.PROD_SSH_KEY }}"); ssh -o StrictHostKeyChecking=no ${{ secrets.PROD_SSH_USER }}@${{ secrets.PROD_SSH_HOST }} << EOF
+        ssh-agent bash -c 'ssh-add <(echo "${{ secrets.PROD_SSH_KEY }}"); ssh -p 53339 -o StrictHostKeyChecking=no ${{ secrets.PROD_SSH_USER }}@${{ secrets.PROD_SSH_HOST }} << EOF
+          echo "Connection successful"
           git pull origin preprod
           cd anonym-front-end
           npm run build
           cd ..
           docker-compose -f docker-compose.preprod.yml --env-file .env.preprod up -d --build
-        EOF'
+        EOF'    
