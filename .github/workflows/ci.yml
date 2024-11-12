@@ -6,7 +6,7 @@ on:
       - preprod
 
 jobs:
-  security:
+  preprod-build-test-deploy:
     runs-on: ubuntu-latest
 
     steps:
@@ -141,16 +141,13 @@ jobs:
         BACK_END_ORIGIN: ${{ secrets.BACK_END_ORIGIN }}
         ORIGIN: ${{ secrets.ORIGIN }}
 
-    - name: Deploy to Preprod
-          if: success()
-          env:
-            PREPROD_*: ${{ secrets.PREPROD_* }}
-          run: |
-            ssh-agent bash -c 'ssh-add <(echo "$PREPROD_SSH_KEY"); ssh -o StrictHostKeyChecking=no $PREPROD_SSH_USER@$PREPROD_SSH_HOST << EOF
-                cd /home/ubuntu/anonym
-                git pull origin preprod
-                cd anonym-front-end
-                npm run build
-                cd ..
-                docker-compose -f docker-compose.preprod.yml --env-file .env.preprod up -d --build
-            EOF'
+    - name: Deploy to Preproduction
+      run: |
+        # Replace these commands with actual deployment commands for your environment
+        ssh-agent bash -c 'ssh-add <(echo "${{ secrets.PREPROD_SSH_KEY }}"); ssh -o StrictHostKeyChecking=no ${{ secrets.PREPROD_USER }}@${{ secrets.PREPROD_HOST }} << EOF
+          git pull origin preprod
+          cd anonym-front-end
+          npm run build
+          cd ..
+          docker-compose -f docker-compose.preprod.yml --env-file .env.preprod up -d --build
+        EOF'
