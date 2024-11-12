@@ -16,12 +16,6 @@ jobs:
       - name: Create SSH directory
         run: mkdir -p ~/.ssh
 
-      - name: Show dir
-        run: ls ~/.ssh >> log.txt
-
-      - name: test_cat
-        run: cat log.txt
-
       - name: Set up known_hosts
         run: ssh-keyscan -t rsa -p 53339 51.75.18.155 >> ~/.ssh/known_hosts
 
