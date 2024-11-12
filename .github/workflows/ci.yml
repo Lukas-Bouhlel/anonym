@@ -33,7 +33,7 @@ jobs:
       #   run: |
       #     echo "$SSH_PASSPHRASE" | ssh-add -q ~/.ssh/id_rsa
 
-      - name: Deploy to VPS 
+      - name: Deploy to VPS
         run: |
           ssh -p 53339 lukas@51.75.18.155 'cd /home/lukas && touch lukas.txt'
   #     # Checkout the repository
