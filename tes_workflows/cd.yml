@@ -1,0 +1,20 @@
+name: Deploy to Production
+
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  prod-deploy:
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Run Production Tests
+        run: |
+          # Exécutez tous les tests de production pour s'assurer que tout fonctionne avant de déployer
+          npm run lint && npm test
