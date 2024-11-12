@@ -34,7 +34,7 @@ Structure des dossiers : Ajoutez un sous-dossier articles dans le dossier upload
 2. Installez le projet sur Docker : Rendez-vous dans le dossier parent "Anonym" et utilisez cette commande pour construire le conteneur, les volumes et les images pour la prod et la preprod :
 ```bash
 docker-compose -f docker-compose.preprod.yml --env-file .env.preprod up -d --build
-docker-compose -f docker-compose.prod.yml --env-file .env.production up -d --build
+docker-compose -f docker-compose.prod.yml --env-file .env.production up -d --build 
 ```
 Pour supprimer les builds, utilisez la commande suivante :
 ```bash
