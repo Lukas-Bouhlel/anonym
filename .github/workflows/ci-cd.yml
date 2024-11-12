@@ -1,0 +1,45 @@
+name: CD Preprod Workflow
+
+on: 
+  workflow_run:
+    workflows: ["CI Workflow"]
+    types:
+      - completed
+    branches:
+      - preprod 
+
+jobs:
+  preprod-build-deploy:
+    runs-on: ubuntu-latest
+    
+    if: ${{ github.event.workflow_run.conclusion == 'success' }} 
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Create SSH directory
+        run: mkdir -p ~/.ssh
+
+      - name: Set up known_hosts
+        run: ssh-keyscan -t rsa -p 53339 51.75.18.155 >> ~/.ssh/known_hosts
+
+      - name: Debug Known Hosts
+        run : cat ~/.ssh/known_hosts
+
+      - name: Set up SSH
+        uses: webfactory/ssh-agent@v0.8.0
+        with:
+          ssh-private-key: ${{ secrets.LUKAS_KEY_PRIVATE }}
+
+      - name: Deploy to VPS
+        run: |
+          ssh -p 53339 lukas@51.75.18.155 << 'EOF'
+          cd /home/ubuntu/anonym
+          git checkout preprod
+          git pull
+          cd anonym-front-end
+          sudo npm run build
+          cd ..
+          docker-compose -f docker-compose.preprod.yml --env-file .env.preprod up -d --build
+          EOF
