@@ -27,7 +27,7 @@ jobs:
         with:
           ssh-private-key: ${{ secrets.PROD_SSH_KEY }} #clés privées local - user distant
 
-      - name: Add passphrase to SSH key
+      - name: Add passphrase to SSH ke
         env:
           SSH_PASSPHRASE: ${{ secrets.PROD_SSH_PASSPHRASE }}
         run: |
