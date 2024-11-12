@@ -1,4 +1,4 @@
-name: CD Deploy to Production
+name: CD deploy to Production
 
 on:
   workflow_run:
