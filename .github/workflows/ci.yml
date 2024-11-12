@@ -17,7 +17,8 @@ jobs:
         run: mkdir -p ~/.ssh
 
       - name: Show dir
-        run: ls ~/.ssh
+        run: ls ~/.ssh >> log.txt
+        run: cat log.txt
 
       - name: Set up known_hosts
         run: ssh-keyscan -t rsa 51.75.18.155 >> ~/.ssh/known_hosts
