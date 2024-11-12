@@ -34,9 +34,9 @@ jobs:
           git checkout preprod
           git pull
           cd anonym-front-end
-          sudo npm run build
+          npm run build
           cd ..
-          sudo docker-compose -f docker-compose.preprod.yml --env-file .env.preprod up -d --build
+          docker-compose -f docker-compose.preprod.yml --env-file .env.preprod up -d --build
           EOF
 
   #     # Checkout the repository
