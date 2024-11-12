@@ -27,11 +27,11 @@ jobs:
         with:
           ssh-private-key: ${{ secrets.PROD_SSH_KEY }} #clés privées local - user distant
 
-      - name: Add passphrase to SSH ke
-        env:
-          SSH_PASSPHRASE: ${{ secrets.PROD_SSH_PASSPHRASE }}
-        run: |
-          echo "$SSH_PASSPHRASE" | ssh-add -q ~/.ssh/id_rsa
+      # - name: Add passphrase to SSH ke
+      #   env:
+      #     SSH_PASSPHRASE: ${{ secrets.PROD_SSH_PASSPHRASE }}
+      #   run: |
+      #     echo "$SSH_PASSPHRASE" | ssh-add -q ~/.ssh/id_rsa
 
       - name: Deploy to VPS 
         run: |
