@@ -29,14 +29,15 @@ jobs:
 
       - name: Deploy to VPS
         run: |
-          ssh -p 53339 lukas@51.75.18.155 
-          'cd /home/lukas/anonym/ && 
-          git checkout preprod && 
-          git pull && 
-          cd anonym-front-end &&
-          npm run build &&
-          cd .. &&
-          docker-compose -f docker-compose.preprod.yml --env-file .env.preprod up -d --build'
+          ssh -p 53339 lukas@51.75.18.155 << 'EOF'
+          cd /home/lukas/anonym/
+          git checkout preprod
+          git pull
+          cd anonym-front-end
+          npm run build
+          cd ..
+          docker-compose -f docker-compose.preprod.yml --env-file .env.preprod up -d --build
+          EOF
 
   #     # Checkout the repository
   #     - name: Checkout repository
