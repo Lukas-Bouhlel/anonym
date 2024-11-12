@@ -16,6 +16,9 @@ jobs:
       - name: Create SSH directory
         run: mkdir -p ~/.ssh
 
+      - name: Show dir
+        run: ls ~/.ssh
+
       - name: Set up known_hosts
         run: ssh-keyscan -t rsa 51.75.18.155 >> ~/.ssh/known_hosts
 
