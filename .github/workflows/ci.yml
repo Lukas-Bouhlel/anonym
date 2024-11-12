@@ -29,10 +29,11 @@ jobs:
 
       - name: Deploy to VPS
         run: |
-          ssh -p 53339 lukas@51.75.18.155 'cd /var/www/ci-cd && 
+          ssh -p 53339 lukas@51.75.18.155 
+          'cd /home/lukas/anonym/ && 
           git checkout preprod && 
           git pull && 
-          cd /home/lukas/anonym/anonym-front-end &&
+          cd anonym-front-end &&
           npm run build &&
           docker-compose -f docker-compose.prod.yml --env-file .env.prod up -d --build'
 
