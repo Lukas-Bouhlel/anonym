@@ -35,7 +35,7 @@ jobs:
 
       - name: Deploy to VPS 
         run: |
-          ssh -p 53339 ubuntu@51.75.18.155 'cd /home/ubuntu && touch lukas.txt'
+          ssh -p 53339 ubuntu@51.75.18.155 'cd /home/ubuntu && sudo touch lukas.txt'
   #     # Checkout the repository
   #     - name: Checkout repository
   #       uses: actions/checkout@v3
