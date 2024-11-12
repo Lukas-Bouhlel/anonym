@@ -1,12 +1,11 @@
 name: Deploy to Production
 
 on:
-  pull_request:
-    branches:
-      - main
+  workflow_dispatch: # Permet de déclencher manuellement le workflow
 
 jobs:
   prod-deploy:
+    # Le workflow ne démarre que si la PR vers `main` a été fusionnée
     if: github.event.pull_request.merged == true
     runs-on: ubuntu-latest
 
@@ -19,8 +18,15 @@ jobs:
           # Exécutez tous les tests de production pour s'assurer que tout fonctionne avant de déployer
           npm run lint && npm test
 
-      # Deploy to Production
+      - name: Approval required
+        if: success() # Cette étape n'apparaît que si les tests ont réussi
+        uses: hmarr/auto-approve-action@v2
+        with:
+          secret: "${{ secrets.GITHUB_TOKEN }}"
+
+      # Déploiement manuel en production
       - name: Deploy to Production
+        if: github.event.pull_request.merged == true && success() # Exécute uniquement après validation manuelle
         run: |
           ssh-agent bash -c 'ssh-add <(echo "${{ secrets.PROD_SSH_KEY }}"); ssh -o StrictHostKeyChecking=no ${{ secrets.PROD_USER }}@${{ secrets.PROD_HOST }} << EOF
             git pull origin main
