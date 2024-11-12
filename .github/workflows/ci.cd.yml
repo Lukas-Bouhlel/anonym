@@ -1,12 +1,12 @@
-name: CD Production Workflow
+name: CI Workflow
 
-on:
-  pull_request:
+on: 
+  push:
     branches:
       - main
 
 jobs:
-  test-and-deploy-prod:
+  security:
     runs-on: ubuntu-latest
 
     steps:
@@ -51,6 +51,15 @@ jobs:
       uses: actions/setup-node@v3
       with:
         node-version: '20.16.0'
+    
+     # ---- Generate SSL Certificates for Frontend and Backend ----
+    # - name: Generate SSL Certificates for Frontend
+    #   run: |
+    #     openssl req -x509 -newkey rsa:2048 -keyout ./anonym-front-end/server.key -out ./anonym-front-end/server.crt -days 365 -nodes -subj "/CN=localhost"
+      
+    # - name: Generate SSL Certificates for Backend
+    #   run: |
+    #     openssl req -x509 -newkey rsa:2048 -keyout ./anonym-back-end/server.key -out ./anonym-back-end/server.crt -days 365 -nodes -subj "/CN=localhost"
 
     # ---- Frontend: Lint, Test, and Build ----
     - name: Install dependencies for Frontend
@@ -140,17 +149,3 @@ jobs:
         MAIL_PASS: ${{ secrets.MAIL_PASS }}
         BACK_END_ORIGIN: ${{ secrets.BACK_END_ORIGIN }}
         ORIGIN: ${{ secrets.ORIGIN }}
-
-      - name: Deploy to Production
-        if: success()
-        env:
-          PROD_*: ${{ secrets.PROD_* }}
-        run: |
-          ssh-agent bash -c 'ssh-add <(echo "secrets.$PROD_SSH_KEY"); ssh -o StrictHostKeyChecking=no secrets.$PROD_SSH_USER@$PROD_SSH_HOST << EOF
-              cd /home/ubuntu/anonym
-              git pull origin main
-              cd anonym-front-end
-              npm run build
-              cd ..
-              docker-compose -f docker-compose.prod.yml --env-file .env.production up -d --build
-          EOF'
