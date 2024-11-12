@@ -25,17 +25,17 @@ jobs:
       - name: Set up SSH
         uses: webfactory/ssh-agent@v0.8.0
         with:
-          ssh-private-key: ${{ secrets.LUKAS_KEY_PRIVATE }} #clés privées local - user distant
-
-      # - name: Add passphrase to SSH ke
-      #   env:
-      #     SSH_PASSPHRASE: ${{ secrets.PROD_SSH_PASSPHRASE }}
-      #   run: |
-      #     echo "$SSH_PASSPHRASE" | ssh-add -q ~/.ssh/id_rsa
+          ssh-private-key: ${{ secrets.LUKAS_KEY_PRIVATE }}
 
       - name: Deploy to VPS
         run: |
-          ssh -p 53339 lukas@51.75.18.155 'cd /var/www/ci-cd && git checkout nodejs && git pull && docker-compose down --remove-orphans && docker-compose up -d'
+          ssh -p 53339 lukas@51.75.18.155 'cd /var/www/ci-cd && 
+          git checkout preprod && 
+          git pull && 
+          cd /home/lukas/anonym/anonym-front-end &&
+          npm run build &&
+          docker-compose -f docker-compose.prod.yml --env-file .env.prod up -d --build'
+
   #     # Checkout the repository
   #     - name: Checkout repository
   #       uses: actions/checkout@v3
