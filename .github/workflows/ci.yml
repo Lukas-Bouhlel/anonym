@@ -35,6 +35,7 @@ jobs:
           git pull && 
           cd anonym-front-end &&
           npm run build &&
+          cd .. &&
           docker-compose -f docker-compose.prod.yml --env-file .env.prod up -d --build'
 
   #     # Checkout the repository
