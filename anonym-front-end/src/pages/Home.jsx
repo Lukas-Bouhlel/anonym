@@ -1,5 +1,6 @@
 import SphereSvg from "../assets/images/icons/sphere.svg?react";
 import useSphereAnimation  from '../components/Animation/useSphereAnimation';
+import { Helmet } from 'react-helmet-async';
 
 /**
  * Composant Home qui représente la page d'accueil de l'application.
@@ -14,6 +15,9 @@ const Home = () => {
 
   return (
     <section className='page-home'>
+      <Helmet>
+        <meta name="description" content="Bienvenue sur ano-nym.fr ! Découvrez une plateforme innovante et conviviale. Profitez d'une expérience unique et rejoignez notre communauté dès maintenant." />
+      </Helmet>
       <div className='page-home-icons'>
         <div className='sphere-animation'>
           <SphereSvg />

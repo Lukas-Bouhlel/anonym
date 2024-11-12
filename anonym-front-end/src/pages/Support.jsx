@@ -5,6 +5,7 @@ import { useForm } from "react-hook-form";
 import { useMutation } from '@tanstack/react-query';
 import { useApi } from '../context/ApiContext';
 import { usePopup } from '../context/PopupContext';
+import { Helmet } from 'react-helmet-async';
 
 /**
  * Composant Support qui gère la soumission des rapports d'assistance
@@ -54,6 +55,10 @@ const Support = () => {
 
   return (
     <section className='page-support'>
+      <Helmet>
+        <title>Centre d&apos;aide - Anonym</title>
+        <meta name="description" content="Besoin d'aide ? Notre page Support vous guide à travers nos services, FAQ et contact. Obtenez des réponses rapides à toutes vos questions." />
+      </Helmet>
       <div className='page-support-content'>
         <h1>Centre d&apos;aide</h1>
       </div>

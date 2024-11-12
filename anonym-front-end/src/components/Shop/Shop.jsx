@@ -153,7 +153,7 @@ const Shop = ({ user }) => {
                                             {isArticlePurchased(item.article_id) ? (
                                                 <button onClick={() => handleToggleActive(item.article_id)}>Utiliser maintenant</button>
                                             ) : (
-                                                <button onClick={() => handlePurchase(item.article_id)}>Acheter pour {item.amount} €</button>
+                                                <button className="shop-buying-item" onClick={() => handlePurchase(item.article_id)}>Acheter pour {item.amount} €</button>
                                             )}
                                         </div>
                                     </div>

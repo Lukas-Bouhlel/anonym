@@ -8,8 +8,8 @@ RUN npm install --legacy-peer-deps
 
 COPY . .
 
-RUN npm run build
+RUN npm run build -- --mode preprod
 
 EXPOSE 8080
 
-CMD ["npm", "run", "preview"]
+CMD ["npm", "run", "preview", "--", "--mode", "preprod"]

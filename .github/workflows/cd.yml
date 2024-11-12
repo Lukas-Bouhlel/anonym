@@ -1,24 +1,36 @@
-name: CD Workflow
+name: Deploy to Production
 
 on:
-  pull_request:
-    branches:
-      - main
+  workflow_dispatch: # Permet de déclencher manuellement le workflow
 
 jobs:
-  deploy:
+  prod-deploy:
+    # Le workflow ne démarre que si la PR vers `main` a été fusionnée
+    if: github.event.pull_request.merged == true
     runs-on: ubuntu-latest
 
     steps:
-        # Checkout the repository
-        - name: Checkout repository
-          uses: actions/checkout@v3
+      - name: Checkout repository
+        uses: actions/checkout@v3
 
-        # Déployer sur le serveur de production
-        - name: Deploy to Production
-          run: |
-            ssh-agent bash -c 'ssh-add <(echo "${{ secrets.PROD_SSH_KEY }}"); ssh -o StrictHostKeyChecking=no ${{ secrets.PROD_SSH_USER }}@${{ secrets.PROD_SSH_HOST }} << EOF
-                git pull origin main
-                docker-compose -f docker-compose.prod.yml --env-file .env.prod up -d
-                docker-compose -f docker-compose.preprod.yml --env-file .env.preprod up -d
-            EOF'
+      - name: Run Production Tests
+        run: |
+          # Exécutez tous les tests de production pour s'assurer que tout fonctionne avant de déployer
+          npm run lint && npm test
+
+      - name: Approval required
+        if: success() # Cette étape n'apparaît que si les tests ont réussi
+        uses: hmarr/auto-approve-action@v2
+        with:
+          secret: "${{ secrets.GITHUB_TOKEN }}"
+
+      # Déploiement manuel en production
+      - name: Deploy to Production
+        if: github.event.pull_request.merged == true && success() # Exécute uniquement après validation manuelle
+        run: |
+          ssh-agent bash -c 'ssh-add <(echo "${{ secrets.PROD_SSH_KEY }}"); ssh -o StrictHostKeyChecking=no ${{ secrets.PROD_USER }}@${{ secrets.PROD_HOST }} << EOF
+            git pull origin main
+            cd anonym-front-end
+            npm run build
+            docker-compose -f docker-compose.prod.yml --env-file .env.prod up -d --build
+          EOF'

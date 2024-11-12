@@ -66,7 +66,7 @@ const Register = ({setStatusAccess}) => {
         <input aria-label={"Name"} aria-required="true" type="text" placeholder="Name" {...register("name", { required: "Le nom d'utilisateur est requis" })} />
         <input aria-label={"Email"} aria-required="true" type="email" placeholder="Email" {...register("email", { required: "L'adresse email est requise" })} />
         <input aria-label={"Mot de passe"} aria-required="true" type="password" placeholder="Mot de passe" {...register("password", { required: "Le mot de passe est requis" })} />
-        <button type="submit">S&apos;inscrire</button>
+        <button type="submit" className="register-submit">S&apos;inscrire</button>
         <p onClick={() => setStatusAccess(false)} className='mobile-redirect-register-or-login'>Se connecter</p>
       </form>
       {/* Gestion de l'affichage des erreurs */}

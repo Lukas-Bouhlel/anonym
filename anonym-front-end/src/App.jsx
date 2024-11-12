@@ -1,8 +1,17 @@
 import { useEffect } from 'react';
 import Router from './router/Router.jsx';
+import ReactGA from "react-ga4";
 import './assets/styles/index.scss';
 import './assets/styles/base.scss';
 import 'bootstrap/dist/css/bootstrap.css';
+import { Helmet } from 'react-helmet-async';
+
+
+ReactGA.initialize("G-S6QML510VW", {
+  gaOptions: {
+    anonymizeIp: true,
+  }
+});
 
 /**
  * Composant App qui gère la logique principale de l'application et le routage.
@@ -37,17 +46,20 @@ const App = () => {
      * Crée dynamiquement et ajoute la balise de script Axeptio dans le body du document.
      * Gère les erreurs de chargement du script en les enregistrant dans la console.
      */
-    const script = document.createElement("script");
-    script.async = true;
-    script.src = "https://static.axept.io/sdk.js";
-    document.body.appendChild(script);
-    window.axeptioSettings.debug = true;
-    script.onerror = () => {
-      console.error("Error loading Axeptio script");
-    };
-    return () => {
-      document.body.removeChild(script);
-    };
+    if (!window.AxeptioSDKLoaded) {
+      const script = document.createElement("script");
+      script.async = true;
+      script.src = "https://static.axept.io/sdk.js";
+      script.onerror = () => {
+        console.error("Error loading Axeptio script");
+      };
+      document.body.appendChild(script);
+      window.AxeptioSDKLoaded = true;
+      window.axeptioSettings.debug = true;
+      script.onerror = () => {
+        console.error("Error loading Axeptio script");
+      };
+    }
   }, []);
 
   /**
@@ -56,7 +68,13 @@ const App = () => {
    * @returns {JSX.Element} Composant Router
    */
   return (
-      <Router/>
+    <>
+      <Helmet>
+        <title>Anonym</title>
+        <meta name="google-site-verification" content="i5ppM2zWvLg1vGLBwXg5beniqRJvRjc-t8Iczu5UVSQ" />
+      </Helmet>
+    <Router/>
+    </>
   )
 }
 export default App

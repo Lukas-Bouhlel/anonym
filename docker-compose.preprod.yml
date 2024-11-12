@@ -19,20 +19,6 @@ services:
     networks:
       - anonym-network-preprod
 
-  phpmyadmin-preprod:
-    image: phpmyadmin/phpmyadmin
-    restart: always
-    ports:
-      - "8085:85"
-    environment:
-      PMA_HOST: mysql-db-preprod
-      PMA_USER: root
-      PMA_PASSWORD: ${PMA_PASSWORD}
-    depends_on:
-      - mysql-db-preprod
-    networks:
-      - anonym-network-preprod
-
   backend-preprod:
     env_file:
       - ./anonym-back-end/.env
@@ -56,15 +42,15 @@ services:
 
   frontend-preprod:
     env_file:
-      - ./anonym-front-end/.env
+      - ./anonym-front-end/.env.preprod
     build:
       context: ./anonym-front-end
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.preprod
     container_name: anonym-front-end-preprod
+    environment:
+        - VITE_NODE_ENV=preprod
     ports:
       - 8100:8100
-    environment:
-      - NODE_ENV=preprod
     depends_on:
       - backend-preprod
     volumes:
@@ -77,12 +63,14 @@ services:
     image: nginx:latest
     container_name: nginx-proxy-preprod
     ports:
-      - "8082:80"
+      - "8180:80"
       - "8443:443"
     volumes:
-      - ./nginx/nginx.preprod.conf:/etc/nginx/nginx.conf
-      - ./certbot/www:/var/www/certbot
+      - ./nginx/preprod.conf:/etc/nginx/nginx.conf
+      - ./nginx/sites-enabled-preprod:/etc/nginx/sites-enabled-preprod
+      - ./nginx/nginxconfig.io:/etc/nginx/nginxconfig.io
       - ./nginx/ssl:/etc/letsencrypt
+      - ./certbot/www:/var/www/certbot
     depends_on:
       - frontend-preprod
       - backend-preprod
