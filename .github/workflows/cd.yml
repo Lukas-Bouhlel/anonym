@@ -1,17 +1,13 @@
 name: Deploy to Production
 
 on:
-  workflow_dispatch:
-
-name: CD Prod Workflow
-
-on: 
   workflow_run:
     workflows: ["CD Preprod Workflow"]
     types:
-      - completed
+      - success
+  workflow_dispatch:
     branches:
-      - main 
+      - main
 
 jobs:
   prod-build-deploy:
@@ -39,10 +35,10 @@ jobs:
         run: |
           ssh -p 53339 lukas@51.75.18.155 << 'EOF'
           cd /home/ubuntu/anonym
-          git checkout preprod
+          git checkout main
           git pull
           cd anonym-front-end
           sudo npm run build
           cd ..
-          docker-compose -f docker-compose.preprod.yml --env-file .env.preprod up -d --build
+          docker-compose -f docker-compose.prod.yml --env-file .env.production up -d --build
           EOF
