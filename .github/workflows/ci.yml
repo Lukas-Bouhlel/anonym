@@ -23,7 +23,7 @@ jobs:
         run: cat log.txt
 
       - name: Set up known_hosts
-        run: ssh-keyscan -t rsa 51.75.18.155 >> ~/.ssh/known_hosts
+        run: ssh-keyscan -t rsa -p 53339 51.75.18.155 >> ~/.ssh/known_hosts
 
       - name: Debug Known Hosts
         run : cat ~/.ssh/known_hosts
@@ -35,7 +35,7 @@ jobs:
 
       - name: Deploy to VPS 
         run: |
-          ssh ubuntu@51.75.18.155 'cd /home/ubuntu && touch lukas.txt'
+          ssh -p 53339 ubuntu@51.75.18.155 'cd /home/ubuntu && touch lukas.txt'
   #     # Checkout the repository
   #     - name: Checkout repository
   #       uses: actions/checkout@v3
