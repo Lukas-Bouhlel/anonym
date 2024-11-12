@@ -35,7 +35,11 @@ describe('Success Page', () => {
 
     const renderWithRouter = (ui, { route = '/' } = {}) => {
         window.history.pushState({}, 'Test page', route);
-        return render(<MemoryRouter initialEntries={[route]}>{ui}</MemoryRouter>);
+        return render(
+            <MemoryRouter initialEntries={[route]} future={{ v7_relativeSplatPath: true }}>
+                {ui}
+            </MemoryRouter>
+        );
     };
 
     test('should render success message and payment details when payment is confirmed', async () => {
