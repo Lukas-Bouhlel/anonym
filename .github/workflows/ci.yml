@@ -145,7 +145,7 @@ jobs:
 
     - name: Deploy to Preproduction
       run: |
-        # Replace these commands with actual deployment commands for your environment
+        # Replace these commands with actual deployment commands for your environmen
         ssh-agent bash -c 'ssh-add <(echo "${{ secrets.PROD_SSH_KEY }}"); ssh -o StrictHostKeyChecking=no ${{ secrets.PROD_SSH_USER }}@${{ secrets.PROD_SSH_HOST }} << EOF
           git pull origin preprod
           cd anonym-front-end
