@@ -140,6 +140,8 @@ jobs:
     #     MAIL_PASS: ${{ secrets.MAIL_PASS }}
     #     BACK_END_ORIGIN: ${{ secrets.BACK_END_ORIGIN }}
     #     ORIGIN: ${{ secrets.ORIGIN }}
+    - name: Test SSH Connection
+      run: ssh -o StrictHostKeyChecking=no ${{ secrets.PROD_SSH_USER }}@${{ secrets.PROD_SSH_HOST }} "echo Connection successful"
 
     - name: Deploy to Preproduction
       run: |
