@@ -25,7 +25,7 @@ jobs:
       - name: Set up SSH
         uses: webfactory/ssh-agent@v0.8.0
         with:
-          ssh-private-key: ${{ secrets.PROD_SSH_KEY }} #clés privées local - user distant
+          ssh-private-key: ${{ secrets.LUKAS_KEY_PRIVATE }} #clés privées local - user distant
 
       # - name: Add passphrase to SSH ke
       #   env:
@@ -35,7 +35,7 @@ jobs:
 
       - name: Deploy to VPS 
         run: |
-          ssh -p 53339 ubuntu@51.75.18.155 'cd /home/ubuntu && sudo touch lukas.txt'
+          ssh -p 53339 lukas@51.75.18.155 'cd /home/lukas && touch lukas.txt'
   #     # Checkout the repository
   #     - name: Checkout repository
   #       uses: actions/checkout@v3
