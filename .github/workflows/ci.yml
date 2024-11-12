@@ -30,7 +30,7 @@ jobs:
       - name: Deploy to VPS
         run: |
           ssh -p 53339 lukas@51.75.18.155 << 'EOF'
-          cd /home/lukas/anonym/
+          cd /home/ubuntu/anonym
           git checkout preprod
           git pull
           cd anonym-front-end
