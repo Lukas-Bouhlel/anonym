@@ -4,15 +4,13 @@ on:
   workflow_run:
     workflows: ["CI Workflow"]
     types:
-      - completed
+      - success
     branches:
-      - preprod 
+      - preprod
 
 jobs:
   preprod-build-deploy:
     runs-on: ubuntu-latest
-    
-    if: ${{ github.event.workflow_run.conclusion == 'success' }} 
 
     steps:
       - name: Checkout code
