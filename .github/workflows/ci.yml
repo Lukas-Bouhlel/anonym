@@ -27,16 +27,16 @@ jobs:
         with:
           ssh-private-key: ${{ secrets.LUKAS_KEY_PRIVATE }}
 
-      - name: Deploy to VPS
-        run: |
-          ssh -p 53339 lukas@51.75.18.155 
-          'cd /home/lukas/anonym/ && 
-          git checkout preprod && 
-          git pull && 
-          cd anonym-front-end &&
-          npm run build &&
-          cd .. &&
-          docker-compose -f docker-compose.prod.yml --env-file .env.prod up -d --build'
+      # - name: Deploy to VPS
+      #   run: |
+      #     ssh -p 53339 lukas@51.75.18.155 
+      #     'cd /home/lukas/anonym/ && 
+      #     git checkout preprod && 
+      #     git pull && 
+      #     cd anonym-front-end &&
+      #     npm run build &&
+      #     cd .. &&
+      #     docker-compose -f docker-compose.prod.yml --env-file .env.prod up -d --build'
 
   #     # Checkout the repository
   #     - name: Checkout repository
