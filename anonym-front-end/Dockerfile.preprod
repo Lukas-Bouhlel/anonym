@@ -10,6 +10,6 @@ COPY . .
 
 RUN npm run build -- --mode preprod
 
-EXPOSE 8080
+EXPOSE 8100
 
 CMD ["npm", "run", "preview", "--", "--mode", "preprod"]
