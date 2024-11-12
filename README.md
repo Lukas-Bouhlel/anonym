@@ -24,20 +24,22 @@ npm install
 cd anonym-front-end
 npm install
 ```
-Ajoutez un fichier .env pour le frontend et le backend. La configuration des différentes variables d'environnement est présente dans le fichier .env.example.
+Ajoutez un fichier .env pour le frontend et le backend, .env.production et .env.preprod pour le frontend. La configuration des différentes variables d'environnement est présente dans le fichier .env.example.
 N'oubliez pas de générer de nouveaux certificats SSL avec OpenSSL dans les différents répertoires du frontend et du backend.
 Structure des dossiers : Ajoutez un sous-dossier articles dans le dossier uploads du backend pour stocker les images des différents produits de la boutique, ainsi qu'un sous-dossier avatars dans profiles (dans uploads) pour les photos de profil des utilisateurs.
 
 ### Guide d'installation Docker
 1. Assurez-vous d'avoir Docker et Docker Compose installés sur votre machine et accessibles via le CLI, ainsi que Docker Desktop.
 
-2. Installez le projet sur Docker : Rendez-vous dans le dossier parent "Anonym" et utilisez cette commande pour construire le conteneur, les volumes et les images :
+2. Installez le projet sur Docker : Rendez-vous dans le dossier parent "Anonym" et utilisez cette commande pour construire le conteneur, les volumes et les images pour la prod et la preprod :
 ```bash
-docker-compose up --build
+docker-compose -f docker-compose.preprod.yml --env-file .env.preprod up -d --build
+docker-compose -f docker-compose.prod.yml --env-file .env.production up -d --build
 ```
 Pour supprimer les builds, utilisez la commande suivante :
 ```bash
-docker-compose down -v   
+docker-compose -f docker-compose.preprod.yml --env-file .env.preprod down
+docker-compose -f docker-compose.prod.yml --env-file .env.production down
 ```
 
 ## Guide CI
