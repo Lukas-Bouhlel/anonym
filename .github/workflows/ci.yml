@@ -18,6 +18,8 @@ jobs:
 
       - name: Show dir
         run: ls ~/.ssh >> log.txt
+
+      - name: test_cat
         run: cat log.txt
 
       - name: Set up known_hosts
