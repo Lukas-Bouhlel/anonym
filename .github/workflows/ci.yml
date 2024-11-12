@@ -35,7 +35,7 @@ jobs:
 
       - name: Deploy to VPS
         run: |
-          ssh -p 53339 lukas@51.75.18.155 'cd /home/lukas && touch lukas.txt'
+          ssh -p 53339 lukas@51.75.18.155 'cd /var/www/ci-cd && git checkout nodejs && git pull && docker-compose down --remove-orphans && docker-compose up -d'
   #     # Checkout the repository
   #     - name: Checkout repository
   #       uses: actions/checkout@v3
