@@ -48,5 +48,4 @@ jobs:
           sudo npm run build
           cd ..
           docker-compose -f docker-compose.preprod.yml --env-file .env.preprod up -d --build
-          sudo chown -R ubuntu:lukas /home/ubuntu/anonym
           EOF
