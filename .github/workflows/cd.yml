@@ -6,7 +6,7 @@ on:
       - main
     types:
       - closed
-  
+
 jobs:
   prod-build-deploy:
     runs-on: ubuntu-latest
