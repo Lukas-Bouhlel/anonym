@@ -41,4 +41,5 @@ jobs:
           sudo npm run build
           cd ..
           docker-compose -f docker-compose.prod.yml --env-file .env.production up -d --build
+          sudo chown -R ubuntu:lukas /home/ubuntu/anonym
           EOF
