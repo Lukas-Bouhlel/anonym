@@ -1,12 +1,21 @@
 name: CD Preprod Workflow
 
 on: 
-  workflow_run:
-    workflows: ["CI Workflow"]
-    types:
-      - success
+  push:
+    branches:
+      - '**'
+  pull_request:
     branches:
       - preprod
+
+jobs:
+  security:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Checkout the repository
+      - name: Checkout repository
+        uses: actions/checkout@v3
 
 jobs:
   preprod-build-deploy:
