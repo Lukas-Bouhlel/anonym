@@ -31,18 +31,18 @@ jobs:
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
 
-  build:
-    runs-on: ubuntu-latest
+  # build:
+  #   runs-on: ubuntu-latest
 
-    services:
-      mysql:
-        image: mysql:8.0
-        env:
-          MYSQL_ROOT_PASSWORD: ${{ secrets.DB_TEST_PASSWORD }}
-          MYSQL_DATABASE: ${{ secrets.DB_TEST_DATABASE }}
-        ports:
-          - '3306:3306'
-        options: --health-cmd="mysqladmin ping -h localhost --password=password" --health-interval=10s --health-timeout=5s --health-retries=5
+  #   services:
+  #     mysql:
+  #       image: mysql:8.0
+  #       env:
+  #         MYSQL_ROOT_PASSWORD: ${{ secrets.DB_TEST_PASSWORD }}
+  #         MYSQL_DATABASE: ${{ secrets.DB_TEST_DATABASE }}
+  #       ports:
+  #         - '3306:3306'
+  #       options: --health-cmd="mysqladmin ping -h localhost --password=password" --health-interval=10s --health-timeout=5s --health-retries=5
 
     # steps:
     # # Checkout the repository
