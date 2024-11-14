@@ -3,15 +3,23 @@ name: CD Preprod Workflow
 on: 
   workflow_run:
     workflows: ["CI Workflow"]
-    types:
-      - success
     branches:
       - preprod
-
+    types:
+      - completed
+  push:
+    branches:
+      - 'preprod'
+  pull_request:
+    branches:
+      - preprod
+ 
 jobs:
   preprod-build-deploy:
     runs-on: ubuntu-latest
-    if: ${{ github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'preprod' }}
+
+    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'push' || github.event_name == 'pull_request' }}
+    
     steps:
       - name: Checkout code
         uses: actions/checkout@v2

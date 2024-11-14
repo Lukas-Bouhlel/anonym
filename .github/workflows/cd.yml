@@ -1,44 +1,45 @@
-# name: CD Deploy to Production
+name: CD Deploy to Production
 
-# on:
-#   workflow_run:
-#     workflows: ["CD Preprod Workflow"]
-#     types:
-#       - success
-#   workflow_dispatch:
-#     branches:
-#       - main
- 
-# jobs:
-#   prod-build-deploy:
-#     runs-on: ubuntu-latest
+on:
+  workflow_run:
+    workflows: ["CD Preprod Workflow"]
+    types:
+      - success
+  workflow_dispatch:
+    branches:
+      - main 
+      
+jobs:
+  prod-build-deploy:
+    runs-on: ubuntu-latest
 
-#     steps:
-#       - name: Checkout code
-#         uses: actions/checkout@v2
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
 
-#       - name: Create SSH directory
-#         run: mkdir -p ~/.ssh
+      - name: Create SSH directory
+        run: mkdir -p ~/.ssh
 
-#       - name: Set up known_hosts
-#         run: ssh-keyscan -t rsa -p 53339 51.75.18.155 >> ~/.ssh/known_hosts
+      - name: Set up known_hosts
+        run: ssh-keyscan -t rsa -p 53339 51.75.18.155 >> ~/.ssh/known_hosts
 
-#       - name: Debug Known Hosts
-#         run : cat ~/.ssh/known_hosts
+      - name: Debug Known Hosts
+        run : cat ~/.ssh/known_hosts
 
-#       - name: Set up SSH
-#         uses: webfactory/ssh-agent@v0.8.0
-#         with:
-#           ssh-private-key: ${{ secrets.LUKAS_KEY_PRIVATE }}
+      - name: Set up SSH
+        uses: webfactory/ssh-agent@v0.8.0
+        with:
+          ssh-private-key: ${{ secrets.LUKAS_KEY_PRIVATE }}
 
-#       - name: Deploy to VPS
-#         run: |
-#           ssh -p 53339 lukas@51.75.18.155 << 'EOF'
-#           cd /home/ubuntu/anonym
-#           git checkout main
-#           git pull
-#           cd anonym-front-end
-#           sudo npm run build
-#           cd ..
-#           docker-compose -f docker-compose.prod.yml --env-file .env.production up -d --build
-#           EOF
+      - name: Deploy to VPS
+        run: |
+          ssh -p 53339 lukas@51.75.18.155 << 'EOF'
+          cd /home/ubuntu/anonym
+          git checkout main
+          git pull
+          cd anonym-front-end
+          sudo npm run build
+          cd ..
+          docker-compose -f docker-compose.prod.yml --env-file .env.production up -d --build
+          sudo chown -R ubuntu:lukas /home/ubuntu/anonym
+          EOF
