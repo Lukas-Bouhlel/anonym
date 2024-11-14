@@ -1,8 +1,8 @@
-name: CD Preprod Workflow
+name: cd_preprod_workflow
 
 on: 
   workflow_run:
-    workflows: ["CI Workflow"]
+    workflows: ["ci_worflow"]
     branches:
       - preprod
     types:

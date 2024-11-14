@@ -1,8 +1,8 @@
-name: CD Deploy to Production
+name: cd_deploy_to_production
 
 on:
   workflow_run:
-    workflows: ["CD Preprod Workflow"]
+    workflows: ["cd_preprod_workflow"]
     types:
       - success
   workflow_dispatch:
