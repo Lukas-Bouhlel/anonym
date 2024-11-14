@@ -2,16 +2,22 @@ name: cd_deploy_to_production
 
 on:
   workflow_run:
-    workflows: ["cd_preprod_workflow"]
-    types:
-      - success
-  workflow_dispatch:
+    workflows: ["ci_workflow"]
     branches:
-      - main 
+      - main
+    types:
+      - completed
       
 jobs:
   prod-build-deploy:
     runs-on: ubuntu-latest
+
+    if: >
+      github.event.workflow_run.conclusion == 'success' &&
+      (
+        (github.event.workflow_run.event == 'push' && github.base_ref == 'preprod') || 
+        github.event.workflow_run.event == 'push'
+      )
 
     steps:
       - name: Checkout code
@@ -41,5 +47,4 @@ jobs:
           sudo npm run build
           cd ..
           docker-compose -f docker-compose.prod.yml --env-file .env.production up -d --build
-          sudo chown -R ubuntu:lukas /home/ubuntu/anonym
           EOF
