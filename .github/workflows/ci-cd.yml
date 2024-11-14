@@ -1,13 +1,17 @@
 name: CD Preprod Workflow
 
 on: 
+  workflow_run:
+    workflows: ["CI Workflow"]
+    types:
+      - success
   push:
     branches:
-      - '**'
+      - 'preprod'
   pull_request:
     branches:
       - preprod
-      
+
 jobs:
   preprod-build-deploy:
     runs-on: ubuntu-latest
