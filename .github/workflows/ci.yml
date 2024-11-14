@@ -16,13 +16,14 @@ jobs:
       # Checkout the repository
       - name: Checkout repository
         uses: actions/checkout@v3
-    build_job:
-    stage: build
-    script:
-      - echo "Building the project"
-    trigger:
-      include: "child-pipeline.yml"
-      strategy: depend  # Lance le pipeline enfant seulement si build_job réussit
+
+    # build_job:
+    # stage: build
+    # script:
+    #   - echo "Building the project"
+    # trigger:
+    #   include: "ci-cd.yml"
+    #   strategy: depend  # Lance le pipeline enfant seulement si build_job réussit
 
   #     # ---- Frontend Snyk Security Check ----
   #     - name: Run Snyk on Frontend for vulnerabilities
