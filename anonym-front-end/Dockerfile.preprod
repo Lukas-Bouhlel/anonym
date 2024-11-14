@@ -9,7 +9,7 @@ RUN npm install --legacy-peer-deps
 COPY . .
 
 RUN npm run build -- --mode preprod
-
+ 
 EXPOSE 8100
 
 CMD ["npm", "run", "preview", "--", "--mode", "preprod"]
