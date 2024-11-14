@@ -1,17 +1,18 @@
 name: cd_deploy_to_production
 
 on:
-  pull_request:
+  workflow_run:
+    workflows: ["ci_workflow"] 
     branches:
-      - main
+      - main 
     types:
-      - closed
-  
+      - completed 
+
 jobs:
   prod-build-deploy:
     runs-on: ubuntu-latest
 
-    if: ${{ github.event.pull_request.merged == true && github.event.pull_request.head.ref == 'preprod' }}
+    if: ${{ github.event.workflow_run.conclusion == 'success' && github.event.pull_request.merged == true && github.event.pull_request.head.ref == 'preprod' }}
 
     steps:
       - name: Checkout code
