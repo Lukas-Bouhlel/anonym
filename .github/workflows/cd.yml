@@ -38,7 +38,7 @@ jobs:
           git checkout main
           git pull
           cd anonym-front-end
-          sudo npm run build
+          npm run build
           cd ..
           docker-compose -f docker-compose.prod.yml --env-file .env.production up -d --build
           EOF
