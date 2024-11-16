@@ -34,9 +34,6 @@ services:
     depends_on:
       mysql-db-preprod:
         condition: service_healthy
-    volumes:
-      - ./anonym-back-end:/app
-      - /app/node_modules
     command: sh -c "npx sequelize-cli db:migrate --config app/config/config.js --migrations-path app/migrations && npm start"
     networks:
       - anonym-network-preprod
@@ -55,9 +52,6 @@ services:
       - 8100:8100
     depends_on:
       - backend-preprod
-    volumes:
-      - ./anonym-front-end:/app
-      - /app/node_modules
     networks:
       - anonym-network-preprod
 
@@ -73,7 +67,6 @@ services:
       - ./nginx/nginxconfig.io:/etc/nginx/nginxconfig.io
       - ./nginx/ssl:/etc/letsencrypt
       - ./certbot/www:/var/www/certbot
-      - ./anonym-front-end/dist:/usr/share/nginx/html
     depends_on:
       - frontend-preprod
       - backend-preprod
