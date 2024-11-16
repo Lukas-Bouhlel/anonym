@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <!-- Page d'accueil -->
+  <url>
+    <loc>https://www.ano-nym.fr/</loc>
+    <lastmod>2024-11-16</lastmod>
+    <priority>1.00</priority>
+  </url>
+  
+  <!-- Page Discover -->
+  <url>
+    <loc>https://www.ano-nym.fr/discover</loc>
+    <lastmod>2024-11-16</lastmod>
+    <priority>0.80</priority>
+  </url>
+
+  <!-- Page Support -->
+  <url>
+    <loc>https://www.ano-nym.fr/support</loc>
+    <lastmod>2024-11-16</lastmod>
+    <priority>0.80</priority>
+  </url>
+
+  <!-- Page Legal Notices -->
+  <url>
+    <loc>https://www.ano-nym.fr/legal-notices</loc>
+    <lastmod>2024-11-16</lastmod>
+    <priority>0.80</priority>
+  </url>
+
+  <!-- Page Privacy Policy -->
+  <url>
+    <loc>https://www.ano-nym.fr/privacy-policy</loc>
+    <lastmod>2024-11-16</lastmod>
+    <priority>0.80</priority>
+  </url>
+
+  <!-- Page Terms & Conditions -->
+  <url>
+    <loc>https://www.ano-nym.fr/terms-conditions</loc>
+    <lastmod>2024-11-16</lastmod>
+    <priority>0.80</priority>
+  </url>
+</urlset>

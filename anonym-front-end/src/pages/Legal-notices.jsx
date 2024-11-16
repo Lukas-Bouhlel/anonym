@@ -1,3 +1,5 @@
+import { Helmet } from 'react-helmet-async';
+
 const LegalNotices = () => {
   /**
    * Composant LegalNotices qui représente la page des mentions légales de l'application.
@@ -9,6 +11,11 @@ const LegalNotices = () => {
    */
   return (
     <section className='page-legal-notices'>
+      <Helmet>
+        <title>Mentions légales - Anonym</title>
+        <meta name="description" content="Mentions légales" />
+        <link rel="canonical" href={`https://www.ano-nym.fr/legal-notices`} />
+      </Helmet>
       <div className="page-legal-notices-content">
         <h1 className='page-legal-notices-title'>Mentions légales</h1>
         <p>Dernière mise à jour : 23/08/2024</p>

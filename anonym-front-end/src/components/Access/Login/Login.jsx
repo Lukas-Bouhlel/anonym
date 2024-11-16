@@ -59,7 +59,7 @@ const Login = ({setStatusForm, setStatusAccess}) => {
     return ( 
         <div className="form-container sign-in">
             <form onSubmit={handleSubmit(onSubmit)}>
-                <h1>Se connecter</h1>
+                <h2>Se connecter</h2>
                 <span>utilisez votre e-mail et votre mot de passe</span>
                 <input  aria-label={"Email"} aria-required="true" type="text" placeholder="Email" {...register("email", { required: "L'adresse email est requise." })}/>
                 <input aria-label={"Mot de passe"} aria-required="true" type="password" placeholder="Mot de passe" {...register("password", { required: "Le mot de passe est requis" })}/>

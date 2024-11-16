@@ -17,6 +17,7 @@ const Discover = () => {
         <Helmet>
           <title>Découvrir - Anonym</title>
           <meta name="description" content="Des discussions fluides et sécurisées t'attendent. Profite d'une plateforme de confiance, épurée et agréable. N'hésite plus, rejoins-nous dès maintenant !" />
+          <link rel="canonical" href={`https://www.ano-nym.fr/discover`} />
         </Helmet>
         <div className='page-discover-content'>
           <h1 className='page-reputation-title'>Découvrir</h1>

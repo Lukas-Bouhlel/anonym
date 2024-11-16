@@ -1,3 +1,5 @@
+@use '../base/colors' as *;
+
 #account  {
     color: $white;
     width: 100%;
@@ -71,8 +73,8 @@
                     gap: 10px;
 
                     .input-file {
-                        min-width: 143px;
-                        max-width: 143px;
+                        min-width: 130px;
+                        max-width: 130px;
                         font-size: 14px;
                     }
 

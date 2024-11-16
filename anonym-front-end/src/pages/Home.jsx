@@ -16,7 +16,9 @@ const Home = () => {
   return (
     <section className='page-home'>
       <Helmet>
+        <title>Anonym</title>
         <meta name="description" content="Bienvenue sur ano-nym.fr ! Découvrez une plateforme innovante et conviviale. Profitez d'une expérience unique et rejoignez notre communauté dès maintenant." />
+        <link rel="canonical" href={`https://www.ano-nym.fr`} />
       </Helmet>
       <div className='page-home-icons'>
         <div className='sphere-animation'>

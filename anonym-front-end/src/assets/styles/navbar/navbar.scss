@@ -1,5 +1,5 @@
-@import '../base/mixins';
-@import '../base/colors';
+@use '../base/colors' as *;
+@use '../base/mixins' as *;
 
 #navbar, #navbar-mobile {
     font-weight: 500;
