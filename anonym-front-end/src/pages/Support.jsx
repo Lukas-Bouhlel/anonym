@@ -58,6 +58,7 @@ const Support = () => {
       <Helmet>
         <title>Centre d&apos;aide - Anonym</title>
         <meta name="description" content="Besoin d'aide ? Notre page Support vous guide à travers nos services, FAQ et contact. Obtenez des réponses rapides à toutes vos questions." />
+        <link rel="canonical" href={`https://www.ano-nym.fr/support`} />
       </Helmet>
       <div className='page-support-content'>
         <h1>Centre d&apos;aide</h1>

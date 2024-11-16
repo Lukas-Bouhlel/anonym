@@ -6,6 +6,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faXmark } from '@fortawesome/free-solid-svg-icons';
 import { useLocation  } from 'react-router-dom';
 import PasswordReset from './Reset/PasswordReset';
+import twitterLogo from '../../assets/images/icons/twitter.svg';
 
 /**
  * Composant Access.
@@ -48,14 +49,20 @@ const Access = () => {
             <div className="toggle-container-access">
                 <div className="toggle">
                     <div className="toggle-panel toggle-left">
-                        <h1 className='container-access-title'>De retour !</h1>
+                        <h2 className='container-access-title'>De retour !</h2>
                         <p>Entrez vos informations personnelles pour utiliser toutes les fonctionnalités du site</p>
                         <button onClick={() => handleClick(false)} className="hidden" id="login">Se connecter</button>
+                        <a href="https://x.com/Anonym_Tech" target='_blank' rel="noopener noreferrer" className="hidden link-twitter-anonym">
+                            <img src={twitterLogo} alt='logo-anonym'/>
+                        </a>
                     </div>
                     <div className="toggle-panel toggle-right">
-                        <h1 className='container-access-title'>Bonjour mon ami!</h1>
+                        <h2 className='container-access-title'>Bonjour mon ami!</h2>
                         <p>Inscrivez-vous avec vos informations personnelles pour utiliser toutes les fonctionnalités du site</p>
                         <button onClick={() => handleClick(true)} className="hidden" id="register">S&apos;inscrire</button>
+                        <a href="https://x.com/Anonym_Tech" target='_blank' rel="noopener noreferrer" className="hidden link-twitter-anonym">
+                            <img src={twitterLogo} alt='logo-anonym'/>
+                        </a>
                     </div>
                 </div>
             </div>

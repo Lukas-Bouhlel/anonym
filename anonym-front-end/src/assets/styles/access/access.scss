@@ -1,3 +1,6 @@
+@use '../base/colors' as *;
+@use '../base/mixins' as *;
+
 #container-access {
     opacity: 1;
     transition: opacity 0.9s;
@@ -212,6 +215,14 @@
             color: #333;
         }
     }
+} 
+
+.link-twitter-anonym {
+    margin-top: 6%;
+    img {
+        width: 20px;
+        height: 20px;
+    }
 }
 
 .error-message-form {
@@ -227,7 +238,7 @@
     display: none;
 }
 
-@media (width <= 992px) {
+@media (max-width: 992px) {
     .container-access {
         width: 60%;
         max-width: 60%;
@@ -258,7 +269,7 @@
     }
 }
 
-@media (width <= 600px) {
+@media (max-width: 600px) {
     .container-access {
         width: 90%;
         max-width: 90%;

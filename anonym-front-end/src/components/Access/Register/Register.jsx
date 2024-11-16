@@ -61,7 +61,7 @@ const Register = ({setStatusAccess}) => {
   return (
     <div className="form-container sign-up">
       <form onSubmit={handleSubmit(onSubmit)}>
-        <h1>Créer un compte</h1>
+        <h2>Créer un compte</h2>
         <span>utilisez votre email pour l&apos;inscription</span>
         <input aria-label={"Name"} aria-required="true" type="text" placeholder="Name" {...register("name", { required: "Le nom d'utilisateur est requis" })} />
         <input aria-label={"Email"} aria-required="true" type="email" placeholder="Email" {...register("email", { required: "L'adresse email est requise" })} />

@@ -1,5 +1,5 @@
-@import '../base/mixins';
-@import '../access/access';
+@use '../base/colors' as *;
+@use '../base/mixins' as *;
 
 .page-home {
     background: $black;

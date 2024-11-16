@@ -1,3 +1,5 @@
+import { Helmet } from 'react-helmet-async';
+
 const PrivacyPolicy = () => {
   /**
    * Composant PrivacyPolicy qui représente la page de la politique de confidentialité de l'application.
@@ -9,6 +11,11 @@ const PrivacyPolicy = () => {
    */
   return (
     <section className='page-privacy-policy'>
+       <Helmet>
+        <title>Politique de Confidentialité - Anonym</title>
+        <meta name="description" content="Politique de Confidentialité" />
+        <link rel="canonical" href={`https://www.ano-nym.fr/privacy-policy`} />
+      </Helmet>
       <div className="page-privacy-policy-content">
         <h1 className='page-privacy-policy-title'>Politique de Confidentialité</h1>
         <p>Dernière mise à jour : 21/08/2024</p>
