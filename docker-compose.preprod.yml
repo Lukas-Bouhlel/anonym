@@ -55,9 +55,6 @@ services:
       - 8100:8100
     depends_on:
       - backend-preprod
-    volumes:
-      - ./anonym-front-end:/app
-      - /app/node_modules
     networks:
       - anonym-network-preprod
 

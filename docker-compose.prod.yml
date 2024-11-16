@@ -55,9 +55,6 @@ services:
         - VITE_NODE_ENV=production
     depends_on:
       - backend
-    volumes:
-      - ./anonym-front-end:/app
-      - /app/node_modules
     networks:
       - anonym-network
 
