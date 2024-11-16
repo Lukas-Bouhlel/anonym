@@ -73,6 +73,7 @@ services:
       - ./nginx/nginxconfig.io:/etc/nginx/nginxconfig.io
       - ./nginx/ssl:/etc/letsencrypt
       - ./certbot/www:/var/www/certbot
+      - ./anonym-front-end/dist:/usr/share/nginx/html
     depends_on:
       - frontend-preprod
       - backend-preprod
