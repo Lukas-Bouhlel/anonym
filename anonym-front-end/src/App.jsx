@@ -20,14 +20,14 @@ ReactGA.initialize("G-S6QML510VW", {
  * @component
  */
 const App = () => {
-  
   /**
    * Hook useEffect qui charge le script de gestion de consentement Axeptio lors du montage du composant.
    * Axeptio est utilisé pour gérer le consentement aux cookies de l'application.
    *
    * @function
    */
-  useEffect(() => {
+   useEffect(() => {
+    // Paramètres de configuration Axeptio
     window.axeptioSettings = {
       clientId: "66c87e40923684660f8565de",
       cookiesVersion: "anonym-fr-EU",
@@ -37,28 +37,26 @@ const App = () => {
           ad_storage: "denied",
           ad_user_data: "denied",
           ad_personalization: "denied",
-          wait_for_update: 500
-        }
-      }
+          wait_for_update: 500,
+        },
+      },
     };
-  
-    /**
-     * Crée dynamiquement et ajoute la balise de script Axeptio dans le body du document.
-     * Gère les erreurs de chargement du script en les enregistrant dans la console.
-     */
+
+    // Chargement dynamique du script Axeptio uniquement s'il n'est pas encore chargé
     if (!window.AxeptioSDKLoaded) {
-      const script = document.createElement("script");
-      script.async = true;
-      script.src = "https://static.axept.io/sdk.js";
-      script.onerror = () => {
-        console.error("Error loading Axeptio script");
-      };
-      document.body.appendChild(script);
-      window.AxeptioSDKLoaded = true;
-      window.axeptioSettings.debug = true;
-      script.onerror = () => {
-        console.error("Error loading Axeptio script");
-      };
+      if (!document.querySelector('script[src="https://static.axept.io/sdk.js"]')) {
+        const script = document.createElement("script");
+        script.async = true;
+        script.src = "https://static.axept.io/sdk.js";
+        script.onload = () => {
+          console.log("Axeptio SDK loaded successfully");
+        };
+        script.onerror = () => {
+          console.error("Failed to load Axeptio SDK");
+        };
+        document.body.appendChild(script);
+        window.AxeptioSDKLoaded = true;
+      }
     }
   }, []);
 
@@ -70,10 +68,9 @@ const App = () => {
   return (
     <>
       <Helmet>
-        <title>Anonym</title>
         <meta name="google-site-verification" content="i5ppM2zWvLg1vGLBwXg5beniqRJvRjc-t8Iczu5UVSQ" />
       </Helmet>
-    <Router/>
+      <Router/>
     </>
   )
 }

@@ -1,3 +1,6 @@
+@use '../base/colors' as *;
+@use '../base/mixins' as *;
+
 #container-access {
     opacity: 1;
     transition: opacity 0.9s;
@@ -211,6 +214,15 @@
             text-decoration: none;
             color: #333;
         }
+    }
+} 
+
+.link-twitter-anonym {
+    margin-top: 6%;
+
+    img {
+        width: 20px;
+        height: 20px;
     }
 }
 

@@ -1,29 +1,30 @@
 // fonts
-@import 'https://fonts.googleapis.com/css2?family=Montserrat:wght@100;200;300;400;500;600;700;800;900&display=swap';
+// @use 'https://fonts.googleapis.com/css2?family=Montserrat:wght@100;200;300;400;500;600;700;800;900&display=swap';
 
 // colors
-@import './base/colors';
-@import './base/mixins';
+@forward  './base/colors'; 
+@forward  './base/mixins';
 
 // pages
-@import './home/home';
-@import './discover/discover';
-@import './support/support';
-@import './reputation/reputation';
-@import './privacy-policy/privacy-policy';
-@import './terms-conditions/terms-conditions';
-@import './legal-notices/legal-notices';
-@import './sidebar/sidebar';
-@import './app/app';
-@import './friends/friends';
-@import './profile/profile';
-@import './profile/profils';
-@import './profile/account';
-@import './paiement/invoice';
-@import './paiement/inventory';
-@import './paiement/shop';
-@import './paiement/success';
-@import './access/reset';
-@import './base/popup';
-@import './admin/admin';
-@import './messages/channelform';
+@use './home/home' as *;
+@use './discover/discover' as *;
+@use './support/support' as *;
+@use './reputation/reputation' as *;
+@use './privacy-policy/privacy-policy' as *;
+@use './terms-conditions/terms-conditions' as *;
+@use './legal-notices/legal-notices' as *;
+@use './sidebar/sidebar' as *;
+@use './app/app' as *;
+@use './friends/friends' as *;
+@use './profile/profile' as *;
+@use './profile/profils' as *;
+@use './profile/account' as *;
+@use './paiement/invoice' as *;
+@use './paiement/inventory' as *;
+@use './paiement/shop' as *;
+@use './paiement/success' as *;
+@use './access/access' as *;
+@use './access/reset' as *;
+@use './base/popup' as *;
+@use './admin/admin' as *;
+@use './messages/channelform' as *;

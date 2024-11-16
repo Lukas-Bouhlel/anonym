@@ -27,7 +27,7 @@ import Admin from "../pages/Admin.jsx";
  */
 const Router = () => {
   return (
-    <BrowserRouter>
+    <BrowserRouter future={{ v7_startTransition: true }}>
       <ApiProvider>
         <PopupProvider>
           <AuthProvider>
@@ -48,6 +48,7 @@ const Router = () => {
                   <Route path="/profile" element={<PrivateRoute><Profile /></PrivateRoute>} />
                   <Route path="/app/success" element={<PrivateRoute><Success /></PrivateRoute>} />
                   <Route path="/app" element={<PrivateRoute><App /></PrivateRoute>} />
+                  <Route path="*" element={<Home />} />
                 </Routes>
               </Layout>
             </UserProvider>

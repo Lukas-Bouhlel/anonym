@@ -1,3 +1,5 @@
+import { Helmet } from 'react-helmet-async';
+
 const TermsConditions = () => {
 
     /**
@@ -9,6 +11,11 @@ const TermsConditions = () => {
      */
     return (
         <section className='page-terms-conditions'>
+            <Helmet>
+                <title>Conditions Générales de Vente (CGV) et d&apos;Utilisation (CGU) - Anonym</title>
+                <meta name="description" content="Conditions Générales de Vente (CGV) et d&apos;Utilisation (CGU)" />
+                <link rel="canonical" href={`https://www.ano-nym.fr/terms-conditions`} />
+            </Helmet>
             <div className="page-terms-conditions-content">
                 <h1 className="page-terms-conditions-title">Conditions Générales de Vente (CGV) et d&apos;Utilisation (CGU)</h1>
                 <p>Dernière mise à jour : 21/08/2024</p>
