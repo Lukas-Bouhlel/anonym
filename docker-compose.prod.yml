@@ -34,9 +34,6 @@ services:
     depends_on:
       mysql-db:
         condition: service_healthy
-    volumes:
-      - ./anonym-back-end:/app
-      - /app/node_modules
     command: sh -c "npx sequelize-cli db:migrate --config app/config/config.js --migrations-path app/migrations && npm start"
     networks:
       - anonym-network
