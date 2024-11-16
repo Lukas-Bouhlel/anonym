@@ -219,6 +219,7 @@
 
 .link-twitter-anonym {
     margin-top: 6%;
+
     img {
         width: 20px;
         height: 20px;
@@ -238,7 +239,7 @@
     display: none;
 }
 
-@media (max-width: 992px) {
+@media (width <= 992px) {
     .container-access {
         width: 60%;
         max-width: 60%;
@@ -269,7 +270,7 @@
     }
 }
 
-@media (max-width: 600px) {
+@media (width <= 600px) {
     .container-access {
         width: 90%;
         max-width: 90%;
