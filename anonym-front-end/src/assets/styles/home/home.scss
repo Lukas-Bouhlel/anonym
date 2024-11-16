@@ -2,7 +2,7 @@
 @use '../base/mixins' as *;
 
 .page-home {
-    background: $black;
+    background: #ff5959;
     height: 100vh;
 
     @include display(flex, center, column);
