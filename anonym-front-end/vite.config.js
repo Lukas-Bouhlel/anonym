@@ -4,8 +4,6 @@ import svgr from "vite-plugin-svgr";
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => {
-  
-  console.log(mode);
 
   if (mode === 'production') {
     return {

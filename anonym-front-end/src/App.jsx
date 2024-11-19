@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import React, { useEffect } from 'react';
 import Router from './router/Router.jsx';
 import ReactGA from "react-ga4";
 import './assets/styles/index.scss';
@@ -48,12 +48,6 @@ const App = () => {
         const script = document.createElement("script");
         script.async = true;
         script.src = "https://static.axept.io/sdk.js";
-        script.onload = () => {
-          console.log("Axeptio SDK loaded successfully");
-        };
-        script.onerror = () => {
-          console.error("Failed to load Axeptio SDK");
-        };
         document.body.appendChild(script);
         window.AxeptioSDKLoaded = true;
       }
