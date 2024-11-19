@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import { useEffect } from 'react';
 import Router from './router/Router.jsx';
 import ReactGA from "react-ga4";
 import './assets/styles/index.scss';
