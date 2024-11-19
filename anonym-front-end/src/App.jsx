@@ -48,12 +48,6 @@ const App = () => {
         const script = document.createElement("script");
         script.async = true;
         script.src = "https://static.axept.io/sdk.js";
-        script.onload = () => {
-          console.log("Axeptio SDK loaded successfully");
-        };
-        script.onerror = () => {
-          console.error("Failed to load Axeptio SDK");
-        };
         document.body.appendChild(script);
         window.AxeptioSDKLoaded = true;
       }
