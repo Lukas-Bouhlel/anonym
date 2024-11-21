@@ -27,7 +27,7 @@ import Admin from "../pages/Admin.jsx";
  */
 const Router = () => {
   return (
-    <BrowserRouter future={{ v7_startTransition: true }}>
+    <BrowserRouter future={{ v7_relativeSplatPath: true, v7_startTransition: true }}>
       <ApiProvider>
         <PopupProvider>
           <AuthProvider>
