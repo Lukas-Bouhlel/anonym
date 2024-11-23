@@ -227,8 +227,6 @@ const ChannelMessages = ({ user, socket, channel, setPage }) => {
         return date.toLocaleString('fr-FR', options).replace(',', ''); // Remplacer la virgule par un espace pour un format plus propre
     };    
 
-    console.log(messages)
-
     return (
         <div className='message-container'>
             <div className='message-container-toolbar'>
