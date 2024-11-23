@@ -37,7 +37,7 @@ jobs:
           ssh -p 53339 lukas@51.75.18.155 << 'EOF'
           cd /home/ubuntu/anonym
           git checkout preprod
-          git pull
+          git pull --rebase
           cd anonym-front-end
           npm run build
           cd ..
