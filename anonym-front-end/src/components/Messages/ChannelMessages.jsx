@@ -67,6 +67,8 @@ const ChannelMessages = ({ user, socket, channel, setPage }) => {
     useEffect(() => {
         if (initialMessages.length > 0) {
             setMessages(initialMessages);
+        } else {
+            setMessages([]);
         }
     }, [initialMessages]);
 
@@ -224,6 +226,8 @@ const ChannelMessages = ({ user, socket, channel, setPage }) => {
         const date = new Date(dateString);
         return date.toLocaleString('fr-FR', options).replace(',', ''); // Remplacer la virgule par un espace pour un format plus propre
     };    
+
+    console.log(messages)
 
     return (
         <div className='message-container'>
