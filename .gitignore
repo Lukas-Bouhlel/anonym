@@ -151,3 +151,4 @@ Thumbs.db
 # Ignorer les docs générés
 /anonym-back-end/docs
 /anonym-front-end/docs
+/anonym-front-end/.env.production

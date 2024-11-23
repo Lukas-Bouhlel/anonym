@@ -220,7 +220,7 @@ Sidebar.propTypes = {
     setPage: PropTypes.func.isRequired,
     setModalVisible: PropTypes.func.isRequired,
     canal: PropTypes.shape({
-        channel_id: PropTypes.string,
+        channel_id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
     }),
     setChannel: PropTypes.func.isRequired,
     socket: PropTypes.object.isRequired,
