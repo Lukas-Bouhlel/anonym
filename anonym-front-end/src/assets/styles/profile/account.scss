@@ -69,12 +69,11 @@
 
                 .content-file-edit {
                     display: flex;
-                    align-items: center;
+                    align-items: flex-start;
                     gap: 10px;
+                    flex-direction: column;
 
                     .input-file {
-                        min-width: 130px;
-                        max-width: 130px;
                         font-size: 14px;
                     }
 
