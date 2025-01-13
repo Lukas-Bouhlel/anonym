@@ -23,7 +23,7 @@ const App = () => {
   const [page, setPage] = useState("friends");
   const [modalVisible, setModalVisible] = useState(false);
   const [channel, setChannel] = useState();
-
+  
   return (
     <div id="app">
       {socket && (
