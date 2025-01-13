@@ -130,7 +130,7 @@ const Shop = ({ user }) => {
             {!shop.isLoading && !inventory.isLoading && (
                 <div className="shop">
                     <div className="card-deck">
-                        {shop?.data && shop.data.length > 0 ? (
+                        {shop.data && shop.data.length > 0 ? (
                             shop.data.map((item, index) => (
                                 <div className="card shop-card-content" key={index}>
                                     <div className="shop-card-content-header">
