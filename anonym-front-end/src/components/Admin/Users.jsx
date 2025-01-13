@@ -154,7 +154,7 @@ const Users = ({ users, refetch }) => {
                 <h1>Utilisateurs</h1>
                 <Button onClick={() => setCreateOpen(true)} className="mb-3">Créer un utilisateur</Button>
             </div>
-            {users && data.length > 0 ? ( 
+            {data.length > 0 ? ( 
                 <div className="table-responsive-scroll">
                     <table className="table align-middle mb-0 bg-white">
                         <thead className="bg-light">
