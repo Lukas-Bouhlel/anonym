@@ -23,7 +23,7 @@ const Account = ({ user, setUser }) => {
     const { register, handleSubmit, setValue, reset, formState: { errors } } = useForm({
         defaultValues: {
             username: user.username || "",
-            email: user?.email || ""
+            email: user.email || ""
         }
     });
 

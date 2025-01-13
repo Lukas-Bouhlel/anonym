@@ -210,7 +210,7 @@ const Shop = ({ shop, refetch }) => {
           Créer un article
         </Button>
       </div>
-      {shop && data.length > 0 ? (
+      {data.length > 0 ? (
         <div className="table-responsive-scroll">
           <table className="table align-middle mb-0 bg-white">
             <thead className="bg-light">

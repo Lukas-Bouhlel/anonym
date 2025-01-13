@@ -229,7 +229,7 @@ const Friends = () => {
                                         <li key={index} className="list-group-item list-friends">
                                             <div className="content-friend">
                                                 <div className="profile-content-infos-img">
-                                                    {friend && friend.FriendDetails.Inventories[0].Shop.content && (
+                                                    {friend.FriendDetails.Inventories[0]?.Shop?.content && (
                                                         <img className="avatar-profile decoration-profile" src={`${friend.FriendDetails.Inventories[0].Shop.content}`} alt="hugenerd" width="50" height="50"/>
                                                     )}
                                                     <img src={`${friend.FriendDetails.avatar}`} alt="avatar" width="50" height="50" className="rounded-circle avatar-profile" />
