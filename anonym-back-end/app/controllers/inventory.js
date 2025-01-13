@@ -250,8 +250,8 @@ exports.update = async (req, res) => {
             return res.status(404).json({ message: 'Inventory item not found.' });
         }
 
-        inventoryItem.user_id = user_id || inventoryItem.user_id;
-        inventoryItem.article_id = article_id || inventoryItem.article_id;
+        inventoryItem.user_id = user_id;
+        inventoryItem.article_id = article_id;
 
         await inventoryItem.save();
         res.status(200).json(inventoryItem);

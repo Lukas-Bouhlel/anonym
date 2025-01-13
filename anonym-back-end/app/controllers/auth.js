@@ -138,7 +138,7 @@ exports.login = async (req, res) => {
         const { identifier, password } = req.body;
 
         // Vérifiez que le champ 'identifier' et le mot de passe sont fournis
-        if (!password) {
+        if (!identifier) {
             return res.status(400).json({ message: "Votre identifiant est requis." });
         }
 
