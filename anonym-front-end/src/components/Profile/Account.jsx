@@ -15,8 +15,8 @@ import Popup from "../Utils/Popup";
  */
 const Account = ({ user, setUser }) => {
     const [avatarFile, setAvatarFile] = useState(null);
-    const [previewUsername, setPreviewUsername] = useState(user?.username || "");
-    const [previewAvatar, setPreviewAvatar] = useState(user?.avatar || "");
+    const [previewUsername, setPreviewUsername] = useState(user.username || "");
+    const [previewAvatar, setPreviewAvatar] = useState(user.avatar || "");
     const [showPopup, setShowPopup] = useState(false);
     const { api_url } = useApi();// Utilise le contexte pour obtenir l'URL de l'API
 
@@ -196,7 +196,7 @@ const Account = ({ user, setUser }) => {
                     <div className="profils-infos">
                         <div className="profils-infos-first">
                             <div className="profile-content-infos-img">
-                                {user?.Inventories?.[0]?.Shop?.content && (
+                                {user.Inventories?.[0]?.Shop?.content && (
                                     <img className="avatar-profile decoration-profile" src={`${user.Inventories[0].Shop.content}`} alt="hugenerd" width="80" height="80"/>
                                 )}
                                 <img className="rounded-circle avatar-profile image-profile" src={`${previewAvatar || user.avatar}`} alt="hugenerd" width="80" height="80" />

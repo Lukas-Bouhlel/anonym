@@ -166,7 +166,7 @@ const Sidebar = ({ user, page, setPage, setModalVisible, canal, setChannel, sock
                         <div className="d-flex align-items-center sidebar-profile-content">
                             <div className="sidebar-profile-content-infos">
                                 <div className="profile-content-infos-img">
-                                    {user?.Inventories?.[0]?.Shop?.content && (
+                                    {user.Inventories?.[0]?.Shop?.content && (
                                         <img className="avatar-profile decoration-profile" src={`${user.Inventories[0].Shop.content}`} alt="hugenerd" width="40" height="40" />
                                     )}
                                     <img className="rounded-circle avatar-profile image-profile" src={`${user.avatar}`} alt="hugenerd" width="40" height="40" />
