@@ -58,7 +58,10 @@ const App = () => {
                 ) : page === "shop" ? (
                   <Shop user={user} logo={logoBuy} />
                 ) : page === "channel" ? (
-                  <ChannelForm />
+                  <ChannelForm 
+                    show={modalVisible}
+                    onClose={() => setModalVisible(false)}
+                  />
                 ) : (
                   page === "canal" && (
                     <ChannelMessages

@@ -8,7 +8,7 @@ import anime from 'animejs';
  */
 const useSphereAnimation  = () => {
   const animationsRef = useRef([]);
-  //Animation de la sphère avec la library anime.js
+  
   useEffect(() => {
     const sphereEl = document.querySelector('.sphere-animation');
     const spherePathEls = sphereEl?.querySelectorAll('.sphere path') || [];
@@ -20,8 +20,9 @@ const useSphereAnimation  = () => {
      * @param {HTMLElement} el - L'élément à ajuster.
      * @param {number} [padding=0] - Le padding à appliquer lors de l'ajustement.
      */
-    function fitElementToParent(el, padding) {
+    function fitElementToParent(el, padding = 0) {
       let timeout = null;
+      // Fonction de redimensionnement
       function resize() {
         if (timeout) clearTimeout(timeout);
         anime.set(el, { scale: 1 });
@@ -32,11 +33,16 @@ const useSphereAnimation  = () => {
         const ratio = parentOffsetWidth / elOffsetWidth;
         timeout = setTimeout(() => anime.set(el, { scale: ratio }), 10);
       }
+
       resize();
-      window.addEventListener('resize', resize);
+      // Retourne la fonction resize pour pouvoir l'utiliser dans le nettoyage
+      return resize;
     }
 
-    fitElementToParent(sphereEl);
+    // Appel à fitElementToParent et récupération de la fonction resize
+    const resizeListener = fitElementToParent(sphereEl);
+    // Ajout de l'écouteur d'événements
+    window.addEventListener('resize', resizeListener);
 
     const breathAnimation = anime({
       begin: () => {
@@ -101,12 +107,13 @@ const useSphereAnimation  = () => {
     }
     init();
 
+    // Cleanup: remove the event listener on unmount
     return () => {
-      window.removeEventListener('resize', fitElementToParent);
+      window.removeEventListener('resize', resizeListener);
     };
-  }, []);
+  }, []); // Empty dependency array ensures effect runs only once on mount/unmount
 
   return animationsRef;
 };
 
-export default useSphereAnimation ;
+export default useSphereAnimation;
