@@ -34,7 +34,7 @@
     "react-ga4": "^2.1.0",
     "react-helmet-async": "^2.0.5",
     "react-hook-form": "^7.49.3",
-    "react-router-dom": "^6.21.0",
+    "react-router-dom": "^6.30.3",
     "rsuite": "^5.70.3",
     "sass": "^1.79.4",
     "socket.io-client": "^4.8.0",
