@@ -16,6 +16,10 @@ import '../utils/app_date_format.dart';
 import '../widgets/app_remote_image.dart';
 import '../widgets/chrome/moji_back_button.dart';
 
+import 'dart:io';
+import 'package:flutter/foundation.dart' show kIsWeb, Uint8List;
+import 'package:image_picker/image_picker.dart';
+
 part 'channels_parts/channel_sheet_widgets.dart';
 part 'channels_parts/channel_list_widgets.dart';
 part 'channels_parts/channel_chat_widgets.dart';
@@ -74,7 +78,9 @@ class _ChannelsScreenState extends State<ChannelsScreen> {
             currentUserFrameUrl: _activeFrameUrlFromUser(currentUser),
             messageController: _messageController,
             onBack: app.closeSelectedChannelView,
-            onSend: () => _sendMessage(app),
+            onSendText: () => _sendText(app),
+            onSendImage: (path, bytes, fileName, text) =>
+                _sendImage(app, path, bytes, fileName, text),
             onInfo: () => _showChannelInfoSheet(context, app),
             onEdit: (message) => _editMessage(context, app, message),
             onDelete: (message) =>
@@ -184,6 +190,30 @@ class _ChannelsScreenState extends State<ChannelsScreen> {
           ),
         );
       },
+    );
+  }
+
+  void _sendText(AppController app) {
+    final text = _messageController.text.trim();
+    if (text.isEmpty) return;
+    app.clearMessageError();
+    app.sendMessage(text);
+    _messageController.clear();
+  }
+
+  Future<void> _sendImage(
+    AppController app,
+    String? filePath,
+    Uint8List? bytes,
+    String? fileName,
+    String textContent,
+  ) async {
+    app.clearMessageError();
+    await app.sendMessageWithImage(
+      imagePath: filePath,
+      imageBytes: bytes,
+      imageFileName: fileName,
+      content: textContent,
     );
   }
 
@@ -540,14 +570,6 @@ class _ChannelsScreenState extends State<ChannelsScreen> {
         );
       },
     );
-  }
-
-  void _sendMessage(AppController app) {
-    final text = _messageController.text.trim();
-    if (text.isEmpty) return;
-    app.clearMessageError();
-    app.sendMessage(text);
-    _messageController.clear();
   }
 
   String? _activeFrameUrlFromUser(UserModel? user) {

@@ -77,6 +77,11 @@ httpServer.listen(port, () => {
 });
 
 /**
+ * Exposition de l'instance io pour les contrôleurs
+ */
+app.locals.io = io;
+
+/**
  * Initialisation des sockets
  * 
  * @function initializeSocket

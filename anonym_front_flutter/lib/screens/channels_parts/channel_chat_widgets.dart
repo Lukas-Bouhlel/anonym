@@ -1,6 +1,6 @@
 part of '../channels_screen.dart';
 
-class _ChatDetailView extends StatelessWidget {
+class _ChatDetailView extends StatefulWidget {
   const _ChatDetailView({
     required this.currentUserId,
     required this.currentUserName,
@@ -8,7 +8,8 @@ class _ChatDetailView extends StatelessWidget {
     required this.currentUserFrameUrl,
     required this.messageController,
     required this.onBack,
-    required this.onSend,
+    required this.onSendText,
+    required this.onSendImage,
     required this.onInfo,
     required this.onEdit,
     required this.onDelete,
@@ -24,7 +25,17 @@ class _ChatDetailView extends StatelessWidget {
   final String? currentUserFrameUrl;
   final TextEditingController messageController;
   final VoidCallback onBack;
-  final VoidCallback onSend;
+  final VoidCallback onSendText;
+
+  /// Appelé avec (filePath, bytes, fileName, textContent).
+  /// Sur mobile : filePath est renseigné ; sur web : bytes est renseigné.
+  final Future<void> Function(
+    String? filePath,
+    Uint8List? bytes,
+    String? fileName,
+    String textContent,
+  ) onSendImage;
+
   final VoidCallback onInfo;
   final ValueChanged<ChannelMessageModel> onEdit;
   final ValueChanged<ChannelMessageModel> onDelete;
@@ -34,17 +45,84 @@ class _ChatDetailView extends StatelessWidget {
   final bool showGroupMenu;
 
   @override
+  State<_ChatDetailView> createState() => _ChatDetailViewState();
+}
+
+class _ChatDetailViewState extends State<_ChatDetailView> {
+  // Image sélectionnée en attente d'envoi
+  String? _pendingImagePath;
+  Uint8List? _pendingImageBytes;
+  String? _pendingImageFileName;
+
+  bool _isSendingImage = false;
+
+  Future<void> _pickImage() async {
+    final result = await ImagePicker().pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 85,
+    );
+    if (result == null) return;
+
+    if (kIsWeb) {
+      final bytes = await result.readAsBytes();
+      setState(() {
+        _pendingImageBytes = bytes;
+        _pendingImagePath = null;
+        _pendingImageFileName = result.name;
+      });
+    } else {
+      setState(() {
+        _pendingImagePath = result.path;
+        _pendingImageBytes = null;
+        _pendingImageFileName = result.name;
+      });
+    }
+  }
+
+  void _clearPendingImage() {
+    setState(() {
+      _pendingImagePath = null;
+      _pendingImageBytes = null;
+      _pendingImageFileName = null;
+    });
+  }
+
+  bool get _hasPendingImage =>
+      _pendingImagePath != null || _pendingImageBytes != null;
+
+  Future<void> _handleSend() async {
+    if (_hasPendingImage) {
+      setState(() => _isSendingImage = true);
+      try {
+        await widget.onSendImage(
+          _pendingImagePath,
+          _pendingImageBytes,
+          _pendingImageFileName,
+          widget.messageController.text.trim(),
+        );
+        widget.messageController.clear();
+        _clearPendingImage();
+      } finally {
+        if (mounted) setState(() => _isSendingImage = false);
+      }
+    } else {
+      widget.onSendText();
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     return SafeArea(
       bottom: false,
       child: Column(
         children: [
+          // ── Header ──────────────────────────────────────────────────────
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 10, 20, 14),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                MojiBackButton(onTap: onBack),
+                MojiBackButton(onTap: widget.onBack),
                 const SizedBox(width: 10),
                 Container(
                   width: 44,
@@ -59,7 +137,7 @@ class _ChatDetailView extends StatelessWidget {
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(12),
                     child: AppRemoteImage(
-                      url: selected.coverImage,
+                      url: widget.selected.coverImage,
                       width: 44,
                       height: 44,
                       fit: BoxFit.cover,
@@ -73,7 +151,7 @@ class _ChatDetailView extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        selected.name,
+                        widget.selected.name,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
@@ -86,23 +164,26 @@ class _ChatDetailView extends StatelessWidget {
                     ],
                   ),
                 ),
-                if (showGroupMenu)
-                  _HeaderIcon(icon: Icons.more_vert, onTap: onInfo),
+                if (widget.showGroupMenu)
+                  _HeaderIcon(icon: Icons.more_vert, onTap: widget.onInfo),
               ],
             ),
           ),
           Divider(height: 1, color: AppColors.cFCFAFE.withValues(alpha: 0.22)),
-          if (loading) const LinearProgressIndicator(minHeight: 2),
+          if (widget.loading) const LinearProgressIndicator(minHeight: 2),
+
+          // ── Messages list ────────────────────────────────────────────────
           Expanded(
             child: Stack(
               children: [
                 Positioned.fill(
                   child: ListView.builder(
-                    padding: const EdgeInsets.fromLTRB(14, 18, 14, 190),
-                    itemCount: messages.length,
+                    padding: const EdgeInsets.fromLTRB(14, 18, 14, 220),
+                    itemCount: widget.messages.length,
                     itemBuilder: (context, index) {
-                      final message = messages[index];
-                      final previous = index > 0 ? messages[index - 1] : null;
+                      final message = widget.messages[index];
+                      final previous =
+                          index > 0 ? widget.messages[index - 1] : null;
                       final messageSenderId =
                           (message.sender?.id != 0
                               ? message.sender?.id
@@ -121,9 +202,9 @@ class _ChatDetailView extends StatelessWidget {
                           previous.createdAt!.month ==
                               message.createdAt!.month &&
                           previous.createdAt!.day == message.createdAt!.day;
-                      final own = messageSenderId == currentUserId;
-                      final next = index + 1 < messages.length
-                          ? messages[index + 1]
+                      final own = messageSenderId == widget.currentUserId;
+                      final next = index + 1 < widget.messages.length
+                          ? widget.messages[index + 1]
                           : null;
                       final msgHour = message.createdAt == null
                           ? null
@@ -156,15 +237,15 @@ class _ChatDetailView extends StatelessWidget {
                           previous != null &&
                           previousSenderId == messageSenderId &&
                           prevHour == msgHour;
-
                       final sameSenderAsNext =
                           next != null &&
                           nextSenderId == messageSenderId &&
                           nextHour == msgHour;
-
                       final isLastInSenderBlock = !sameSenderAsNext;
-                      final showAuthorBlock = !own && !sameSenderAsPrevious;
-                      final showOwnAuthorBlock = own && !sameSenderAsPrevious;
+                      final showAuthorBlock =
+                          !own && !sameSenderAsPrevious;
+                      final showOwnAuthorBlock =
+                          own && !sameSenderAsPrevious;
                       final senderName =
                           (message.sender?.username ?? '').trim().isNotEmpty
                           ? message.sender!.username
@@ -189,7 +270,8 @@ class _ChatDetailView extends StatelessWidget {
                         children: [
                           if (!sameDay && message.createdAt != null)
                             Padding(
-                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              padding:
+                                  const EdgeInsets.symmetric(vertical: 12),
                               child: Row(
                                 children: [
                                   Expanded(
@@ -229,95 +311,137 @@ class _ChatDetailView extends StatelessWidget {
                             showAuthorBlock: showAuthorBlock,
                             showOwnAuthorBlock: showOwnAuthorBlock,
                             senderName: senderName,
-                            ownName: (currentUserName ?? '').trim().isNotEmpty
-                                ? currentUserName!
+                            ownName: (widget.currentUserName ?? '')
+                                    .trim()
+                                    .isNotEmpty
+                                ? widget.currentUserName!
                                 : 'Moi',
                             senderAvatarUrl: message.sender?.avatar,
-                            ownAvatarUrl: currentUserAvatarUrl,
+                            ownAvatarUrl: widget.currentUserAvatarUrl,
                             senderFrameUrl: _activeFrameUrlFromUser(
                               message.sender,
                             ),
-                            ownFrameUrl: currentUserFrameUrl,
+                            ownFrameUrl: widget.currentUserFrameUrl,
                             showBlockFooter: isLastInSenderBlock,
                             blockFooterLabel: blockFooterLabel,
-                            onEdit: own ? () => onEdit(message) : null,
-                            onDelete: own ? () => onDelete(message) : null,
+                            onEdit:
+                                own ? () => widget.onEdit(message) : null,
+                            onDelete:
+                                own ? () => widget.onDelete(message) : null,
                           ),
                         ],
                       );
                     },
                   ),
                 ),
+
+                // ── Input bar (fixed bottom) ─────────────────────────────
                 Positioned(
                   left: 0,
                   right: 0,
                   bottom: 0,
                   child: Padding(
                     padding: const EdgeInsets.fromLTRB(14, 6, 14, 20),
-                    child: Container(
-                      constraints: const BoxConstraints(
-                        minHeight: 52,
-                        maxHeight: 180,
-                      ),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 10,
-                      ),
-                      decoration: BoxDecoration(
-                        gradient: AppGradients.gB1BCFBTo393566,
-                        borderRadius: BorderRadius.circular(25),
-                      ),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          _GradientSquareIcon(icon: Icons.add, onTap: () {}),
-                          const SizedBox(width: 5),
-                          Expanded(
-                            child: TextField(
-                              controller: messageController,
-                              keyboardType: TextInputType.multiline,
-                              textInputAction: TextInputAction.newline,
-                              minLines: 1,
-                              maxLines: 5,
-                              textAlignVertical: TextAlignVertical.bottom,
-                              onSubmitted: (_) => onSend(),
-                              cursorColor: AppColors.whiteColor,
-                              style: const TextStyle(
-                                color: AppColors.whiteColor,
-                                fontSize: 15,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        // ── Image preview ────────────────────────────────
+                        if (_hasPendingImage)
+                          _ImagePreviewBar(
+                            imagePath: _pendingImagePath,
+                            imageBytes: _pendingImageBytes,
+                            onRemove: _clearPendingImage,
+                          ),
+                        if (_hasPendingImage) const SizedBox(height: 6),
+
+                        // ── Text + send ──────────────────────────────────
+                        Container(
+                          constraints: const BoxConstraints(
+                            minHeight: 52,
+                            maxHeight: 180,
+                          ),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 14,
+                            vertical: 10,
+                          ),
+                          decoration: BoxDecoration(
+                            gradient: AppGradients.gB1BCFBTo393566,
+                            borderRadius: BorderRadius.circular(25),
+                          ),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: [
+                              _GradientSquareIcon(
+                                icon: Icons.add,
+                                onTap: _isSendingImage ? () {} : _pickImage,
                               ),
-                              decoration: InputDecoration(
-                                hintText: 'Envoyez un message...',
-                                hintStyle: TextStyle(
-                                  color: AppColors.cFCFAFE.withValues(
-                                    alpha: 0.68,
+                              const SizedBox(width: 5),
+                              Expanded(
+                                child: TextField(
+                                  controller: widget.messageController,
+                                  keyboardType: TextInputType.multiline,
+                                  textInputAction: TextInputAction.newline,
+                                  minLines: 1,
+                                  maxLines: 5,
+                                  textAlignVertical: TextAlignVertical.bottom,
+                                  onSubmitted: (_) => _handleSend(),
+                                  cursorColor: AppColors.whiteColor,
+                                  style: const TextStyle(
+                                    color: AppColors.whiteColor,
+                                    fontSize: 15,
                                   ),
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.w100,
+                                  decoration: InputDecoration(
+                                    hintText: _hasPendingImage
+                                        ? 'Ajouter un message...'
+                                        : 'Envoyez un message...',
+                                    hintStyle: TextStyle(
+                                      color: AppColors.cFCFAFE.withValues(
+                                        alpha: 0.68,
+                                      ),
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.w100,
+                                    ),
+                                    filled: false,
+                                    fillColor: Colors.transparent,
+                                    border: InputBorder.none,
+                                    enabledBorder: InputBorder.none,
+                                    focusedBorder: InputBorder.none,
+                                    disabledBorder: InputBorder.none,
+                                    errorBorder: InputBorder.none,
+                                    focusedErrorBorder: InputBorder.none,
+                                    contentPadding:
+                                        const EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                      vertical: 14,
+                                    ),
+                                    isCollapsed: true,
+                                  ),
                                 ),
-                                filled: false,
-                                fillColor: Colors.transparent,
-                                border: InputBorder.none,
-                                enabledBorder: InputBorder.none,
-                                focusedBorder: InputBorder.none,
-                                disabledBorder: InputBorder.none,
-                                errorBorder: InputBorder.none,
-                                focusedErrorBorder: InputBorder.none,
-                                contentPadding: const EdgeInsets.symmetric(
-                                  horizontal: 8,
-                                  vertical: 14,
-                                ),
-                                isCollapsed: true,
                               ),
-                            ),
+                              const SizedBox(width: 10),
+                              _isSendingImage
+                                  ? const SizedBox(
+                                      width: 42,
+                                      height: 42,
+                                      child: Center(
+                                        child: SizedBox(
+                                          width: 22,
+                                          height: 22,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                            color: AppColors.cFCFAFE,
+                                          ),
+                                        ),
+                                      ),
+                                    )
+                                  : _GradientSquareIcon(
+                                      svgAsset: 'assets/icons/mouse.svg',
+                                      onTap: _handleSend,
+                                    ),
+                            ],
                           ),
-                          const SizedBox(width: 10),
-                          _GradientSquareIcon(
-                            svgAsset: 'assets/icons/mouse.svg',
-                            onTap: onSend,
-                          ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
                   ),
                 ),
@@ -342,6 +466,93 @@ class _ChatDetailView extends StatelessWidget {
     return null;
   }
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Preview bar : miniature + bouton supprimer
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _ImagePreviewBar extends StatelessWidget {
+  const _ImagePreviewBar({
+    required this.imagePath,
+    required this.imageBytes,
+    required this.onRemove,
+  });
+
+  final String? imagePath;
+  final Uint8List? imageBytes;
+  final VoidCallback onRemove;
+
+  @override
+  Widget build(BuildContext context) {
+    Widget imageWidget;
+    if (imageBytes != null) {
+      imageWidget = Image.memory(
+        imageBytes!,
+        width: 72,
+        height: 72,
+        fit: BoxFit.cover,
+      );
+    } else if (imagePath != null) {
+      imageWidget = Image.file(
+        File(imagePath!),
+        width: 72,
+        height: 72,
+        fit: BoxFit.cover,
+      );
+    } else {
+      return const SizedBox.shrink();
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        gradient: AppGradients.gB1BCFBTo393566,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: AppColors.cFCFAFE.withValues(alpha: 0.20),
+        ),
+      ),
+      child: Row(
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(10),
+            child: imageWidget,
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              'Image sélectionnée',
+              style: TextStyle(
+                color: AppColors.cFCFAFE.withValues(alpha: 0.85),
+                fontSize: 14,
+              ),
+            ),
+          ),
+          GestureDetector(
+            onTap: onRemove,
+            child: Container(
+              width: 28,
+              height: 28,
+              decoration: BoxDecoration(
+                color: AppColors.cFCFAFE.withValues(alpha: 0.15),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.close_rounded,
+                color: AppColors.cFCFAFE,
+                size: 16,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Bulle de message (text + image optionnel)
+// ─────────────────────────────────────────────────────────────────────────────
 
 class _MessageBubble extends StatelessWidget {
   const _MessageBubble({
@@ -389,6 +600,9 @@ class _MessageBubble extends StatelessWidget {
     final frameUrl = own ? ownFrameUrl : senderFrameUrl;
     final displayName = own ? ownName : senderName;
 
+    final hasImage = message.imageUrl != null && message.imageUrl!.isNotEmpty;
+    final hasText = message.content.trim().isNotEmpty;
+
     final avatar = startsBlock
         ? _ChatMessageAvatar(avatarUrl: avatarUrl, frameUrl: frameUrl)
         : const SizedBox(width: 52, height: 52);
@@ -420,19 +634,58 @@ class _MessageBubble extends StatelessWidget {
           ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 300),
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+              padding: EdgeInsets.symmetric(
+                horizontal: hasImage && !hasText ? 0 : 14,
+                vertical: hasImage && !hasText ? 0 : 14,
+              ),
               decoration: BoxDecoration(
-                color: own ? AppColors.primary : AppColors.whiteColor,
+                color: hasImage && !hasText
+                    ? Colors.transparent
+                    : (own ? AppColors.primary : AppColors.whiteColor),
                 borderRadius: bubbleRadius,
               ),
-              child: Text(
-                message.content,
-                style: TextStyle(
-                  color: own ? AppColors.whiteColor : AppColors.textPrimary,
-                  fontSize: 15,
-                  fontFamily: AppTypography.displayFontFamily,
-                  height: 1.35,
-                ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Image
+                  if (hasImage)
+                    ClipRRect(
+                      borderRadius: hasText
+                          ? const BorderRadius.only(
+                              topLeft: Radius.circular(10),
+                              topRight: Radius.circular(10),
+                            )
+                          : bubbleRadius,
+                      child: AppRemoteImage(
+                        url: message.imageUrl,
+                        width: 240,
+                        height: 200,
+                        fit: BoxFit.cover,
+                        fallbackIcon: Icons.broken_image_outlined,
+                      ),
+                    ),
+                  // Texte
+                  if (hasText) ...[
+                    if (hasImage) const SizedBox(height: 8),
+                    Padding(
+                      padding: hasImage
+                          ? const EdgeInsets.fromLTRB(14, 0, 14, 14)
+                          : EdgeInsets.zero,
+                      child: Text(
+                        message.content,
+                        style: TextStyle(
+                          color: own
+                              ? AppColors.whiteColor
+                              : AppColors.textPrimary,
+                          fontSize: 15,
+                          fontFamily: AppTypography.displayFontFamily,
+                          height: 1.35,
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
               ),
             ),
           ),
@@ -476,6 +729,8 @@ class _MessageBubble extends StatelessWidget {
     );
   }
 }
+
+// ─── Widgets inchangés ────────────────────────────────────────────────────────
 
 class _ChatMessageAvatar extends StatelessWidget {
   const _ChatMessageAvatar({required this.avatarUrl, required this.frameUrl});

@@ -486,6 +486,12 @@ class AppController extends ChangeNotifier {
     }
   }
 
+  // ─────────────────────────────────────────────────────────────────────────────
+// PATCH : colle ces deux méthodes dans AppController en remplacement de
+// l'actuelle sendMessage().
+// ─────────────────────────────────────────────────────────────────────────────
+
+  /// Envoie un message TEXTE SEUL via Socket.IO (comportement inchangé).
   Future<void> sendMessage(String content) async {
     final selected = _selectedChannel;
     final userId = _authController.user?.id;
@@ -498,6 +504,41 @@ class AppController extends ChangeNotifier {
       channelId: selected.channelId,
     );
     notifyListeners();
+  }
+
+  Future<void> sendMessageWithImage({
+    required String? imagePath,
+    List<int>? imageBytes,
+    String? imageFileName,
+    String content = '',
+  }) async {
+    final selected = _selectedChannel;
+    final userId = _authController.user?.id;
+    if (selected == null || userId == null) return;
+    if ((imagePath == null || imagePath.isEmpty) && imageBytes == null) return;
+
+    _messageError = null;
+    notifyListeners();
+
+    try {
+      final message = await _privateMessageRepository.sendWithImage(
+        channelId: selected.channelId,
+        content: content,
+        imageFilePath: imagePath,
+        imageBytes: imageBytes,
+        imageFileName: imageFileName,
+      );
+      final alreadyExists = _messages.any(
+        (m) => m.messageId == message.messageId,
+      );
+      if (!alreadyExists) {
+        _messages = [..._messages, message];
+        notifyListeners();
+      }
+    } catch (e) {
+      _messageError = ApiErrorParser.parse(e, fallback: 'Envoi image impossible');
+      notifyListeners();
+    }
   }
 
   Future<void> updateMessage({

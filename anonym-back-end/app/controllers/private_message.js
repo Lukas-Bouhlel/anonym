@@ -1,9 +1,126 @@
-const { PrivateMessage } = require('../models');
+const { PrivateMessage, Channel, UserChannel, User, Inventory, Shop } = require('../models');
+const { Op } = require('sequelize');
 
 /**
  * @module privateMessageController
  * @description Ce module contient des fonctions pour gérer les messages privés, y compris la mise à jour et la suppression des messages.
  */
+
+/**
+ * Envoyer un message avec une image optionnelle dans un channel en un seul appel.
+ *
+ * @async
+ * @function sendMessageWithImage
+ * @param {Object} req - L'objet de requête.
+ * @param {Object} req.params.channelId - L'ID du channel.
+ * @param {Object} req.body - Le corps de la requête.
+ * @param {string} req.body.content - Le contenu du message.
+ * @param {Object} req.file - Le fichier image uploadé (optionnel).
+ * @param {Object} req.auth - Les données d'authentification.
+ * @param {number} req.auth.userId - L'ID de l'utilisateur authentifié.
+ * @param {Object} res - L'objet de réponse.
+ * @returns {Object} 201 - Le message créé avec les détails du sender.
+ * @returns {Object} 400 - Erreur de validation.
+ * @returns {Object} 403 - Accès refusé (pas membre du channel).
+ * @returns {Object} 404 - Channel ou channel type invalide.
+ * @returns {Object} 500 - Erreur interne du serveur.
+ */
+exports.sendMessageWithImage = async (req, res) => {
+    try {
+        const { channelId } = req.params;
+        const { content } = req.body;
+        const userId = req.auth.userId;
+
+        // Valider que le contenu ou l'image existe
+        if (!content && !req.file) {
+            return res.status(400).json({ message: 'Le contenu ou une image est requis.' });
+        }
+
+        // Vérifier que le channel existe
+        const channel = await Channel.findByPk(channelId);
+        if (!channel) {
+            return res.status(404).json({ message: 'Channel non trouvé.' });
+        }
+
+        // Vérifier que l'utilisateur est membre du channel
+        const isMember = await UserChannel.findOne({
+            where: { channel_id: channelId, user_id: userId }
+        });
+        if (!isMember) {
+            return res.status(403).json({ message: 'Vous ne faites pas partie de ce channel.' });
+        }
+
+        // Construire l'URL de l'image si elle existe
+        let imageUrl = null;
+        if (req.file) {
+            imageUrl = `${req.protocol}://${req.get('host')}/uploads/messages/images/${req.file.filename}`;
+        }
+
+        // Créer le message
+        const message = await PrivateMessage.create({
+            sender_id: userId,
+            content: content || null,
+            image_url: imageUrl,
+            channel_id: channelId,
+            status: 'unread',
+            createdAt: new Date()
+        });
+
+        // Récupérer les détails du sender
+        const sender = await User.findByPk(userId, {
+            attributes: ['id', 'username', 'avatar'],
+            include: [
+                {
+                    model: Inventory,
+                    where: { active: true },
+                    attributes: ['item_id', 'article_id', 'active'],
+                    include: [
+                        {
+                            model: Shop,
+                            attributes: ['title', 'type', 'content', 'amount']
+                        }
+                    ],
+                    required: false
+                }
+            ]
+        });
+
+        // Émettre l'événement Socket.io en temps réel
+        const io = req.app.locals.io;
+        if (io) {
+            io.to(channelId.toString()).emit('newMessage', {
+                id: message.message_id,
+                content: message.content,
+                imageUrl: message.image_url,
+                sender,
+                createdAt: message.createdAt
+            });
+
+            // Mettre à jour le compte des messages non lus
+            const unreadCount = await PrivateMessage.count({
+                where: {
+                    channel_id: channelId,
+                    status: 'unread',
+                    sender_id: {
+                        [Op.ne]: userId
+                    }
+                }
+            });
+            io.to(channelId.toString()).emit('unreadCount', { count: unreadCount });
+        }
+
+        return res.status(201).json({
+            id: message.message_id,
+            content: message.content,
+            imageUrl: message.image_url,
+            sender,
+            createdAt: message.createdAt
+        });
+    } catch (error) {
+        console.error('Error sending message:', error);
+        return res.status(500).json({ message: error.message || 'Une erreur est survenue lors de l\'envoi du message.' });
+    }
+};
 
 /**
  * Upload une image pour un message.
