@@ -81,12 +81,14 @@ describe('Account Routes', () => {
                 datas: JSON.stringify({
                     username: 'updateduser',
                     email: 'updated@example.com',
+                    bio: 'Bio de test',
                 }),
             });
 
         expect(response.status).toBe(200);
         expect(response.body).toHaveProperty('username', 'updateduser');
         expect(response.body).toHaveProperty('email', 'updated@example.com');
+        expect(response.body).toHaveProperty('bio', 'Bio de test');
     });
 
     it('PUT /api/account/password - should update user password', async () => {

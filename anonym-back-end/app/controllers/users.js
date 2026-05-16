@@ -23,7 +23,7 @@ const path = require('path');
 exports.create = async (req, res) => {
     try {
         const datas = JSON.parse(req.body.datas);
-        const { username, email, password, roles } = datas;
+        const { username, email, password, roles, bio } = datas;
         let newAvatarPath;
 
         // Vérifier que l'utilisateur est soit ADMIN, soit SUPER_ADMIN
@@ -89,7 +89,8 @@ exports.create = async (req, res) => {
             email,
             password: password,
             roles: roles || 'USER', // Par défaut, le rôle est USER
-            avatar: newAvatarPath
+            avatar: newAvatarPath,
+            bio
         });
 
         res.status(201).json(newUser);
@@ -117,7 +118,7 @@ exports.update = async (req, res) => {
     try {
         const userId = req.params.id;
         const datas = JSON.parse(req.body.datas);
-        const { username, email, password, avatar, roles } = datas;
+        const { username, email, password, avatar, roles, bio } = datas;
 
         if (req.auth.userRole === 'USER') {
             return res.status(403).json({ message: "Il faut être admin pour accéder à cette page." });
@@ -193,6 +194,7 @@ exports.update = async (req, res) => {
         }
         if (email) user.email = email;
         if (password) user.password = await bcrypt.hash(password, 10);
+        if (typeof bio === 'string' || bio === null) user.bio = bio;
         // Vérifier si l'utilisateur tente de créer un rôle autre que 'USER'
         if (roles && roles !== 'USER') {
             // Vérifier si le rôle de l'utilisateur qui fait la requête est SUPER_ADMIN

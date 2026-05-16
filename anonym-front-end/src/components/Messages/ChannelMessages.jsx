@@ -57,7 +57,7 @@ const ChannelMessages = ({ user, socket, channel, setPage }) => {
         }
     };
 
-    const { data: initialMessages = [], isLoading } = useQuery({
+    const { data: initialMessages, isLoading } = useQuery({
         queryKey: ['messages', channelId],
         queryFn: fetchMessages,
         enabled: !!channelId, // Lancer la requête seulement si channelId est défini
@@ -65,12 +65,14 @@ const ChannelMessages = ({ user, socket, channel, setPage }) => {
 
     // Mettre à jour les messages lorsque la requête est terminée
     useEffect(() => {
-        if (initialMessages.length > 0) {
+        if (Array.isArray(initialMessages)) {
             setMessages(initialMessages);
-        } else {
-            setMessages([]);
         }
     }, [initialMessages]);
+
+    useEffect(() => {
+        setMessages([]);
+    }, [channelId]);
 
     // Écouter les nouveaux messages via WebSocket
     useEffect(() => {

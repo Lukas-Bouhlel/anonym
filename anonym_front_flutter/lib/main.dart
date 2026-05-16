@@ -1,0 +1,92 @@
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+
+import 'pages/app_page.dart';
+import 'providers/app_controller.dart';
+import 'providers/auth_controller.dart';
+import 'services/account_repository.dart';
+import 'services/admin_repository.dart';
+import 'services/api_client.dart';
+import 'services/auth_repository.dart';
+import 'services/channel_repository.dart';
+import 'services/friends_repository.dart';
+import 'services/inventory_repository.dart';
+import 'services/invoice_repository.dart';
+import 'services/payment_repository.dart';
+import 'services/private_message_repository.dart';
+import 'services/session_service.dart';
+import 'services/shop_repository.dart';
+import 'services/socket_service.dart';
+
+void main() {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  final apiClient = ApiClient();
+  final sessionService = SessionService();
+  final authRepository = AuthRepository(
+    apiClient.dio,
+    apiClient,
+    sessionService,
+  );
+  final accountRepository = AccountRepository(apiClient.dio);
+  final adminRepository = AdminRepository(apiClient.dio);
+  final friendsRepository = FriendsRepository(apiClient.dio);
+  final channelRepository = ChannelRepository(apiClient.dio);
+  final privateMessageRepository = PrivateMessageRepository(apiClient.dio);
+  final shopRepository = ShopRepository(apiClient.dio);
+  final inventoryRepository = InventoryRepository(apiClient.dio);
+  final paymentRepository = PaymentRepository(apiClient.dio);
+  final invoiceRepository = InvoiceRepository(apiClient.dio);
+  final socketService = SocketService();
+
+  runApp(
+    MultiProvider(
+      providers: [
+        Provider.value(value: apiClient),
+        Provider.value(value: sessionService),
+        Provider.value(value: authRepository),
+        Provider.value(value: accountRepository),
+        Provider.value(value: adminRepository),
+        Provider.value(value: friendsRepository),
+        Provider.value(value: channelRepository),
+        Provider.value(value: privateMessageRepository),
+        Provider.value(value: shopRepository),
+        Provider.value(value: inventoryRepository),
+        Provider.value(value: paymentRepository),
+        Provider.value(value: invoiceRepository),
+        Provider.value(value: socketService),
+        ChangeNotifierProvider(create: (_) => AuthController(authRepository)),
+        ChangeNotifierProxyProvider<AuthController, AppController>(
+          create: (context) => AppController(
+            authController: context.read<AuthController>(),
+            accountRepository: accountRepository,
+            friendsRepository: friendsRepository,
+            channelRepository: channelRepository,
+            privateMessageRepository: privateMessageRepository,
+            shopRepository: shopRepository,
+            inventoryRepository: inventoryRepository,
+            paymentRepository: paymentRepository,
+            invoiceRepository: invoiceRepository,
+            socketService: socketService,
+          ),
+          update: (context, authController, existingController) {
+            return existingController ??
+                AppController(
+                  authController: authController,
+                  accountRepository: accountRepository,
+                  friendsRepository: friendsRepository,
+                  channelRepository: channelRepository,
+                  privateMessageRepository: privateMessageRepository,
+                  shopRepository: shopRepository,
+                  inventoryRepository: inventoryRepository,
+                  paymentRepository: paymentRepository,
+                  invoiceRepository: invoiceRepository,
+                  socketService: socketService,
+                );
+          },
+        ),
+      ],
+      child: const AnonymApp(),
+    ),
+  );
+}

@@ -47,6 +47,9 @@ const storage = multer.diskStorage({
         if (req.baseUrl.includes('/auth') || req.baseUrl.includes('/account') || req.baseUrl.includes('/admin')) {
             folder = 'uploads/profiles/avatars';
         }
+        if (req.baseUrl.includes('/channels')) {
+            folder = 'uploads/channels/covers';
+        }
 
         createDirectory(folder);  // créer le dossier si nécessaire
         callback(null, folder);

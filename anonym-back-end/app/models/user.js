@@ -85,6 +85,16 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.STRING,
       allowNull: true,
     },
+    bio: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+      validate: {
+        len: {
+          args: [0, 500],
+          msg: "La bio ne peut pas dépasser 500 caractères"
+        }
+      }
+    },
     roles: {
       type: DataTypes.ENUM('USER', 'ADMIN', 'SUPER_ADMIN'),
       allowNull: false,

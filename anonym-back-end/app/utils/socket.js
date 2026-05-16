@@ -1,168 +1,140 @@
-const { PrivateMessage, User, Inventory, Shop, Channel } = require('../models');
-const { Op } = require('sequelize'); // Assurez-vous d'importer Op pour les requêtes
+const { PrivateMessage, User, Inventory, Shop, Channel, UserChannel, Friend } = require('../models');
+const { Op } = require('sequelize');
 
-
-/**
- * Récupère le nombre de messages non lus dans un canal donné, pour un utilisateur spécifique.
- * 
- * @async
- * @function getUnreadMessageCount
- * @param {number} channelId - L'identifiant du canal de discussion.
- * @param {number} userId - L'identifiant de l'utilisateur.
- * @returns {Promise<number>} - Le nombre de messages non lus.
- */
 const getUnreadMessageCount = async (channelId, userId) => {
     return await PrivateMessage.count({
         where: {
             channel_id: channelId,
-            status: 'unread', 
+            status: 'unread',
             sender_id: {
-                [Op.ne]: userId // Exclure les messages envoyés par l'utilisateur
+                [Op.ne]: userId
             }
         }
     });
 };
 
-
-/**
- * Marque tous les messages non lus dans un canal comme lus pour un utilisateur.
- * 
- * @async
- * @function markMessagesAsRead
- * @param {number} channelId - L'identifiant du canal de discussion.
- * @param {number} userId - L'identifiant de l'utilisateur.
- * @returns {Promise<number[]>} - Le nombre de lignes affectées.
- */
 const markMessagesAsRead = async (channelId, userId) => {
     return await PrivateMessage.update(
-        { status: 'read' }, // Met à jour le statut à 'lu'
+        { status: 'read' },
         {
             where: {
                 channel_id: channelId,
-                status: 'unread', // Cibler uniquement les messages non lus
+                status: 'unread',
                 sender_id: {
-                    [Op.ne]: userId // Exclure les messages envoyés par l'utilisateur
+                    [Op.ne]: userId
                 }
             }
         }
     );
 };
 
-
-/**
- * Initialise la connexion Socket.IO et gère les événements de messagerie.
- *
- * @function initializeSocket
- * @param {Object} io - L'instance Socket.IO.
- */
 const initializeSocket = (io) => {
     io.on('connection', (socket) => {
-         /**
-         * Gère l'événement lorsque l'utilisateur rejoint un canal.
-         * 
-         * @event joinChannel
-         * @param {Object} data - Les données de l'événement.
-         * @param {number} data.channelId - L'identifiant du canal.
-         * @param {number} data.userId - L'identifiant de l'utilisateur.
-         */
         socket.on('joinChannel', async (data) => {
-            const { channelId, userId } = data; 
-            
-            // Marquer les messages non lus comme lus
+            const { channelId, userId } = data;
             await markMessagesAsRead(channelId, userId);
-            
-            // Mettre à jour le compte des messages non lus après que l'utilisateur a rejoint
             const unreadCount = await getUnreadMessageCount(channelId, userId);
             io.to(channelId).emit('unreadCount', { count: unreadCount });
-            
             socket.join(channelId);
         });
 
-         /**
-         * Gère l'envoi d'un message privé dans un canal.
-         * 
-         * @event privateMessage
-         * @param {Object} data - Les données du message privé.
-         * @param {number} data.senderId - L'identifiant de l'expéditeur.
-         * @param {string} data.content - Le contenu du message.
-         * @param {number} data.channelId - L'identifiant du canal.
-         */
-        socket.on('privateMessage', async ({ senderId, content, channelId }) => {
+        socket.on('privateMessage', async ({ senderId, content, channelId, imageUrl }) => {
             try {
-                // Créer le message dans la base de données
+                const channel = await Channel.findByPk(channelId);
+                if (!channel) {
+                    socket.emit('messageError', { message: 'Chat introuvable.' });
+                    return;
+                }
+
+                const channelMembers = await UserChannel.findAll({
+                    where: { channel_id: channelId },
+                    attributes: ['user_id']
+                });
+
+                const memberIds = channelMembers.map((m) => m.user_id);
+                if (!memberIds.includes(senderId)) {
+                    socket.emit('messageError', { message: 'Vous ne faites pas partie de ce chat.' });
+                    return;
+                }
+
+                if (channel.channel_type === 'PRIVATE_DM' && memberIds.length !== 2) {
+                    socket.emit('messageError', { message: 'Configuration invalide pour un message prive.' });
+                    return;
+                }
+
+                if (channel.channel_type === 'PRIVATE_DM') {
+                    const receiverId = memberIds.find((id) => id !== senderId);
+                    const acceptedFriendship = await Friend.findOne({
+                        where: {
+                            status: 'ACTIVE',
+                            [Op.or]: [
+                                { user_id: senderId, friend_id: receiverId },
+                                { user_id: receiverId, friend_id: senderId }
+                            ]
+                        }
+                    });
+
+                    if (!acceptedFriendship) {
+                        socket.emit('messageError', { message: 'Vous pouvez chatter uniquement avec un ami ayant accepte la demande.' });
+                        return;
+                    }
+                }
+
                 const message = await PrivateMessage.create({
                     sender_id: senderId,
                     content,
+                    image_url: imageUrl,
                     channel_id: channelId,
                     status: 'unread',
                     createdAt: new Date()
                 });
 
-                const sender = await User.findByPk(senderId, { 
+                const sender = await User.findByPk(senderId, {
                     attributes: ['id', 'username', 'avatar'],
                     include: [
                         {
-                            model: Inventory, // Inclure l'inventaire de l'utilisateur
-                            where: { active: true }, // Filtrer uniquement les articles actifs
+                            model: Inventory,
+                            where: { active: true },
                             attributes: ['item_id', 'article_id', 'active'],
                             include: [
                                 {
-                                    model: Shop, // Inclure les détails de l'article
+                                    model: Shop,
                                     attributes: ['title', 'type', 'content', 'amount']
                                 }
                             ],
-                            required: false // Assurer que même si pas d'inventaire, le message passe
+                            required: false
                         }
                     ]
                 });
 
-                 // Envoyer le message au canal spécifique
                 io.to(channelId).emit('newMessage', {
                     id: message.message_id,
                     content: message.content,
-                    sender: sender,
+                    imageUrl: message.image_url,
+                    sender,
                     createdAt: message.createdAt
                 });
-                 // Mettre à jour le compte des messages non lus pour tous les utilisateurs
-                 const unreadCount = await getUnreadMessageCount(channelId, senderId);
-                 io.to(channelId).emit('unreadCount', { count: unreadCount });
+
+                const unreadCount = await getUnreadMessageCount(channelId, senderId);
+                io.to(channelId).emit('unreadCount', { count: unreadCount });
             } catch (error) {
                 console.error('Error sending private message:', error.message);
             }
         });
 
-         /**
-         * Gère l'événement de départ de l'utilisateur d'un canal.
-         * 
-         * @event leaveChannel
-         * @param {Object} data - Les données de l'événement.
-         * @param {number} data.channelId - L'identifiant du canal quitté.
-         */
-        socket.on('leaveChannel', async ({channelId}) => {
+        socket.on('leaveChannel', async ({ channelId }) => {
             socket.leave(channelId);
         });
 
-        /**
-         * Gère la suppression d'un canal.
-         * 
-         * @event deleteChannel
-         * @param {number} channelId - L'identifiant du canal à supprimer.
-         */
         socket.on('deleteChannel', async (channelId) => {
-            // Ici, tu devrais ajouter une vérification pour voir si l'utilisateur est le créateur
             try {
-                await Channel.destroy({ where: { id: channelId } });
+                await Channel.destroy({ where: { channel_id: channelId } });
                 io.to(channelId).emit('channelDeleted', channelId);
             } catch (error) {
                 console.error('Error deleting channel:', error.message);
             }
         });
 
-        /**
-         * Gère la déconnexion de l'utilisateur du socket.
-         * 
-         * @event disconnect
-         */
         socket.on('disconnect', () => {
             console.log(`Client disconnected: ${socket.id}`);
         });

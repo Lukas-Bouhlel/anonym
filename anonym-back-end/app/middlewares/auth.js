@@ -21,7 +21,16 @@ const jwt = require('jsonwebtoken');
  */
 module.exports = (req, res, next) => {
     try {
-        const token = req.cookies.token; 
+        const tokenFromCookie = req.cookies?.token;
+        const authHeader = req.headers?.authorization;
+        const tokenFromHeader = authHeader && authHeader.startsWith('Bearer ')
+            ? authHeader.slice(7)
+            : null;
+        const token = tokenFromCookie || tokenFromHeader;
+
+        if (!token) {
+            throw new Error('Missing token');
+        }
 
         const decodedToken = jwt.verify(token, process.env.JWT_SECRET);
         const userId = decodedToken.userId;

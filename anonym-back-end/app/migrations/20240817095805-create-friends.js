@@ -28,9 +28,9 @@ module.exports = {
         onDelete: 'CASCADE'
       },
       status: {
-        type: Sequelize.ENUM('ACTIVE', 'BLOQUED'),
+        type: Sequelize.ENUM('ACTIVE', 'PENDING', 'BLOQUED'),
         allowNull: false,
-        defaultValue: 'ACTIVE'
+        defaultValue: 'PENDING'
       },
       createdAt: {
         type: Sequelize.DATE,

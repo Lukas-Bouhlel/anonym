@@ -1,46 +1,38 @@
-const { Friend, User, Inventory, Shop  } = require('../models');
+const { Op } = require('sequelize');
+const { Friend, User, Inventory, Shop } = require('../models');
 
-/**
- * @module friendController
- * @description Ce module gère les opérations liées aux amis des utilisateurs, y compris la lecture, l'ajout, la mise à jour et la suppression des relations d'amitié.
- */
+const FRIEND_STATUS = {
+    ACTIVE: 'ACTIVE',
+    PENDING: 'PENDING',
+    BLOQUED: 'BLOQUED'
+};
 
-/**
- * Lire tous les amis d'un utilisateur, y compris leurs inventaires actifs.
- *
- * @async
- * @function readAll
- * @param {Object} req - L'objet de requête contenant les détails de l'utilisateur connecté.
- * @param {Object} res - L'objet de réponse.
- * @returns {Object} 200 - Liste des amis de l'utilisateur avec leurs détails et inventaires actifs.
- * @throws {Object} 500 - Erreur interne du serveur si une erreur se produit lors de la récupération des amis.
- */
+const friendInclude = {
+    model: User,
+    as: 'FriendDetails',
+    attributes: ['id', 'username', 'email', 'avatar'],
+    include: [
+        {
+            model: Inventory,
+            where: { active: true },
+            attributes: ['item_id', 'article_id', 'active'],
+            include: [
+                {
+                    model: Shop,
+                    attributes: ['title', 'type', 'content', 'amount']
+                }
+            ],
+            required: false
+        }
+    ]
+};
+
 exports.readAll = async (req, res) => {
     try {
         const userId = req.auth.userId;
         const friends = await Friend.findAll({
-            where: { user_id: userId },
-            include: [
-                {
-                    model: User, // L'ami
-                    as: 'FriendDetails',
-                    attributes: ['id', 'username', 'email', 'avatar'], // Attributs de l'ami
-                    include: [
-                        {
-                            model: Inventory, // Inclure l'inventaire
-                            where: { active: true }, // Ne récupérer que les articles actifs
-                            attributes: ['item_id', 'article_id', 'active'],
-                            include: [
-                                {
-                                    model: Shop, // Détails de l'article
-                                    attributes: ['title', 'type', 'content', 'amount']
-                                }
-                            ],
-                            required: false // Rendre l'inventaire facultatif, récupérer même s'il n'y a pas d'articles actifs
-                        }
-                    ]
-                }
-            ]
+            where: { user_id: userId, status: FRIEND_STATUS.ACTIVE },
+            include: [friendInclude]
         });
 
         res.status(200).json(friends);
@@ -49,17 +41,63 @@ exports.readAll = async (req, res) => {
     }
 };
 
-/**
- * Lire un ami spécifique d'un utilisateur.
- *
- * @async
- * @function read
- * @param {Object} req - L'objet de requête contenant l'ID de l'ami à lire.
- * @param {Object} res - L'objet de réponse.
- * @returns {Object} 200 - Détails de l'ami demandé.
- * @throws {Object} 404 - Non trouvé si l'ami n'existe pas.
- * @throws {Object} 500 - Erreur interne du serveur si une erreur se produit lors de la récupération de l'ami.
- */
+exports.readIncomingRequests = async (req, res) => {
+    try {
+        const userId = req.auth.userId;
+        const requests = await Friend.findAll({
+            where: { friend_id: userId, status: FRIEND_STATUS.PENDING },
+            include: [{
+                model: User,
+                as: 'User',
+                attributes: ['id', 'username', 'email', 'avatar']
+            }],
+            order: [['createdAt', 'DESC']]
+        });
+
+        res.status(200).json(requests);
+    } catch (error) {
+        res.status(500).json({ message: error.message || 'An error occurred while retrieving incoming requests.' });
+    }
+};
+
+exports.readOutgoingRequests = async (req, res) => {
+    try {
+        const userId = req.auth.userId;
+        const requests = await Friend.findAll({
+            where: { user_id: userId, status: FRIEND_STATUS.PENDING },
+            include: [{
+                model: User,
+                as: 'FriendDetails',
+                attributes: ['id', 'username', 'email', 'avatar']
+            }],
+            order: [['createdAt', 'DESC']]
+        });
+
+        res.status(200).json(requests);
+    } catch (error) {
+        res.status(500).json({ message: error.message || 'An error occurred while retrieving outgoing requests.' });
+    }
+};
+
+exports.readBlockedUsers = async (req, res) => {
+    try {
+        const userId = req.auth.userId;
+        const blockedUsers = await Friend.findAll({
+            where: { user_id: userId, status: FRIEND_STATUS.BLOQUED },
+            include: [{
+                model: User,
+                as: 'FriendDetails',
+                attributes: ['id', 'username', 'email', 'avatar']
+            }],
+            order: [['updatedAt', 'DESC']]
+        });
+
+        res.status(200).json(blockedUsers);
+    } catch (error) {
+        res.status(500).json({ message: error.message || 'An error occurred while retrieving blocked users.' });
+    }
+};
+
 exports.read = async (req, res) => {
     try {
         const friendId = req.params.id;
@@ -69,7 +107,7 @@ exports.read = async (req, res) => {
         });
 
         if (!friend) {
-            return res.status(404).json({ message: "Ami non trouvé." });
+            return res.status(404).json({ message: 'Ami non trouvÃ©.' });
         }
 
         res.status(200).json(friend);
@@ -78,130 +116,273 @@ exports.read = async (req, res) => {
     }
 };
 
-/**
- * Ajouter un nouvel ami à la liste d'amis de l'utilisateur.
- *
- * @async
- * @function addFriend
- * @param {Object} req - L'objet de requête contenant le nom d'utilisateur de l'ami à ajouter.
- * @param {Object} res - L'objet de réponse.
- * @returns {Object} 201 - Détails de la nouvelle relation d'amitié créée.
- * @throws {Object} 404 - Non trouvé si l'utilisateur à ajouter n'existe pas.
- * @throws {Object} 400 - Mauvaise requête si l'utilisateur essaie de s'ajouter lui-même ou si la relation d'amitié existe déjà.
- * @throws {Object} 500 - Erreur interne du serveur si une erreur se produit lors de l'ajout de l'ami.
- */
 exports.addFriend = async (req, res) => {
     try {
-        const userId = req.auth.userId; // ID de l'utilisateur actuel
-        const friendUsername = req.params.username; // Récupérer le nom d'utilisateur de l'ami à ajouter
+        const userId = req.auth.userId;
+        const friendUsername = req.params.username;
 
-        // Rechercher l'ami par son nom d'utilisateur
-        const friend = await User.findOne({
-            where: {
-                username: friendUsername
-            }
-        });
+        const friend = await User.findOne({ where: { username: friendUsername } });
 
-        // Vérifier si l'utilisateur existe
         if (!friend) {
-            return res.status(404).json({ message: "Utilisateur introuvable" });
+            return res.status(404).json({ message: 'Utilisateur introuvable' });
         }
 
-        const friendId = friend.id; // ID de l'ami trouvé
+        const friendId = friend.id;
 
-        // Vérifier que l'utilisateur ne s'ajoute pas lui-même en ami
         if (userId === friendId) {
-            return res.status(400).json({ message: "Vous ne pouvez pas vous ajouter comme ami" });
+            return res.status(400).json({ message: 'Vous ne pouvez pas vous ajouter comme ami' });
         }
 
-        // Vérifier si la relation d'amitié existe déjà
-        const existingFriend = await Friend.findOne({
-            where: {
-                user_id: userId,
-                friend_id: friendId
-            }
-        });
+        const [existingFriend, reverseFriendship] = await Promise.all([
+            Friend.findOne({ where: { user_id: userId, friend_id: friendId } }),
+            Friend.findOne({ where: { user_id: friendId, friend_id: userId } })
+        ]);
 
         if (existingFriend) {
-            return res.status(400).json({ message: "Cet utilisateur est déjà votre ami" });
+            if (existingFriend.status === FRIEND_STATUS.ACTIVE) {
+                return res.status(400).json({ message: 'Cet utilisateur est dÃ©jÃ  votre ami' });
+            }
+            if (existingFriend.status === FRIEND_STATUS.PENDING) {
+                return res.status(400).json({ message: "Demande d'ami dÃ©jÃ  envoyÃ©e, en attente d'acceptation." });
+            }
+            return res.status(400).json({ message: 'Cet utilisateur est bloquÃ©. DÃ©bloquez-le avant de renvoyer une demande.' });
         }
 
-        // Créer la relation d'amitié
+        if (reverseFriendship) {
+            if (reverseFriendship.status === FRIEND_STATUS.ACTIVE) {
+                return res.status(400).json({ message: 'Cet utilisateur est dÃ©jÃ  votre ami' });
+            }
+            if (reverseFriendship.status === FRIEND_STATUS.PENDING) {
+                return res.status(400).json({ message: "Cet utilisateur vous a dÃ©jÃ  envoyÃ© une demande. Acceptez-la." });
+            }
+            return res.status(400).json({ message: 'Cet utilisateur vous a bloquÃ© ou la relation est bloquÃ©e.' });
+        }
+
         const newFriend = await Friend.create({
             user_id: userId,
             friend_id: friendId,
-            status: 'ACTIVE'
+            status: FRIEND_STATUS.PENDING
         });
 
         res.status(201).json(newFriend);
     } catch (error) {
-        res.status(500).json({ message: error.message || "An error occurred while adding the friend." });
+        res.status(500).json({ message: error.message || 'An error occurred while adding the friend.' });
     }
 };
 
-/**
- * Mettre à jour le statut d'une relation d'amitié.
- *
- * @async
- * @function update
- * @param {Object} req - L'objet de requête contenant l'ID de l'ami et le nouveau statut.
- * @param {Object} res - L'objet de réponse.
- * @returns {Object} 200 - La relation d'amitié mise à jour.
- * @throws {Object} 404 - Non trouvé si la relation d'amitié n'existe pas.
- * @throws {Object} 400 - Mauvaise requête si le statut est invalide.
- * @throws {Object} 500 - Erreur interne du serveur si une erreur se produit lors de la mise à jour du statut de l'ami.
- */
-exports.update = async (req, res) => {
+exports.respondToRequest = async (req, res) => {
     try {
-        const friendId = req.params.id;
+        const requestId = parseInt(req.params.requestId, 10);
+        const userId = req.auth.userId;
         const { status } = req.body;
-        
-        const friendship = await Friend.findOne({
-            where: { user_id: req.auth.userId, friend_id: friendId }
+
+        if (![FRIEND_STATUS.ACTIVE, FRIEND_STATUS.BLOQUED].includes(status)) {
+            return res.status(400).json({ message: 'Invalid status for a friend request response.' });
+        }
+
+        const incomingRequest = await Friend.findOne({
+            where: {
+                id: requestId,
+                friend_id: userId,
+                status: FRIEND_STATUS.PENDING
+            }
         });
 
-        if (!friendship) {
-            return res.status(404).json({ message: "Friendship not found." });
+        if (!incomingRequest) {
+            return res.status(404).json({ message: 'Friend request not found.' });
         }
 
-        if (status && ['ACTIVE', 'BLOQUED'].includes(status)) {
-            friendship.status = status;
-            await friendship.save();
-            return res.status(200).json(friendship);
-        } else {
-            return res.status(400).json({ message: "Invalid status." });
+        incomingRequest.status = status;
+        await incomingRequest.save();
+
+        if (status === FRIEND_STATUS.ACTIVE) {
+            const [reverseFriendship, created] = await Friend.findOrCreate({
+                where: {
+                    user_id: userId,
+                    friend_id: incomingRequest.user_id
+                },
+                defaults: { status: FRIEND_STATUS.ACTIVE }
+            });
+
+            if (!created && reverseFriendship.status !== FRIEND_STATUS.ACTIVE) {
+                reverseFriendship.status = FRIEND_STATUS.ACTIVE;
+                await reverseFriendship.save();
+            }
         }
+
+        return res.status(200).json(incomingRequest);
+    } catch (error) {
+        res.status(500).json({ message: error.message || 'An error occurred while responding to the friend request.' });
+    }
+};
+
+exports.cancelOutgoingRequest = async (req, res) => {
+    try {
+        const requestId = parseInt(req.params.requestId, 10);
+        const userId = req.auth.userId;
+
+        const outgoingRequest = await Friend.findOne({
+            where: {
+                id: requestId,
+                user_id: userId,
+                status: FRIEND_STATUS.PENDING
+            }
+        });
+
+        if (!outgoingRequest) {
+            return res.status(404).json({ message: 'Outgoing friend request not found.' });
+        }
+
+        await outgoingRequest.destroy();
+        return res.status(204).send();
+    } catch (error) {
+        res.status(500).json({ message: error.message || 'An error occurred while cancelling the friend request.' });
+    }
+};
+
+exports.blockUser = async (req, res) => {
+    try {
+        const userId = req.auth.userId;
+        const targetUserId = parseInt(req.params.id, 10);
+
+        if (!Number.isInteger(targetUserId)) {
+            return res.status(400).json({ message: 'Invalid user id.' });
+        }
+
+        if (userId === targetUserId) {
+            return res.status(400).json({ message: 'Vous ne pouvez pas vous bloquer vous-même.' });
+        }
+
+        const targetUser = await User.findByPk(targetUserId);
+        if (!targetUser) {
+            return res.status(404).json({ message: 'Utilisateur introuvable.' });
+        }
+
+        const [friendship] = await Friend.findOrCreate({
+            where: { user_id: userId, friend_id: targetUserId },
+            defaults: { status: FRIEND_STATUS.BLOQUED }
+        });
+
+        if (friendship.status !== FRIEND_STATUS.BLOQUED) {
+            friendship.status = FRIEND_STATUS.BLOQUED;
+            await friendship.save();
+        }
+
+        await Friend.destroy({
+            where: {
+                user_id: targetUserId,
+                friend_id: userId,
+                status: FRIEND_STATUS.PENDING
+            }
+        });
+
+        return res.status(200).json(friendship);
+    } catch (error) {
+        res.status(500).json({ message: error.message || 'An error occurred while blocking this user.' });
+    }
+};
+
+exports.unblockUser = async (req, res) => {
+    try {
+        const userId = req.auth.userId;
+        const targetUserId = parseInt(req.params.id, 10);
+
+        if (!Number.isInteger(targetUserId)) {
+            return res.status(400).json({ message: 'Invalid user id.' });
+        }
+
+        const blockedFriendship = await Friend.findOne({
+            where: {
+                user_id: userId,
+                friend_id: targetUserId,
+                status: FRIEND_STATUS.BLOQUED
+            }
+        });
+
+        if (!blockedFriendship) {
+            return res.status(404).json({ message: 'Blocked user not found.' });
+        }
+
+        await blockedFriendship.destroy();
+        return res.status(204).send();
+    } catch (error) {
+        res.status(500).json({ message: error.message || 'An error occurred while unblocking this user.' });
+    }
+};
+
+// Backward compatibility route: PUT /friends/:id where :id = other user id
+exports.update = async (req, res) => {
+    try {
+        const friendId = parseInt(req.params.id, 10);
+        const userId = req.auth.userId;
+        const { status } = req.body;
+
+        if (![FRIEND_STATUS.ACTIVE, FRIEND_STATUS.PENDING, FRIEND_STATUS.BLOQUED].includes(status)) {
+            return res.status(400).json({ message: 'Invalid status.' });
+        }
+
+        const ownFriendship = await Friend.findOne({
+            where: { user_id: userId, friend_id: friendId }
+        });
+
+        if (ownFriendship) {
+            ownFriendship.status = status;
+            await ownFriendship.save();
+            return res.status(200).json(ownFriendship);
+        }
+
+        const incomingRequest = await Friend.findOne({
+            where: {
+                user_id: friendId,
+                friend_id: userId,
+                status: FRIEND_STATUS.PENDING
+            }
+        });
+
+        if (!incomingRequest) {
+            return res.status(404).json({ message: 'Friendship not found.' });
+        }
+
+        incomingRequest.status = status;
+        await incomingRequest.save();
+
+        if (status === FRIEND_STATUS.ACTIVE) {
+            const [reverseFriendship, created] = await Friend.findOrCreate({
+                where: { user_id: userId, friend_id: friendId },
+                defaults: { status: FRIEND_STATUS.ACTIVE }
+            });
+
+            if (!created && reverseFriendship.status !== FRIEND_STATUS.ACTIVE) {
+                reverseFriendship.status = FRIEND_STATUS.ACTIVE;
+                await reverseFriendship.save();
+            }
+        }
+
+        return res.status(200).json(incomingRequest);
     } catch (error) {
         res.status(500).json({ message: error.message || 'An error occurred while updating the friend status.' });
     }
 };
 
-/**
- * Supprimer une relation d'amitié.
- *
- * @async
- * @function delete
- * @param {Object} req - L'objet de requête contenant l'ID de l'ami à supprimer.
- * @param {Object} res - L'objet de réponse.
- * @returns {Object} 204 - Message de succès indiquant que la relation d'amitié a été supprimée.
- * @throws {Object} 404 - Non trouvé si la relation d'amitié n'existe pas.
- * @throws {Object} 500 - Erreur interne du serveur si une erreur se produit lors de la suppression de la relation d'amitié.
- */
 exports.delete = async (req, res) => {
     try {
-        const friendId = req.params.id;
+        const friendId = parseInt(req.params.id, 10);
+        const userId = req.auth.userId;
 
-        const friendship = await Friend.findOne({
-            where: { user_id: req.auth.userId, friend_id: friendId }
+        const deletedCount = await Friend.destroy({
+            where: {
+                [Op.or]: [
+                    { user_id: userId, friend_id: friendId },
+                    { user_id: friendId, friend_id: userId }
+                ]
+            }
         });
 
-        if (!friendship) {
-            return res.status(404).json({ message: "Friendship not found." });
+        if (!deletedCount) {
+            return res.status(404).json({ message: 'Friendship not found.' });
         }
 
-        await friendship.destroy();
-
-        res.status(204).json({ message: "Friendship deleted successfully." });
+        return res.status(204).send();
     } catch (error) {
         res.status(500).json({ message: error.message || 'An error occurred while deleting the friendship.' });
     }

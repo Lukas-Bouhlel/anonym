@@ -1,0 +1,59 @@
+name: anonym_front_flutter
+description: "Anonym Flutter front-end"
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.11.3
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.8
+  dio: ^5.9.0
+  dio_cookie_manager: ^3.3.0
+  cookie_jar: ^4.0.8
+  go_router: ^16.2.5
+  provider: ^6.1.5
+  socket_io_client: ^3.1.2
+  url_launcher: ^6.3.2
+  shared_preferences: ^2.5.3
+  flutter_svg: ^2.2.4
+  geolocator: ^13.0.4
+  flutter_map: ^8.3.0
+  latlong2: ^0.9.1
+  mapbox_maps_flutter: ^2.23.0
+  webview_windows: ^0.4.0
+  image_picker: ^1.1.2
+  file_selector: ^1.0.3
+  qr_flutter: ^4.1.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/icons/
+  fonts:
+    - family: SFProDisplay
+      fonts:
+        - asset: assets/fonts/SFProDisplay/SF-Pro-Display-Regular.otf
+        - asset: assets/fonts/SFProDisplay/SF-Pro-Display-Medium.otf
+          weight: 500
+        - asset: assets/fonts/SFProDisplay/SF-Pro-Display-Semibold.otf
+          weight: 600
+        - asset: assets/fonts/SFProDisplay/SF-Pro-Display-Bold.otf
+          weight: 700
+    - family: ClashDisplay
+      fonts:
+        - asset: assets/fonts/ClashDisplay/ClashDisplay-Regular.otf
+        - asset: assets/fonts/ClashDisplay/ClashDisplay-Semibold.otf
+          weight: 600
+        - asset: assets/fonts/ClashDisplay/ClashDisplay-Bold.otf
+          weight: 700
+    - family: EricaOne
+      fonts:
+        - asset: assets/fonts/EricaOne/EricaOne-Regular.ttf

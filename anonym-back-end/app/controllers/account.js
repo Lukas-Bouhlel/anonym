@@ -130,7 +130,7 @@ exports.update = async (req, res) => {
     try {
         const userId = req.auth.userId;// Récupérer l'ID de l'utilisateur depuis les paramètres JWT
         const datas = JSON.parse(req.body.datas);
-        const { username, email, avatar } = datas;
+        const { username, email, avatar, bio } = datas;
 
         if (!userId) {
             return res.status(400).json({ message: "User ID is required." });
@@ -200,6 +200,7 @@ exports.update = async (req, res) => {
             user.username = username;
         }
         if (email) user.email = email;
+        if (typeof bio === 'string' || bio === null) user.bio = bio;
         user.avatar = newAvatarPath;
 
         await user.save();

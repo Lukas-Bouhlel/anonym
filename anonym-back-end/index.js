@@ -6,6 +6,34 @@ const initializeSocket = require('./app/utils/socket');
 const env = process.env.NODE_ENV || 'development';
 const port = process.env.NODE_ENV === 'preprod' ? process.env.PORT_PREPROD : process.env.PORT;
 
+const configuredOrigin =
+  env === 'production'
+    ? process.env.ORIGIN_PROD
+    : env === 'preprod'
+      ? process.env.ORIGIN_PREPROD
+      : process.env.ORIGIN;
+
+const isAllowedDevOrigin = (origin) => {
+  if (!origin) return true;
+  try {
+    const { hostname } = new URL(origin);
+    return hostname === 'localhost' || hostname === '127.0.0.1';
+  } catch {
+    return false;
+  }
+};
+
+const isAllowedOrigin = (origin) => {
+  if (!origin) return true;
+  if (origin === configuredOrigin) return true;
+
+  if (env === 'development') {
+    return isAllowedDevOrigin(origin);
+  }
+
+  return false;
+};
+
 /**
  * Création du serveur HTTPS
  * 
@@ -26,7 +54,12 @@ const httpServer = createServer(app);
  */
 const io = new Server(httpServer, {
   cors: {
-      origin: env === 'production' ? process.env.ORIGIN_PROD : env === 'preprod' ? process.env.ORIGIN_PREPROD : process.env.ORIGIN, 
+      origin: (origin, callback) => {
+        if (isAllowedOrigin(origin)) {
+          return callback(null, true);
+        }
+        return callback(new Error(`Origin not allowed by CORS: ${origin}`), false);
+      },
       credentials: true,
       methods: ['GET', 'POST', 'PUT', 'DELETE'],
       allowedHeaders: ['Content-Type', 'Authorization']

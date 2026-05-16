@@ -6,6 +6,31 @@ const { PrivateMessage } = require('../models');
  */
 
 /**
+ * Upload une image pour un message.
+ *
+ * @async
+ * @function uploadImage
+ * @param {Object} req - L'objet de requête.
+ * @param {Object} res - L'objet de réponse.
+ * @returns {Object} 200 - L'URL de l'image.
+ * @returns {Object} 400 - Erreur si aucune image n'est fournie.
+ * @returns {Object} 500 - Erreur interne du serveur.
+ */
+exports.uploadImage = async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ message: 'Aucune image fournie.' });
+        }
+
+        const imageUrl = `${req.protocol}://${req.get('host')}/uploads/messages/images/${req.file.filename}`;
+        
+        res.status(200).json({ imageUrl });
+    } catch (error) {
+        res.status(500).json({ message: error.message || 'Une erreur est survenue lors de l\'upload de l\'image.' });
+    }
+};
+
+/**
  * Mettre à jour un message.
  *
  * @async
