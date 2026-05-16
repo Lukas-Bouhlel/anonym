@@ -34,6 +34,7 @@ class ChannelsScreen extends StatefulWidget {
 class _ChannelsScreenState extends State<ChannelsScreen> {
   final TextEditingController _searchController = TextEditingController();
   final TextEditingController _messageController = TextEditingController();
+  ChannelMessageModel? _editingMessage;
   String _query = '';
   String? _lastShownMessageError;
 
@@ -77,6 +78,8 @@ class _ChannelsScreenState extends State<ChannelsScreen> {
             currentUserAvatarUrl: currentUser?.avatar,
             currentUserFrameUrl: _activeFrameUrlFromUser(currentUser),
             messageController: _messageController,
+            editingMessage: _editingMessage,
+            onCancelEdit: _cancelEdit,
             onBack: app.closeSelectedChannelView,
             onSendText: () => _sendText(app),
             onSendImage: (path, bytes, fileName, text) =>
@@ -197,8 +200,16 @@ class _ChannelsScreenState extends State<ChannelsScreen> {
     final text = _messageController.text.trim();
     if (text.isEmpty) return;
     app.clearMessageError();
-    app.sendMessage(text);
-    _messageController.clear();
+    if (_editingMessage != null) {
+      app.updateMessage(
+        messageId: _editingMessage!.messageId,
+        content: text,
+      );
+      _cancelEdit();
+    } else {
+      app.sendMessage(text);
+      _messageController.clear();
+    }
   }
 
   Future<void> _sendImage(
@@ -215,6 +226,13 @@ class _ChannelsScreenState extends State<ChannelsScreen> {
       imageFileName: fileName,
       content: textContent,
     );
+  }
+
+  void _cancelEdit() {
+    setState(() {
+      _editingMessage = null;
+      _messageController.clear();
+    });
   }
 
   Future<void> _showConversationActions(
@@ -604,40 +622,13 @@ class _ChannelsScreenState extends State<ChannelsScreen> {
     AppController app,
     ChannelMessageModel message,
   ) async {
-    final controller = TextEditingController(text: message.content);
-    await showDialog<void>(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text('Modifier le message'),
-          content: TextField(
-            controller: controller,
-            maxLines: 4,
-            decoration: const InputDecoration(border: OutlineInputBorder()),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Annuler'),
-            ),
-            FilledButton(
-              onPressed: () async {
-                final text = controller.text.trim();
-                if (text.isEmpty) return;
-                await app.updateMessage(
-                  messageId: message.messageId,
-                  content: text,
-                );
-                if (!context.mounted) return;
-                Navigator.of(context).pop();
-              },
-              child: const Text('Enregistrer'),
-            ),
-          ],
-        );
-      },
-    );
-    controller.dispose();
+    setState(() {
+      _editingMessage = message;
+      _messageController.text = message.content;
+      _messageController.selection = TextSelection.collapsed(
+        offset: _messageController.text.length,
+      );
+    });
   }
 
   Future<void> _showChannelInfoSheet(

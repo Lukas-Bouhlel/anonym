@@ -486,12 +486,6 @@ class AppController extends ChangeNotifier {
     }
   }
 
-  // ─────────────────────────────────────────────────────────────────────────────
-// PATCH : colle ces deux méthodes dans AppController en remplacement de
-// l'actuelle sendMessage().
-// ─────────────────────────────────────────────────────────────────────────────
-
-  /// Envoie un message TEXTE SEUL via Socket.IO (comportement inchangé).
   Future<void> sendMessage(String content) async {
     final selected = _selectedChannel;
     final userId = _authController.user?.id;

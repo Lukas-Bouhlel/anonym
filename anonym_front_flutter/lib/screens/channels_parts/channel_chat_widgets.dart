@@ -7,6 +7,8 @@ class _ChatDetailView extends StatefulWidget {
     required this.currentUserAvatarUrl,
     required this.currentUserFrameUrl,
     required this.messageController,
+    required this.editingMessage,
+    required this.onCancelEdit,
     required this.onBack,
     required this.onSendText,
     required this.onSendImage,
@@ -24,6 +26,8 @@ class _ChatDetailView extends StatefulWidget {
   final String? currentUserAvatarUrl;
   final String? currentUserFrameUrl;
   final TextEditingController messageController;
+  final ChannelMessageModel? editingMessage;
+  final VoidCallback onCancelEdit;
   final VoidCallback onBack;
   final VoidCallback onSendText;
 
@@ -49,6 +53,11 @@ class _ChatDetailView extends StatefulWidget {
 }
 
 class _ChatDetailViewState extends State<_ChatDetailView> {
+  final ScrollController _scrollController = ScrollController();
+  bool _shouldScrollToBottom = true;
+  int? _lastChannelId;
+  int? _lastMessageId;
+
   // Image sélectionnée en attente d'envoi
   String? _pendingImagePath;
   Uint8List? _pendingImageBytes;
@@ -90,6 +99,60 @@ class _ChatDetailViewState extends State<_ChatDetailView> {
   bool get _hasPendingImage =>
       _pendingImagePath != null || _pendingImageBytes != null;
 
+  void _scrollToBottom() {
+    if (widget.messages.isEmpty || !_scrollController.hasClients) {
+      return;
+    }
+
+    final position = _scrollController.position;
+    final target = position.maxScrollExtent;
+    if (target <= 0) {
+      return;
+    }
+
+    if (_scrollController.offset != target) {
+      _scrollController.jumpTo(target);
+    }
+  }
+
+  void _scheduleScrollToBottom() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      if (!_scrollController.hasClients || widget.messages.isEmpty) {
+        Future<void>.delayed(const Duration(milliseconds: 50), () {
+          if (!mounted) return;
+          _scheduleScrollToBottom();
+        });
+        return;
+      }
+
+      if (_scrollController.position.maxScrollExtent <= 0) {
+        Future<void>.delayed(const Duration(milliseconds: 50), () {
+          if (!mounted) return;
+          _scheduleScrollToBottom();
+        });
+        return;
+      }
+
+      _scrollToBottom();
+      _shouldScrollToBottom = false;
+    });
+  }
+
+  void _maybeScrollToBottom() {
+    final currentChannelId = widget.selected.channelId;
+    final currentMessageId = widget.messages.isNotEmpty
+        ? widget.messages.last.messageId
+        : null;
+
+    if (_lastChannelId != currentChannelId || _lastMessageId != currentMessageId) {
+      _lastChannelId = currentChannelId;
+      _lastMessageId = currentMessageId;
+      _shouldScrollToBottom = true;
+      _scheduleScrollToBottom();
+    }
+  }
+
   Future<void> _handleSend() async {
     if (_hasPendingImage) {
       setState(() => _isSendingImage = true);
@@ -111,7 +174,34 @@ class _ChatDetailViewState extends State<_ChatDetailView> {
   }
 
   @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _scheduleScrollToBottom();
+  }
+
+  @override
+  void didUpdateWidget(covariant _ChatDetailView oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.selected.channelId != oldWidget.selected.channelId ||
+        widget.messages.length != oldWidget.messages.length ||
+        (widget.messages.isNotEmpty && oldWidget.messages.isNotEmpty &&
+            widget.messages.last.messageId != oldWidget.messages.last.messageId)) {
+      _shouldScrollToBottom = true;
+    }
+    if (_shouldScrollToBottom) {
+      _scheduleScrollToBottom();
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    _maybeScrollToBottom();
     return SafeArea(
       bottom: false,
       child: Column(
@@ -178,7 +268,14 @@ class _ChatDetailViewState extends State<_ChatDetailView> {
               children: [
                 Positioned.fill(
                   child: ListView.builder(
-                    padding: const EdgeInsets.fromLTRB(14, 18, 14, 220),
+                    controller: _scrollController,
+                    padding: EdgeInsets.fromLTRB(
+                      14,
+                      18,
+                      14,
+                      100 + MediaQuery.of(context).viewPadding.bottom +
+                          (widget.editingMessage != null ? 60 : 0),
+                    ),
                     itemCount: widget.messages.length,
                     itemBuilder: (context, index) {
                       final message = widget.messages[index];
@@ -345,6 +442,54 @@ class _ChatDetailViewState extends State<_ChatDetailView> {
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
+                        if (widget.editingMessage != null) ...[
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 14,
+                              vertical: 12,
+                            ),
+                            margin: const EdgeInsets.only(bottom: 10),
+                            decoration: BoxDecoration(
+                              gradient: AppGradients.gB1BCFBTo393566,
+                              borderRadius: BorderRadius.circular(18),
+                              border: Border.all(
+                                color: AppColors.cFCFAFE.withValues(alpha: 0.18),
+                              ),
+                            ),
+                            child: Row(
+                              children: [
+                                GestureDetector(
+                                  onTap: widget.onCancelEdit,
+                                  child: Container(
+                                    width: 34,
+                                    height: 34,
+                                    decoration: BoxDecoration(
+                                      color: AppColors.cFCFAFE.withValues(alpha: 0.10),
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: const Icon(
+                                      Icons.close_rounded,
+                                      color: AppColors.cFCFAFE,
+                                      size: 20,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Text(
+                                    'Modification du message',
+                                    style: const TextStyle(
+                                      color: AppColors.cFCFAFE,
+                                      fontFamily: AppTypography.displayFontFamily,
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                         // ── Image preview ────────────────────────────────
                         if (_hasPendingImage)
                           _ImagePreviewBar(
@@ -713,18 +858,114 @@ class _MessageBubble extends StatelessWidget {
       ),
     );
 
+    Future<void> _showMessageOptions() async {
+      if (onEdit == null && onDelete == null) return;
+
+      final selectedAction = await showModalBottomSheet<String>(
+        context: context,
+        backgroundColor: Colors.transparent,
+        builder: (context) {
+          return Container(
+            decoration: const BoxDecoration(
+              gradient: AppGradients.gB1BCFBTo393566,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+            ),
+            child: SafeArea(
+              top: false,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      width: 48,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: AppColors.cFCFAFE.withValues(alpha: 0.28),
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    const Text(
+                      'Options du message',
+                      style: TextStyle(
+                        color: AppColors.cFCFAFE,
+                        fontFamily: AppTypography.displayFontFamily,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+                    if (onEdit != null)
+                      Container(
+                        margin: const EdgeInsets.only(bottom: 10),
+                        decoration: BoxDecoration(
+                          color: AppColors.cFCFAFE.withValues(alpha: 0.08),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: AppColors.cFCFAFE.withValues(alpha: 0.12),
+                          ),
+                        ),
+                        child: ListTile(
+                          leading: const Icon(Icons.edit, color: AppColors.cFCFAFE),
+                          title: const Text(
+                            'Modifier le message',
+                            style: TextStyle(color: AppColors.cFCFAFE),
+                          ),
+                          onTap: () => Navigator.of(context).pop('edit'),
+                        ),
+                      ),
+                    if (onDelete != null)
+                      Container(
+                        decoration: BoxDecoration(
+                          color: AppColors.cFCFAFE.withValues(alpha: 0.08),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: AppColors.cFCFAFE.withValues(alpha: 0.12),
+                          ),
+                        ),
+                        child: ListTile(
+                          leading: const Icon(Icons.delete_outline, color: AppColors.danger),
+                          title: const Text(
+                            'Supprimer le message',
+                            style: TextStyle(color: AppColors.cFCFAFE),
+                          ),
+                          onTap: () => Navigator.of(context).pop('delete'),
+                        ),
+                      ),
+                    const SizedBox(height: 10),
+                  ],
+                ),
+              ),
+            ),
+          );
+        },
+      );
+
+      if (selectedAction == 'edit') {
+        onEdit?.call();
+      } else if (selectedAction == 'delete') {
+        onDelete?.call();
+      }
+    }
+
     return Padding(
       padding: EdgeInsets.only(
         bottom: showBlockFooter ? 18 : 8,
         left: own ? 0 : 42,
         right: own ? 42 : 0,
       ),
-      child: Row(
-        mainAxisAlignment: own
-            ? MainAxisAlignment.start
-            : MainAxisAlignment.end,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: own ? [avatar, messageColumn] : [messageColumn, avatar],
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onLongPress: own ? _showMessageOptions : null,
+        child: Row(
+          mainAxisAlignment: own
+              ? MainAxisAlignment.start
+              : MainAxisAlignment.end,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: own ? [avatar, messageColumn] : [messageColumn, avatar],
+        ),
       ),
     );
   }
