@@ -406,7 +406,6 @@ class _AppShellScreenState extends State<AppShellScreen> {
                             ),
                             recognizer: TapGestureRecognizer()
                               ..onTap = () {
-                                // TODO: ouvrir la charte
                               },
                           ),
                           const TextSpan(text: '.'),

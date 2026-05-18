@@ -8,9 +8,6 @@ class _ConversationTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final subtitle = channel.description?.trim().isNotEmpty == true
-        ? channel.description!
-        : 'Derniere activite...';
     return Padding(
       padding: const EdgeInsets.only(bottom: 2),
       child: InkWell(
@@ -80,13 +77,6 @@ class _ConversationTile extends StatelessWidget {
                         fontWeight: FontWeight.w700,
                       ),
                     ),
-                    Text(
-                      subtitle,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(color: AppColors.cDBE7FE),
-                    ),
-                    const SizedBox(height: 4),
                     _ChannelTypeBadge(channel: channel),
                   ],
                 ),

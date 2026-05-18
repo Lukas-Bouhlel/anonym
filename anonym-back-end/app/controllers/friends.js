@@ -7,10 +7,10 @@ const FRIEND_STATUS = {
     BLOQUED: 'BLOQUED'
 };
 
-const friendInclude = {
+const friendDetailsInclude = {
     model: User,
     as: 'FriendDetails',
-    attributes: ['id', 'username', 'email', 'avatar'],
+    attributes: ['id', 'username', 'email', 'avatar', 'createdAt', 'updatedAt'],
     include: [
         {
             model: Inventory,
@@ -19,6 +19,7 @@ const friendInclude = {
             include: [
                 {
                     model: Shop,
+                    where: { type: 'CADRE' },
                     attributes: ['title', 'type', 'content', 'amount']
                 }
             ],
@@ -32,7 +33,7 @@ exports.readAll = async (req, res) => {
         const userId = req.auth.userId;
         const friends = await Friend.findAll({
             where: { user_id: userId, status: FRIEND_STATUS.ACTIVE },
-            include: [friendInclude]
+            include: [friendDetailsInclude]
         });
 
         res.status(200).json(friends);
@@ -65,11 +66,7 @@ exports.readOutgoingRequests = async (req, res) => {
         const userId = req.auth.userId;
         const requests = await Friend.findAll({
             where: { user_id: userId, status: FRIEND_STATUS.PENDING },
-            include: [{
-                model: User,
-                as: 'FriendDetails',
-                attributes: ['id', 'username', 'email', 'avatar']
-            }],
+            include: [friendDetailsInclude],
             order: [['createdAt', 'DESC']]
         });
 
@@ -84,11 +81,7 @@ exports.readBlockedUsers = async (req, res) => {
         const userId = req.auth.userId;
         const blockedUsers = await Friend.findAll({
             where: { user_id: userId, status: FRIEND_STATUS.BLOQUED },
-            include: [{
-                model: User,
-                as: 'FriendDetails',
-                attributes: ['id', 'username', 'email', 'avatar']
-            }],
+            include: [friendDetailsInclude],
             order: [['updatedAt', 'DESC']]
         });
 
@@ -103,7 +96,7 @@ exports.read = async (req, res) => {
         const friendId = req.params.id;
         const friend = await Friend.findOne({
             where: { user_id: req.auth.userId, friend_id: friendId },
-            include: { model: User, as: 'FriendDetails', attributes: ['id', 'username', 'email', 'avatar'] }
+            include: friendDetailsInclude
         });
 
         if (!friend) {

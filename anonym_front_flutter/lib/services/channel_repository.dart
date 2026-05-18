@@ -21,9 +21,9 @@ class ChannelRepository {
     Future<ChannelModel> postForm({String? imagePath}) async {
       final payload = <String, dynamic>{
         'channelType': channelType,
-        if (name != null) 'name': name,
-        if (description != null) 'description': description,
-        if (visibility != null) 'visibility': visibility,
+        'name': ?name,
+        'description': ?description,
+        'visibility': ?visibility,
         if (memberIds != null) 'memberIds': jsonEncode(memberIds),
         if (imagePath != null && imagePath.trim().isNotEmpty) ...{
           'image': await MultipartFile.fromFile(imagePath),
@@ -138,9 +138,9 @@ class ChannelRepository {
     String? visibility,
   }) async {
     final payload = <String, dynamic>{
-      if (name != null) 'name': name,
-      if (description != null) 'description': description,
-      if (visibility != null) 'visibility': visibility,
+      'name': ?name,
+      'description': ?description,
+      'visibility': ?visibility,
     };
     if (payload.isEmpty) return;
     try {
@@ -168,7 +168,7 @@ class ChannelRepository {
       '/api/channels/$channelId/invite-links',
       data: {
         'mode': mode,
-        if (expiresInMinutes != null) 'expiresInMinutes': expiresInMinutes,
+        'expiresInMinutes': ?expiresInMinutes,
       },
     );
     return response.data ?? const <String, dynamic>{};

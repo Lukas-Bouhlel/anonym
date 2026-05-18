@@ -38,7 +38,8 @@ class _ChatDetailView extends StatefulWidget {
     Uint8List? bytes,
     String? fileName,
     String textContent,
-  ) onSendImage;
+  )
+  onSendImage;
 
   final VoidCallback onInfo;
   final ValueChanged<ChannelMessageModel> onEdit;
@@ -145,7 +146,8 @@ class _ChatDetailViewState extends State<_ChatDetailView> {
         ? widget.messages.last.messageId
         : null;
 
-    if (_lastChannelId != currentChannelId || _lastMessageId != currentMessageId) {
+    if (_lastChannelId != currentChannelId ||
+        _lastMessageId != currentMessageId) {
       _lastChannelId = currentChannelId;
       _lastMessageId = currentMessageId;
       _shouldScrollToBottom = true;
@@ -190,8 +192,10 @@ class _ChatDetailViewState extends State<_ChatDetailView> {
     super.didUpdateWidget(oldWidget);
     if (widget.selected.channelId != oldWidget.selected.channelId ||
         widget.messages.length != oldWidget.messages.length ||
-        (widget.messages.isNotEmpty && oldWidget.messages.isNotEmpty &&
-            widget.messages.last.messageId != oldWidget.messages.last.messageId)) {
+        (widget.messages.isNotEmpty &&
+            oldWidget.messages.isNotEmpty &&
+            widget.messages.last.messageId !=
+                oldWidget.messages.last.messageId)) {
       _shouldScrollToBottom = true;
     }
     if (_shouldScrollToBottom) {
@@ -273,14 +277,16 @@ class _ChatDetailViewState extends State<_ChatDetailView> {
                       14,
                       18,
                       14,
-                      100 + MediaQuery.of(context).viewPadding.bottom +
+                      100 +
+                          MediaQuery.of(context).viewPadding.bottom +
                           (widget.editingMessage != null ? 60 : 0),
                     ),
                     itemCount: widget.messages.length,
                     itemBuilder: (context, index) {
                       final message = widget.messages[index];
-                      final previous =
-                          index > 0 ? widget.messages[index - 1] : null;
+                      final previous = index > 0
+                          ? widget.messages[index - 1]
+                          : null;
                       final messageSenderId =
                           (message.sender?.id != 0
                               ? message.sender?.id
@@ -339,10 +345,8 @@ class _ChatDetailViewState extends State<_ChatDetailView> {
                           nextSenderId == messageSenderId &&
                           nextHour == msgHour;
                       final isLastInSenderBlock = !sameSenderAsNext;
-                      final showAuthorBlock =
-                          !own && !sameSenderAsPrevious;
-                      final showOwnAuthorBlock =
-                          own && !sameSenderAsPrevious;
+                      final showAuthorBlock = !own && !sameSenderAsPrevious;
+                      final showOwnAuthorBlock = own && !sameSenderAsPrevious;
                       final senderName =
                           (message.sender?.username ?? '').trim().isNotEmpty
                           ? message.sender!.username
@@ -367,8 +371,7 @@ class _ChatDetailViewState extends State<_ChatDetailView> {
                         children: [
                           if (!sameDay && message.createdAt != null)
                             Padding(
-                              padding:
-                                  const EdgeInsets.symmetric(vertical: 12),
+                              padding: const EdgeInsets.symmetric(vertical: 12),
                               child: Row(
                                 children: [
                                   Expanded(
@@ -408,9 +411,8 @@ class _ChatDetailViewState extends State<_ChatDetailView> {
                             showAuthorBlock: showAuthorBlock,
                             showOwnAuthorBlock: showOwnAuthorBlock,
                             senderName: senderName,
-                            ownName: (widget.currentUserName ?? '')
-                                    .trim()
-                                    .isNotEmpty
+                            ownName:
+                                (widget.currentUserName ?? '').trim().isNotEmpty
                                 ? widget.currentUserName!
                                 : 'Moi',
                             senderAvatarUrl: message.sender?.avatar,
@@ -421,10 +423,10 @@ class _ChatDetailViewState extends State<_ChatDetailView> {
                             ownFrameUrl: widget.currentUserFrameUrl,
                             showBlockFooter: isLastInSenderBlock,
                             blockFooterLabel: blockFooterLabel,
-                            onEdit:
-                                own ? () => widget.onEdit(message) : null,
-                            onDelete:
-                                own ? () => widget.onDelete(message) : null,
+                            onEdit: own ? () => widget.onEdit(message) : null,
+                            onDelete: own
+                                ? () => widget.onDelete(message)
+                                : null,
                           ),
                         ],
                       );
@@ -453,7 +455,9 @@ class _ChatDetailViewState extends State<_ChatDetailView> {
                               gradient: AppGradients.gB1BCFBTo393566,
                               borderRadius: BorderRadius.circular(18),
                               border: Border.all(
-                                color: AppColors.cFCFAFE.withValues(alpha: 0.18),
+                                color: AppColors.cFCFAFE.withValues(
+                                  alpha: 0.18,
+                                ),
                               ),
                             ),
                             child: Row(
@@ -464,7 +468,9 @@ class _ChatDetailViewState extends State<_ChatDetailView> {
                                     width: 34,
                                     height: 34,
                                     decoration: BoxDecoration(
-                                      color: AppColors.cFCFAFE.withValues(alpha: 0.10),
+                                      color: AppColors.cFCFAFE.withValues(
+                                        alpha: 0.10,
+                                      ),
                                       borderRadius: BorderRadius.circular(12),
                                     ),
                                     child: const Icon(
@@ -480,7 +486,8 @@ class _ChatDetailViewState extends State<_ChatDetailView> {
                                     'Modification du message',
                                     style: const TextStyle(
                                       color: AppColors.cFCFAFE,
-                                      fontFamily: AppTypography.displayFontFamily,
+                                      fontFamily:
+                                          AppTypography.displayFontFamily,
                                       fontSize: 15,
                                       fontWeight: FontWeight.w700,
                                     ),
@@ -554,8 +561,7 @@ class _ChatDetailViewState extends State<_ChatDetailView> {
                                     disabledBorder: InputBorder.none,
                                     errorBorder: InputBorder.none,
                                     focusedErrorBorder: InputBorder.none,
-                                    contentPadding:
-                                        const EdgeInsets.symmetric(
+                                    contentPadding: const EdgeInsets.symmetric(
                                       horizontal: 8,
                                       vertical: 14,
                                     ),
@@ -653,9 +659,7 @@ class _ImagePreviewBar extends StatelessWidget {
       decoration: BoxDecoration(
         gradient: AppGradients.gB1BCFBTo393566,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: AppColors.cFCFAFE.withValues(alpha: 0.20),
-        ),
+        border: Border.all(color: AppColors.cFCFAFE.withValues(alpha: 0.20)),
       ),
       child: Row(
         children: [
@@ -873,27 +877,22 @@ class _MessageBubble extends StatelessWidget {
             child: SafeArea(
               top: false,
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 20,
+                ),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Container(
-                      width: 48,
-                      height: 4,
-                      decoration: BoxDecoration(
-                        color: AppColors.cFCFAFE.withValues(alpha: 0.28),
-                        borderRadius: BorderRadius.circular(2),
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                    const Text(
-                      'Options du message',
-                      style: TextStyle(
-                        color: AppColors.cFCFAFE,
-                        fontFamily: AppTypography.displayFontFamily,
-                        fontSize: 18,
-                        fontWeight: FontWeight.w700,
+                    Center(
+                      child: Container(
+                        width: 48,
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: AppColors.cFCFAFE.withValues(alpha: 0.28),
+                          borderRadius: BorderRadius.circular(2),
+                        ),
                       ),
                     ),
                     const SizedBox(height: 14),
@@ -901,14 +900,17 @@ class _MessageBubble extends StatelessWidget {
                       Container(
                         margin: const EdgeInsets.only(bottom: 10),
                         decoration: BoxDecoration(
-                          color: AppColors.cFCFAFE.withValues(alpha: 0.08),
+                          gradient: AppGradients.gB1BCFBTo393566,
                           borderRadius: BorderRadius.circular(16),
                           border: Border.all(
                             color: AppColors.cFCFAFE.withValues(alpha: 0.12),
                           ),
                         ),
                         child: ListTile(
-                          leading: const Icon(Icons.edit, color: AppColors.cFCFAFE),
+                          leading: const Icon(
+                            Icons.edit,
+                            color: AppColors.cFCFAFE,
+                          ),
                           title: const Text(
                             'Modifier le message',
                             style: TextStyle(color: AppColors.cFCFAFE),
@@ -919,17 +921,20 @@ class _MessageBubble extends StatelessWidget {
                     if (onDelete != null)
                       Container(
                         decoration: BoxDecoration(
-                          color: AppColors.cFCFAFE.withValues(alpha: 0.08),
+                          gradient: AppGradients.gB1BCFBTo393566,
                           borderRadius: BorderRadius.circular(16),
                           border: Border.all(
                             color: AppColors.cFCFAFE.withValues(alpha: 0.12),
                           ),
                         ),
                         child: ListTile(
-                          leading: const Icon(Icons.delete_outline, color: AppColors.danger),
+                          leading: const Icon(
+                            Icons.delete_outline,
+                            color: AppColors.danger,
+                          ),
                           title: const Text(
                             'Supprimer le message',
-                            style: TextStyle(color: AppColors.cFCFAFE),
+                            style: TextStyle(color: AppColors.danger),
                           ),
                           onTap: () => Navigator.of(context).pop('delete'),
                         ),

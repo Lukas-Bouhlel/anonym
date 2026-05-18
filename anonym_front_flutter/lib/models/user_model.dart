@@ -6,6 +6,7 @@ class UserModel {
     required this.id,
     required this.username,
     required this.email,
+    this.createdAt,
     this.avatar,
     this.bio,
     this.roles,
@@ -15,6 +16,7 @@ class UserModel {
   final int id;
   final String username;
   final String email;
+  final DateTime? createdAt;
   final String? avatar;
   final String? bio;
   final String? roles;
@@ -27,6 +29,7 @@ class UserModel {
       id: _toInt(json['id'] ?? json['user_id'] ?? json['userId']),
       username: (json['username'] ?? '').toString(),
       email: (json['email'] ?? '').toString(),
+      createdAt: _parseDateTime(json['createdAt'] ?? json['created_at']),
       avatar: MediaUrl.nullable(json['avatar']?.toString()),
       bio: json['bio']?.toString(),
       roles: json['roles']?.toString(),
@@ -38,6 +41,7 @@ class UserModel {
     int? id,
     String? username,
     String? email,
+    DateTime? createdAt,
     String? avatar,
     String? bio,
     String? roles,
@@ -47,6 +51,7 @@ class UserModel {
       id: id ?? this.id,
       username: username ?? this.username,
       email: email ?? this.email,
+      createdAt: createdAt ?? this.createdAt,
       avatar: avatar ?? this.avatar,
       bio: bio ?? this.bio,
       roles: roles ?? this.roles,
@@ -77,5 +82,11 @@ class UserModel {
       return [InventoryItemModel.fromJson(raw)];
     }
     return const [];
+  }
+
+  static DateTime? _parseDateTime(Object? value) {
+    if (value == null) return null;
+    final s = value is String ? value : value.toString();
+    return DateTime.tryParse(s);
   }
 }

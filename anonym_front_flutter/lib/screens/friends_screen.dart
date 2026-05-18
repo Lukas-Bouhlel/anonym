@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../models/friend_model.dart';
 import '../models/user_model.dart';
 import '../providers/app_controller.dart';
+import '../screens/user_profile_screen.dart';
 import '../theme.dart';
 import '../widgets/app_remote_image.dart';
 
@@ -197,8 +198,21 @@ class _FriendsScreenState extends State<FriendsScreen> {
             (user) => _DiscoverableUserTile(
               user: user,
               onTap: () {
-                _searchController.text = user.username;
-                setState(() => _query = user.username.toLowerCase());
+                showModalBottomSheet(
+                  context: context,
+                  isScrollControlled: true,
+                  backgroundColor: Colors.transparent,
+                  shape: const RoundedRectangleBorder(
+                    borderRadius: BorderRadius.vertical(
+                      top: Radius.circular(28),
+                    ),
+                  ),
+                  clipBehavior: Clip.antiAlias,
+                  builder: (_) => FractionallySizedBox(
+                    heightFactor: 0.86,
+                    child: UserProfileScreen(user: user),
+                  ),
+                );
               },
               onAdd: () => _addFriend(app, user.username, userId: user.id),
             ),
@@ -763,58 +777,88 @@ class _FriendTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final details = friend.friendDetails;
+    final user = details ?? UserModel(
+      id: friend.friendId,
+      username: 'Utilisateur',
+      email: '',
+    );
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 6),
-      child: Container(
-        height: 70,
-        padding: const EdgeInsets.symmetric(horizontal: 12),
-        decoration: BoxDecoration(
-          color: AppColors.cB1BCFB.withValues(alpha: 0.14),
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(12),
+        child: InkWell(
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: AppColors.cFCFAFE.withValues(alpha: 0.48),
-            width: 1,
-          ),
-        ),
-        child: Row(
-          children: [
-            ClipRRect(
-              borderRadius: BorderRadius.circular(11),
-              child: AppRemoteImage(
-                url: details?.avatar,
-                width: 43,
-                height: 43,
-                fallbackIcon: Icons.person_outline_rounded,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                details?.username ?? 'Utilisateur',
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  color: AppColors.cFCFAFE,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w700,
+          onTap: () {
+            showModalBottomSheet(
+              context: context,
+              isScrollControlled: true,
+              backgroundColor: Colors.transparent,
+              shape: const RoundedRectangleBorder(
+                borderRadius: BorderRadius.vertical(
+                  top: Radius.circular(28),
                 ),
               ),
-            ),
-            IconButton(
-              onPressed: () async {
-                await app.deleteFriend(friend.friendId);
-                if (!context.mounted || app.errorMessage == null) return;
-                ScaffoldMessenger.of(
-                  context,
-                ).showSnackBar(SnackBar(content: Text(app.errorMessage!)));
-              },
-              icon: const Icon(
-                Icons.close_rounded,
-                color: AppColors.cFCFAFE,
-                size: 24,
+              clipBehavior: Clip.antiAlias,
+              builder: (_) => FractionallySizedBox(
+                heightFactor: 0.86,
+                child: UserProfileScreen(user: user),
+              ),
+            );
+          },
+          child: Container(
+            height: 70,
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            decoration: BoxDecoration(
+              color: AppColors.cB1BCFB.withValues(alpha: 0.14),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: AppColors.cFCFAFE.withValues(alpha: 0.48),
+                width: 1,
               ),
             ),
-          ],
+            child: Row(
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(11),
+                  child: AppRemoteImage(
+                    url: details?.avatar,
+                    width: 43,
+                    height: 43,
+                    fallbackIcon: Icons.person_outline_rounded,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    details?.username ?? 'Utilisateur',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: AppColors.cFCFAFE,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+                IconButton(
+                  onPressed: () async {
+                    await app.deleteFriend(friend.friendId);
+                    if (!context.mounted || app.errorMessage == null) return;
+                    ScaffoldMessenger.of(
+                      context,
+                    ).showSnackBar(SnackBar(content: Text(app.errorMessage!)));
+                  },
+                  icon: const Icon(
+                    Icons.close_rounded,
+                    color: AppColors.cFCFAFE,
+                    size: 24,
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );
@@ -835,57 +879,87 @@ class _IncomingRequestTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final details = request.friendDetails;
+    final user = details ?? UserModel(
+      id: request.friendId,
+      username: 'Utilisateur',
+      email: '',
+    );
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 6),
-      child: Container(
-        height: 76,
-        padding: const EdgeInsets.symmetric(horizontal: 12),
-        decoration: BoxDecoration(
-          color: AppColors.cB1BCFB.withValues(alpha: 0.14),
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(12),
+        child: InkWell(
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: AppColors.cFCFAFE.withValues(alpha: 0.48),
-            width: 1,
-          ),
-        ),
-        child: Row(
-          children: [
-            ClipRRect(
-              borderRadius: BorderRadius.circular(11),
-              child: AppRemoteImage(
-                url: details?.avatar,
-                width: 43,
-                height: 43,
-                fallbackIcon: Icons.person_outline_rounded,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                details?.username ?? 'Utilisateur',
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  color: AppColors.cFCFAFE,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w700,
+          onTap: () {
+            showModalBottomSheet(
+              context: context,
+              isScrollControlled: true,
+              backgroundColor: Colors.transparent,
+              shape: const RoundedRectangleBorder(
+                borderRadius: BorderRadius.vertical(
+                  top: Radius.circular(28),
                 ),
               ),
-            ),
-            IconButton(
-              tooltip: 'Accepter',
-              onPressed: onAccept,
-              icon: const Icon(
-                Icons.check_circle_rounded,
-                color: AppColors.cCFFFDD,
+              clipBehavior: Clip.antiAlias,
+              builder: (_) => FractionallySizedBox(
+                heightFactor: 0.86,
+                child: UserProfileScreen(user: user),
+              ),
+            );
+          },
+          child: Container(
+            height: 76,
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            decoration: BoxDecoration(
+              color: AppColors.cB1BCFB.withValues(alpha: 0.14),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: AppColors.cFCFAFE.withValues(alpha: 0.48),
+                width: 1,
               ),
             ),
-            IconButton(
-              tooltip: 'Refuser',
-              onPressed: onBlock,
-              icon: const Icon(Icons.cancel_rounded, color: Color(0xFFFF9F9F)),
+            child: Row(
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(11),
+                  child: AppRemoteImage(
+                    url: details?.avatar,
+                    width: 43,
+                    height: 43,
+                    fallbackIcon: Icons.person_outline_rounded,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    details?.username ?? 'Utilisateur',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: AppColors.cFCFAFE,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+                IconButton(
+                  tooltip: 'Accepter',
+                  onPressed: onAccept,
+                  icon: const Icon(
+                    Icons.check_circle_rounded,
+                    color: AppColors.cCFFFDD,
+                  ),
+                ),
+                IconButton(
+                  tooltip: 'Refuser',
+                  onPressed: onBlock,
+                  icon: const Icon(Icons.cancel_rounded, color: Color(0xFFFF9F9F)),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );
@@ -901,60 +975,90 @@ class _OutgoingRequestTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final details = request.friendDetails;
+    final user = details ?? UserModel(
+      id: request.friendId,
+      username: 'Utilisateur',
+      email: '',
+    );
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 6),
-      child: Container(
-        height: 70,
-        padding: const EdgeInsets.symmetric(horizontal: 12),
-        decoration: BoxDecoration(
-          color: AppColors.cB1BCFB.withValues(alpha: 0.14),
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(12),
+        child: InkWell(
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: AppColors.cFCFAFE.withValues(alpha: 0.48),
-            width: 1,
+          onTap: () {
+            showModalBottomSheet(
+              context: context,
+              isScrollControlled: true,
+              backgroundColor: Colors.transparent,
+              shape: const RoundedRectangleBorder(
+                borderRadius: BorderRadius.vertical(
+                  top: Radius.circular(28),
+                ),
+              ),
+              clipBehavior: Clip.antiAlias,
+              builder: (_) => FractionallySizedBox(
+                heightFactor: 0.86,
+                child: UserProfileScreen(user: user),
+              ),
+            );
+          },
+          child: Container(
+            height: 70,
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            decoration: BoxDecoration(
+              color: AppColors.cB1BCFB.withValues(alpha: 0.14),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: AppColors.cFCFAFE.withValues(alpha: 0.48),
+                width: 1,
+              ),
+            ),
+            child: Row(
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(11),
+                  child: AppRemoteImage(
+                    url: details?.avatar,
+                    width: 43,
+                    height: 43,
+                    fallbackIcon: Icons.person_outline_rounded,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        details?.username ?? 'Utilisateur',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: AppColors.cFCFAFE,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      const Text(
+                        'En attente',
+                        style: TextStyle(color: AppColors.cDBE7FE, fontSize: 13),
+                      ),
+                    ],
+                  ),
+                ),
+                IconButton(
+                  tooltip: 'Annuler',
+                  onPressed: onCancel,
+                  icon: const Icon(Icons.close_rounded, color: AppColors.cFCFAFE),
+                ),
+              ],
+            ),
           ),
-        ),
-        child: Row(
-          children: [
-            ClipRRect(
-              borderRadius: BorderRadius.circular(11),
-              child: AppRemoteImage(
-                url: details?.avatar,
-                width: 43,
-                height: 43,
-                fallbackIcon: Icons.person_outline_rounded,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    details?.username ?? 'Utilisateur',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: AppColors.cFCFAFE,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  const Text(
-                    'En attente',
-                    style: TextStyle(color: AppColors.cDBE7FE, fontSize: 13),
-                  ),
-                ],
-              ),
-            ),
-            IconButton(
-              tooltip: 'Annuler',
-              onPressed: onCancel,
-              icon: const Icon(Icons.close_rounded, color: AppColors.cFCFAFE),
-            ),
-          ],
         ),
       ),
     );

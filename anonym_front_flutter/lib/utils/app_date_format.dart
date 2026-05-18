@@ -31,4 +31,6 @@ class AppDateFormat {
     final safeDiff = diff <= 0 ? 1 : diff;
     return '$safeDiff jours';
   }
+
+  static longDate(DateTime? memberSince) {}
 }
