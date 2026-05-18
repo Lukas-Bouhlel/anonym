@@ -32,7 +32,7 @@ class ChannelRepository {
         },
       };
       final response = await _dio.post<Map<String, dynamic>>(
-        '/api/channels',
+        '/api/channel',
         data: FormData.fromMap(payload),
         options: Options(contentType: 'multipart/form-data'),
       );
@@ -42,6 +42,29 @@ class ChannelRepository {
     try {
       return await postForm(imagePath: imageFilePath);
     } on DioException catch (e) {
+      final statusCode = e.response?.statusCode ?? 0;
+      if (statusCode == 404 || statusCode == 405) {
+        final payload = <String, dynamic>{
+          'channelType': channelType,
+          'name': ?name,
+          'description': ?description,
+          'visibility': ?visibility,
+          if (memberIds != null) 'memberIds': jsonEncode(memberIds),
+          if (imageFilePath != null && imageFilePath.trim().isNotEmpty) ...{
+            'image': await MultipartFile.fromFile(imageFilePath),
+            'cover_image': await MultipartFile.fromFile(imageFilePath),
+          },
+        };
+        final legacyResponse = await _dio.post<Map<String, dynamic>>(
+          '/api/channels',
+          data: FormData.fromMap(payload),
+          options: Options(contentType: 'multipart/form-data'),
+        );
+        return ChannelModel.fromJson(
+          legacyResponse.data ?? <String, dynamic>{},
+        );
+      }
+
       final message = e.response?.data?.toString().toLowerCase() ?? '';
       final canRetryWithoutImage =
           imageFilePath != null &&
@@ -60,10 +83,21 @@ class ChannelRepository {
   }
 
   Future<List<ChannelModel>> readUserChannels() async {
-    final response = await _dio.get<List<dynamic>>('/api/channels/user');
-    final payload = response.data ?? const [];
+    List<dynamic>? payload;
+    try {
+      final response = await _dio.get<List<dynamic>>('/api/channel/user');
+      payload = response.data;
+    } on DioException catch (e) {
+      final statusCode = e.response?.statusCode ?? 0;
+      if (statusCode != 404 && statusCode != 405) rethrow;
+      final legacyResponse = await _dio.get<List<dynamic>>(
+        '/api/channels/user',
+      );
+      payload = legacyResponse.data;
+    }
+    final normalized = payload ?? const [];
 
-    return payload
+    return normalized
         .whereType<Map<String, dynamic>>()
         .map(ChannelModel.fromJson)
         .toList(growable: false);
@@ -78,22 +112,43 @@ class ChannelRepository {
   }
 
   Future<List<UserModel>> readChannelUsers(int channelId) async {
-    final response = await _dio.get<List<dynamic>>(
-      '/api/channels/$channelId/users',
-    );
-    final payload = response.data ?? const [];
+    List<dynamic>? payload;
+    try {
+      final response = await _dio.get<List<dynamic>>(
+        '/api/channel/$channelId/users',
+      );
+      payload = response.data;
+    } on DioException catch (e) {
+      final statusCode = e.response?.statusCode ?? 0;
+      if (statusCode != 404 && statusCode != 405) rethrow;
+      final legacyResponse = await _dio.get<List<dynamic>>(
+        '/api/channels/$channelId/users',
+      );
+      payload = legacyResponse.data;
+    }
+    final normalized = payload ?? const [];
 
-    return payload
+    return normalized
         .whereType<Map<String, dynamic>>()
         .map(UserModel.fromJson)
         .toList(growable: false);
   }
 
   Future<List<ChannelMessageModel>> readChannelMessages(int channelId) async {
-    final response = await _dio.get<dynamic>(
-      '/api/channels/$channelId/messages',
-    );
-    final payload = response.data;
+    dynamic payload;
+    try {
+      final response = await _dio.get<dynamic>(
+        '/api/channel/$channelId/messages',
+      );
+      payload = response.data;
+    } on DioException catch (e) {
+      final statusCode = e.response?.statusCode ?? 0;
+      if (statusCode != 404 && statusCode != 405) rethrow;
+      final legacyResponse = await _dio.get<dynamic>(
+        '/api/channels/$channelId/messages',
+      );
+      payload = legacyResponse.data;
+    }
 
     if (payload is! List) {
       return const [];
@@ -166,10 +221,7 @@ class ChannelRepository {
   }) async {
     final response = await _dio.post<Map<String, dynamic>>(
       '/api/channels/$channelId/invite-links',
-      data: {
-        'mode': mode,
-        'expiresInMinutes': ?expiresInMinutes,
-      },
+      data: {'mode': mode, 'expiresInMinutes': ?expiresInMinutes},
     );
     return response.data ?? const <String, dynamic>{};
   }

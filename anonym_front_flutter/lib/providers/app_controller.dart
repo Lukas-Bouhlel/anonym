@@ -389,6 +389,16 @@ class AppController extends ChangeNotifier {
     }, fallbackMessage: 'Impossible de debloquer cet utilisateur');
   }
 
+  Future<void> blockUser(int userId) async {
+    await _wrap(() async {
+      await _friendsRepository.blockUserById(userId);
+      await Future.wait([
+        refreshBlockedUsers(silent: true),
+        refreshFriendRequests(silent: true),
+      ]);
+    }, fallbackMessage: 'Impossible de bloquer cet utilisateur');
+  }
+
   Future<void> deleteFriend(int friendId) async {
     await _wrap(() async {
       await _friendsRepository.deleteById(friendId);

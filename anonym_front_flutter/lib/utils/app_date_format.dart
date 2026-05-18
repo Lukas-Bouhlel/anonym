@@ -32,5 +32,5 @@ class AppDateFormat {
     return '$safeDiff jours';
   }
 
-  static longDate(DateTime? memberSince) {}
+  static void longDate(DateTime? memberSince) {}
 }

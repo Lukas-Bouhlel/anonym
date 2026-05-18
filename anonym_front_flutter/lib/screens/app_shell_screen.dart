@@ -42,6 +42,12 @@ class _AppShellScreenState extends State<AppShellScreen> {
   Widget build(BuildContext context) {
     return Consumer<AppController>(
       builder: (context, app, _) {
+        if (app.selectedChannel != null && _tabIndex != 1) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (!mounted) return;
+            setState(() => _tabIndex = 1);
+          });
+        }
         final isChatOpen = _tabIndex == 1 && app.selectedChannel != null;
         return Scaffold(
           extendBody: true,
@@ -113,10 +119,7 @@ class _AppShellScreenState extends State<AppShellScreen> {
               const Text(
                 "Ton groupe est l'endroit où tu retrouves tes amis. Crée le tien et lance une discussion.",
                 textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: AppColors.cFCFAFE,
-                  fontSize: 13,
-                ),
+                style: TextStyle(color: AppColors.cFCFAFE, fontSize: 13),
               ),
               const SizedBox(height: 14),
               _ActionRow(
@@ -404,9 +407,7 @@ class _AppShellScreenState extends State<AppShellScreen> {
                               fontSize: 13,
                               fontWeight: FontWeight.w600,
                             ),
-                            recognizer: TapGestureRecognizer()
-                              ..onTap = () {
-                              },
+                            recognizer: TapGestureRecognizer()..onTap = () {},
                           ),
                           const TextSpan(text: '.'),
                         ],
@@ -500,12 +501,15 @@ class _SheetShell extends StatelessWidget {
   Widget build(BuildContext context) {
     final mediaQuery = MediaQuery.of(context);
     return Padding(
-      padding: EdgeInsets.only(
-        bottom: mediaQuery.viewInsets.bottom,
-      ),
+      padding: EdgeInsets.only(bottom: mediaQuery.viewInsets.bottom),
       child: Container(
         margin: const EdgeInsets.fromLTRB(12, 0, 12, 0),
-        padding: EdgeInsets.fromLTRB(16, 10, 16, 16 + mediaQuery.padding.bottom),
+        padding: EdgeInsets.fromLTRB(
+          16,
+          10,
+          16,
+          16 + mediaQuery.padding.bottom,
+        ),
         decoration: BoxDecoration(
           gradient: AppGradients.gB1BCFBTo393566,
           borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),

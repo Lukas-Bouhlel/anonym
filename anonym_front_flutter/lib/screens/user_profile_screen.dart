@@ -7,17 +7,20 @@ import '../providers/app_controller.dart';
 import '../providers/auth_controller.dart';
 import '../theme.dart';
 import '../widgets/app_remote_image.dart';
+import 'feedback_screen.dart';
+import 'profile_screen.dart';
 
 class UserProfileScreen extends StatelessWidget {
   const UserProfileScreen({super.key, required this.user});
-
   final UserModel user;
 
   @override
   Widget build(BuildContext context) {
     final app = context.watch<AppController>();
     final me = context.watch<AuthController>().user;
+    final moreButtonKey = GlobalKey();
     final t = Theme.of(context).textTheme;
+
     String formatDate(DateTime dt) {
       const months = [
         'janvier',
@@ -164,19 +167,42 @@ class UserProfileScreen extends StatelessWidget {
                                 ),
                               ),
                               const SizedBox(width: 12),
-                              Container(
-                                width: 38,
-                                height: 38,
-                                decoration: BoxDecoration(
-                                  color: AppColors.cB1BCFB.withValues(
-                                    alpha: 0.18,
+                              InkWell(
+                                key: moreButtonKey,
+                                borderRadius: BorderRadius.circular(14),
+                                onTap: isOwnProfile
+                                    ? null
+                                    : () {
+                                        final renderBox =
+                                            moreButtonKey.currentContext!
+                                                    .findRenderObject()
+                                                as RenderBox;
+                                        final offset = renderBox.localToGlobal(
+                                          Offset.zero,
+                                        );
+                                        final buttonRect =
+                                            offset & renderBox.size;
+                                        _showProfileMenu(
+                                          context,
+                                          app,
+                                          user,
+                                          buttonRect,
+                                        );
+                                      },
+                                child: Container(
+                                  width: 38,
+                                  height: 38,
+                                  decoration: BoxDecoration(
+                                    color: AppColors.cB1BCFB.withValues(
+                                      alpha: 0.18,
+                                    ),
+                                    borderRadius: BorderRadius.circular(14),
                                   ),
-                                  borderRadius: BorderRadius.circular(14),
-                                ),
-                                child: const Icon(
-                                  Icons.more_vert,
-                                  color: AppColors.cFCFAFE,
-                                  size: 20,
+                                  child: const Icon(
+                                    Icons.more_vert,
+                                    color: AppColors.cFCFAFE,
+                                    size: 20,
+                                  ),
                                 ),
                               ),
                             ],
@@ -289,7 +315,7 @@ class UserProfileScreen extends StatelessWidget {
                                       vertical: 10,
                                     ),
                                     itemCount: publicCommunities.length,
-                                    separatorBuilder: (_, __) =>
+                                    separatorBuilder: (_, _) =>
                                         const SizedBox(height: 2),
                                     itemBuilder: (context, index) {
                                       final channel = publicCommunities[index];
@@ -312,7 +338,28 @@ class UserProfileScreen extends StatelessWidget {
                               child: SizedBox(
                                 height: 46,
                                 child: FilledButton(
-                                  onPressed: () {},
+                                  onPressed: isOwnProfile
+                                      ? null
+                                      : () async {
+                                          await app.createPrivateDm(
+                                            targetUserId: user.id,
+                                          );
+                                          if (!context.mounted) return;
+                                          if (app.errorMessage != null &&
+                                              app.errorMessage!.isNotEmpty) {
+                                            ScaffoldMessenger.of(
+                                              context,
+                                            ).showSnackBar(
+                                              SnackBar(
+                                                content: Text(
+                                                  app.errorMessage!,
+                                                ),
+                                              ),
+                                            );
+                                            return;
+                                          }
+                                          Navigator.of(context).pop();
+                                        },
                                   style: FilledButton.styleFrom(
                                     backgroundColor: AppColors.c393566,
                                     foregroundColor: AppColors.cFCFAFE,
@@ -329,7 +376,8 @@ class UserProfileScreen extends StatelessWidget {
                                     'Envoyer un message',
                                     style: TextStyle(
                                       fontWeight: FontWeight.w700,
-                                      fontFamily: AppTypography.primaryFontFamily,
+                                      fontFamily:
+                                          AppTypography.primaryFontFamily,
                                     ),
                                   ),
                                 ),
@@ -344,14 +392,57 @@ class UserProfileScreen extends StatelessWidget {
                                 borderRadius: BorderRadius.circular(12),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: AppColors.c393566.withOpacity(0.18),
+                                    color: AppColors.c393566.withValues(
+                                      alpha: 0.18,
+                                    ),
                                     blurRadius: 16,
                                     offset: const Offset(0, 6),
                                   ),
                                 ],
                               ),
                               child: IconButton(
-                                onPressed: () {},
+                                onPressed: () {
+                                  Navigator.of(context).push(
+                                    PageRouteBuilder<void>(
+                                      transitionDuration: const Duration(
+                                        milliseconds: 260,
+                                      ),
+                                      reverseTransitionDuration: const Duration(
+                                        milliseconds: 220,
+                                      ),
+                                      pageBuilder:
+                                          (
+                                            context,
+                                            animation,
+                                            secondaryAnimation,
+                                          ) => ShareProfileScreen(
+                                            username: user.username,
+                                          ),
+                                      transitionsBuilder:
+                                          (
+                                            context,
+                                            animation,
+                                            secondaryAnimation,
+                                            child,
+                                          ) {
+                                            final offset =
+                                                Tween<Offset>(
+                                                  begin: const Offset(1, 0),
+                                                  end: Offset.zero,
+                                                ).animate(
+                                                  CurvedAnimation(
+                                                    parent: animation,
+                                                    curve: Curves.easeOutCubic,
+                                                  ),
+                                                );
+                                            return SlideTransition(
+                                              position: offset,
+                                              child: child,
+                                            );
+                                          },
+                                    ),
+                                  );
+                                },
                                 icon: const Icon(
                                   Icons.reply_rounded,
                                   color: AppColors.cFCFAFE,
@@ -372,6 +463,240 @@ class UserProfileScreen extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  bool _isActiveFriendStatus(String status) {
+    return status.trim().toUpperCase() == 'ACTIVE';
+  }
+
+  bool _isFriend(AppController app, int userId) {
+    return app.friends.any(
+      (friend) =>
+          friend.friendId == userId && _isActiveFriendStatus(friend.status),
+    );
+  }
+
+  bool _hasOutgoingRequest(AppController app, int userId) {
+    return app.outgoingFriendRequests.any(
+      (request) => request.friendId == userId,
+    );
+  }
+
+  int? _outgoingRequestId(AppController app, int userId) {
+    for (final request in app.outgoingFriendRequests) {
+      if (request.friendId == userId) return request.id;
+    }
+    return null;
+  }
+
+  bool _hasIncomingRequest(AppController app, int userId) {
+    return app.incomingFriendRequests.any(
+      (request) => request.userId == userId,
+    );
+  }
+
+  bool _isBlocked(AppController app, int userId) {
+    return app.blockedUsers.any((blocked) => blocked.id == userId);
+  }
+
+  Future<void> _showProfileMenu(
+    BuildContext context,
+    AppController app,
+    UserModel user,
+    Rect anchorRect,
+  ) async {
+    final isBlocked = _isBlocked(app, user.id);
+    final isFriend = _isFriend(app, user.id);
+    final hasOutgoing = _hasOutgoingRequest(app, user.id);
+    final hasIncoming = _hasIncomingRequest(app, user.id);
+    final friendLabel = isFriend
+        ? 'Retirer cet ami'
+        : hasOutgoing
+        ? 'Retirer demande d\'ami'
+        : hasIncoming
+        ? 'Accepter la demande d\'ami'
+        : 'Ajouter en ami';
+
+    final selected = await showGeneralDialog<String>(
+      context: context,
+      barrierDismissible: true,
+      barrierLabel: 'Menu utilisateur',
+      barrierColor: Colors.black.withValues(alpha: 0.80),
+      transitionDuration: const Duration(milliseconds: 220),
+      pageBuilder: (context, animation, secondaryAnimation) {
+        final screenWidth = MediaQuery.of(context).size.width;
+        final curved = CurvedAnimation(
+          parent: animation,
+          curve: Curves.easeOutBack,
+        );
+        return Stack(
+          children: [
+            Positioned(
+              right: screenWidth - anchorRect.right,
+              top: anchorRect.bottom,
+              child: ScaleTransition(
+                scale: curved,
+                alignment: Alignment.topRight,
+                child: FadeTransition(
+                  opacity: animation,
+                  child: Material(
+                    color: Colors.transparent,
+                    child: Container(
+                      width: 240,
+                      decoration: BoxDecoration(
+                        color: AppColors.c393566,
+                        borderRadius: BorderRadius.circular(24),
+                        border: Border.all(
+                          color: AppColors.cFCFAFE.withValues(alpha: 0.18),
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.3),
+                            blurRadius: 24,
+                            offset: const Offset(0, 12),
+                          ),
+                        ],
+                      ),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          _buildMenuTile(
+                            context: context,
+                            label: friendLabel,
+                            value: 'friend',
+                          ),
+                          Divider(
+                            height: 1,
+                            color: AppColors.cFCFAFE.withValues(alpha: 0.18),
+                            indent: 20,
+                            endIndent: 20,
+                          ),
+                          _buildMenuTile(
+                            context: context,
+                            label: isBlocked ? 'Débloquer' : 'Bloquer',
+                            value: 'block',
+                            labelColor: isBlocked
+                                ? AppColors.cDBE7FE
+                                : AppColors.cFF6565,
+                          ),
+                          Divider(
+                            height: 1,
+                            color: AppColors.cFCFAFE.withValues(alpha: 0.18),
+                            indent: 20,
+                            endIndent: 20,
+                          ),
+                          _buildMenuTile(
+                            context: context,
+                            label: 'Signaler',
+                            value: 'report',
+                            labelColor: AppColors.cFF6565,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+      transitionBuilder: (context, animation, secondaryAnimation, child) {
+        return child;
+      },
+    );
+
+    if (selected != null) {
+      if (!context.mounted) return;
+      await _handleProfileMenuAction(selected, context, app, user);
+    }
+  }
+
+  Widget _buildMenuTile({
+    required BuildContext context,
+    required String label,
+    required String value,
+    Color labelColor = AppColors.cFCFAFE,
+  }) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () => Navigator.of(context).pop(value),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  label,
+                  style: TextStyle(
+                    color: labelColor,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _handleProfileMenuAction(
+    String selected,
+    BuildContext context,
+    AppController app,
+    UserModel user,
+  ) async {
+    if (selected == 'friend') {
+      final isFriend = _isFriend(app, user.id);
+      final hasOutgoing = _hasOutgoingRequest(app, user.id);
+      final hasIncoming = _hasIncomingRequest(app, user.id);
+
+      if (isFriend) {
+        await app.deleteFriend(user.id);
+      } else if (hasOutgoing) {
+        final requestId = _outgoingRequestId(app, user.id);
+        if (requestId == null || requestId <= 0) {
+          if (!context.mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Demande sortante introuvable.')),
+          );
+          return;
+        }
+        await app.cancelOutgoingFriendRequest(requestId);
+      } else if (hasIncoming) {
+        final request = app.incomingFriendRequests.firstWhere(
+          (request) => request.userId == user.id,
+          orElse: () => throw StateError('Demande entrante introuvable'),
+        );
+        await app.respondToIncomingFriendRequest(
+          requestId: request.id,
+          status: 'ACCEPTED',
+        );
+      } else {
+        await app.addFriendByUsername(user.username, userId: user.id);
+      }
+    } else if (selected == 'block') {
+      final blocked = _isBlocked(app, user.id);
+      if (blocked) {
+        await app.unblockUser(user.id);
+      } else {
+        await app.blockUser(user.id);
+      }
+    } else if (selected == 'report') {
+      await Navigator.of(
+        context,
+      ).push(MaterialPageRoute(builder: (_) => const FeedbackScreen()));
+    }
+
+    if (!context.mounted) return;
+    if (app.errorMessage != null) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(app.errorMessage!)));
+    }
   }
 }
 

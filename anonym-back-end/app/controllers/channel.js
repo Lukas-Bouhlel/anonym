@@ -62,6 +62,34 @@ exports.create = async (req, res) => {
             return res.status(400).json({ message: 'Un message prive doit contenir exactement 2 users.' });
         }
 
+        let targetUserId = null;
+        if (channelType === 'PRIVATE_DM') {
+            targetUserId = parseInt(memberIds[0], 10);
+            if (!Number.isInteger(targetUserId) || targetUserId === userId) {
+                return res.status(400).json({ message: 'Utilisateur prive invalide.' });
+            }
+
+            const existingDm = await Channel.findOne({
+                where: { channel_type: 'PRIVATE_DM' },
+                include: [
+                    {
+                        model: User,
+                        as: 'Users',
+                        attributes: ['id'],
+                        through: { attributes: [] },
+                        where: { id: { [Op.in]: [userId, targetUserId] } },
+                        required: true
+                    }
+                ],
+                group: ['Channel.channel_id'],
+                having: Channel.sequelize.literal('COUNT(DISTINCT `Users`.`id`) = 2')
+            });
+
+            if (existingDm) {
+                return res.status(200).json(existingDm);
+            }
+        }
+
         const finalVisibility = channelType === 'PRIVATE_DM' ? 'PRIVATE' : visibility;
         const coverImage = channelType === 'GROUP' ? uploadedCoverImage : null;
 
@@ -77,10 +105,6 @@ exports.create = async (req, res) => {
         await UserChannel.create({ user_id: userId, channel_id: channel.channel_id });
 
         if (channelType === 'PRIVATE_DM') {
-            const targetUserId = parseInt(memberIds[0], 10);
-            if (!Number.isInteger(targetUserId) || targetUserId === userId) {
-                return res.status(400).json({ message: 'Utilisateur prive invalide.' });
-            }
             await UserChannel.create({ user_id: targetUserId, channel_id: channel.channel_id });
         }
 
@@ -516,6 +540,10 @@ exports.deleteChannel = async (req, res) => {
 
         if (channel.created_by !== userId) {
             return res.status(403).json({ message: "Vous n'avez pas la permission de supprimer ce channel." });
+        }
+
+        if (channel.channel_type === 'PRIVATE_DM') {
+            return res.status(400).json({ message: 'Un message prive ne peut pas etre supprime.' });
         }
 
         await UserChannel.destroy({ where: { channel_id: id } });

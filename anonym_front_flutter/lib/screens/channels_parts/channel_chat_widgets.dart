@@ -862,7 +862,7 @@ class _MessageBubble extends StatelessWidget {
       ),
     );
 
-    Future<void> _showMessageOptions() async {
+    Future<void> showMessageOptions() async {
       if (onEdit == null && onDelete == null) return;
 
       final selectedAction = await showModalBottomSheet<String>(
@@ -963,7 +963,7 @@ class _MessageBubble extends StatelessWidget {
       ),
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
-        onLongPress: own ? _showMessageOptions : null,
+        onLongPress: own ? showMessageOptions : null,
         child: Row(
           mainAxisAlignment: own
               ? MainAxisAlignment.start
