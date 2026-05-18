@@ -31,6 +31,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   String _initialUsername = '';
   String _initialEmail = '';
   String? _initialBio;
+  bool _allowNonFriendDms = true;
 
   String? _pendingAvatarPath;
   Uint8List? _pendingAvatarBytes;
@@ -47,6 +48,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     _initialUsername = user?.username ?? '';
     _initialEmail = user?.email ?? '';
     _initialBio = user?.bio;
+    _allowNonFriendDms = user?.allowNonFriendDms ?? true;
     _nameController.text = _initialUsername;
     _emailController.text = _initialEmail;
     _bioController.text = _initialBio ?? '';
@@ -83,9 +85,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         decoration: BoxDecoration(
           gradient: AppGradients.gB1BCFBTo393566,
           borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-          border: Border.all(
-            color: AppColors.cFCFAFE.withValues(alpha: 0.35),
-          ),
+          border: Border.all(color: AppColors.cFCFAFE.withValues(alpha: 0.35)),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -274,6 +274,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       username: username,
       email: email,
       bio: bio,
+      allowNonFriendDms: _allowNonFriendDms,
       avatarFilePath: _pendingAvatarPath,
       avatarBytes: _pendingAvatarBytes,
       avatarFileName: _pendingAvatarFileName,
@@ -328,9 +329,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 Center(
                   child: GestureDetector(
                     onTap: _showPhotoBottomSheet,
-                    child: ClipOval(
-                      child: _buildProfileImage(user?.avatar),
-                    ),
+                    child: ClipOval(child: _buildProfileImage(user?.avatar)),
                   ),
                 ),
                 const SizedBox(height: 20),
@@ -350,8 +349,20 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                           label: 'Email',
                           controller: _emailController,
                           keyboardType: TextInputType.emailAddress,
-                          hintText:
-                              _initialEmail.isEmpty ? 'Email' : _initialEmail,
+                          hintText: _initialEmail.isEmpty
+                              ? 'Email'
+                              : _initialEmail,
+                        ),
+                        const SizedBox(height: 12),
+                        _ToggleField(
+                          label: 'Autoriser les DM des non-amis',
+                          value: _allowNonFriendDms,
+                          helper: _allowNonFriendDms
+                              ? 'Tout utilisateur peut vous envoyer un DM.'
+                              : 'Seuls vos amis actifs peuvent vous envoyer un DM.',
+                          onChanged: (value) {
+                            setState(() => _allowNonFriendDms = value);
+                          },
                         ),
                         const SizedBox(height: 12),
                         _InlineField(
@@ -383,9 +394,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                           fontSize: 16,
                         ),
                       ),
-                      child: Text(
-                        _isSaving ? 'Enregistrement...' : 'Terminer',
-                      ),
+                      child: Text(_isSaving ? 'Enregistrement...' : 'Terminer'),
                     ),
                   ),
                 ),
@@ -470,6 +479,79 @@ class _InlineField extends StatelessWidget {
                 ),
               ),
             ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ToggleField extends StatelessWidget {
+  const _ToggleField({
+    required this.label,
+    required this.value,
+    required this.onChanged,
+    this.helper,
+  });
+
+  final String label;
+  final bool value;
+  final ValueChanged<bool> onChanged;
+  final String? helper;
+
+  @override
+  Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(18, 10, 10, 10),
+      decoration: BoxDecoration(
+        gradient: AppGradients.gB1BCFBTo393566,
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(
+          color: AppColors.cFCFAFE.withValues(alpha: 0.35),
+          width: 1.1,
+        ),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: textTheme.titleSmall?.copyWith(
+                    color: AppColors.whiteColor,
+                    fontFamily: AppTypography.displayFontFamily,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                if (helper != null && helper!.trim().isNotEmpty) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    helper!,
+                    style: textTheme.bodySmall?.copyWith(
+                      color: AppColors.cDBE7FE,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          Switch(
+            value: value,
+            onChanged: onChanged,
+            activeThumbColor: AppColors.c393566,
+            activeTrackColor: AppColors.cCFFFDD,
+            inactiveThumbColor: AppColors.cFCFAFE,
+            inactiveTrackColor: AppColors.cFCFAFE.withValues(alpha: 0.25),
+            trackOutlineColor: WidgetStateProperty.resolveWith((states) {
+              return AppColors.cFCFAFE.withValues(alpha: 0.25);
+            }),
+            trackOutlineWidth: WidgetStateProperty.resolveWith((states) {
+              return 1.0;
+            }),
           ),
         ],
       ),

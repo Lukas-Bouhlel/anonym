@@ -1,5 +1,21 @@
 const { PrivateMessage, User, Inventory, Shop, Channel, UserChannel, Friend } = require('../models');
 const { Op } = require('sequelize');
+let hasAllowNonFriendDmsColumnCache = null;
+
+const hasAllowNonFriendDmsColumn = async () => {
+    if (hasAllowNonFriendDmsColumnCache !== null) {
+        return hasAllowNonFriendDmsColumnCache;
+    }
+
+    try {
+        const usersTable = await User.sequelize.getQueryInterface().describeTable('users');
+        hasAllowNonFriendDmsColumnCache = Boolean(usersTable.allow_non_friend_dms);
+    } catch {
+        hasAllowNonFriendDmsColumnCache = false;
+    }
+
+    return hasAllowNonFriendDmsColumnCache;
+};
 
 const getUnreadMessageCount = async (channelId, userId) => {
     return await PrivateMessage.count({
@@ -64,19 +80,35 @@ const initializeSocket = (io) => {
 
                 if (channel.channel_type === 'PRIVATE_DM') {
                     const receiverId = memberIds.find((id) => id !== senderId);
-                    const acceptedFriendship = await Friend.findOne({
-                        where: {
-                            status: 'ACTIVE',
-                            [Op.or]: [
-                                { user_id: senderId, friend_id: receiverId },
-                                { user_id: receiverId, friend_id: senderId }
-                            ]
-                        }
+                    const allowNonFriendDmsColumnExists = await hasAllowNonFriendDmsColumn();
+                    const receiver = await User.findByPk(receiverId, {
+                        attributes: allowNonFriendDmsColumnExists ? ['id', 'allow_non_friend_dms'] : ['id']
                     });
 
-                    if (!acceptedFriendship) {
-                        socket.emit('messageError', { message: 'Vous pouvez chatter uniquement avec un ami ayant accepte la demande.' });
+                    if (!receiver) {
+                        socket.emit('messageError', { message: 'Destinataire introuvable.' });
                         return;
+                    }
+
+                    const allowNonFriendDms = allowNonFriendDmsColumnExists
+                        ? receiver.allow_non_friend_dms
+                        : true;
+
+                    if (!allowNonFriendDms) {
+                        const acceptedFriendship = await Friend.findOne({
+                            where: {
+                                status: 'ACTIVE',
+                                [Op.or]: [
+                                    { user_id: senderId, friend_id: receiverId },
+                                    { user_id: receiverId, friend_id: senderId }
+                                ]
+                            }
+                        });
+
+                        if (!acceptedFriendship) {
+                            socket.emit('messageError', { message: 'Cet utilisateur refuse les messages prives des non-amis.' });
+                            return;
+                        }
                     }
                 }
 

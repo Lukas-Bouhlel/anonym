@@ -34,6 +34,7 @@ class AccountRepository {
     required String username,
     required String email,
     String? bio,
+    bool? allowNonFriendDms,
     String? avatarFilePath,
     Uint8List? avatarBytes,
     String? avatarFileName,
@@ -43,6 +44,7 @@ class AccountRepository {
       'username': username,
       'email': email,
       'bio': bio,
+      if (allowNonFriendDms != null) 'allow_non_friend_dms': allowNonFriendDms,
       if (deleteAvatar) 'avatar': 'delete',
     };
 

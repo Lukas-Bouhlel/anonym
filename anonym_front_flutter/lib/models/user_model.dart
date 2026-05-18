@@ -10,6 +10,7 @@ class UserModel {
     this.avatar,
     this.bio,
     this.roles,
+    this.allowNonFriendDms = true,
     this.inventories = const [],
   });
 
@@ -20,6 +21,7 @@ class UserModel {
   final String? avatar;
   final String? bio;
   final String? roles;
+  final bool allowNonFriendDms;
   final List<InventoryItemModel> inventories;
 
   bool get isAdmin => roles == 'ADMIN' || roles == 'SUPER_ADMIN';
@@ -33,6 +35,10 @@ class UserModel {
       avatar: MediaUrl.nullable(json['avatar']?.toString()),
       bio: json['bio']?.toString(),
       roles: json['roles']?.toString(),
+      allowNonFriendDms: _toBool(
+        json['allow_non_friend_dms'] ?? json['allowNonFriendDms'],
+        fallback: true,
+      ),
       inventories: _parseInventories(json),
     );
   }
@@ -45,6 +51,7 @@ class UserModel {
     String? avatar,
     String? bio,
     String? roles,
+    bool? allowNonFriendDms,
     List<InventoryItemModel>? inventories,
   }) {
     return UserModel(
@@ -55,6 +62,7 @@ class UserModel {
       avatar: avatar ?? this.avatar,
       bio: bio ?? this.bio,
       roles: roles ?? this.roles,
+      allowNonFriendDms: allowNonFriendDms ?? this.allowNonFriendDms,
       inventories: inventories ?? this.inventories,
     );
   }
@@ -64,6 +72,17 @@ class UserModel {
     if (value is num) return value.toInt();
     if (value is String) return int.tryParse(value) ?? 0;
     return 0;
+  }
+
+  static bool _toBool(Object? value, {required bool fallback}) {
+    if (value is bool) return value;
+    if (value is num) return value != 0;
+    if (value is String) {
+      final normalized = value.trim().toLowerCase();
+      if (normalized == 'true' || normalized == '1') return true;
+      if (normalized == 'false' || normalized == '0') return false;
+    }
+    return fallback;
   }
 
   static List<InventoryItemModel> _parseInventories(Map<String, dynamic> json) {

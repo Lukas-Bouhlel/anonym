@@ -1,5 +1,21 @@
-const { PrivateMessage, Channel, UserChannel, User, Inventory, Shop } = require('../models');
+const { PrivateMessage, Channel, UserChannel, User, Inventory, Shop, Friend } = require('../models');
 const { Op } = require('sequelize');
+let hasAllowNonFriendDmsColumnCache = null;
+
+const hasAllowNonFriendDmsColumn = async () => {
+    if (hasAllowNonFriendDmsColumnCache !== null) {
+        return hasAllowNonFriendDmsColumnCache;
+    }
+
+    try {
+        const usersTable = await User.sequelize.getQueryInterface().describeTable('users');
+        hasAllowNonFriendDmsColumnCache = Boolean(usersTable.allow_non_friend_dms);
+    } catch {
+        hasAllowNonFriendDmsColumnCache = false;
+    }
+
+    return hasAllowNonFriendDmsColumnCache;
+};
 
 /**
  * @module privateMessageController
@@ -43,6 +59,48 @@ exports.sendMessageWithImage = async (req, res) => {
         }
 
         // Vérifier que l'utilisateur est membre du channel
+        if (channel.channel_type === 'PRIVATE_DM') {
+            const members = await UserChannel.findAll({
+                where: { channel_id: channelId },
+                attributes: ['user_id'],
+                raw: true
+            });
+
+            const recipient = members.find((member) => member.user_id !== userId);
+            if (!recipient) {
+                return res.status(400).json({ message: 'Discussion privee invalide.' });
+            }
+
+            const allowNonFriendDmsColumnExists = await hasAllowNonFriendDmsColumn();
+            if (allowNonFriendDmsColumnExists) {
+                const recipientUser = await User.findByPk(recipient.user_id, {
+                    attributes: ['id', 'allow_non_friend_dms']
+                });
+
+                if (!recipientUser) {
+                    return res.status(404).json({ message: 'Destinataire introuvable.' });
+                }
+
+                if (!recipientUser.allow_non_friend_dms) {
+                    const activeFriendship = await Friend.findOne({
+                        where: {
+                            status: 'ACTIVE',
+                            [Op.or]: [
+                                { user_id: userId, friend_id: recipient.user_id },
+                                { user_id: recipient.user_id, friend_id: userId }
+                            ]
+                        }
+                    });
+
+                    if (!activeFriendship) {
+                        return res.status(403).json({
+                            message: 'Cet utilisateur refuse les messages prives des non-amis.'
+                        });
+                    }
+                }
+            }
+        }
+
         const isMember = await UserChannel.findOne({
             where: { channel_id: channelId, user_id: userId }
         });

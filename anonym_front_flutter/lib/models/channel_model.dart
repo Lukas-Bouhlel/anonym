@@ -1,4 +1,5 @@
 import '../utils/media_url.dart';
+import 'user_model.dart';
 
 class ChannelModel {
   const ChannelModel({
@@ -10,6 +11,7 @@ class ChannelModel {
     this.channelType = 'GROUP',
     this.visibility = 'PUBLIC',
     this.coverImage,
+    this.dmPeer,
   });
 
   final int channelId;
@@ -20,8 +22,10 @@ class ChannelModel {
   final String channelType;
   final String visibility;
   final String? coverImage;
+  final UserModel? dmPeer;
 
   factory ChannelModel.fromJson(Map<String, dynamic> json) {
+    final rawDmPeer = json['dm_peer'] ?? json['dmPeer'];
     return ChannelModel(
       channelId: _toInt(json['channel_id'] ?? json['channelId']),
       name: (json['name'] ?? '').toString(),
@@ -34,6 +38,9 @@ class ChannelModel {
       coverImage: MediaUrl.nullable(
         (json['cover_image'] ?? json['coverImage'])?.toString(),
       ),
+      dmPeer: rawDmPeer is Map
+          ? UserModel.fromJson(Map<String, dynamic>.from(rawDmPeer))
+          : null,
     );
   }
 
@@ -46,6 +53,7 @@ class ChannelModel {
     String? channelType,
     String? visibility,
     String? coverImage,
+    UserModel? dmPeer,
   }) {
     return ChannelModel(
       channelId: channelId ?? this.channelId,
@@ -56,6 +64,7 @@ class ChannelModel {
       channelType: channelType ?? this.channelType,
       visibility: visibility ?? this.visibility,
       coverImage: coverImage ?? this.coverImage,
+      dmPeer: dmPeer ?? this.dmPeer,
     );
   }
 

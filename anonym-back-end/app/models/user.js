@@ -95,6 +95,11 @@ module.exports = (sequelize, DataTypes) => {
         }
       }
     },
+    allow_non_friend_dms: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: true
+    },
     roles: {
       type: DataTypes.ENUM('USER', 'ADMIN', 'SUPER_ADMIN'),
       allowNull: false,

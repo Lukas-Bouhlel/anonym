@@ -6,6 +6,9 @@ class _ChatDetailView extends StatefulWidget {
     required this.currentUserName,
     required this.currentUserAvatarUrl,
     required this.currentUserFrameUrl,
+    required this.isDm,
+    this.dmPeerName,
+    this.dmPeerAvatarUrl,
     required this.messageController,
     required this.editingMessage,
     required this.onCancelEdit,
@@ -25,6 +28,9 @@ class _ChatDetailView extends StatefulWidget {
   final String? currentUserName;
   final String? currentUserAvatarUrl;
   final String? currentUserFrameUrl;
+  final bool isDm;
+  final String? dmPeerName;
+  final String? dmPeerAvatarUrl;
   final TextEditingController messageController;
   final ChannelMessageModel? editingMessage;
   final VoidCallback onCancelEdit;
@@ -206,6 +212,16 @@ class _ChatDetailViewState extends State<_ChatDetailView> {
   @override
   Widget build(BuildContext context) {
     _maybeScrollToBottom();
+    final headerTitle =
+        widget.isDm &&
+            widget.dmPeerName != null &&
+            widget.dmPeerName!.trim().isNotEmpty
+        ? widget.dmPeerName!.trim()
+        : widget.selected.name;
+    final headerAvatarUrl = widget.isDm
+        ? widget.dmPeerAvatarUrl
+        : widget.selected.coverImage;
+
     return SafeArea(
       bottom: false,
       child: Column(
@@ -218,26 +234,38 @@ class _ChatDetailViewState extends State<_ChatDetailView> {
               children: [
                 MojiBackButton(onTap: widget.onBack),
                 const SizedBox(width: 10),
-                Container(
+                SizedBox(
                   width: 44,
                   height: 44,
-                  decoration: BoxDecoration(
-                    color: AppColors.cFCFAFE.withValues(alpha: 0.08),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: AppColors.cFCFAFE.withValues(alpha: 0.20),
-                    ),
-                  ),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(12),
-                    child: AppRemoteImage(
-                      url: widget.selected.coverImage,
-                      width: 44,
-                      height: 44,
-                      fit: BoxFit.cover,
-                      fallbackIcon: Icons.alternate_email,
-                    ),
-                  ),
+                  child: widget.isDm
+                      ? ClipOval(
+                          child: AppRemoteImage(
+                            url: headerAvatarUrl,
+                            width: 44,
+                            height: 44,
+                            fit: BoxFit.cover,
+                            fallbackIcon: Icons.person,
+                          ),
+                        )
+                      : Container(
+                          decoration: BoxDecoration(
+                            color: AppColors.cFCFAFE.withValues(alpha: 0.08),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: AppColors.cFCFAFE.withValues(alpha: 0.20),
+                            ),
+                          ),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(12),
+                            child: AppRemoteImage(
+                              url: headerAvatarUrl,
+                              width: 44,
+                              height: 44,
+                              fit: BoxFit.cover,
+                              fallbackIcon: Icons.alternate_email,
+                            ),
+                          ),
+                        ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -245,7 +273,7 @@ class _ChatDetailViewState extends State<_ChatDetailView> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        widget.selected.name,
+                        headerTitle,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(

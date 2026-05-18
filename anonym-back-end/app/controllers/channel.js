@@ -1,8 +1,9 @@
 const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
-const { Channel, PrivateMessage, User, UserChannel, Inventory, Shop, ChannelInvite } = require('../models');
+const { Channel, PrivateMessage, User, UserChannel, Inventory, Shop, ChannelInvite, Friend } = require('../models');
 const { Op } = require('sequelize');
+let hasAllowNonFriendDmsColumnCache = null;
 
 const getUnreadMessageCount = async (channelId, userId) => {
     return await PrivateMessage.count({
@@ -37,6 +38,21 @@ const parseMaybeJsonArray = (value) => {
     return [];
 };
 
+const hasAllowNonFriendDmsColumn = async () => {
+    if (hasAllowNonFriendDmsColumnCache !== null) {
+        return hasAllowNonFriendDmsColumnCache;
+    }
+
+    try {
+        const usersTable = await User.sequelize.getQueryInterface().describeTable('users');
+        hasAllowNonFriendDmsColumnCache = Boolean(usersTable.allow_non_friend_dms);
+    } catch {
+        hasAllowNonFriendDmsColumnCache = false;
+    }
+
+    return hasAllowNonFriendDmsColumnCache;
+};
+
 exports.create = async (req, res) => {
     try {
         const { name, description, channelType = 'GROUP', visibility = 'PRIVATE' } = req.body;
@@ -69,24 +85,62 @@ exports.create = async (req, res) => {
                 return res.status(400).json({ message: 'Utilisateur prive invalide.' });
             }
 
-            const existingDm = await Channel.findOne({
-                where: { channel_type: 'PRIVATE_DM' },
-                include: [
-                    {
-                        model: User,
-                        as: 'Users',
-                        attributes: ['id'],
-                        through: { attributes: [] },
-                        where: { id: { [Op.in]: [userId, targetUserId] } },
-                        required: true
+            const allowNonFriendDmsColumnExists = await hasAllowNonFriendDmsColumn();
+            const targetUser = await User.findByPk(targetUserId, {
+                attributes: allowNonFriendDmsColumnExists ? ['id', 'allow_non_friend_dms'] : ['id']
+            });
+            if (!targetUser) {
+                return res.status(404).json({ message: 'Utilisateur introuvable.' });
+            }
+
+            const allowNonFriendDms = allowNonFriendDmsColumnExists
+                ? targetUser.allow_non_friend_dms
+                : true;
+
+            if (!allowNonFriendDms) {
+                const activeFriendship = await Friend.findOne({
+                    where: {
+                        status: 'ACTIVE',
+                        [Op.or]: [
+                            { user_id: userId, friend_id: targetUserId },
+                            { user_id: targetUserId, friend_id: userId }
+                        ]
                     }
+                });
+
+                if (!activeFriendship) {
+                    return res.status(403).json({
+                        message: 'Cet utilisateur accepte uniquement les messages prives de ses amis.'
+                    });
+                }
+            }
+
+            const candidateMemberships = await UserChannel.findAll({
+                attributes: [
+                    'channel_id',
+                    [UserChannel.sequelize.fn('COUNT', UserChannel.sequelize.fn('DISTINCT', UserChannel.sequelize.col('user_id'))), 'memberCount']
                 ],
-                group: ['Channel.channel_id'],
-                having: Channel.sequelize.literal('COUNT(DISTINCT `Users`.`id`) = 2')
+                where: {
+                    user_id: { [Op.in]: [userId, targetUserId] }
+                },
+                group: ['channel_id'],
+                having: UserChannel.sequelize.literal('COUNT(DISTINCT user_id) = 2'),
+                raw: true
             });
 
-            if (existingDm) {
-                return res.status(200).json(existingDm);
+            if (candidateMemberships.length > 0) {
+                const candidateChannelIds = candidateMemberships.map((row) => row.channel_id);
+                const existingDm = await Channel.findOne({
+                    where: {
+                        channel_id: { [Op.in]: candidateChannelIds },
+                        channel_type: 'PRIVATE_DM'
+                    },
+                    order: [['channel_id', 'ASC']]
+                });
+
+                if (existingDm) {
+                    return res.status(200).json(existingDm);
+                }
             }
         }
 
@@ -380,6 +434,53 @@ exports.getUserChannels = async (req, res) => {
             return res.status(404).json({ message: 'Utilisateur non trouve.' });
         }
 
+        const dmChannelIds = user.Channels
+            .filter((channel) => channel.channel_type === 'PRIVATE_DM')
+            .map((channel) => channel.channel_id);
+
+        const dmPeerByChannelId = {};
+        if (dmChannelIds.length > 0) {
+            const dmUsers = await User.findAll({
+                attributes: ['id', 'username', 'avatar'],
+                include: [
+                    {
+                        model: Channel,
+                        attributes: ['channel_id'],
+                        where: { channel_id: { [Op.in]: dmChannelIds } },
+                        through: { attributes: [] },
+                        required: true
+                    },
+                    {
+                        model: Inventory,
+                        where: { active: true },
+                        attributes: ['item_id', 'article_id', 'active'],
+                        include: [
+                            {
+                                model: Shop,
+                                where: { type: 'CADRE' },
+                                attributes: ['title', 'type', 'content', 'amount']
+                            }
+                        ],
+                        required: false
+                    }
+                ]
+            });
+
+            for (const dmUser of dmUsers) {
+                if (dmUser.id === userId) continue;
+                for (const dmChannel of dmUser.Channels || []) {
+                    if (!dmPeerByChannelId[dmChannel.channel_id]) {
+                        dmPeerByChannelId[dmChannel.channel_id] = {
+                            id: dmUser.id,
+                            username: dmUser.username,
+                            avatar: dmUser.avatar,
+                            Inventories: dmUser.Inventories || []
+                        };
+                    }
+                }
+            }
+        }
+
         const channelsWithUnreadCount = await Promise.all(user.Channels.map(async (channel) => {
             const unreadCount = await getUnreadMessageCount(channel.channel_id, userId);
             return {
@@ -389,7 +490,10 @@ exports.getUserChannels = async (req, res) => {
                 created_by: channel.created_by,
                 cover_image: channel.cover_image,
                 channel_type: channel.channel_type,
-                visibility: channel.visibility
+                visibility: channel.visibility,
+                dm_peer: channel.channel_type === 'PRIVATE_DM'
+                    ? (dmPeerByChannelId[channel.channel_id] || null)
+                    : null
             };
         }));
 

@@ -18,7 +18,25 @@ class ChannelRepository {
     List<int>? memberIds,
     String? imageFilePath,
   }) async {
-    Future<ChannelModel> postForm({String? imagePath}) async {
+    Future<ChannelModel> postJson({required String endpoint}) async {
+      final payload = <String, dynamic>{
+        'channelType': channelType,
+        'name': ?name,
+        'description': ?description,
+        'visibility': ?visibility,
+        if (memberIds != null) 'memberIds': memberIds,
+      };
+      final response = await _dio.post<Map<String, dynamic>>(
+        endpoint,
+        data: payload,
+      );
+      return ChannelModel.fromJson(response.data ?? <String, dynamic>{});
+    }
+
+    Future<ChannelModel> postForm({
+      required String endpoint,
+      String? imagePath,
+    }) async {
       final payload = <String, dynamic>{
         'channelType': channelType,
         'name': ?name,
@@ -32,37 +50,31 @@ class ChannelRepository {
         },
       };
       final response = await _dio.post<Map<String, dynamic>>(
-        '/api/channel',
+        endpoint,
         data: FormData.fromMap(payload),
         options: Options(contentType: 'multipart/form-data'),
       );
       return ChannelModel.fromJson(response.data ?? <String, dynamic>{});
     }
 
+    final hasImage = imageFilePath != null && imageFilePath.trim().isNotEmpty;
+    final useMultipart = hasImage;
+
     try {
-      return await postForm(imagePath: imageFilePath);
+      if (useMultipart) {
+        return await postForm(
+          endpoint: '/api/channels',
+          imagePath: imageFilePath,
+        );
+      }
+      return await postJson(endpoint: '/api/channels');
     } on DioException catch (e) {
       final statusCode = e.response?.statusCode ?? 0;
       if (statusCode == 404 || statusCode == 405) {
-        final payload = <String, dynamic>{
-          'channelType': channelType,
-          'name': ?name,
-          'description': ?description,
-          'visibility': ?visibility,
-          if (memberIds != null) 'memberIds': jsonEncode(memberIds),
-          if (imageFilePath != null && imageFilePath.trim().isNotEmpty) ...{
-            'image': await MultipartFile.fromFile(imageFilePath),
-            'cover_image': await MultipartFile.fromFile(imageFilePath),
-          },
-        };
-        final legacyResponse = await _dio.post<Map<String, dynamic>>(
-          '/api/channels',
-          data: FormData.fromMap(payload),
-          options: Options(contentType: 'multipart/form-data'),
-        );
-        return ChannelModel.fromJson(
-          legacyResponse.data ?? <String, dynamic>{},
-        );
+        if (useMultipart) {
+          return postForm(endpoint: '/api/channel', imagePath: imageFilePath);
+        }
+        return postJson(endpoint: '/api/channel');
       }
 
       final message = e.response?.data?.toString().toLowerCase() ?? '';
@@ -71,28 +83,35 @@ class ChannelRepository {
           imageFilePath.trim().isNotEmpty &&
           message.contains('cover_image');
       if (!canRetryWithoutImage) rethrow;
-      return postForm();
+      return postJson(endpoint: '/api/channels');
     }
   }
 
   Future<void> invite({required int channelId, required int userId}) async {
-    await _dio.post<void>(
-      '/api/channels/invite',
-      data: {'channelId': channelId, 'userId': userId},
-    );
+    try {
+      await _dio.post<void>(
+        '/api/channels/invite',
+        data: {'channelId': channelId, 'userId': userId},
+      );
+    } on DioException catch (e) {
+      final statusCode = e.response?.statusCode ?? 0;
+      if (statusCode != 404 && statusCode != 405) rethrow;
+      await _dio.post<void>(
+        '/api/channel/invite',
+        data: {'channelId': channelId, 'userId': userId},
+      );
+    }
   }
 
   Future<List<ChannelModel>> readUserChannels() async {
     List<dynamic>? payload;
     try {
-      final response = await _dio.get<List<dynamic>>('/api/channel/user');
+      final response = await _dio.get<List<dynamic>>('/api/channels/user');
       payload = response.data;
     } on DioException catch (e) {
       final statusCode = e.response?.statusCode ?? 0;
       if (statusCode != 404 && statusCode != 405) rethrow;
-      final legacyResponse = await _dio.get<List<dynamic>>(
-        '/api/channels/user',
-      );
+      final legacyResponse = await _dio.get<List<dynamic>>('/api/channel/user');
       payload = legacyResponse.data;
     }
     final normalized = payload ?? const [];
@@ -104,25 +123,36 @@ class ChannelRepository {
   }
 
   Future<int> readUnreadCount(int channelId) async {
-    final response = await _dio.get<Map<String, dynamic>>(
-      '/api/channels/$channelId/unreadCount',
-    );
-    final payload = response.data ?? <String, dynamic>{};
-    return _toInt(payload['count']);
+    Map<String, dynamic>? payload;
+    try {
+      final response = await _dio.get<Map<String, dynamic>>(
+        '/api/channels/$channelId/unreadCount',
+      );
+      payload = response.data;
+    } on DioException catch (e) {
+      final statusCode = e.response?.statusCode ?? 0;
+      if (statusCode != 404 && statusCode != 405) rethrow;
+      final legacyResponse = await _dio.get<Map<String, dynamic>>(
+        '/api/channel/$channelId/unreadCount',
+      );
+      payload = legacyResponse.data;
+    }
+    final normalized = payload ?? <String, dynamic>{};
+    return _toInt(normalized['count']);
   }
 
   Future<List<UserModel>> readChannelUsers(int channelId) async {
     List<dynamic>? payload;
     try {
       final response = await _dio.get<List<dynamic>>(
-        '/api/channel/$channelId/users',
+        '/api/channels/$channelId/users',
       );
       payload = response.data;
     } on DioException catch (e) {
       final statusCode = e.response?.statusCode ?? 0;
       if (statusCode != 404 && statusCode != 405) rethrow;
       final legacyResponse = await _dio.get<List<dynamic>>(
-        '/api/channels/$channelId/users',
+        '/api/channel/$channelId/users',
       );
       payload = legacyResponse.data;
     }
@@ -138,14 +168,14 @@ class ChannelRepository {
     dynamic payload;
     try {
       final response = await _dio.get<dynamic>(
-        '/api/channel/$channelId/messages',
+        '/api/channels/$channelId/messages',
       );
       payload = response.data;
     } on DioException catch (e) {
       final statusCode = e.response?.statusCode ?? 0;
       if (statusCode != 404 && statusCode != 405) rethrow;
       final legacyResponse = await _dio.get<dynamic>(
-        '/api/channels/$channelId/messages',
+        '/api/channel/$channelId/messages',
       );
       payload = legacyResponse.data;
     }
@@ -161,15 +191,33 @@ class ChannelRepository {
   }
 
   Future<void> leaveChannel(int channelId) async {
-    await _dio.delete<void>('/api/channels/leave/$channelId');
+    try {
+      await _dio.delete<void>('/api/channels/leave/$channelId');
+    } on DioException catch (e) {
+      final statusCode = e.response?.statusCode ?? 0;
+      if (statusCode != 404 && statusCode != 405) rethrow;
+      await _dio.delete<void>('/api/channel/leave/$channelId');
+    }
   }
 
   Future<void> deleteChannel(int channelId) async {
-    await _dio.delete<void>('/api/channels/$channelId');
+    try {
+      await _dio.delete<void>('/api/channels/$channelId');
+    } on DioException catch (e) {
+      final statusCode = e.response?.statusCode ?? 0;
+      if (statusCode != 404 && statusCode != 405) rethrow;
+      await _dio.delete<void>('/api/channel/$channelId');
+    }
   }
 
   Future<void> joinPublic(int channelId) async {
-    await _dio.post<void>('/api/channels/$channelId/join-public', data: {});
+    try {
+      await _dio.post<void>('/api/channels/$channelId/join-public', data: {});
+    } on DioException catch (e) {
+      final statusCode = e.response?.statusCode ?? 0;
+      if (statusCode != 404 && statusCode != 405) rethrow;
+      await _dio.post<void>('/api/channel/$channelId/join-public', data: {});
+    }
   }
 
   Future<void> updateCover({
@@ -179,11 +227,21 @@ class ChannelRepository {
     final formData = FormData.fromMap({
       'image': await MultipartFile.fromFile(imageFilePath),
     });
-    await _dio.put<void>(
-      '/api/channels/$channelId/cover',
-      data: formData,
-      options: Options(contentType: 'multipart/form-data'),
-    );
+    try {
+      await _dio.put<void>(
+        '/api/channels/$channelId/cover',
+        data: formData,
+        options: Options(contentType: 'multipart/form-data'),
+      );
+    } on DioException catch (e) {
+      final statusCode = e.response?.statusCode ?? 0;
+      if (statusCode != 404 && statusCode != 405) rethrow;
+      await _dio.put<void>(
+        '/api/channel/$channelId/cover',
+        data: formData,
+        options: Options(contentType: 'multipart/form-data'),
+      );
+    }
   }
 
   Future<void> updateGroup({
@@ -201,17 +259,39 @@ class ChannelRepository {
     try {
       await _dio.put<void>('/api/channels/$channelId', data: payload);
     } on DioException {
-      await _dio.patch<void>('/api/channels/$channelId', data: payload);
+      try {
+        await _dio.patch<void>('/api/channels/$channelId', data: payload);
+      } on DioException catch (e) {
+        final statusCode = e.response?.statusCode ?? 0;
+        if (statusCode != 404 && statusCode != 405) rethrow;
+        try {
+          await _dio.put<void>('/api/channel/$channelId', data: payload);
+        } on DioException {
+          await _dio.patch<void>('/api/channel/$channelId', data: payload);
+        }
+      }
     }
   }
 
   Future<int> joinByInvite(String code) async {
-    final response = await _dio.post<Map<String, dynamic>>(
-      '/api/channels/join-by-invite',
-      data: {'code': code},
-    );
-    final payload = response.data ?? const <String, dynamic>{};
-    return _toInt(payload['channel_id']);
+    Map<String, dynamic>? payload;
+    try {
+      final response = await _dio.post<Map<String, dynamic>>(
+        '/api/channels/join-by-invite',
+        data: {'code': code},
+      );
+      payload = response.data;
+    } on DioException catch (e) {
+      final statusCode = e.response?.statusCode ?? 0;
+      if (statusCode != 404 && statusCode != 405) rethrow;
+      final legacyResponse = await _dio.post<Map<String, dynamic>>(
+        '/api/channel/join-by-invite',
+        data: {'code': code},
+      );
+      payload = legacyResponse.data;
+    }
+    final normalized = payload ?? const <String, dynamic>{};
+    return _toInt(normalized['channel_id']);
   }
 
   Future<Map<String, dynamic>> createInviteLink({
@@ -219,11 +299,21 @@ class ChannelRepository {
     required String mode,
     int? expiresInMinutes,
   }) async {
-    final response = await _dio.post<Map<String, dynamic>>(
-      '/api/channels/$channelId/invite-links',
-      data: {'mode': mode, 'expiresInMinutes': ?expiresInMinutes},
-    );
-    return response.data ?? const <String, dynamic>{};
+    try {
+      final response = await _dio.post<Map<String, dynamic>>(
+        '/api/channels/$channelId/invite-links',
+        data: {'mode': mode, 'expiresInMinutes': ?expiresInMinutes},
+      );
+      return response.data ?? const <String, dynamic>{};
+    } on DioException catch (e) {
+      final statusCode = e.response?.statusCode ?? 0;
+      if (statusCode != 404 && statusCode != 405) rethrow;
+      final legacyResponse = await _dio.post<Map<String, dynamic>>(
+        '/api/channel/$channelId/invite-links',
+        data: {'mode': mode, 'expiresInMinutes': ?expiresInMinutes},
+      );
+      return legacyResponse.data ?? const <String, dynamic>{};
+    }
   }
 
   int _toInt(Object? value) {

@@ -2,6 +2,22 @@ const { User, Inventory, Shop } = require('../models');
 const bcrypt = require('bcrypt');
 const fs = require('fs');
 const path = require('path');
+let hasAllowNonFriendDmsColumnCache = null;
+
+const hasAllowNonFriendDmsColumn = async () => {
+    if (hasAllowNonFriendDmsColumnCache !== null) {
+        return hasAllowNonFriendDmsColumnCache;
+    }
+
+    try {
+        const usersTable = await User.sequelize.getQueryInterface().describeTable('users');
+        hasAllowNonFriendDmsColumnCache = Boolean(usersTable.allow_non_friend_dms);
+    } catch {
+        hasAllowNonFriendDmsColumnCache = false;
+    }
+
+    return hasAllowNonFriendDmsColumnCache;
+};
 
 /**
  * @module UserController
@@ -130,7 +146,7 @@ exports.update = async (req, res) => {
     try {
         const userId = req.auth.userId;// Récupérer l'ID de l'utilisateur depuis les paramètres JWT
         const datas = JSON.parse(req.body.datas);
-        const { username, email, avatar, bio } = datas;
+        const { username, email, avatar, bio, allow_non_friend_dms } = datas;
 
         if (!userId) {
             return res.status(400).json({ message: "User ID is required." });
@@ -201,6 +217,9 @@ exports.update = async (req, res) => {
         }
         if (email) user.email = email;
         if (typeof bio === 'string' || bio === null) user.bio = bio;
+        if (typeof allow_non_friend_dms === 'boolean' && await hasAllowNonFriendDmsColumn()) {
+            user.allow_non_friend_dms = allow_non_friend_dms;
+        }
         user.avatar = newAvatarPath;
 
         await user.save();

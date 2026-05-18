@@ -72,11 +72,28 @@ class _ChannelsScreenState extends State<ChannelsScreen> {
         if (app.selectedChannel != null) {
           final selected = app.selectedChannel!;
           final isGroup = selected.channelType.trim().toUpperCase() == 'GROUP';
+          final isDm =
+              selected.channelType.trim().toUpperCase() == 'PRIVATE_DM';
+          final dmPeerFromMembers = isDm
+              ? app.channelMembers.firstWhere(
+                  (member) => member.id != currentUser?.id,
+                  orElse: () => const UserModel(id: 0, username: '', email: ''),
+                )
+              : null;
+          final hasMemberPeer = (dmPeerFromMembers?.username ?? '')
+              .trim()
+              .isNotEmpty;
+          final dmPeer = hasMemberPeer ? dmPeerFromMembers : selected.dmPeer;
+          final dmPeerName = (dmPeer?.username ?? '').trim();
+          final hasDmPeerName = dmPeerName.isNotEmpty;
           return _ChatDetailView(
             currentUserId: currentUser?.id,
             currentUserName: currentUser?.username,
             currentUserAvatarUrl: currentUser?.avatar,
             currentUserFrameUrl: _activeFrameUrlFromUser(currentUser),
+            isDm: isDm,
+            dmPeerName: hasDmPeerName ? dmPeerName : null,
+            dmPeerAvatarUrl: dmPeer?.avatar,
             messageController: _messageController,
             editingMessage: _editingMessage,
             onCancelEdit: _cancelEdit,
@@ -97,8 +114,10 @@ class _ChannelsScreenState extends State<ChannelsScreen> {
 
         final channels = app.channels
             .where((channel) {
-              final source = '${channel.name} ${channel.description ?? ''}'
-                  .toLowerCase();
+              final dmPeerName = channel.dmPeer?.username ?? '';
+              final source =
+                  '${channel.name} ${channel.description ?? ''} $dmPeerName'
+                      .toLowerCase();
               return _query.isEmpty || source.contains(_query);
             })
             .toList(growable: false);
@@ -201,10 +220,7 @@ class _ChannelsScreenState extends State<ChannelsScreen> {
     if (text.isEmpty) return;
     app.clearMessageError();
     if (_editingMessage != null) {
-      app.updateMessage(
-        messageId: _editingMessage!.messageId,
-        content: text,
-      );
+      app.updateMessage(messageId: _editingMessage!.messageId, content: text);
       _cancelEdit();
     } else {
       app.sendMessage(text);

@@ -262,12 +262,15 @@ class AppController extends ChangeNotifier {
           for (final channel in _channels) channel.channelId: channel,
         };
         final fetched = await _channelRepository.readUserChannels();
-        _channels = fetched.map((channel) {
-          final previous = previousById[channel.channelId];
-          final hasDescription = channel.description?.trim().isNotEmpty == true;
-          if (hasDescription || previous == null) return channel;
-          return channel.copyWith(description: previous.description);
-        }).toList(growable: false);
+        _channels = fetched
+            .map((channel) {
+              final previous = previousById[channel.channelId];
+              final hasDescription =
+                  channel.description?.trim().isNotEmpty == true;
+              if (hasDescription || previous == null) return channel;
+              return channel.copyWith(description: previous.description);
+            })
+            .toList(growable: false);
         if (_selectedChannel != null) {
           final match = _channels.where(
             (it) => it.channelId == _selectedChannel!.channelId,
@@ -540,7 +543,10 @@ class AppController extends ChangeNotifier {
         notifyListeners();
       }
     } catch (e) {
-      _messageError = ApiErrorParser.parse(e, fallback: 'Envoi image impossible');
+      _messageError = ApiErrorParser.parse(
+        e,
+        fallback: 'Envoi image impossible',
+      );
       notifyListeners();
     }
   }
@@ -704,13 +710,15 @@ class AppController extends ChangeNotifier {
         visibility: normalizedVisibility ?? selected.visibility,
       );
       _channels = _channels
-          .map((channel) => channel.channelId == selected.channelId
-              ? channel.copyWith(
-                  name: normalizedName ?? channel.name,
-                  description: normalizedDescription ?? channel.description,
-                  visibility: normalizedVisibility ?? channel.visibility,
-                )
-              : channel)
+          .map(
+            (channel) => channel.channelId == selected.channelId
+                ? channel.copyWith(
+                    name: normalizedName ?? channel.name,
+                    description: normalizedDescription ?? channel.description,
+                    visibility: normalizedVisibility ?? channel.visibility,
+                  )
+                : channel,
+          )
           .toList(growable: false);
       notifyListeners();
 
@@ -806,6 +814,7 @@ class AppController extends ChangeNotifier {
     required String username,
     required String email,
     String? bio,
+    bool? allowNonFriendDms,
     String? avatarFilePath,
     Uint8List? avatarBytes,
     String? avatarFileName,
@@ -816,6 +825,7 @@ class AppController extends ChangeNotifier {
         username: username,
         email: email,
         bio: bio,
+        allowNonFriendDms: allowNonFriendDms,
         avatarFilePath: avatarFilePath,
         avatarBytes: avatarBytes,
         avatarFileName: avatarFileName,
@@ -902,7 +912,7 @@ class AppController extends ChangeNotifier {
   void _onMessageErrorFromSocket(String message) {
     final normalized = message.trim();
     _messageError = normalized.isEmpty
-        ? 'Vous pouvez chatter uniquement avec un ami ayant accepte la demande.'
+        ? 'DM impossible: vous devez etre ami actif ou activer les DM non-amis.'
         : normalized;
     notifyListeners();
   }

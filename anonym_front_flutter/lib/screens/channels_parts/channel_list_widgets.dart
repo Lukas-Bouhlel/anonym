@@ -1,5 +1,18 @@
 part of '../channels_screen.dart';
 
+String? _dmPeerFrameUrl(UserModel? user) {
+  if (user == null) return null;
+  for (final item in user.inventories) {
+    if (!item.active) continue;
+    final shop = item.shop;
+    if (shop == null) continue;
+    if (shop.type.trim().toUpperCase() != 'CADRE') continue;
+    final content = shop.content.trim();
+    if (content.isNotEmpty) return content;
+  }
+  return null;
+}
+
 class _ConversationTile extends StatelessWidget {
   const _ConversationTile({required this.channel, required this.onTap});
 
@@ -8,6 +21,12 @@ class _ConversationTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDm = channel.channelType.trim().toUpperCase() == 'PRIVATE_DM';
+    final dmPeer = channel.dmPeer;
+    final dmPeerName = (dmPeer?.username ?? '').trim();
+    final title = isDm && dmPeerName.isNotEmpty ? dmPeerName : channel.name;
+    final avatarUrl = isDm ? dmPeer?.avatar : channel.coverImage;
+    final dmPeerFrameUrl = isDm ? _dmPeerFrameUrl(dmPeer) : null;
     return Padding(
       padding: const EdgeInsets.only(bottom: 2),
       child: InkWell(
@@ -27,27 +46,55 @@ class _ConversationTile extends StatelessWidget {
             children: [
               Stack(
                 children: [
-                  Container(
+                  SizedBox(
                     width: 48,
                     height: 48,
-                    decoration: BoxDecoration(
-                      gradient: AppGradients.gB1BCFBTo393566,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: AppColors.whiteColor.withValues(alpha: 0.24),
-                        width: 1.24,
-                      ),
-                    ),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(12),
-                      child: AppRemoteImage(
-                        url: channel.coverImage,
-                        width: 48,
-                        height: 48,
-                        fit: BoxFit.cover,
-                        fallbackIcon: Icons.alternate_email,
-                      ),
-                    ),
+                    child: isDm
+                        ? Stack(
+                            alignment: Alignment.center,
+                            children: [
+                              ClipOval(
+                                child: AppRemoteImage(
+                                  url: avatarUrl,
+                                  width: 48,
+                                  height: 48,
+                                  fit: BoxFit.cover,
+                                  fallbackIcon: Icons.person,
+                                ),
+                              ),
+                              if (dmPeerFrameUrl != null)
+                                IgnorePointer(
+                                  child: AppRemoteImage(
+                                    url: dmPeerFrameUrl,
+                                    width: 52,
+                                    height: 52,
+                                    fit: BoxFit.contain,
+                                  ),
+                                ),
+                            ],
+                          )
+                        : Container(
+                            decoration: BoxDecoration(
+                              gradient: AppGradients.gB1BCFBTo393566,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: AppColors.whiteColor.withValues(
+                                  alpha: 0.24,
+                                ),
+                                width: 1.24,
+                              ),
+                            ),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(12),
+                              child: AppRemoteImage(
+                                url: avatarUrl,
+                                width: 48,
+                                height: 48,
+                                fit: BoxFit.cover,
+                                fallbackIcon: Icons.alternate_email,
+                              ),
+                            ),
+                          ),
                   ),
                   Positioned(
                     right: -1,
@@ -69,7 +116,7 @@ class _ConversationTile extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      channel.name,
+                      title,
                       style: const TextStyle(
                         fontFamily: AppTypography.displayFontFamily,
                         color: AppColors.cFCFAFE,
