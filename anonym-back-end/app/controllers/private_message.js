@@ -1,5 +1,6 @@
 const { PrivateMessage, Channel, UserChannel, User, Inventory, Shop, Friend } = require('../models');
 const { Op } = require('sequelize');
+const { deleteUploadFileIfExists } = require('../utils/fileCleanup');
 let hasAllowNonFriendDmsColumnCache = null;
 
 const hasAllowNonFriendDmsColumn = async () => {
@@ -257,6 +258,7 @@ exports.delete = async (req, res) => {
             return res.status(404).json({ message: "Message not found or you're not the sender." });
         }
 
+        deleteUploadFileIfExists(message.image_url);
         await message.destroy();
 
         res.status(200).json({ message: "Message deleted successfully." });

@@ -5,6 +5,7 @@ import '../providers/app_controller.dart';
 import '../theme.dart';
 import '../widgets/app_remote_image.dart';
 import '../widgets/chrome/moji_back_button.dart';
+import '../widgets/modals/moji_confirm_modal.dart';
 
 class BlockedUsersScreen extends StatefulWidget {
   const BlockedUsersScreen({super.key});
@@ -77,7 +78,7 @@ class _BlockedUsersScreenState extends State<BlockedUsersScreen> {
                         child: _BlockedUserCard(
                           username: user.username,
                           avatarUrl: user.avatar,
-                          onUnblock: () => app.unblockUser(user.id),
+                          onUnblock: () => _confirmAndUnblock(user.id),
                         ),
                       ),
                     ),
@@ -88,6 +89,22 @@ class _BlockedUsersScreenState extends State<BlockedUsersScreen> {
         ),
       ),
     );
+  }
+
+  Future<void> _confirmAndUnblock(int userId) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      barrierDismissible: true,
+      builder: (dialogContext) => MojiConfirmModal(
+        title: 'Debloquer cet utilisateur ?',
+        description: 'Il pourra de nouveau te contacter et interagir avec toi.',
+        confirmLabel: 'Debloquer',
+        onConfirm: () => Navigator.of(dialogContext).pop(true),
+        onCancel: () => Navigator.of(dialogContext).pop(false),
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    await context.read<AppController>().unblockUser(userId);
   }
 }
 
@@ -100,7 +117,7 @@ class _BlockedUserCard extends StatelessWidget {
 
   final String username;
   final String? avatarUrl;
-  final VoidCallback onUnblock;
+  final Future<void> Function() onUnblock;
 
   @override
   Widget build(BuildContext context) {
@@ -147,7 +164,7 @@ class _BlockedUserCard extends StatelessWidget {
             child: SizedBox(
               height: 40,
               child: TextButton(
-                onPressed: onUnblock,
+                onPressed: () async => onUnblock(),
                 style: TextButton.styleFrom(
                   foregroundColor: AppColors.whiteColor,
                   padding: const EdgeInsets.symmetric(horizontal: 16),

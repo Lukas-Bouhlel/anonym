@@ -75,6 +75,7 @@ class AppController extends ChangeNotifier {
   List<FriendModel> _outgoingFriendRequests = const [];
   List<UserModel> _blockedUsers = const [];
   List<ChannelModel> _channels = const [];
+  List<ChannelModel> _publicChannels = const [];
   ChannelModel? _selectedChannel;
   List<UserModel> _channelMembers = const [];
   List<ChannelMessageModel> _messages = const [];
@@ -95,6 +96,7 @@ class AppController extends ChangeNotifier {
   List<FriendModel> get outgoingFriendRequests => _outgoingFriendRequests;
   List<UserModel> get blockedUsers => _blockedUsers;
   List<ChannelModel> get channels => _channels;
+  List<ChannelModel> get publicChannels => _publicChannels;
   ChannelModel? get selectedChannel => _selectedChannel;
   List<UserModel> get channelMembers => _channelMembers;
   List<ChannelMessageModel> get messages => _messages;
@@ -184,6 +186,7 @@ class AppController extends ChangeNotifier {
         refreshBlockedUsers(silent: true),
         refreshUsers(silent: true),
         refreshChannels(silent: true),
+        refreshPublicChannels(silent: true),
         refreshShop(silent: true),
         refreshInventory(silent: true),
         refreshInvoices(silent: true),
@@ -261,7 +264,9 @@ class AppController extends ChangeNotifier {
         final previousById = <int, ChannelModel>{
           for (final channel in _channels) channel.channelId: channel,
         };
-        final fetched = await _channelRepository.readUserChannels();
+        final fetched = await _channelRepository.readUserChannels(
+          filter: 'joined',
+        );
         _channels = fetched
             .map((channel) {
               final previous = previousById[channel.channelId];
@@ -286,6 +291,18 @@ class AppController extends ChangeNotifier {
       },
       silent: silent,
       fallbackMessage: 'Impossible de charger les channels',
+    );
+  }
+
+  Future<void> refreshPublicChannels({bool silent = false}) async {
+    await _wrap(
+      () async {
+        _publicChannels = await _channelRepository.readUserChannels(
+          filter: 'all',
+        );
+      },
+      silent: silent,
+      fallbackMessage: 'Impossible de charger les channels publics',
     );
   }
 
@@ -636,7 +653,10 @@ class AppController extends ChangeNotifier {
   Future<void> joinPublicChannel(int channelId) async {
     await _wrap(() async {
       await _channelRepository.joinPublic(channelId);
-      await refreshChannels(silent: true);
+      await Future.wait([
+        refreshChannels(silent: true),
+        refreshPublicChannels(silent: true),
+      ]);
     }, fallbackMessage: 'Impossible de rejoindre ce channel public');
   }
 
@@ -1059,6 +1079,7 @@ class AppController extends ChangeNotifier {
     _outgoingFriendRequests = const [];
     _blockedUsers = const [];
     _channels = const [];
+    _publicChannels = const [];
     _selectedChannel = null;
     _channelMembers = const [];
     _messages = const [];

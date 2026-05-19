@@ -355,7 +355,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                         ),
                         const SizedBox(height: 12),
                         _ToggleField(
-                          label: 'Autoriser les DM des non-amis',
+                          label: 'Autoriser les DM',
                           value: _allowNonFriendDms,
                           helper: _allowNonFriendDms
                               ? 'Tout utilisateur peut vous envoyer un DM.'

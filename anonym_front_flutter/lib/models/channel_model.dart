@@ -12,6 +12,8 @@ class ChannelModel {
     this.visibility = 'PUBLIC',
     this.coverImage,
     this.dmPeer,
+    this.isJoined,
+    this.listCategory,
   });
 
   final int channelId;
@@ -23,6 +25,8 @@ class ChannelModel {
   final String visibility;
   final String? coverImage;
   final UserModel? dmPeer;
+  final bool? isJoined;
+  final String? listCategory;
 
   factory ChannelModel.fromJson(Map<String, dynamic> json) {
     final rawDmPeer = json['dm_peer'] ?? json['dmPeer'];
@@ -38,6 +42,9 @@ class ChannelModel {
       coverImage: MediaUrl.nullable(
         (json['cover_image'] ?? json['coverImage'])?.toString(),
       ),
+      isJoined: _toBool(json['is_joined'] ?? json['isJoined']),
+      listCategory: (json['list_category'] ?? json['listCategory'])
+          ?.toString(),
       dmPeer: rawDmPeer is Map
           ? UserModel.fromJson(Map<String, dynamic>.from(rawDmPeer))
           : null,
@@ -54,6 +61,8 @@ class ChannelModel {
     String? visibility,
     String? coverImage,
     UserModel? dmPeer,
+    bool? isJoined,
+    String? listCategory,
   }) {
     return ChannelModel(
       channelId: channelId ?? this.channelId,
@@ -65,6 +74,8 @@ class ChannelModel {
       visibility: visibility ?? this.visibility,
       coverImage: coverImage ?? this.coverImage,
       dmPeer: dmPeer ?? this.dmPeer,
+      isJoined: isJoined ?? this.isJoined,
+      listCategory: listCategory ?? this.listCategory,
     );
   }
 
@@ -73,5 +84,16 @@ class ChannelModel {
     if (value is num) return value.toInt();
     if (value is String) return int.tryParse(value) ?? 0;
     return 0;
+  }
+
+  static bool? _toBool(Object? value) {
+    if (value is bool) return value;
+    if (value is num) return value != 0;
+    if (value is String) {
+      final normalized = value.trim().toLowerCase();
+      if (normalized == 'true' || normalized == '1') return true;
+      if (normalized == 'false' || normalized == '0') return false;
+    }
+    return null;
   }
 }

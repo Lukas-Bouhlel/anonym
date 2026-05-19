@@ -103,15 +103,25 @@ class ChannelRepository {
     }
   }
 
-  Future<List<ChannelModel>> readUserChannels() async {
+  Future<List<ChannelModel>> readUserChannels({String? filter}) async {
     List<dynamic>? payload;
+    final query = <String, dynamic>{};
+    if (filter != null && filter.trim().isNotEmpty) {
+      query['filter'] = filter.trim().toLowerCase();
+    }
     try {
-      final response = await _dio.get<List<dynamic>>('/api/channels/user');
+      final response = await _dio.get<List<dynamic>>(
+        '/api/channels/user',
+        queryParameters: query.isEmpty ? null : query,
+      );
       payload = response.data;
     } on DioException catch (e) {
       final statusCode = e.response?.statusCode ?? 0;
       if (statusCode != 404 && statusCode != 405) rethrow;
-      final legacyResponse = await _dio.get<List<dynamic>>('/api/channel/user');
+      final legacyResponse = await _dio.get<List<dynamic>>(
+        '/api/channel/user',
+        queryParameters: query.isEmpty ? null : query,
+      );
       payload = legacyResponse.data;
     }
     final normalized = payload ?? const [];
@@ -120,6 +130,30 @@ class ChannelRepository {
         .whereType<Map<String, dynamic>>()
         .map(ChannelModel.fromJson)
         .toList(growable: false);
+  }
+
+  Future<List<ChannelModel>> readPublicChannels() async {
+    try {
+      return await readUserChannels(filter: 'all');
+    } on DioException {
+      List<dynamic>? payload;
+      try {
+        final response = await _dio.get<List<dynamic>>('/api/channels/public');
+        payload = response.data;
+      } on DioException catch (e) {
+        final statusCode = e.response?.statusCode ?? 0;
+        if (statusCode != 404 && statusCode != 405) rethrow;
+        final legacyResponse = await _dio.get<List<dynamic>>(
+          '/api/channel/public',
+        );
+        payload = legacyResponse.data;
+      }
+      final normalized = payload ?? const [];
+      return normalized
+          .whereType<Map<String, dynamic>>()
+          .map(ChannelModel.fromJson)
+          .toList(growable: false);
+    }
   }
 
   Future<int> readUnreadCount(int channelId) async {

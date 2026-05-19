@@ -287,56 +287,13 @@ class _ChannelsScreenState extends State<ChannelsScreen> {
                       borderRadius: BorderRadius.circular(99),
                     ),
                   ),
-                  _InfoRow(
-                    icon: Icons.public_rounded,
-                    label: 'Creer un groupe public',
-                    onTap: () async {
-                      Navigator.of(context).pop();
-                      await _showCreateGroupDialog(
-                        context,
-                        app,
-                        visibility: 'PUBLIC',
-                      );
-                    },
-                  ),
-                  const SizedBox(height: 8),
-                  _InfoRow(
-                    icon: Icons.lock_outline_rounded,
-                    label: 'Creer un groupe prive',
-                    onTap: () async {
-                      Navigator.of(context).pop();
-                      await _showCreateGroupDialog(
-                        context,
-                        app,
-                        visibility: 'PRIVATE',
-                      );
-                    },
-                  ),
-                  const SizedBox(height: 8),
-                  _InfoRow(
-                    icon: Icons.person_add_alt_1_rounded,
-                    label: 'Creer une conversation DM',
-                    onTap: () async {
-                      Navigator.of(context).pop();
-                      await _showCreateDmDialog(context, app);
-                    },
-                  ),
                   const SizedBox(height: 8),
                   _InfoRow(
                     icon: Icons.login_rounded,
-                    label: 'Rejoindre un groupe public (ID)',
+                    label: 'Rejoindre une conversation',
                     onTap: () async {
                       Navigator.of(context).pop();
-                      await _showJoinPublicDialog(context, app);
-                    },
-                  ),
-                  const SizedBox(height: 8),
-                  _InfoRow(
-                    icon: Icons.vpn_key_outlined,
-                    label: 'Rejoindre via code invitation',
-                    onTap: () async {
-                      Navigator.of(context).pop();
-                      await _showJoinByCodeDialog(context, app);
+                      await _openJoinPublicDirectoryScreen(context, app);
                     },
                   ),
                 ],
@@ -348,261 +305,28 @@ class _ChannelsScreenState extends State<ChannelsScreen> {
     );
   }
 
-  Future<void> _showCreateGroupDialog(
-    BuildContext context,
-    AppController app, {
-    required String visibility,
-  }) async {
-    String name = '';
-    String description = '';
-    await showModalBottomSheet<void>(
-      context: context,
-      backgroundColor: Colors.transparent,
-      isScrollControlled: true,
-      builder: (context) {
-        return SafeArea(
-          child: Padding(
-            padding: EdgeInsets.only(
-              bottom: MediaQuery.of(context).viewInsets.bottom,
-            ),
-            child: StatefulBuilder(
-              builder: (context, setModalState) {
-                return _ActionSheetContainer(
-                  title: visibility == 'PUBLIC'
-                      ? 'Creer un groupe public'
-                      : 'Creer un groupe prive',
-                  child: Column(
-                    children: [
-                      TextField(
-                        onChanged: (value) => setModalState(() => name = value),
-                        style: const TextStyle(color: AppColors.cFCFAFE),
-                        decoration: const InputDecoration(
-                          labelText: 'Nom du channel',
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-                      TextField(
-                        onChanged: (value) =>
-                            setModalState(() => description = value),
-                        style: const TextStyle(color: AppColors.cFCFAFE),
-                        decoration: const InputDecoration(
-                          labelText: 'Description',
-                        ),
-                      ),
-                      const SizedBox(height: 14),
-                      SizedBox(
-                        width: double.infinity,
-                        child: FilledButton(
-                          onPressed: () async {
-                            final normalizedName = name.trim();
-                            if (normalizedName.isEmpty) return;
-                            await app.createGroupChannel(
-                              name: normalizedName,
-                              description: description.trim(),
-                              visibility: visibility,
-                            );
-                            if (!context.mounted) return;
-                            Navigator.of(context).pop();
-                          },
-                          child: const Text('Creer'),
-                        ),
-                      ),
-                    ],
-                  ),
-                );
-              },
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  Future<void> _showCreateDmDialog(
+  Future<void> _openJoinPublicDirectoryScreen(
     BuildContext context,
     AppController app,
   ) async {
-    final activeFriends = app.friends
-        .where((friend) => friend.status.trim().toUpperCase() == 'ACTIVE')
-        .where((friend) => friend.friendDetails != null)
-        .toList(growable: false);
-    if (activeFriends.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Aucun ami actif disponible pour creer un DM.'),
-        ),
-      );
-      return;
-    }
-
-    int? selectedUserId = activeFriends.first.friendId;
-    await showModalBottomSheet<void>(
-      context: context,
-      backgroundColor: Colors.transparent,
-      isScrollControlled: true,
-      builder: (context) {
-        return SafeArea(
-          child: StatefulBuilder(
-            builder: (context, setInnerState) {
-              return _ActionSheetContainer(
-                title: 'Creer une conversation DM',
-                child: Column(
-                  children: [
-                    DropdownButtonFormField<int>(
-                      initialValue: selectedUserId,
-                      dropdownColor: AppColors.c393566,
-                      decoration: const InputDecoration(labelText: 'Ami'),
-                      items: activeFriends
-                          .map(
-                            (friend) => DropdownMenuItem<int>(
-                              value: friend.friendId,
-                              child: Text(
-                                friend.friendDetails?.username.isNotEmpty ==
-                                        true
-                                    ? friend.friendDetails!.username
-                                    : 'User #${friend.friendId}',
-                                style: const TextStyle(
-                                  color: AppColors.cFCFAFE,
-                                ),
-                              ),
-                            ),
-                          )
-                          .toList(growable: false),
-                      onChanged: (value) =>
-                          setInnerState(() => selectedUserId = value),
-                    ),
-                    const SizedBox(height: 14),
-                    SizedBox(
-                      width: double.infinity,
-                      child: FilledButton(
-                        onPressed: () async {
-                          if (selectedUserId == null) return;
-                          await app.createPrivateDm(
-                            targetUserId: selectedUserId!,
-                          );
-                          if (!context.mounted) return;
-                          Navigator.of(context).pop();
-                        },
-                        child: const Text('Creer'),
-                      ),
-                    ),
-                  ],
-                ),
-              );
-            },
-          ),
-        );
-      },
-    );
-  }
-
-  Future<void> _showJoinPublicDialog(
-    BuildContext context,
-    AppController app,
-  ) async {
-    String channelIdValue = '';
-    await showModalBottomSheet<void>(
-      context: context,
-      backgroundColor: Colors.transparent,
-      isScrollControlled: true,
-      builder: (context) {
-        return SafeArea(
-          child: Padding(
-            padding: EdgeInsets.only(
-              bottom: MediaQuery.of(context).viewInsets.bottom,
-            ),
-            child: StatefulBuilder(
-              builder: (context, setModalState) {
-                return _ActionSheetContainer(
-                  title: 'Rejoindre un groupe public',
-                  child: Column(
-                    children: [
-                      TextField(
-                        onChanged: (value) =>
-                            setModalState(() => channelIdValue = value),
-                        keyboardType: TextInputType.number,
-                        style: const TextStyle(color: AppColors.cFCFAFE),
-                        decoration: const InputDecoration(
-                          labelText: 'Channel ID',
-                        ),
-                      ),
-                      const SizedBox(height: 14),
-                      SizedBox(
-                        width: double.infinity,
-                        child: FilledButton(
-                          onPressed: () async {
-                            final channelId = int.tryParse(
-                              channelIdValue.trim(),
-                            );
-                            if (channelId == null) return;
-                            await app.joinPublicChannel(channelId);
-                            if (!context.mounted) return;
-                            Navigator.of(context).pop();
-                          },
-                          child: const Text('Rejoindre'),
-                        ),
-                      ),
-                    ],
-                  ),
-                );
-              },
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  Future<void> _showJoinByCodeDialog(
-    BuildContext context,
-    AppController app,
-  ) async {
-    String code = '';
-    await showModalBottomSheet<void>(
-      context: context,
-      backgroundColor: Colors.transparent,
-      isScrollControlled: true,
-      builder: (context) {
-        return SafeArea(
-          child: Padding(
-            padding: EdgeInsets.only(
-              bottom: MediaQuery.of(context).viewInsets.bottom,
-            ),
-            child: StatefulBuilder(
-              builder: (context, setModalState) {
-                return _ActionSheetContainer(
-                  title: 'Rejoindre via invitation',
-                  child: Column(
-                    children: [
-                      TextField(
-                        onChanged: (value) => setModalState(() => code = value),
-                        style: const TextStyle(color: AppColors.cFCFAFE),
-                        decoration: const InputDecoration(
-                          labelText: 'Code invitation',
-                        ),
-                      ),
-                      const SizedBox(height: 14),
-                      SizedBox(
-                        width: double.infinity,
-                        child: FilledButton(
-                          onPressed: () async {
-                            final normalized = code.trim();
-                            if (normalized.isEmpty) return;
-                            await app.joinByInviteCode(normalized);
-                            if (!context.mounted) return;
-                            Navigator.of(context).pop();
-                          },
-                          child: const Text('Rejoindre'),
-                        ),
-                      ),
-                    ],
-                  ),
-                );
-              },
-            ),
-          ),
-        );
-      },
+    await app.refreshPublicChannels(silent: true);
+    if (!context.mounted) return;
+    await Navigator.of(context).push(
+      PageRouteBuilder<void>(
+        transitionDuration: const Duration(milliseconds: 260),
+        reverseTransitionDuration: const Duration(milliseconds: 220),
+        pageBuilder: (context, animation, secondaryAnimation) =>
+            const _PublicConversationsScreen(),
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          final offset = Tween<Offset>(
+            begin: const Offset(1, 0),
+            end: Offset.zero,
+          ).animate(
+            CurvedAnimation(parent: animation, curve: Curves.easeOutCubic),
+          );
+          return SlideTransition(position: offset, child: child);
+        },
+      ),
     );
   }
 
@@ -1288,6 +1012,395 @@ class _ChannelsScreenState extends State<ChannelsScreen> {
           },
         );
       },
+    );
+  }
+}
+
+class _PublicConversationsScreen extends StatefulWidget {
+  const _PublicConversationsScreen();
+
+  @override
+  State<_PublicConversationsScreen> createState() =>
+      _PublicConversationsScreenState();
+}
+
+class _PublicConversationsScreenState extends State<_PublicConversationsScreen> {
+  String _query = '';
+  String _filter = 'all';
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.transparent,
+      body: Container(
+        decoration: const BoxDecoration(gradient: AppGradients.gB1BCFBTo393566),
+        child: SafeArea(
+          child: Consumer<AppController>(
+            builder: (context, app, _) {
+              final allPublicChannels = app.publicChannels
+                  .where(
+                    (channel) =>
+                        channel.channelType.trim().toUpperCase() == 'GROUP' &&
+                        channel.visibility.trim().toUpperCase() == 'PUBLIC',
+                  )
+                  .toList(growable: false);
+              final joinedIds = app.channels
+                  .map((channel) => channel.channelId)
+                  .toSet();
+              bool resolveJoined(ChannelModel channel) {
+                final category =
+                    (channel.listCategory ?? '').trim().toLowerCase();
+                if (channel.isJoined != null) return channel.isJoined!;
+                if (category == 'joined') return true;
+                if (category == 'discover') return false;
+                return joinedIds.contains(channel.channelId);
+              }
+              final normalizedQuery = _query.trim().toLowerCase();
+              final filtered = allPublicChannels.where((channel) {
+                final isJoined = resolveJoined(channel);
+                if (_filter == 'joined' && !isJoined) {
+                  return false;
+                }
+                if (_filter == 'discover' && isJoined) {
+                  return false;
+                }
+                final haystack =
+                    '${channel.name} ${channel.description ?? ''}'.toLowerCase();
+                return normalizedQuery.isEmpty ||
+                    haystack.contains(normalizedQuery);
+              }).toList(growable: false);
+
+              return RefreshIndicator(
+                onRefresh: () async {
+                  await Future.wait([
+                    app.refreshChannels(silent: true),
+                    app.refreshPublicChannels(silent: true),
+                  ]);
+                },
+                child: ListView(
+                  padding: const EdgeInsets.fromLTRB(16, 18, 16, 24),
+                  children: [
+                    Row(
+                      children: [
+                        const MojiBackButton(),
+                        const SizedBox(width: 14),
+                        const Expanded(
+                          child: Text(
+                            'Rejoindre',
+                            style: TextStyle(
+                              fontFamily: AppTypography.displayFontFamily,
+                              color: AppColors.cFCFAFE,
+                              fontSize: 28,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 14),
+                    Container(
+                      height: 48,
+                      padding: const EdgeInsets.symmetric(horizontal: 11.45),
+                      decoration: BoxDecoration(
+                        gradient: AppGradients.gB1BCFBTo393566,
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(
+                            Icons.search,
+                            color: AppColors.whiteColor,
+                            size: 27,
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: TextField(
+                              onChanged: (value) =>
+                                  setState(() => _query = value),
+                              style: const TextStyle(
+                                color: AppColors.whiteColor,
+                                fontFamily: AppTypography.primaryFontFamily,
+                                fontWeight: FontWeight.w500,
+                                fontSize: 13,
+                              ),
+                              cursorColor: AppColors.whiteColor,
+                              decoration: const InputDecoration(
+                                hintText: 'Rechercher une conversation',
+                                hintStyle: TextStyle(
+                                  color: AppColors.whiteColor,
+                                  fontFamily: AppTypography.primaryFontFamily,
+                                  fontWeight: FontWeight.w500,
+                                  fontSize: 13,
+                                ),
+                                filled: false,
+                                fillColor: Colors.transparent,
+                                isCollapsed: true,
+                                border: InputBorder.none,
+                                enabledBorder: InputBorder.none,
+                                focusedBorder: InputBorder.none,
+                                disabledBorder: InputBorder.none,
+                                errorBorder: InputBorder.none,
+                                focusedErrorBorder: InputBorder.none,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    _PublicFilterBar(
+                      selected: _filter,
+                      allCount: allPublicChannels.length,
+                      joinedCount: allPublicChannels
+                          .where(resolveJoined)
+                          .length,
+                      discoverCount: allPublicChannels
+                          .where((c) => !resolveJoined(c))
+                          .length,
+                      onSelected: (value) => setState(() => _filter = value),
+                    ),
+                    const SizedBox(height: 10),
+                    if (filtered.isEmpty)
+                      const Padding(
+                        padding: EdgeInsets.only(top: 80),
+                        child: Center(
+                          child: Text(
+                            'Aucune conversation publique trouvee.',
+                            style: TextStyle(color: AppColors.cDBE7FE),
+                          ),
+                        ),
+                      )
+                    else
+                      ...filtered.map((channel) {
+                        final joined = resolveJoined(channel);
+                        return Container(
+                          margin: const EdgeInsets.only(bottom: 8),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 8,
+                          ),
+                          decoration: BoxDecoration(
+                            color: AppColors.cFCFAFE.withValues(alpha: 0.08),
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(
+                              color: AppColors.cFCFAFE.withValues(alpha: 0.16),
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(10),
+                                child: AppRemoteImage(
+                                  url: channel.coverImage,
+                                  width: 44,
+                                  height: 44,
+                                  fit: BoxFit.cover,
+                                  fallbackIcon: Icons.groups_rounded,
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      channel.name,
+                                      style: const TextStyle(
+                                        color: AppColors.cFCFAFE,
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
+                                    Text(
+                                      (channel.description ?? '').trim().isEmpty
+                                          ? 'Groupe public'
+                                          : channel.description!.trim(),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: const TextStyle(
+                                        color: AppColors.cDBE7FE,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              TextButton(
+                                onPressed: () async {
+                                  if (joined) {
+                                    await app.selectChannel(channel);
+                                  } else {
+                                    await app.joinPublicChannel(channel.channelId);
+                                    final joinedChannel = app.channels
+                                        .where(
+                                          (it) =>
+                                              it.channelId == channel.channelId,
+                                        )
+                                        .toList(growable: false);
+                                    if (joinedChannel.isNotEmpty) {
+                                      await app.selectChannel(joinedChannel.first);
+                                    }
+                                  }
+                                  if (!context.mounted) return;
+                                  final error = app.errorMessage;
+                                  if (error != null && error.isNotEmpty) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(content: Text(error)),
+                                    );
+                                    return;
+                                  }
+                                  Navigator.of(context).pop();
+                                },
+                                style: TextButton.styleFrom(
+                                  foregroundColor: AppColors.cFCFAFE,
+                                  backgroundColor: AppColors.cFCFAFE.withValues(
+                                    alpha: 0.10,
+                                  ),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                ),
+                                child: Text(joined ? 'Ouvrir' : 'Rejoindre'),
+                              ),
+                            ],
+                          ),
+                        );
+                      }),
+                  ],
+                ),
+              );
+            },
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _PublicFilterBar extends StatelessWidget {
+  const _PublicFilterBar({
+    required this.selected,
+    required this.allCount,
+    required this.joinedCount,
+    required this.discoverCount,
+    required this.onSelected,
+  });
+
+  final String selected;
+  final int allCount;
+  final int joinedCount;
+  final int discoverCount;
+  final ValueChanged<String> onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          child: _PublicFilterChip(
+            label: 'Toutes',
+            count: allCount,
+            isActive: selected == 'all',
+            onTap: () => onSelected('all'),
+          ),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: _PublicFilterChip(
+            label: 'Deja rejointes',
+            count: joinedCount,
+            isActive: selected == 'joined',
+            onTap: () => onSelected('joined'),
+          ),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: _PublicFilterChip(
+            label: 'A decouvrir',
+            count: discoverCount,
+            isActive: selected == 'discover',
+            onTap: () => onSelected('discover'),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _PublicFilterChip extends StatelessWidget {
+  const _PublicFilterChip({
+    required this.label,
+    required this.count,
+    required this.isActive,
+    required this.onTap,
+  });
+
+  final String label;
+  final int count;
+  final bool isActive;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Ink(
+          height: 38,
+          padding: const EdgeInsets.symmetric(horizontal: 10),
+          decoration: BoxDecoration(
+            gradient: isActive ? AppGradients.gB1BCFBTo393566 : null,
+            color: isActive ? null : AppColors.cB1BCFB.withValues(alpha: 0.16),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: AppColors.whiteColor.withValues(
+                alpha: isActive ? 0.35 : 0.24,
+              ),
+              width: 1,
+            ),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Flexible(
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: AppColors.whiteColor.withValues(
+                      alpha: isActive ? 1 : 0.9,
+                    ),
+                    fontFamily: AppTypography.primaryFontFamily,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 6),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                decoration: BoxDecoration(
+                  color: AppColors.whiteColor.withValues(
+                    alpha: isActive ? 0.2 : 0.14,
+                  ),
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: Text(
+                  '$count',
+                  style: const TextStyle(
+                    color: AppColors.whiteColor,
+                    fontFamily: AppTypography.primaryFontFamily,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

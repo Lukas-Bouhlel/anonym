@@ -77,6 +77,7 @@ class _InfoRow extends StatelessWidget {
   }
 }
 
+
 class _MemberAvatar extends StatelessWidget {
   const _MemberAvatar({required this.member});
 
@@ -134,53 +135,5 @@ class _MemberAvatar extends StatelessWidget {
       if (content.isNotEmpty) return content;
     }
     return null;
-  }
-}
-
-class _ActionSheetContainer extends StatelessWidget {
-  const _ActionSheetContainer({required this.title, required this.child});
-
-  final String title;
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    final bottomSafe = MediaQuery.of(context).padding.bottom;
-    return Container(
-      margin: const EdgeInsets.fromLTRB(12, 0, 12, 0),
-      padding: EdgeInsets.fromLTRB(16, 10, 16, 16 + bottomSafe),
-      decoration: BoxDecoration(
-        gradient: AppGradients.gB1BCFBTo393566,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-        border: Border.all(color: AppColors.cFCFAFE.withValues(alpha: 0.3)),
-      ),
-      child: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 44,
-              height: 4,
-              margin: const EdgeInsets.only(bottom: 10),
-              decoration: BoxDecoration(
-                color: AppColors.cFCFAFE.withValues(alpha: 0.45),
-                borderRadius: BorderRadius.circular(99),
-              ),
-            ),
-            Text(
-              title,
-              style: const TextStyle(
-                fontFamily: AppTypography.displayFontFamily,
-                color: AppColors.cFCFAFE,
-                fontSize: 22,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-            const SizedBox(height: 12),
-            child,
-          ],
-        ),
-      ),
-    );
   }
 }

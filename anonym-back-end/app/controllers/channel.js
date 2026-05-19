@@ -1,8 +1,7 @@
 const crypto = require('crypto');
-const fs = require('fs');
-const path = require('path');
 const { Channel, PrivateMessage, User, UserChannel, Inventory, Shop, ChannelInvite, Friend } = require('../models');
 const { Op } = require('sequelize');
+const { deleteUploadFileIfExists, deleteUploadFiles } = require('../utils/fileCleanup');
 let hasAllowNonFriendDmsColumnCache = null;
 
 const getUnreadMessageCount = async (channelId, userId) => {
@@ -186,12 +185,7 @@ exports.updateCoverImage = async (req, res) => {
             return res.status(403).json({ message: "Vous n'avez pas la permission de modifier la couverture." });
         }
 
-        if (channel.cover_image) {
-            const oldPath = path.join(__dirname, '../../uploads/channels/covers', path.basename(channel.cover_image));
-            if (fs.existsSync(oldPath)) {
-                fs.unlinkSync(oldPath);
-            }
-        }
+        deleteUploadFileIfExists(channel.cover_image);
 
         channel.cover_image = `${req.protocol}://${req.get("host")}/uploads/channels/covers/${req.file.filename}`;
         await channel.save();
@@ -425,6 +419,13 @@ exports.getUnreadMessageCount = async (req, res) => {
 exports.getUserChannels = async (req, res) => {
     try {
         const userId = req.auth.userId;
+        const filter = typeof req.query.filter === 'string'
+            ? req.query.filter.trim().toLowerCase()
+            : 'all';
+
+        if (!['all', 'joined', 'discover'].includes(filter)) {
+            return res.status(400).json({ message: "Filtre invalide. Utilisez 'all', 'joined' ou 'discover'." });
+        }
 
         const user = await User.findByPk(userId, {
             include: [{ model: Channel, as: 'Channels' }]
@@ -433,6 +434,8 @@ exports.getUserChannels = async (req, res) => {
         if (!user) {
             return res.status(404).json({ message: 'Utilisateur non trouve.' });
         }
+
+        const joinedChannelIds = new Set(user.Channels.map((channel) => channel.channel_id));
 
         const dmChannelIds = user.Channels
             .filter((channel) => channel.channel_type === 'PRIVATE_DM')
@@ -481,7 +484,7 @@ exports.getUserChannels = async (req, res) => {
             }
         }
 
-        const channelsWithUnreadCount = await Promise.all(user.Channels.map(async (channel) => {
+        const joinedChannelsWithUnreadCount = await Promise.all(user.Channels.map(async (channel) => {
             const unreadCount = await getUnreadMessageCount(channel.channel_id, userId);
             return {
                 channel_id: channel.channel_id,
@@ -491,13 +494,45 @@ exports.getUserChannels = async (req, res) => {
                 cover_image: channel.cover_image,
                 channel_type: channel.channel_type,
                 visibility: channel.visibility,
+                is_joined: true,
+                list_category: 'joined',
                 dm_peer: channel.channel_type === 'PRIVATE_DM'
                     ? (dmPeerByChannelId[channel.channel_id] || null)
                     : null
             };
         }));
+        const publicDiscoverChannels = await Channel.findAll({
+            where: {
+                channel_type: 'GROUP',
+                visibility: 'PUBLIC',
+                channel_id: { [Op.notIn]: Array.from(joinedChannelIds) }
+            },
+            order: [['createdAt', 'DESC']]
+        });
 
-        res.status(200).json(channelsWithUnreadCount);
+        const discoverChannels = publicDiscoverChannels.map((channel) => ({
+            channel_id: channel.channel_id,
+            name: channel.name,
+            unreadCount: 0,
+            created_by: channel.created_by,
+            cover_image: channel.cover_image,
+            channel_type: channel.channel_type,
+            visibility: channel.visibility,
+            is_joined: false,
+            list_category: 'discover',
+            dm_peer: null
+        }));
+
+        const channelsWithFilter = [
+            ...joinedChannelsWithUnreadCount,
+            ...discoverChannels
+        ].filter((channel) => {
+            if (filter === 'joined') return channel.is_joined === true;
+            if (filter === 'discover') return channel.is_joined === false;
+            return true;
+        });
+
+        res.status(200).json(channelsWithFilter);
     } catch (error) {
         res.status(500).json({ message: error.message || 'Erreur lors de la recuperation des canaux.' });
     }
@@ -649,6 +684,20 @@ exports.deleteChannel = async (req, res) => {
         if (channel.channel_type === 'PRIVATE_DM') {
             return res.status(400).json({ message: 'Un message prive ne peut pas etre supprime.' });
         }
+
+        const messagesWithImages = await PrivateMessage.findAll({
+            where: {
+                channel_id: id,
+                image_url: { [Op.ne]: null }
+            },
+            attributes: ['image_url'],
+            raw: true
+        });
+
+        deleteUploadFiles([
+            channel.cover_image,
+            ...messagesWithImages.map((message) => message.image_url)
+        ]);
 
         await UserChannel.destroy({ where: { channel_id: id } });
         await ChannelInvite.destroy({ where: { channel_id: id } });

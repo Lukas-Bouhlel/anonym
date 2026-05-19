@@ -6,9 +6,15 @@ import '../services/admin_repository.dart';
 import '../theme.dart';
 import '../utils/api_error_parser.dart';
 import '../widgets/chrome/moji_back_button.dart';
+import '../widgets/modals/moji_confirm_modal.dart';
 
 class FeedbackScreen extends StatefulWidget {
-  const FeedbackScreen({super.key});
+  const FeedbackScreen({
+    super.key,
+    this.confirmBeforeSubmit = false,
+  });
+
+  final bool confirmBeforeSubmit;
 
   @override
   State<FeedbackScreen> createState() => _FeedbackScreenState();
@@ -31,6 +37,10 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
 
   Future<void> _onSubmit() async {
     if (!_isValid || _submitting) return;
+    if (widget.confirmBeforeSubmit) {
+      final confirmed = await _showSubmitConfirmModal();
+      if (!confirmed) return;
+    }
     final userEmail = context.read<AuthController>().user?.email.trim() ?? '';
     if (userEmail.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -67,6 +77,22 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
     } finally {
       if (mounted) setState(() => _submitting = false);
     }
+  }
+
+  Future<bool> _showSubmitConfirmModal() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      barrierDismissible: true,
+      builder: (dialogContext) => MojiConfirmModal(
+        title: 'Envoyer ce signalement ?',
+        description:
+            'Ton signalement va etre transmis a l equipe pour verification.',
+        confirmLabel: 'Envoyer',
+        onConfirm: () => Navigator.of(dialogContext).pop(true),
+        onCancel: () => Navigator.of(dialogContext).pop(false),
+      ),
+    );
+    return confirmed == true;
   }
 
   @override

@@ -1,5 +1,6 @@
 const { PrivateMessage, User, Inventory, Shop, Channel, UserChannel, Friend } = require('../models');
 const { Op } = require('sequelize');
+const { deleteUploadFiles } = require('./fileCleanup');
 let hasAllowNonFriendDmsColumnCache = null;
 
 const hasAllowNonFriendDmsColumn = async () => {
@@ -160,6 +161,25 @@ const initializeSocket = (io) => {
 
         socket.on('deleteChannel', async (channelId) => {
             try {
+                const channel = await Channel.findByPk(channelId, {
+                    attributes: ['channel_id', 'cover_image']
+                });
+                if (channel) {
+                    const messagesWithImages = await PrivateMessage.findAll({
+                        where: {
+                            channel_id: channelId,
+                            image_url: { [Op.ne]: null }
+                        },
+                        attributes: ['image_url'],
+                        raw: true
+                    });
+
+                    deleteUploadFiles([
+                        channel.cover_image,
+                        ...messagesWithImages.map((message) => message.image_url)
+                    ]);
+                }
+
                 await Channel.destroy({ where: { channel_id: channelId } });
                 io.to(channelId).emit('channelDeleted', channelId);
             } catch (error) {

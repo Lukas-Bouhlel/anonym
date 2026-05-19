@@ -1,4 +1,4 @@
-const { User } = require('../models');
+const { User, RegisterVerificationCode, RegisterVerificationEvent } = require('../models');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const fs = require('fs');
@@ -6,6 +6,52 @@ const path = require('path')
 const { Op } = require('sequelize');
 const CryptoJS = require('crypto-js');
 const env = process.env.NODE_ENV || 'development';
+
+const REGISTER_CODE_TTL_MINUTES = 10;
+const REGISTER_RESEND_COOLDOWN_SECONDS = 60;
+const REGISTER_SEND_WINDOW_MINUTES = 15;
+const REGISTER_SEND_WINDOW_MAX = 5;
+const REGISTER_VERIFY_MAX_ATTEMPTS = 5;
+const REGISTER_VERIFY_BLOCK_MINUTES = 15;
+const GENERIC_REGISTER_CODE_MESSAGE = 'Si votre email est valide, un code de verification vient d etre envoye.';
+
+const normalizeEmail = (email) => {
+    if (typeof email !== 'string') return '';
+    const trimmed = email.trim().toLowerCase();
+    const [localPart, domainPart] = trimmed.split('@');
+    if (!localPart || !domainPart) return trimmed;
+    if (domainPart === 'gmail.com') {
+        return `${localPart.replace(/\./g, '')}@${domainPart}`;
+    }
+    return trimmed;
+};
+
+const hashOtpCode = (otpCode) => CryptoJS.SHA256(otpCode).toString();
+
+const getRequesterIp = (req) => {
+    if (req.ip) return String(req.ip);
+    if (req.headers['x-forwarded-for']) {
+        return String(req.headers['x-forwarded-for']).split(',')[0].trim();
+    }
+    return 'unknown';
+};
+
+const issueAuthResponse = (res, user) => {
+    const token = jwt.sign(
+        { userId: user.id, userRole: user.roles },
+        process.env.JWT_SECRET,
+        { expiresIn: '10h' }
+    );
+
+    res.cookie('token', token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'Strict',
+        maxAge: 10 * 60 * 60 * 1000,
+    });
+
+    return res.status(200).json({ token, user });
+};
 
 /**
  * @module UserController
@@ -35,86 +81,10 @@ const env = process.env.NODE_ENV || 'development';
  * }
  */
 exports.signup = async (req, res) => {
-    try {
-        // Créer l'utilisateur avec l'avatar (soit celui téléchargé, soit la copie du défaut)
-        const user = await User.create({
-            ...req.body
-        });
-
-        const email_user = req.body.email;
-
-        // Après la création réussie de l'utilisateur, générer l'avatar si nécessaire
-        if (!req.file && req.avatarData) {
-            const { circleColor, pathColor, uniqueAvatarName } = req.avatarData;
-
-            // Chemin du fichier avatar par défaut
-            const defaultAvatarPath = path.join(__dirname, '../../uploads/profiles/default/default_avatar.svg');
-            const userAvatarPath = path.resolve(__dirname, '../../uploads/profiles/avatars', uniqueAvatarName);
-
-            // Vérifier si le fichier SVG par défaut existe
-            if (!fs.existsSync(defaultAvatarPath)) {
-                return res.status(500).json({ message: 'Default avatar not found' });
-            }
-
-             // Lire et modifier le contenu du SVG
-            let svgContent;
-            try {
-                svgContent = fs.readFileSync(defaultAvatarPath, 'utf8');
-            } catch {
-                return res.status(500).json({ message: 'Error reading default avatar' });
-            }
-
-            // Remplacer la couleur dans le SVG
-             svgContent = svgContent
-                .replace(/<circle[^>]*fill="[^"]*"[^>]*>/, `<circle cx="115" cy="115" r="115" fill="${circleColor}"/>`)
-                .replace(/<path[^>]*fill="[^"]*"[^>]*>/, `<path d="M114.37 48L150.593 117.743L167.732 116.319L184.87 114.894L158.396 132.766C169.932 154.979 184.87 183.741 184.87 183.741L161.077 183.801L140.549 144.814L66.4727 183.801H44L54.9652 162.64L135.365 133.027C135.365 133.027 135.396 133.016 135.457 132.994C136.576 132.584 177.708 117.529 184.87 114.894L167.732 116.319L150.593 117.743L131.372 124.824L115.018 92.3567L103.054 114.894L89.6156 140.207L44 157.012L66.0193 141.308L79.1852 115.9L114.37 48Z" fill="${pathColor}"/>`);
-
-            // Écrire le SVG modifié
-            try {
-                fs.writeFileSync(userAvatarPath, svgContent);
-            } catch {
-                return res.status(500).json({ message: 'Error saving user avatar' });
-            }
-
-            // Mettre à jour l'avatar de l'utilisateur dans la base de données
-            user.avatar = `${req.protocol}://${req.get("host")}/uploads/profiles/avatars/${uniqueAvatarName}`;
-            await user.save();
-        }
-
-         // Lire le fichier HTML pour l'e-mail
-        const emailTemplatePath = path.join(__dirname, '../../templates/signup-email.html');
-
-        let htmlContent;
-        try {
-            htmlContent = fs.readFileSync(emailTemplatePath, 'utf8');
-        } catch {
-            return res.status(500).json({ message: 'Error reading email template' });
-        }
-
-        // Remplacer le nom de l'utilisateur dans le contenu HTML
-        htmlContent = htmlContent.replace(/Salut\s+Rei,/, `Salut ${user.username},`);
-
-        // Envoyer l'e-mail de confirmation avec le contenu HTML
-        await req.mailer.sendEmail(
-            email_user,// Destinataire
-            'Bienvenue sur notre plateforme Anonym !',// Sujet
-            '',// Contenu texte (vide)
-            htmlContent// Contenu HTML
-        );
-
-        res.status(201).json(user);
-    } catch (error) {
-        // Gérer les erreurs spécifiques à la validation Sequelize
-        if (error.name === 'SequelizeValidationError') {
-            const messages = error.errors.map(err => err.message);
-            return res.status(400).json({ message: messages });
-        }
-
-        res.status(500).json({
-            message: error.message || 'Could not create user'
-        });
-    }
-}
+    return res.status(410).json({
+        message: "Cette route n'est plus disponible. Utilisez /auth/register/request-code puis /auth/register/confirm."
+    });
+};
 
 /**
  * Authentifie un utilisateur et renvoie un token JWT.
@@ -167,27 +137,201 @@ exports.login = async (req, res) => {
             return res.status(401).json({ message: "Votre identifiant ou votre mot de passe est incorrect" });
         }
 
-        // Générer le token JWT
-        const token = jwt.sign(
-            { userId: user.id, userRole: user.roles }, 
-            process.env.JWT_SECRET, 
-            { expiresIn: '10h' }
-        );
-
-        res.cookie('token', token, {
-            httpOnly: true,  // Empêche l'accès au cookie via JS
-            secure: process.env.NODE_ENV === 'production',  // Seulement en HTTPS en production
-            sameSite: 'Strict',  // Empêche l'envoi du cookie pour les requêtes cross-site
-            maxAge: 10 * 60 * 60 * 1000,  // Expire dans 10 heures
-        });
-
-        res.status(200).json({ token, user });
+        return issueAuthResponse(res, user);
     } catch (error) {
         res.status(500).json({
             message: error.message || 'An error occurred during login'
         });
     }
 }
+
+exports.requestRegisterCode = async (req, res) => {
+    try {
+        const email = normalizeEmail(req.body?.email);
+        const ip = getRequesterIp(req);
+        const now = new Date();
+
+        if (!email) {
+            return res.status(400).json({ message: 'Email requis.' });
+        }
+
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) {
+            return res.status(400).json({ message: 'Email invalide.' });
+        }
+
+        const windowStart = new Date(now.getTime() - REGISTER_SEND_WINDOW_MINUTES * 60 * 1000);
+
+        const [emailWindowCount, ipWindowCount] = await Promise.all([
+            RegisterVerificationEvent.count({
+                where: {
+                    email,
+                    event_type: 'REQUEST_CODE',
+                    createdAt: { [Op.gte]: windowStart }
+                }
+            }),
+            RegisterVerificationEvent.count({
+                where: {
+                    ip,
+                    event_type: 'REQUEST_CODE',
+                    createdAt: { [Op.gte]: windowStart }
+                }
+            })
+        ]);
+
+        if (emailWindowCount >= REGISTER_SEND_WINDOW_MAX || ipWindowCount >= REGISTER_SEND_WINDOW_MAX) {
+            console.warn(`[register_code] Rate limit hit email=${email} ip=${ip}`);
+            return res.status(429).json({ message: 'Trop de tentatives. Reessayez plus tard.' });
+        }
+
+        const [existingUser, existingCode] = await Promise.all([
+            User.findOne({ where: { email } }),
+            RegisterVerificationCode.findOne({ where: { email } })
+        ]);
+
+        if (existingCode?.last_sent_at) {
+            const elapsedMs = now.getTime() - new Date(existingCode.last_sent_at).getTime();
+            if (elapsedMs < REGISTER_RESEND_COOLDOWN_SECONDS * 1000) {
+                return res.status(429).json({ message: 'Attendez avant de redemander un code.' });
+            }
+        }
+
+        await RegisterVerificationEvent.create({
+            email,
+            ip,
+            event_type: 'REQUEST_CODE'
+        });
+
+        if (existingUser) {
+            return res.status(200).json({ message: GENERIC_REGISTER_CODE_MESSAGE });
+        }
+
+        const otpCode = `${Math.floor(100000 + Math.random() * 900000)}`;
+        const nextWindowStartedAt = existingCode?.send_window_started_at
+            ? new Date(existingCode.send_window_started_at)
+            : now;
+        const isSameWindow = now.getTime() - nextWindowStartedAt.getTime() < REGISTER_SEND_WINDOW_MINUTES * 60 * 1000;
+        const sendAttempts = isSameWindow ? (existingCode?.send_attempts || 0) + 1 : 1;
+
+        if (sendAttempts > REGISTER_SEND_WINDOW_MAX) {
+            return res.status(429).json({ message: 'Trop de tentatives. Reessayez plus tard.' });
+        }
+
+        const codeData = {
+            email,
+            code_hash: hashOtpCode(otpCode),
+            code_expires_at: new Date(now.getTime() + REGISTER_CODE_TTL_MINUTES * 60 * 1000),
+            last_sent_at: now,
+            send_attempts: sendAttempts,
+            send_window_started_at: isSameWindow ? nextWindowStartedAt : now,
+            verify_attempts: 0,
+            blocked_until: null,
+            last_ip: ip
+        };
+
+        if (existingCode) {
+            await existingCode.update(codeData);
+        } else {
+            await RegisterVerificationCode.create(codeData);
+        }
+
+        await req.mailer.sendEmail(
+            email,
+            'Votre code de verification Anonym',
+            `Votre code de verification est ${otpCode}. Il expire dans ${REGISTER_CODE_TTL_MINUTES} minutes.`,
+            `<p>Votre code de verification est <strong>${otpCode}</strong>.</p><p>Il expire dans ${REGISTER_CODE_TTL_MINUTES} minutes.</p>`
+        );
+
+        return res.status(200).json({ message: GENERIC_REGISTER_CODE_MESSAGE });
+    } catch (error) {
+        return res.status(500).json({ message: error.message || 'Erreur lors de la demande de code.' });
+    }
+};
+
+exports.confirmRegisterCode = async (req, res) => {
+    try {
+        const email = normalizeEmail(req.body?.email);
+        const { code, username, password } = req.body;
+        const now = new Date();
+
+        if (!email || !code || !username || !password) {
+            return res.status(400).json({ message: 'Email, code, username et mot de passe sont requis.' });
+        }
+
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) {
+            return res.status(400).json({ message: 'Email invalide.' });
+        }
+
+        const otpEntry = await RegisterVerificationCode.findOne({ where: { email } });
+        if (!otpEntry) {
+            return res.status(400).json({ message: 'Code invalide ou expire.' });
+        }
+
+        if (otpEntry.blocked_until && new Date(otpEntry.blocked_until) > now) {
+            return res.status(429).json({ message: 'Trop de tentatives de verification. Reessayez plus tard.' });
+        }
+
+        if (new Date(otpEntry.code_expires_at) <= now) {
+            return res.status(400).json({ message: 'Code invalide ou expire.' });
+        }
+
+        if (otpEntry.code_hash !== hashOtpCode(String(code))) {
+            const nextAttempts = (otpEntry.verify_attempts || 0) + 1;
+            const updates = { verify_attempts: nextAttempts };
+            if (nextAttempts >= REGISTER_VERIFY_MAX_ATTEMPTS) {
+                updates.blocked_until = new Date(now.getTime() + REGISTER_VERIFY_BLOCK_MINUTES * 60 * 1000);
+                console.warn(`[register_code] Verification blocked email=${email}`);
+            }
+            await otpEntry.update(updates);
+            return res.status(400).json({ message: 'Code invalide ou expire.' });
+        }
+
+        const existingUser = await User.findOne({
+            where: {
+                [Op.or]: [{ email }, { username }]
+            }
+        });
+        if (existingUser) {
+            await otpEntry.destroy();
+            return res.status(409).json({ message: 'Un compte existe deja avec ces informations.' });
+        }
+
+        const user = await User.create({
+            username,
+            email,
+            password
+        });
+
+        if (!req.file && req.avatarData) {
+            const { circleColor, pathColor, uniqueAvatarName } = req.avatarData;
+            const defaultAvatarPath = path.join(__dirname, '../../uploads/profiles/default/default_avatar.svg');
+            const userAvatarPath = path.resolve(__dirname, '../../uploads/profiles/avatars', uniqueAvatarName);
+
+            if (fs.existsSync(defaultAvatarPath)) {
+                let svgContent = fs.readFileSync(defaultAvatarPath, 'utf8');
+                svgContent = svgContent
+                    .replace(/<circle[^>]*fill="[^"]*"[^>]*>/, `<circle cx="115" cy="115" r="115" fill="${circleColor}"/>`)
+                    .replace(/<path[^>]*fill="[^"]*"[^>]*>/, `<path d="M114.37 48L150.593 117.743L167.732 116.319L184.87 114.894L158.396 132.766C169.932 154.979 184.87 183.741 184.87 183.741L161.077 183.801L140.549 144.814L66.4727 183.801H44L54.9652 162.64L135.365 133.027C135.365 133.027 135.396 133.016 135.457 132.994C136.576 132.584 177.708 117.529 184.87 114.894L167.732 116.319L150.593 117.743L131.372 124.824L115.018 92.3567L103.054 114.894L89.6156 140.207L44 157.012L66.0193 141.308L79.1852 115.9L114.37 48Z" fill="${pathColor}"/>`);
+                fs.writeFileSync(userAvatarPath, svgContent);
+                user.avatar = `${req.protocol}://${req.get("host")}/uploads/profiles/avatars/${uniqueAvatarName}`;
+                await user.save();
+            }
+        } else if (req.file) {
+            user.avatar = `${req.protocol}://${req.get("host")}/uploads/profiles/avatars/${req.file.filename}`;
+            await user.save();
+        }
+
+        await otpEntry.destroy();
+        return issueAuthResponse(res, user);
+    } catch (error) {
+        if (error.name === 'SequelizeValidationError') {
+            const messages = error.errors.map(err => err.message);
+            return res.status(400).json({ message: messages });
+        }
+        return res.status(500).json({ message: error.message || 'Erreur lors de la confirmation de l inscription.' });
+    }
+};
 
 /**
  * Déconnecte l'utilisateur en invalidant le cookie JWT.

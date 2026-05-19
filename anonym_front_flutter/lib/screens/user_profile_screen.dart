@@ -7,6 +7,7 @@ import '../providers/app_controller.dart';
 import '../providers/auth_controller.dart';
 import '../theme.dart';
 import '../widgets/app_remote_image.dart';
+import '../widgets/modals/moji_confirm_modal.dart';
 import 'feedback_screen.dart';
 import 'profile_screen.dart';
 
@@ -655,6 +656,14 @@ class UserProfileScreen extends StatelessWidget {
       final hasIncoming = _hasIncomingRequest(app, user.id);
 
       if (isFriend) {
+        final confirmed = await _showConfirmModal(
+          context: context,
+          title: 'Supprimer cet ami ?',
+          description:
+              'Cette personne sera retiree de ta liste d\'amis. Tu pourras la rajouter plus tard.',
+          confirmLabel: 'Supprimer l\'ami',
+        );
+        if (!confirmed) return;
         await app.deleteFriend(user.id);
       } else if (hasOutgoing) {
         final requestId = _outgoingRequestId(app, user.id);
@@ -665,6 +674,14 @@ class UserProfileScreen extends StatelessWidget {
           );
           return;
         }
+        final confirmed = await _showConfirmModal(
+          context: context,
+          title: 'Retirer la demande d\'ami ?',
+          description:
+              'La demande en attente sera annulee et la personne ne la verra plus.',
+          confirmLabel: 'Retirer la demande',
+        );
+        if (!confirmed) return;
         await app.cancelOutgoingFriendRequest(requestId);
       } else if (hasIncoming) {
         final request = app.incomingFriendRequests.firstWhere(
@@ -681,14 +698,34 @@ class UserProfileScreen extends StatelessWidget {
     } else if (selected == 'block') {
       final blocked = _isBlocked(app, user.id);
       if (blocked) {
+        final confirmed = await _showConfirmModal(
+          context: context,
+          title: 'Debloquer cet utilisateur ?',
+          description:
+              'Il pourra de nouveau te contacter et interagir avec toi.',
+          confirmLabel: 'Debloquer',
+        );
+        if (!confirmed) return;
         await app.unblockUser(user.id);
       } else {
+        final confirmed = await _showConfirmModal(
+          context: context,
+          title: 'Bloquer cet utilisateur ?',
+          description:
+              'Tu ne verras plus ses interactions et il ne pourra plus te contacter.',
+          confirmLabel: 'Bloquer',
+        );
+        if (!confirmed) return;
         await app.blockUser(user.id);
       }
     } else if (selected == 'report') {
       await Navigator.of(
         context,
-      ).push(MaterialPageRoute(builder: (_) => const FeedbackScreen()));
+      ).push(
+        MaterialPageRoute(
+          builder: (_) => const FeedbackScreen(confirmBeforeSubmit: true),
+        ),
+      );
     }
 
     if (!context.mounted) return;
@@ -697,6 +734,26 @@ class UserProfileScreen extends StatelessWidget {
         context,
       ).showSnackBar(SnackBar(content: Text(app.errorMessage!)));
     }
+  }
+
+  Future<bool> _showConfirmModal({
+    required BuildContext context,
+    required String title,
+    required String description,
+    required String confirmLabel,
+  }) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      barrierDismissible: true,
+      builder: (dialogContext) => MojiConfirmModal(
+        title: title,
+        description: description,
+        confirmLabel: confirmLabel,
+        onConfirm: () => Navigator.of(dialogContext).pop(true),
+        onCancel: () => Navigator.of(dialogContext).pop(false),
+      ),
+    );
+    return confirmed == true;
   }
 }
 

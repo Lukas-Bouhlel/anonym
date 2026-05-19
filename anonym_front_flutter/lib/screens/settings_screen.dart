@@ -8,6 +8,7 @@ import '../routes/app_routes.dart';
 import '../theme.dart';
 import '../widgets/app_remote_image.dart';
 import '../widgets/chrome/moji_back_button.dart';
+import '../widgets/modals/moji_confirm_modal.dart';
 import 'edit_profile_screen.dart';
 import 'inventory_screen.dart';
 import 'invoices_screen.dart';
@@ -19,6 +20,38 @@ import 'feedback_screen.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
+
+  Future<bool> _confirmLogout(BuildContext context) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      barrierDismissible: true,
+      builder: (dialogContext) => MojiConfirmModal(
+        title: 'Se deconnecter ?',
+        description: 'Tu vas etre deconnecte de ton compte sur cet appareil.',
+        confirmLabel: 'Se deconnecter',
+        onConfirm: () => Navigator.of(dialogContext).pop(true),
+        onCancel: () => Navigator.of(dialogContext).pop(false),
+      ),
+    );
+    return confirmed == true;
+  }
+
+  Future<bool> _confirmDeleteAccount(BuildContext context) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      barrierDismissible: true,
+      builder: (dialogContext) => MojiConfirmModal(
+        title: 'Supprimer le compte ?',
+        description:
+            'Cette action est definitive. Ton compte et tes donnees seront supprimes.',
+        confirmLabel: 'Supprimer le compte',
+        confirmGradient: const [AppColors.danger, AppColors.danger],
+        onConfirm: () => Navigator.of(dialogContext).pop(true),
+        onCancel: () => Navigator.of(dialogContext).pop(false),
+      ),
+    );
+    return confirmed == true;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -202,6 +235,8 @@ class SettingsScreen extends StatelessWidget {
                 onPressed: auth.isBusy
                     ? null
                     : () async {
+                        final confirmed = await _confirmLogout(context);
+                        if (!confirmed) return;
                         await auth.logout();
                         if (!context.mounted) return;
                         context.go(AppRoutes.auth);
@@ -212,6 +247,33 @@ class SettingsScreen extends StatelessWidget {
                   foregroundColor: AppColors.cFCFAFE,
                   side: BorderSide(
                     color: AppColors.cFCFAFE.withValues(alpha: 0.38),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 10),
+              OutlinedButton.icon(
+                onPressed: auth.isBusy || app.isSubmitting
+                    ? null
+                    : () async {
+                        final confirmed = await _confirmDeleteAccount(context);
+                        if (!confirmed) return;
+                        await app.deleteAccount();
+                        if (!context.mounted) return;
+                        if (app.errorMessage != null &&
+                            app.errorMessage!.isNotEmpty) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text(app.errorMessage!)),
+                          );
+                          return;
+                        }
+                        context.go(AppRoutes.auth);
+                      },
+                icon: const Icon(Icons.delete_forever_rounded),
+                label: const Text('Supprimer le compte'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: AppColors.danger,
+                  side: BorderSide(
+                    color: AppColors.danger.withValues(alpha: 0.7),
                   ),
                 ),
               ),

@@ -10,6 +10,8 @@ const generateAvatar = require('../middlewares/generateAvatar');
  * @description Ce module gère les routes liées à l'authentification des utilisateurs, y compris l'inscription, la connexion, et la gestion des mots de passe.
  */
 router.post("/signup", multer, generateAvatar, authCtrl.signup);
+router.post('/register/request-code', authCtrl.requestRegisterCode);
+router.post('/register/confirm', multer, generateAvatar, authCtrl.confirmRegisterCode);
 router.post("/login", normalizeEmailMiddleware, authCtrl.login);
 router.post("/logout", authCtrl.logout);
 router.post('/reset-password', normalizeEmailMiddleware, authCtrl.requestPasswordReset);
