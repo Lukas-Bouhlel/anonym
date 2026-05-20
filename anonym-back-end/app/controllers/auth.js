@@ -103,6 +103,49 @@ const issueAuthResponse = (res, user) => {
     return res.status(200).json({ token, user });
 };
 
+const getRuntimeEnvVar = (baseName) => {
+    if (env === 'production') {
+        return process.env[`${baseName}_PROD`] || process.env[baseName];
+    }
+    if (env === 'preprod') {
+        return process.env[`${baseName}_PREPROD`] || process.env[baseName];
+    }
+    return process.env[baseName];
+};
+
+const buildResetPasswordLink = (baseUrl, token) => {
+    if (typeof baseUrl !== 'string') return '';
+    const trimmedBaseUrl = baseUrl.trim();
+    if (!trimmedBaseUrl) return '';
+
+    const encodedToken = encodeURIComponent(token);
+
+    // Allows templates like "myapp://reset?token={token}" or "https://my.app/reset/{token}"
+    if (trimmedBaseUrl.includes('{token}')) {
+        return trimmedBaseUrl.replace('{token}', encodedToken);
+    }
+
+    const withoutTrailingSlash = trimmedBaseUrl.replace(/\/+$/, '');
+    const hasResetPath = /\/reset\/?(\?|$)/i.test(withoutTrailingSlash);
+    const urlWithResetPath = hasResetPath ? withoutTrailingSlash : `${withoutTrailingSlash}/reset/`;
+    const separator = urlWithResetPath.includes('?') ? '&' : '?';
+
+    return `${urlWithResetPath}${separator}token=${encodedToken}`;
+};
+
+const isHttpLink = (url) => {
+    if (typeof url !== 'string') return false;
+    return /^https?:\/\//i.test(url.trim());
+};
+
+const getResetPasswordWebBaseUrl = () => {
+    return getRuntimeEnvVar('RESET_PASSWORD_WEB_URL')
+        || getRuntimeEnvVar('RESET_PASSWORD_URL')
+        || getRuntimeEnvVar('ORIGIN');
+};
+
+const getResetPasswordMobileBaseUrl = () => getRuntimeEnvVar('RESET_PASSWORD_MOBILE_URL');
+
 /**
  * @module UserController
  */
@@ -502,12 +545,19 @@ exports.requestPasswordReset = async (req, res) => {
         await user.save();
 
         // Créer un lien de réinitialisation
-        const resetLink = `${env === 'production' ? process.env.ORIGIN_PROD : process.env.ORIGIN}/reset/?token=${token}`;
-
+        const webResetLink = buildResetPasswordLink(getResetPasswordWebBaseUrl(), token);
+        if (!webResetLink) {
+            return res.status(500).json({ message: "Configuration manquante pour l'URL de reinitialisation web" });
+        }
+        const mobileResetLink = buildResetPasswordLink(getResetPasswordMobileBaseUrl(), token);
+        // Beaucoup de clients e-mail bloquent les schemes custom (ex: anonym://),
+        // donc on garde un bouton cliquable en privilégiant HTTP(S).
+        const primaryResetLink = isHttpLink(mobileResetLink) ? mobileResetLink : webResetLink;
         // Lire le template d'email
         const emailTemplatePath = path.join(__dirname, '../../templates/reset-password-email.html');
         let htmlContent = fs.readFileSync(emailTemplatePath, 'utf8');
-        htmlContent = htmlContent.replace(/{{resetLink}}/, resetLink);
+        htmlContent = htmlContent.replace(/{{resetLink}}/g, primaryResetLink);
+        htmlContent = htmlContent.replace(/{{resetFallbackLink}}/g, webResetLink);
 
         // Envoyer l'email
         await req.mailer.sendEmail(
@@ -542,8 +592,12 @@ exports.requestPasswordReset = async (req, res) => {
  */
 exports.resetPassword = async (req, res) => {
     try {
-        const { token } = req.query;
+        const token = req.query?.token || req.body?.token;
         const { password, confirmPassword } = req.body;
+
+        if (!token) {
+            return res.status(400).json({ message: 'Le token de reinitialisation est requis' });
+        }
     
         if (!password) {
             return res.status(400).json({ message: "Le mot de passe est requis" });
@@ -609,3 +663,4 @@ exports.resetPassword = async (req, res) => {
         res.status(500).json({ message: error.message || 'Impossible de réinitialiser le mot de passe' });
     }
 };
+

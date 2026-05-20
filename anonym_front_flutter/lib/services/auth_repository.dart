@@ -133,8 +133,12 @@ class AuthRepository {
     required String confirmPassword,
   }) async {
     await _dio.post<void>(
-      '/api/auth/reset?token=$token',
-      data: {'password': password, 'confirmPassword': confirmPassword},
+      '/api/auth/reset',
+      data: {
+        'token': token,
+        'password': password,
+        'confirmPassword': confirmPassword,
+      },
     );
   }
 
