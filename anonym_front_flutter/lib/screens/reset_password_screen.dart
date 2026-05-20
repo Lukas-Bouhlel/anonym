@@ -99,7 +99,15 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
               children: [
                 Row(
                   children: [
-                    const MojiBackButton(),
+                    MojiBackButton(
+                      onTap: () {
+                        if (context.canPop()) {
+                          context.pop();
+                        } else {
+                          context.go(AppRoutes.login);
+                        }
+                      },
+                    ),
                     const SizedBox(width: 14),
                     Expanded(
                       child: Text(

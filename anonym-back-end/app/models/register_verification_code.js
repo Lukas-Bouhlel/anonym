@@ -21,6 +21,14 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.STRING(64),
       allowNull: false
     },
+    pending_username: {
+      type: DataTypes.STRING,
+      allowNull: true
+    },
+    pending_password_hash: {
+      type: DataTypes.STRING,
+      allowNull: true
+    },
     code_expires_at: {
       type: DataTypes.DATE,
       allowNull: false

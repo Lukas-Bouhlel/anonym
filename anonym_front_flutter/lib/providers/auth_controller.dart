@@ -16,6 +16,8 @@ class AuthController extends ChangeNotifier {
   bool _isBootstrapping = true;
   bool _isBusy = false;
   String? _errorMessage;
+  String? _infoMessage;
+  int? _retryAfterSeconds;
   int _authMutationVersion = 0;
 
   UserModel? get user => _user;
@@ -23,6 +25,8 @@ class AuthController extends ChangeNotifier {
   bool get isBootstrapping => _isBootstrapping;
   bool get isBusy => _isBusy;
   String? get errorMessage => _errorMessage;
+  String? get infoMessage => _infoMessage;
+  int? get retryAfterSeconds => _retryAfterSeconds;
 
   Future<void> bootstrap() async {
     final bootstrapVersion = _authMutationVersion;
@@ -133,6 +137,72 @@ class AuthController extends ChangeNotifier {
       _errorMessage = ApiErrorParser.parse(
         e,
         fallback: 'Inscription impossible',
+      );
+      return false;
+    } finally {
+      _setBusy(false);
+    }
+  }
+
+  Future<bool> requestRegisterCode({
+    required String email,
+    required String username,
+    required String password,
+  }) async {
+    _setBusy(true);
+    _errorMessage = null;
+    _infoMessage = null;
+    _retryAfterSeconds = null;
+    try {
+      final payload = await _repository.requestRegisterCode(
+        email: email,
+        username: username,
+        password: password,
+      );
+      final message = payload['message'];
+      if (message is String && message.trim().isNotEmpty) {
+        _infoMessage = message;
+      }
+      return true;
+    } catch (e) {
+      _errorMessage = ApiErrorParser.parse(
+        e,
+        fallback: 'Envoi du code impossible',
+      );
+      if (e is DioException) {
+        final data = e.response?.data;
+        if (data is Map<String, dynamic>) {
+          final retry = data['retry_after_seconds'];
+          if (retry is int) {
+            _retryAfterSeconds = retry;
+          } else if (retry is num) {
+            _retryAfterSeconds = retry.toInt();
+          }
+        }
+      }
+      return false;
+    } finally {
+      _setBusy(false);
+    }
+  }
+
+  Future<bool> confirmRegister({
+    required String email,
+    required String code,
+  }) async {
+    _setBusy(true);
+    _authMutationVersion++;
+    _errorMessage = null;
+    try {
+      _user = await _repository.confirmRegister(
+        email: email,
+        code: code,
+      );
+      return true;
+    } catch (e) {
+      _errorMessage = ApiErrorParser.parse(
+        e,
+        fallback: 'Verification impossible',
       );
       return false;
     } finally {

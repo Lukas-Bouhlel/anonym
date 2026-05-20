@@ -7,12 +7,30 @@ class ApiErrorParser {
     if (error is DioException) {
       final data = error.response?.data;
       if (data is Map<String, dynamic>) {
-        final message = data['message'];
-        if (message is String && message.trim().isNotEmpty) {
-          return message;
+        for (final key in ['message', 'error', 'detail']) {
+          final value = data[key];
+          if (value is String && value.trim().isNotEmpty) {
+            return value;
+          }
+          if (value is List && value.isNotEmpty) {
+            return value.join('\n');
+          }
         }
-        if (message is List && message.isNotEmpty) {
-          return message.join('\n');
+
+        final errors = data['errors'];
+        if (errors is List && errors.isNotEmpty) {
+          return errors.join('\n');
+        }
+        if (errors is Map) {
+          final lines = <String>[];
+          errors.forEach((field, value) {
+            if (value is List && value.isNotEmpty) {
+              lines.add(value.join('\n'));
+            } else if (value is String && value.trim().isNotEmpty) {
+              lines.add(value);
+            }
+          });
+          if (lines.isNotEmpty) return lines.join('\n');
         }
       }
 

@@ -1,3 +1,5 @@
+import 'password_validators.dart';
+
 class AuthValidators {
   const AuthValidators._();
 
@@ -25,14 +27,7 @@ class AuthValidators {
       return 'Mot de passe requis';
     }
 
-    if (!strict) {
-      return null;
-    }
-
-    if (value.length < 12) {
-      return '12 caractères minimum';
-    }
-
-    return null;
+    if (!strict) return null;
+    return PasswordValidators.validateAsString(value);
   }
 }

@@ -13,7 +13,7 @@ const REGISTER_SEND_WINDOW_MINUTES = 15;
 const REGISTER_SEND_WINDOW_MAX = 5;
 const REGISTER_VERIFY_MAX_ATTEMPTS = 5;
 const REGISTER_VERIFY_BLOCK_MINUTES = 15;
-const GENERIC_REGISTER_CODE_MESSAGE = 'Si votre email est valide, un code de verification vient d etre envoye.';
+const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+=\-[\]{};:,.<>?/\\|`~"'Â£Â¤Â§ÂµÂ¢â‚¹])[A-Za-z\d!@#$%^&*()_+=\-[\]{};:,.<>?/\\|`~"'Â£Â¤Â§ÂµÂ¢â‚¹]{12,}$/;
 
 const normalizeEmail = (email) => {
     if (typeof email !== 'string') return '';
@@ -24,6 +24,56 @@ const normalizeEmail = (email) => {
         return `${localPart.replace(/\./g, '')}@${domainPart}`;
     }
     return trimmed;
+};
+
+const normalizeUsername = (username) => {
+    if (typeof username !== 'string') return '';
+    return username.trim().toLowerCase();
+};
+
+const extractUsernameFromBody = (body) => {
+    if (!body || typeof body !== 'object') return '';
+
+    if (typeof body.username === 'string') return body.username;
+    if (typeof body.userName === 'string') return body.userName;
+
+    if (body.datas && typeof body.datas === 'object') {
+        if (typeof body.datas.username === 'string') return body.datas.username;
+        if (typeof body.datas.userName === 'string') return body.datas.userName;
+    }
+
+    if (typeof body.datas === 'string') {
+        try {
+            const parsedDatas = JSON.parse(body.datas);
+            if (typeof parsedDatas?.username === 'string') return parsedDatas.username;
+            if (typeof parsedDatas?.userName === 'string') return parsedDatas.userName;
+        } catch {
+            return '';
+        }
+    }
+
+    return '';
+};
+
+const extractPasswordFromBody = (body) => {
+    if (!body || typeof body !== 'object') return '';
+
+    if (typeof body.password === 'string') return body.password;
+
+    if (body.datas && typeof body.datas === 'object' && typeof body.datas.password === 'string') {
+        return body.datas.password;
+    }
+
+    if (typeof body.datas === 'string') {
+        try {
+            const parsedDatas = JSON.parse(body.datas);
+            if (typeof parsedDatas?.password === 'string') return parsedDatas.password;
+        } catch {
+            return '';
+        }
+    }
+
+    return '';
 };
 
 const hashOtpCode = (otpCode) => CryptoJS.SHA256(otpCode).toString();
@@ -148,6 +198,8 @@ exports.login = async (req, res) => {
 exports.requestRegisterCode = async (req, res) => {
     try {
         const email = normalizeEmail(req.body?.email);
+        const username = normalizeUsername(extractUsernameFromBody(req.body));
+        const password = extractPasswordFromBody(req.body);
         const ip = getRequesterIp(req);
         const now = new Date();
 
@@ -158,6 +210,35 @@ exports.requestRegisterCode = async (req, res) => {
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         if (!emailRegex.test(email)) {
             return res.status(400).json({ message: 'Email invalide.' });
+        }
+
+        if (!username) {
+            return res.status(400).json({ message: "Le nom d'utilisateur est requis." });
+        }
+        if (!password) {
+            return res.status(400).json({ message: 'Le mot de passe est requis.' });
+        }
+        if (!PASSWORD_REGEX.test(password)) {
+            return res.status(400).json({
+                message: "Mot de passe : 12 caractères min, avec majuscules, minuscules, chiffres et caractères spéciaux"
+            });
+        }
+
+        const [existingUsernameUser, existingEmailUser] = await Promise.all([
+            User.findOne({
+                where: User.sequelize.where(
+                    User.sequelize.fn('LOWER', User.sequelize.col('username')),
+                    username
+                )
+            }),
+            User.findOne({ where: { email } })
+        ]);
+
+        if (existingUsernameUser) {
+            return res.status(409).json({ message: "Ce nom d'utilisateur est deja utilise." });
+        }
+        if (existingEmailUser) {
+            return res.status(409).json({ message: "L'adresse email est deja utilise." });
         }
 
         const windowStart = new Date(now.getTime() - REGISTER_SEND_WINDOW_MINUTES * 60 * 1000);
@@ -184,29 +265,28 @@ exports.requestRegisterCode = async (req, res) => {
             return res.status(429).json({ message: 'Trop de tentatives. Reessayez plus tard.' });
         }
 
-        const [existingUser, existingCode] = await Promise.all([
-            User.findOne({ where: { email } }),
-            RegisterVerificationCode.findOne({ where: { email } })
-        ]);
+        const existingCode = await RegisterVerificationCode.findOne({ where: { email } });
 
         if (existingCode?.last_sent_at) {
             const elapsedMs = now.getTime() - new Date(existingCode.last_sent_at).getTime();
             if (elapsedMs < REGISTER_RESEND_COOLDOWN_SECONDS * 1000) {
-                return res.status(429).json({ message: 'Attendez avant de redemander un code.' });
+                const remainingSeconds = Math.ceil((REGISTER_RESEND_COOLDOWN_SECONDS * 1000 - elapsedMs) / 1000);
+                return res.status(429).json({
+                    message: `Veuillez patienter ${remainingSeconds}s avant de redemander un code.`,
+                    retry_after_seconds: remainingSeconds
+                });
             }
         }
 
+        await RegisterVerificationEvent.destroy({ where: { email } });
         await RegisterVerificationEvent.create({
             email,
             ip,
             event_type: 'REQUEST_CODE'
         });
 
-        if (existingUser) {
-            return res.status(200).json({ message: GENERIC_REGISTER_CODE_MESSAGE });
-        }
-
         const otpCode = `${Math.floor(100000 + Math.random() * 900000)}`;
+        const pendingPasswordHash = await bcrypt.hash(password, 10);
         const nextWindowStartedAt = existingCode?.send_window_started_at
             ? new Date(existingCode.send_window_started_at)
             : now;
@@ -220,6 +300,8 @@ exports.requestRegisterCode = async (req, res) => {
         const codeData = {
             email,
             code_hash: hashOtpCode(otpCode),
+            pending_username: username,
+            pending_password_hash: pendingPasswordHash,
             code_expires_at: new Date(now.getTime() + REGISTER_CODE_TTL_MINUTES * 60 * 1000),
             last_sent_at: now,
             send_attempts: sendAttempts,
@@ -242,7 +324,10 @@ exports.requestRegisterCode = async (req, res) => {
             `<p>Votre code de verification est <strong>${otpCode}</strong>.</p><p>Il expire dans ${REGISTER_CODE_TTL_MINUTES} minutes.</p>`
         );
 
-        return res.status(200).json({ message: GENERIC_REGISTER_CODE_MESSAGE });
+        return res.status(200).json({
+            message: 'Code de verification renvoye avec succes.',
+            code_resent: true
+        });
     } catch (error) {
         return res.status(500).json({ message: error.message || 'Erreur lors de la demande de code.' });
     }
@@ -251,11 +336,11 @@ exports.requestRegisterCode = async (req, res) => {
 exports.confirmRegisterCode = async (req, res) => {
     try {
         const email = normalizeEmail(req.body?.email);
-        const { code, username, password } = req.body;
+        const { code } = req.body;
         const now = new Date();
 
-        if (!email || !code || !username || !password) {
-            return res.status(400).json({ message: 'Email, code, username et mot de passe sont requis.' });
+        if (!email || !code) {
+            return res.status(400).json({ message: 'Email et code sont requis.' });
         }
 
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -287,42 +372,56 @@ exports.confirmRegisterCode = async (req, res) => {
             return res.status(400).json({ message: 'Code invalide ou expire.' });
         }
 
-        const existingUser = await User.findOne({
-            where: {
-                [Op.or]: [{ email }, { username }]
-            }
-        });
-        if (existingUser) {
-            await otpEntry.destroy();
-            return res.status(409).json({ message: 'Un compte existe deja avec ces informations.' });
+        const username = normalizeUsername(otpEntry.pending_username);
+        const pendingPasswordHash = otpEntry.pending_password_hash;
+        if (!username || !pendingPasswordHash) {
+            return res.status(400).json({ message: 'Informations de pre-inscription manquantes. Redemandez un code.' });
         }
 
-        const user = await User.create({
-            username,
-            email,
-            password
-        });
+        const [existingEmailUser, existingUsernameUser] = await Promise.all([
+            User.findOne({ where: { email } }),
+            User.findOne({
+                where: User.sequelize.where(
+                    User.sequelize.fn('LOWER', User.sequelize.col('username')),
+                    username
+                )
+            })
+        ]);
 
+        if (existingEmailUser) {
+            await RegisterVerificationCode.destroy({ where: { email } });
+            await RegisterVerificationEvent.destroy({ where: { email } });
+            return res.status(409).json({ message: 'Un compte existe deja avec cet email.' });
+        }
+
+        if (existingUsernameUser) {
+            return res.status(409).json({ message: "Ce nom d'utilisateur est deja utilise." });
+        }
+
+        let newAvatarPath = null;
         if (!req.file && req.avatarData) {
             const { circleColor, pathColor, uniqueAvatarName } = req.avatarData;
             const defaultAvatarPath = path.join(__dirname, '../../uploads/profiles/default/default_avatar.svg');
             const userAvatarPath = path.resolve(__dirname, '../../uploads/profiles/avatars', uniqueAvatarName);
 
-            if (fs.existsSync(defaultAvatarPath)) {
-                let svgContent = fs.readFileSync(defaultAvatarPath, 'utf8');
-                svgContent = svgContent
-                    .replace(/<circle[^>]*fill="[^"]*"[^>]*>/, `<circle cx="115" cy="115" r="115" fill="${circleColor}"/>`)
-                    .replace(/<path[^>]*fill="[^"]*"[^>]*>/, `<path d="M114.37 48L150.593 117.743L167.732 116.319L184.87 114.894L158.396 132.766C169.932 154.979 184.87 183.741 184.87 183.741L161.077 183.801L140.549 144.814L66.4727 183.801H44L54.9652 162.64L135.365 133.027C135.365 133.027 135.396 133.016 135.457 132.994C136.576 132.584 177.708 117.529 184.87 114.894L167.732 116.319L150.593 117.743L131.372 124.824L115.018 92.3567L103.054 114.894L89.6156 140.207L44 157.012L66.0193 141.308L79.1852 115.9L114.37 48Z" fill="${pathColor}"/>`);
-                fs.writeFileSync(userAvatarPath, svgContent);
-                user.avatar = `${req.protocol}://${req.get("host")}/uploads/profiles/avatars/${uniqueAvatarName}`;
-                await user.save();
-            }
+            let svgContent = fs.readFileSync(defaultAvatarPath, 'utf8');
+            svgContent = svgContent.replace(/<circle[^>]*fill="[^"]*"[^>]*>/, `<circle cx="115" cy="115" r="115" fill="${circleColor}"/>`);
+            svgContent = svgContent.replace(/<path[^>]*fill="[^"]*"[^>]*>/, `<path d="M114.37 48L150.593 117.743L167.732 116.319L184.87 114.894L158.396 132.766C169.932 154.979 184.87 183.741 184.87 183.741L161.077 183.801L140.549 144.814L66.4727 183.801H44L54.9652 162.64L135.365 133.027C135.365 133.027 135.396 133.016 135.457 132.994C136.576 132.584 177.708 117.529 184.87 114.894L167.732 116.319L150.593 117.743L131.372 124.824L115.018 92.3567L103.054 114.894L89.6156 140.207L44 157.012L66.0193 141.308L79.1852 115.9L114.37 48Z" fill="${pathColor}"/>`);
+            fs.writeFileSync(userAvatarPath, svgContent);
+            newAvatarPath = `${req.protocol}://${req.get('host')}/uploads/profiles/avatars/${uniqueAvatarName}`;
         } else if (req.file) {
-            user.avatar = `${req.protocol}://${req.get("host")}/uploads/profiles/avatars/${req.file.filename}`;
-            await user.save();
+            newAvatarPath = `${req.protocol}://${req.get('host')}/uploads/profiles/avatars/${req.file.filename}`;
         }
 
-        await otpEntry.destroy();
+        const user = await User.create({
+            username,
+            email,
+            password: pendingPasswordHash,
+            avatar: newAvatarPath
+        }, { hooks: false, validate: false });
+
+        await RegisterVerificationCode.destroy({ where: { email } });
+        await RegisterVerificationEvent.destroy({ where: { email } });
         return issueAuthResponse(res, user);
     } catch (error) {
         if (error.name === 'SequelizeValidationError') {
