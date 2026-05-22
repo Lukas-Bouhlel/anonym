@@ -15,7 +15,6 @@ import 'services/invoice_repository.dart';
 import 'services/payment_repository.dart';
 import 'services/points_repository.dart';
 import 'services/private_message_repository.dart';
-import 'services/session_service.dart';
 import 'services/shop_repository.dart';
 import 'services/socket_service.dart';
 
@@ -23,12 +22,7 @@ void main() {
   WidgetsFlutterBinding.ensureInitialized();
 
   final apiClient = ApiClient();
-  final sessionService = SessionService();
-  final authRepository = AuthRepository(
-    apiClient.dio,
-    apiClient,
-    sessionService,
-  );
+  final authRepository = AuthRepository(apiClient.dio, apiClient);
   final accountRepository = AccountRepository(apiClient.dio);
   final adminRepository = AdminRepository(apiClient.dio);
   final friendsRepository = FriendsRepository(apiClient.dio);
@@ -45,7 +39,6 @@ void main() {
     MultiProvider(
       providers: [
         Provider.value(value: apiClient),
-        Provider.value(value: sessionService),
         Provider.value(value: authRepository),
         Provider.value(value: accountRepository),
         Provider.value(value: adminRepository),

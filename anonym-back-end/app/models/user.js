@@ -13,6 +13,7 @@ module.exports = (sequelize, DataTypes) => {
       User.hasMany(models.Inventory, { foreignKey: 'user_id' });
       User.belongsToMany(models.Channel, { through: 'UserChannel', foreignKey: 'user_id' });
       User.hasMany(models.UserPointDaily, { foreignKey: 'user_id' });
+      User.hasMany(models.RefreshToken, { foreignKey: 'user_id', as: 'refreshTokens' });
     }
   }
   User.init({

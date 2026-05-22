@@ -1,3 +1,5 @@
+﻿import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:dio/dio.dart';
 
@@ -7,6 +9,7 @@ import '../utils/api_error_parser.dart';
 
 class AuthController extends ChangeNotifier {
   AuthController(this._repository) {
+    _repository.setSessionExpiredHandler(_handleSessionExpired);
     bootstrap();
   }
 
@@ -73,13 +76,13 @@ class AuthController extends ChangeNotifier {
         );
       }
     } finally {
-      if (bootstrapVersion == _authMutationVersion) {
-        _isBootstrapping = false;
-        if (kDebugMode) {
-          debugPrint('[AUTH][bootstrap:end] loggedIn=$isLoggedIn');
-        }
-        notifyListeners();
+      _isBootstrapping = false;
+      if (kDebugMode) {
+        debugPrint(
+          '[AUTH][bootstrap:end] v=$bootstrapVersion currentV=$_authMutationVersion loggedIn=$isLoggedIn',
+        );
       }
+      notifyListeners();
     }
   }
 
@@ -282,6 +285,14 @@ class AuthController extends ChangeNotifier {
     }
   }
 
+  void _handleSessionExpired() {
+    unawaited(_repository.clearLocalSession());
+    _user = null;
+    _errorMessage = 'Session expirée ou invalide (401).';
+    _isBootstrapping = false;
+    notifyListeners();
+  }
+
   void clearError() {
     _errorMessage = null;
     notifyListeners();
@@ -300,3 +311,4 @@ class AuthController extends ChangeNotifier {
     return false;
   }
 }
+

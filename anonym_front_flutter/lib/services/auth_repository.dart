@@ -3,18 +3,17 @@ import 'package:flutter/foundation.dart';
 
 import '../models/user_model.dart';
 import 'api_client.dart';
-import 'session_service.dart';
 
 class AuthRepository {
-  AuthRepository(this._dio, this._apiClient, this._sessionService);
+  AuthRepository(this._dio, this._apiClient);
 
   final Dio _dio;
   final ApiClient _apiClient;
-  final SessionService _sessionService;
 
-  Future<void> hydrateSession() async {
-    final token = await _sessionService.readToken();
-    _apiClient.setAuthToken(token);
+  Future<void> hydrateSession() async {}
+
+  void setSessionExpiredHandler(VoidCallback handler) {
+    _apiClient.setSessionExpiredHandler(handler);
   }
 
   Future<UserModel> login({
@@ -27,12 +26,6 @@ class AuthRepository {
     );
 
     final payload = response.data ?? <String, dynamic>{};
-    final token = payload['token']?.toString();
-
-    if (token != null && token.isNotEmpty) {
-      await _sessionService.saveToken(token);
-      _apiClient.setAuthToken(token);
-    }
 
     final userJson = payload['user'] is Map<String, dynamic>
         ? payload['user'] as Map<String, dynamic>
@@ -110,12 +103,6 @@ class AuthRepository {
     );
 
     final payload = response.data ?? <String, dynamic>{};
-    final token = payload['token']?.toString();
-
-    if (token != null && token.isNotEmpty) {
-      await _sessionService.saveToken(token);
-      _apiClient.setAuthToken(token);
-    }
 
     final userJson = payload['user'] is Map<String, dynamic>
         ? payload['user'] as Map<String, dynamic>
@@ -148,12 +135,14 @@ class AuthRepository {
   }
 
   Future<void> logout() async {
-    await _dio.post<void>('/api/auth/logout');
-    await clearLocalSession();
+    try {
+      await _dio.post<void>('/api/auth/logout');
+    } finally {
+      await clearLocalSession();
+    }
   }
 
   Future<void> clearLocalSession() async {
-    _apiClient.setAuthToken(null);
-    await _sessionService.clearToken();
+    await _apiClient.clearSessionData();
   }
 }

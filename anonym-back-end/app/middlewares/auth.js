@@ -43,6 +43,13 @@ module.exports = (req, res, next) => {
         
         next();
     } catch {
+        const cookieOptions = {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'Strict',
+        };
+        res.clearCookie?.(process.env.JWT_ACCESS_COOKIE_NAME || 'token', cookieOptions);
+        res.clearCookie?.(process.env.JWT_REFRESH_COOKIE_NAME || 'refreshToken', cookieOptions);
         res.status(401).json({
             error: 'Unauthorized request!'
         });

@@ -9,6 +9,7 @@ const router = require("./app/routes/index.js");
 const db = require("./app/models/index.js");
 const path = require('path');
 const createMailer = require('./app/utils/mailer.js');
+const { ensureCsrfCookie } = require('./app/middlewares/csrf');
 const env = process.env.NODE_ENV || 'development';
 
 const configuredOrigin =
@@ -165,7 +166,7 @@ app.use(cors({
     },
     credentials: true,  // Permet les cookies
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
-    allowedHeaders: ['Content-Type', 'Authorization']
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-CSRF-Token']
 }));
 
 app.use(cookieParser());
@@ -184,6 +185,7 @@ app.set('trust proxy', true);
  * @param {string} route - Route définie pour l'API.
  * @param {Function} handler - Gestionnaire des requêtes pour les routes.
  */
-app.use("/api", router);
+app.use('/api', ensureCsrfCookie, router);
 
 module.exports = app;
+

@@ -1,8 +1,9 @@
-const { User, RegisterVerificationCode, RegisterVerificationEvent } = require('../models');
+const { User, RefreshToken, RegisterVerificationCode, RegisterVerificationEvent } = require('../models');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const fs = require('fs');
 const path = require('path')
+const crypto = require('crypto');
 const { Op } = require('sequelize');
 const CryptoJS = require('crypto-js');
 const env = process.env.NODE_ENV || 'development';
@@ -14,6 +15,11 @@ const REGISTER_SEND_WINDOW_MAX = 5;
 const REGISTER_VERIFY_MAX_ATTEMPTS = 5;
 const REGISTER_VERIFY_BLOCK_MINUTES = 15;
 const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+=\-[\]{};:,.<>?/\\|`~"'Â£Â¤Â§ÂµÂ¢â‚¹])[A-Za-z\d!@#$%^&*()_+=\-[\]{};:,.<>?/\\|`~"'Â£Â¤Â§ÂµÂ¢â‚¹]{12,}$/;
+
+const ACCESS_TOKEN_TTL = process.env.JWT_ACCESS_TTL || '15m';
+const REFRESH_TOKEN_TTL_DAYS = Number(process.env.JWT_REFRESH_TTL_DAYS || 7);
+const REFRESH_TOKEN_COOKIE_NAME = process.env.JWT_REFRESH_COOKIE_NAME || 'refreshToken';
+const ACCESS_TOKEN_COOKIE_NAME = process.env.JWT_ACCESS_COOKIE_NAME || 'token';
 
 const normalizeEmail = (email) => {
     if (typeof email !== 'string') return '';
@@ -86,20 +92,60 @@ const getRequesterIp = (req) => {
     return 'unknown';
 };
 
-const issueAuthResponse = (res, user) => {
-    const token = jwt.sign(
-        { userId: user.id, userRole: user.roles },
-        process.env.JWT_SECRET,
-        { expiresIn: '10h' }
-    );
+const hashRefreshToken = (refreshToken) => crypto.createHash('sha256').update(refreshToken).digest('hex');
 
-    res.cookie('token', token, {
+const getTokenCookieOptions = (maxAge) => ({
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'Strict',
+    maxAge,
+});
+
+const createAccessToken = (user) => jwt.sign(
+    { userId: user.id, userRole: user.roles },
+    process.env.JWT_SECRET,
+    { expiresIn: ACCESS_TOKEN_TTL }
+);
+
+const createRefreshToken = () => crypto.randomBytes(64).toString('hex');
+
+const setAuthCookies = (res, accessToken, refreshToken) => {
+    const accessJwtDecoded = jwt.decode(accessToken);
+    const accessExpiryMs = accessJwtDecoded?.exp ? (accessJwtDecoded.exp * 1000) - Date.now() : 15 * 60 * 1000;
+    const refreshExpiryMs = REFRESH_TOKEN_TTL_DAYS * 24 * 60 * 60 * 1000;
+
+    res.cookie(ACCESS_TOKEN_COOKIE_NAME, accessToken, getTokenCookieOptions(Math.max(accessExpiryMs, 1000)));
+    res.cookie(REFRESH_TOKEN_COOKIE_NAME, refreshToken, getTokenCookieOptions(refreshExpiryMs));
+};
+
+const clearAuthCookies = (res) => {
+    const cookieOptions = {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'Strict',
-        maxAge: 10 * 60 * 60 * 1000,
-    });
+    };
+    res.clearCookie(ACCESS_TOKEN_COOKIE_NAME, cookieOptions);
+    res.clearCookie(REFRESH_TOKEN_COOKIE_NAME, cookieOptions);
+};
 
+const persistRefreshToken = async (userId, refreshToken, req) => {
+    const expiresAt = new Date(Date.now() + REFRESH_TOKEN_TTL_DAYS * 24 * 60 * 60 * 1000);
+    return RefreshToken.create({
+        user_id: userId,
+        token_hash: hashRefreshToken(refreshToken),
+        expires_at: expiresAt,
+        revoked_at: null,
+        created_by_ip: getRequesterIp(req),
+        user_agent: req.get('user-agent') || null,
+        last_used_at: null
+    });
+};
+
+const issueAuthResponse = async (req, res, user) => {
+    const token = createAccessToken(user);
+    const refreshToken = createRefreshToken();
+    await persistRefreshToken(user.id, refreshToken, req);
+    setAuthCookies(res, token, refreshToken);
     return res.status(200).json({ token, user });
 };
 
@@ -230,7 +276,7 @@ exports.login = async (req, res) => {
             return res.status(401).json({ message: "Votre identifiant ou votre mot de passe est incorrect" });
         }
 
-        return issueAuthResponse(res, user);
+        return await issueAuthResponse(req, res, user);
     } catch (error) {
         res.status(500).json({
             message: error.message || 'An error occurred during login'
@@ -465,7 +511,7 @@ exports.confirmRegisterCode = async (req, res) => {
 
         await RegisterVerificationCode.destroy({ where: { email } });
         await RegisterVerificationEvent.destroy({ where: { email } });
-        return issueAuthResponse(res, user);
+        return await issueAuthResponse(req, res, user);
     } catch (error) {
         if (error.name === 'SequelizeValidationError') {
             const messages = error.errors.map(err => err.message);
@@ -487,16 +533,60 @@ exports.confirmRegisterCode = async (req, res) => {
  * // Exemple de requête
  * POST /api/auth/logout
  */
-exports.logout = (req, res) => {
+exports.refreshToken = async (req, res) => {
     try {
-        // Invalider le cookie contenant le token JWT
-        res.clearCookie('token', {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: 'Strict',
+        const refreshTokenFromCookie = req.cookies?.[REFRESH_TOKEN_COOKIE_NAME];
+        const refreshTokenFromBody = req.body?.refreshToken;
+        const refreshToken = refreshTokenFromCookie || refreshTokenFromBody;
+
+        if (!refreshToken) {
+            clearAuthCookies(res);
+            return res.status(401).json({ message: 'Refresh token missing' });
+        }
+
+        const tokenHash = hashRefreshToken(refreshToken);
+        const tokenRecord = await RefreshToken.findOne({ where: { token_hash: tokenHash } });
+
+        if (!tokenRecord || tokenRecord.revoked_at || new Date(tokenRecord.expires_at) <= new Date()) {
+            clearAuthCookies(res);
+            return res.status(401).json({ message: 'Invalid or expired refresh token' });
+        }
+
+        const user = await User.findByPk(tokenRecord.user_id);
+        if (!user) {
+            clearAuthCookies(res);
+            return res.status(401).json({ message: 'Invalid refresh token user' });
+        }
+
+        await tokenRecord.update({
+            revoked_at: new Date(),
+            last_used_at: new Date()
         });
 
-        // Envoyer une réponse de succès
+        const newAccessToken = createAccessToken(user);
+        const newRefreshToken = createRefreshToken();
+        await persistRefreshToken(user.id, newRefreshToken, req);
+        setAuthCookies(res, newAccessToken, newRefreshToken);
+
+        return res.status(200).json({ token: newAccessToken, user });
+    } catch (error) {
+        clearAuthCookies(res);
+        return res.status(500).json({ message: error.message || 'Unable to refresh token' });
+    }
+};
+
+exports.logout = async (req, res) => {
+    try {
+        const refreshToken = req.cookies?.[REFRESH_TOKEN_COOKIE_NAME] || req.body?.refreshToken;
+        if (refreshToken) {
+            const tokenHash = hashRefreshToken(refreshToken);
+            await RefreshToken.update(
+                { revoked_at: new Date() },
+                { where: { token_hash: tokenHash, revoked_at: null } }
+            );
+        }
+
+        clearAuthCookies(res);
         res.status(200).json({ message: "Successfully logged out" });
     } catch (error) {
         res.status(500).json({ message: error.message || 'Logout failed' });
@@ -651,12 +741,11 @@ exports.resetPassword = async (req, res) => {
             confirmationHtmlContent
         );
 
-        // Invalider le cookie contenant le token JWT
-        res.clearCookie('token', {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: 'Strict',
-        });
+        await RefreshToken.update(
+            { revoked_at: new Date() },
+            { where: { user_id: user.id, revoked_at: null } }
+        );
+        clearAuthCookies(res);
 
         res.status(200).json({ message: 'Le mot de passe a été réinitialisé avec succès' });
     } catch (error) {

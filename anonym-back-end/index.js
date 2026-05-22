@@ -4,6 +4,7 @@ const { createServer } = require("http");
 const { Server } = require("socket.io");
 const initializeSocket = require('./app/utils/socket');
 const socketAuth = require('./app/middlewares/socketAuth');
+const { startRefreshTokenCleanup } = require('./app/utils/refreshTokenCleanup');
 const env = process.env.NODE_ENV || 'development';
 const port = process.env.NODE_ENV === 'preprod' ? process.env.PORT_PREPROD : process.env.PORT;
 
@@ -91,3 +92,5 @@ app.locals.io = io;
  * @param {Server} io - Instance de Socket.IO pour gérer les connexions des sockets.
  */
 initializeSocket(io);
+startRefreshTokenCleanup();
+
