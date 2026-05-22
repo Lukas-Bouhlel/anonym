@@ -4,7 +4,9 @@ const fs = require('fs');
 const path = require('path');
 const { Op } = require('sequelize');
 const { deleteUploadFileIfExists, deleteUploadFiles } = require('../utils/fileCleanup');
+const { getLevelFromPoints } = require('../utils/points');
 let hasAllowNonFriendDmsColumnCache = null;
+const PRESENCE_STATUSES = ['online', 'idle', 'dnd', 'invisible'];
 
 const hasAllowNonFriendDmsColumn = async () => {
     if (hasAllowNonFriendDmsColumnCache !== null) {
@@ -19,6 +21,23 @@ const hasAllowNonFriendDmsColumn = async () => {
     }
 
     return hasAllowNonFriendDmsColumnCache;
+};
+
+const getPresenceForViewer = (user, viewerId) => {
+    const status = user?.presence_status || 'online';
+    if (status === 'invisible' && Number(user?.id) !== Number(viewerId)) {
+        return 'offline';
+    }
+    return status;
+};
+
+const serializeUserForViewer = (user, viewerId) => {
+    const userJson = user.toJSON ? user.toJSON() : user;
+    return {
+        ...userJson,
+        presence_status: getPresenceForViewer(userJson, viewerId),
+        level: getLevelFromPoints(userJson.total_points || 0)
+    };
 };
 
 /**
@@ -60,7 +79,7 @@ exports.readAccount = async (req, res) => {
             return res.status(404).json({ message: "User not found" });
         }
 
-        res.status(200).json(user);
+        res.status(200).json(serializeUserForViewer(user, userId));
     } catch (error) {
         res.status(500).json({
             message: error.message || 'Une erreur est survenue lors de la récupération des comptes.'
@@ -89,7 +108,7 @@ exports.read = async (req, res) => {
             return res.status(404).json({ message: "User not found" });
         }
 
-        res.status(200).json(user);
+        res.status(200).json(serializeUserForViewer(user, req.auth.userId));
     } catch (error) {
         res.status(500).json({
             message: error.message || 'Une erreur est survenue lors de la récupération du compte.'
@@ -116,7 +135,9 @@ exports.readAll = async (req, res) => {
             return res.status(404).json({ message: "Users not found" });
         }
 
-        res.status(200).json(users);
+        const viewerId = req.auth.userId;
+        const serializedUsers = users.map((user) => serializeUserForViewer(user, viewerId));
+        res.status(200).json(serializedUsers);
     } catch (error) {
         res.status(500).json({
             message: error.message || 'Une erreur est survenue lors de la récupération des comptes.'
@@ -346,6 +367,44 @@ exports.delete = async (req, res) => {
     } catch (error) {
         res.status(500).json({
             message: error.message || 'Une erreur est survenue lors de la suppression du compte.'
+        });
+    }
+};
+
+exports.updatePresence = async (req, res) => {
+    try {
+        const userId = req.auth.userId;
+        const { presence_status } = req.body;
+
+        if (!PRESENCE_STATUSES.includes(presence_status)) {
+            return res.status(400).json({
+                message: `presence_status must be one of: ${PRESENCE_STATUSES.join(', ')}`
+            });
+        }
+
+        const user = await User.findOne({ where: { id: userId } });
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        user.presence_status = presence_status;
+        await user.save();
+
+        const io = req.app?.locals?.io;
+        if (io) {
+            io.emit('presenceUpdated', {
+                userId: user.id,
+                presence_status: user.presence_status
+            });
+        }
+
+        return res.status(200).json({
+            message: 'Presence updated successfully.',
+            presence_status: user.presence_status
+        });
+    } catch (error) {
+        return res.status(500).json({
+            message: error.message || 'Une erreur est survenue lors de la mise a jour du statut.'
         });
     }
 };

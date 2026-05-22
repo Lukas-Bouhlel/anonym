@@ -24,7 +24,7 @@ class ChannelRepository {
         'name': ?name,
         'description': ?description,
         'visibility': ?visibility,
-        if (memberIds != null) 'memberIds': memberIds,
+        'memberIds': ?memberIds,
       };
       final response = await _dio.post<Map<String, dynamic>>(
         endpoint,

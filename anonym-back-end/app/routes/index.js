@@ -10,6 +10,7 @@ const inventoryRoutes = require('./inventory.js');
 const friendsRoutes = require('./friends.js');
 const privateMessagesRoutes = require('./private_message.js');
 const channelRoutes = require('./channel');
+const pointsRoutes = require('./points');
 
 /**
  * Les différentes routes de l'application sont définies ici et reliées à leur fichier respectif.
@@ -26,5 +27,6 @@ router.use("/inventory", inventoryRoutes);
 router.use("/friends", friendsRoutes);
 router.use("/privateMessage", privateMessagesRoutes);
 router.use('/channels', channelRoutes);
+router.use('/points', pointsRoutes);
 
 module.exports = router

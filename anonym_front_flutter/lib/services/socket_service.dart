@@ -27,11 +27,13 @@ class SocketService {
   bool get isConnected => _socket?.connected ?? false;
 
   void connect({
+    String? authToken,
     void Function(ChannelMessageModel message)? onNewMessage,
     void Function(String message)? onMessageError,
     void Function(List<dynamic> payload)? onLocationSnapshot,
     void Function(Map<String, dynamic> payload)? onLocationUpdate,
     void Function(int userId)? onLocationRemove,
+    void Function(Map<String, dynamic> payload)? onPresenceUpdated,
   }) {
     if (_socket != null) {
       _registerMessageErrorListener(onMessageError);
@@ -40,6 +42,7 @@ class SocketService {
         onLocationUpdate: onLocationUpdate,
         onLocationRemove: onLocationRemove,
       );
+      _registerPresenceListener(onPresenceUpdated);
       return;
     }
 
@@ -47,6 +50,14 @@ class SocketService {
       AppConfig.apiBaseUrl,
       io.OptionBuilder()
           .setTransports(['websocket', 'polling'])
+          .setAuth(<String, dynamic>{
+            if (authToken != null && authToken.trim().isNotEmpty)
+              'token': authToken.trim(),
+          })
+          .setExtraHeaders(<String, dynamic>{
+            if (authToken != null && authToken.trim().isNotEmpty)
+              'Authorization': 'Bearer ${authToken.trim()}',
+          })
           .disableAutoConnect()
           .enableReconnection()
           .build(),
@@ -68,10 +79,22 @@ class SocketService {
       onLocationUpdate: onLocationUpdate,
       onLocationRemove: onLocationRemove,
     );
+    _registerPresenceListener(onPresenceUpdated);
     _socket!.on('connect', (_) => requestLiveLocationsSnapshot());
     _socket!.on('reconnect', (_) => requestLiveLocationsSnapshot());
 
     _socket!.connect();
+  }
+
+  void _registerPresenceListener(
+    void Function(Map<String, dynamic> payload)? onPresenceUpdated,
+  ) {
+    if (_socket == null) return;
+    _socket!.off('presenceUpdated');
+    _socket!.on('presenceUpdated', (data) {
+      if (onPresenceUpdated == null || data is! Map) return;
+      onPresenceUpdated(Map<String, dynamic>.from(data));
+    });
   }
 
   void joinChannel({required int channelId, required int userId}) {

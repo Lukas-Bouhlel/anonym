@@ -1,7 +1,31 @@
-const { PrivateMessage, Channel, UserChannel, User, Inventory, Shop, Friend } = require('../models');
+const { PrivateMessage, Channel, UserChannel, User, Inventory, Shop, Friend, UserPointDaily, sequelize } = require('../models');
 const { Op } = require('sequelize');
 const { deleteUploadFileIfExists } = require('../utils/fileCleanup');
 let hasAllowNonFriendDmsColumnCache = null;
+
+const updateChannelReputationScore = async (channelId) => {
+    const channel = await Channel.findByPk(channelId);
+    if (!channel) return null;
+
+    // Reputation only applies to public groups (exclude private DMs).
+    if (channel.channel_type !== 'GROUP' || channel.visibility !== 'PUBLIC') {
+        if (channel.reputation_score !== 0) {
+            await channel.update({ reputation_score: 0 });
+        }
+        return 0;
+    }
+
+    const [messageCount, participantCount] = await Promise.all([
+        PrivateMessage.count({ where: { channel_id: channelId } }),
+        UserChannel.count({ where: { channel_id: channelId } })
+    ]);
+
+    const reputationScore = (messageCount * 1) + (participantCount * 2);
+    if (channel.reputation_score !== reputationScore) {
+        await channel.update({ reputation_score: reputationScore });
+    }
+    return reputationScore;
+};
 
 const hasAllowNonFriendDmsColumn = async () => {
     if (hasAllowNonFriendDmsColumnCache !== null) {
@@ -115,15 +139,71 @@ exports.sendMessageWithImage = async (req, res) => {
             imageUrl = `${req.protocol}://${req.get('host')}/uploads/messages/images/${req.file.filename}`;
         }
 
-        // Créer le message
-        const message = await PrivateMessage.create({
-            sender_id: userId,
-            content: content || null,
-            image_url: imageUrl,
-            channel_id: channelId,
-            status: 'unread',
-            createdAt: new Date()
+        let awardedPoints = 1;
+        let appliedMultiplier = 1;
+        let updatedTotalPoints = 0;
+
+        const message = await sequelize.transaction(async (transaction) => {
+            const activeItems = await Inventory.findAll({
+                where: { user_id: userId, active: true },
+                include: [{
+                    model: Shop,
+                    attributes: ['points_multiplier']
+                }],
+                transaction
+            });
+
+            if (activeItems.length > 0) {
+                appliedMultiplier = activeItems.reduce((accumulator, inventoryItem) => {
+                    const multiplier = Number(inventoryItem?.Shop?.points_multiplier || 1);
+                    if (!Number.isFinite(multiplier) || multiplier < 1) {
+                        return accumulator;
+                    }
+
+                    return accumulator * multiplier;
+                }, 1);
+            }
+
+            awardedPoints = Math.max(1, Math.round(1 * appliedMultiplier));
+
+            const createdMessage = await PrivateMessage.create({
+                sender_id: userId,
+                content: content || null,
+                image_url: imageUrl,
+                channel_id: channelId,
+                status: 'unread',
+                createdAt: new Date()
+            }, { transaction });
+
+            const user = await User.findByPk(userId, { transaction, lock: transaction.LOCK.UPDATE });
+            const nextTotalPoints = (user.total_points || 0) + awardedPoints;
+            updatedTotalPoints = nextTotalPoints;
+            user.total_points = nextTotalPoints;
+            await user.save({ transaction });
+
+            const currentDate = new Date().toISOString().slice(0, 10);
+            const [dailyStat] = await UserPointDaily.findOrCreate({
+                where: {
+                    user_id: userId,
+                    stat_date: currentDate
+                },
+                defaults: {
+                    user_id: userId,
+                    stat_date: currentDate,
+                    messages_count: 0,
+                    points_earned: 0
+                },
+                transaction
+            });
+
+            dailyStat.messages_count += 1;
+            dailyStat.points_earned += awardedPoints;
+            await dailyStat.save({ transaction });
+
+            return createdMessage;
         });
+
+        await updateChannelReputationScore(channelId);
 
         // Récupérer les détails du sender
         const sender = await User.findByPk(userId, {
@@ -173,7 +253,12 @@ exports.sendMessageWithImage = async (req, res) => {
             content: message.content,
             imageUrl: message.image_url,
             sender,
-            createdAt: message.createdAt
+            createdAt: message.createdAt,
+            points: {
+                awarded: awardedPoints,
+                multiplier: Number(appliedMultiplier.toFixed(2)),
+                total: updatedTotalPoints
+            }
         });
     } catch (error) {
         console.error('Error sending message:', error);
@@ -259,7 +344,9 @@ exports.delete = async (req, res) => {
         }
 
         deleteUploadFileIfExists(message.image_url);
+        const channelId = message.channel_id;
         await message.destroy();
+        await updateChannelReputationScore(channelId);
 
         res.status(200).json({ message: "Message deleted successfully." });
     } catch (error) {

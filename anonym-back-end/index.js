@@ -3,6 +3,7 @@ const app = require("./app.js");
 const { createServer } = require("http");
 const { Server } = require("socket.io");
 const initializeSocket = require('./app/utils/socket');
+const socketAuth = require('./app/middlewares/socketAuth');
 const env = process.env.NODE_ENV || 'development';
 const port = process.env.NODE_ENV === 'preprod' ? process.env.PORT_PREPROD : process.env.PORT;
 
@@ -65,6 +66,8 @@ const io = new Server(httpServer, {
       allowedHeaders: ['Content-Type', 'Authorization']
   }
 });
+
+io.use(socketAuth);
 
 /**
  * Lancement du serveur HTTPS et Socket.IO

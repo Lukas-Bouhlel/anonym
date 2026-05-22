@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
@@ -11,10 +12,13 @@ import '../models/user_model.dart';
 import '../providers/app_controller.dart';
 import '../providers/auth_controller.dart';
 import 'group_settings_screen.dart';
+import 'user_profile_screen.dart';
 import '../theme.dart';
 import '../utils/app_date_format.dart';
+import '../utils/presence_utils.dart';
 import '../widgets/app_remote_image.dart';
 import '../widgets/chrome/moji_back_button.dart';
+import '../widgets/presence_badge.dart';
 
 import 'dart:io';
 import 'package:flutter/foundation.dart' show kIsWeb, Uint8List;
@@ -94,6 +98,31 @@ class _ChannelsScreenState extends State<ChannelsScreen> {
             isDm: isDm,
             dmPeerName: hasDmPeerName ? dmPeerName : null,
             dmPeerAvatarUrl: dmPeer?.avatar,
+            dmPeerPresenceStatus: isDm && dmPeer != null
+                ? app.presenceStatusForUser(dmPeer.id)
+                : null,
+            dmPeerPresenceLabel: isDm && dmPeer != null
+                ? app.presenceLabelForUser(dmPeer.id)
+                : null,
+            onDmHeaderTap: isDm && dmPeer != null && dmPeer.id > 0
+                ? () {
+                    showModalBottomSheet(
+                      context: context,
+                      isScrollControlled: true,
+                      backgroundColor: Colors.transparent,
+                      shape: const RoundedRectangleBorder(
+                        borderRadius: BorderRadius.vertical(
+                          top: Radius.circular(28),
+                        ),
+                      ),
+                      clipBehavior: Clip.antiAlias,
+                      builder: (_) => FractionallySizedBox(
+                        heightFactor: 0.86,
+                        child: UserProfileScreen(user: dmPeer),
+                      ),
+                    );
+                  }
+                : null,
             messageController: _messageController,
             editingMessage: _editingMessage,
             onCancelEdit: _cancelEdit,
@@ -205,6 +234,16 @@ class _ChannelsScreenState extends State<ChannelsScreen> {
                 ...channels.map(
                   (channel) => _ConversationTile(
                     channel: channel,
+                    dmPresenceStatus: channel.channelType.trim().toUpperCase() ==
+                            'PRIVATE_DM' &&
+                        channel.dmPeer != null
+                        ? app.presenceStatusForUser(channel.dmPeer!.id)
+                        : null,
+                    dmPresenceLabel: channel.channelType.trim().toUpperCase() ==
+                            'PRIVATE_DM' &&
+                        channel.dmPeer != null
+                        ? app.presenceLabelForUser(channel.dmPeer!.id)
+                        : null,
                     onTap: () => app.selectChannel(channel),
                   ),
                 ),
@@ -255,12 +294,13 @@ class _ChannelsScreenState extends State<ChannelsScreen> {
     BuildContext context,
     AppController app,
   ) async {
+    final parentContext = context;
     await showModalBottomSheet<void>(
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
-      builder: (context) {
-        final bottomSafe = MediaQuery.of(context).padding.bottom;
+      builder: (sheetContext) {
+        final bottomSafe = MediaQuery.of(sheetContext).padding.bottom;
         return SafeArea(
           child: Container(
             margin: const EdgeInsets.fromLTRB(12, 0, 12, 0),
@@ -292,8 +332,8 @@ class _ChannelsScreenState extends State<ChannelsScreen> {
                     icon: Icons.login_rounded,
                     label: 'Rejoindre une conversation',
                     onTap: () async {
-                      Navigator.of(context).pop();
-                      await _openJoinPublicDirectoryScreen(context, app);
+                      Navigator.of(sheetContext).pop();
+                      await _openJoinPublicDirectoryScreen(parentContext, app);
                     },
                   ),
                 ],
@@ -309,8 +349,6 @@ class _ChannelsScreenState extends State<ChannelsScreen> {
     BuildContext context,
     AppController app,
   ) async {
-    await app.refreshPublicChannels(silent: true);
-    if (!context.mounted) return;
     await Navigator.of(context).push(
       PageRouteBuilder<void>(
         transitionDuration: const Duration(milliseconds: 260),
@@ -318,12 +356,13 @@ class _ChannelsScreenState extends State<ChannelsScreen> {
         pageBuilder: (context, animation, secondaryAnimation) =>
             const _PublicConversationsScreen(),
         transitionsBuilder: (context, animation, secondaryAnimation, child) {
-          final offset = Tween<Offset>(
-            begin: const Offset(1, 0),
-            end: Offset.zero,
-          ).animate(
-            CurvedAnimation(parent: animation, curve: Curves.easeOutCubic),
-          );
+          final offset =
+              Tween<Offset>(
+                begin: const Offset(1, 0),
+                end: Offset.zero,
+              ).animate(
+                CurvedAnimation(parent: animation, curve: Curves.easeOutCubic),
+              );
           return SlideTransition(position: offset, child: child);
         },
       ),
@@ -393,7 +432,6 @@ class _ChannelsScreenState extends State<ChannelsScreen> {
         return StatefulBuilder(
           builder: (context, setState) {
             return Container(
-              margin: const EdgeInsets.fromLTRB(12, 0, 12, 0),
               padding: EdgeInsets.fromLTRB(14, 10, 14, 16 + bottomSafe),
               decoration: BoxDecoration(
                 gradient: AppGradients.gB1BCFBTo393566,
@@ -625,6 +663,23 @@ class _ChannelsScreenState extends State<ChannelsScreen> {
                     return ListTile(
                       contentPadding: EdgeInsets.zero,
                       leading: _MemberAvatar(member: member),
+                      onTap: () {
+                        showModalBottomSheet(
+                          context: context,
+                          isScrollControlled: true,
+                          backgroundColor: Colors.transparent,
+                          shape: const RoundedRectangleBorder(
+                            borderRadius: BorderRadius.vertical(
+                              top: Radius.circular(28),
+                            ),
+                          ),
+                          clipBehavior: Clip.antiAlias,
+                          builder: (_) => FractionallySizedBox(
+                            heightFactor: 0.86,
+                            child: UserProfileScreen(user: member),
+                          ),
+                        );
+                      },
                       title: Text(
                         member.username.isNotEmpty
                             ? member.username
@@ -1024,9 +1079,146 @@ class _PublicConversationsScreen extends StatefulWidget {
       _PublicConversationsScreenState();
 }
 
-class _PublicConversationsScreenState extends State<_PublicConversationsScreen> {
+class _PublicConversationsScreenState extends State<_PublicConversationsScreen>
+    with WidgetsBindingObserver {
   String _query = '';
   String _filter = 'all';
+  final Map<String, int> _countsByFilter = {
+    'all': 0,
+    'joined': 0,
+    'discover': 0,
+  };
+  bool _isSwitchingFilter = false;
+  bool _isRealtimeRefreshing = false;
+  int _filterRequestVersion = 0;
+  Timer? _realtimeTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final app = context.read<AppController>();
+      setState(() {
+        _countsByFilter[_filter] = app.publicChannels.length;
+      });
+      _loadFilter(app, _filter, showLoader: true);
+      _startRealtimeRefresh();
+    });
+  }
+
+  @override
+  void dispose() {
+    _realtimeTimer?.cancel();
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state != AppLifecycleState.resumed || !mounted) return;
+    _refreshRealtime();
+  }
+
+  void _startRealtimeRefresh() {
+    _realtimeTimer?.cancel();
+    _realtimeTimer = Timer.periodic(const Duration(seconds: 8), (_) {
+      _refreshRealtime();
+    });
+  }
+
+  Future<void> _refreshCountsForAll(AppController app) async {
+    try {
+      final responses = await Future.wait([
+        app.loadJoinDirectoryChannels(filter: 'all'),
+        app.loadJoinDirectoryChannels(filter: 'joined'),
+        app.loadJoinDirectoryChannels(filter: 'discover'),
+      ]);
+      if (!mounted) return;
+      setState(() {
+        _countsByFilter['all'] = responses[0].length;
+        _countsByFilter['joined'] = responses[1].length;
+        _countsByFilter['discover'] = responses[2].length;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _countsByFilter[_filter] = app.publicChannels.length;
+      });
+    }
+  }
+
+  Future<void> _refreshRealtime() async {
+    if (!mounted || _isRealtimeRefreshing || _isSwitchingFilter) return;
+    _isRealtimeRefreshing = true;
+    final app = context.read<AppController>();
+    final activeFilter = _filter;
+    try {
+      await Future.wait([
+        app.refreshChannels(silent: true),
+        app.refreshPublicChannels(filter: activeFilter, silent: true),
+      ]);
+      if (!mounted) return;
+      setState(() {
+        _countsByFilter[activeFilter] = app.publicChannels.length;
+      });
+    } finally {
+      _isRealtimeRefreshing = false;
+    }
+  }
+
+  Future<void> _loadFilter(
+    AppController app,
+    String filter, {
+    bool showLoader = false,
+  }) async {
+    final requestVersion = ++_filterRequestVersion;
+    if (showLoader) {
+      setState(() => _isSwitchingFilter = true);
+    }
+    await app.refreshPublicChannels(filter: filter, silent: true);
+    if (!mounted || requestVersion != _filterRequestVersion) return;
+    setState(() {
+      _countsByFilter[filter] = app.publicChannels.length;
+      _isSwitchingFilter = false;
+    });
+    unawaited(_refreshCountsForAll(app));
+  }
+
+  bool _isPublicGroupChannel(ChannelModel channel) {
+    final type = channel.channelType.trim().toUpperCase();
+    final visibility = channel.visibility.trim().toUpperCase();
+    return type == 'GROUP' && visibility == 'PUBLIC';
+  }
+
+  Future<void> _handleJoinChannelTap(
+    BuildContext context,
+    AppController app,
+    ChannelModel channel,
+    bool joined,
+  ) async {
+    if (joined) {
+      await app.selectChannel(channel);
+    } else {
+      await app.joinPublicChannel(channel.channelId, publicFilter: _filter);
+      final joinedChannel = app.channels
+          .where((it) => it.channelId == channel.channelId)
+          .toList(growable: false);
+      if (joinedChannel.isNotEmpty) {
+        await app.selectChannel(joinedChannel.first);
+      }
+    }
+    if (!context.mounted) return;
+    final error = app.errorMessage;
+    if (error != null && error.isNotEmpty) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(error)));
+      return;
+    }
+    Navigator.of(context).pop();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -1037,45 +1229,65 @@ class _PublicConversationsScreenState extends State<_PublicConversationsScreen> 
         child: SafeArea(
           child: Consumer<AppController>(
             builder: (context, app, _) {
-              final allPublicChannels = app.publicChannels
-                  .where(
-                    (channel) =>
-                        channel.channelType.trim().toUpperCase() == 'GROUP' &&
-                        channel.visibility.trim().toUpperCase() == 'PUBLIC',
-                  )
-                  .toList(growable: false);
+              final allPublicChannels = app.publicChannels.toList(
+                growable: false,
+              );
               final joinedIds = app.channels
                   .map((channel) => channel.channelId)
                   .toSet();
               bool resolveJoined(ChannelModel channel) {
-                final category =
-                    (channel.listCategory ?? '').trim().toLowerCase();
+                final category = (channel.listCategory ?? '')
+                    .trim()
+                    .toLowerCase();
                 if (channel.isJoined != null) return channel.isJoined!;
                 if (category == 'joined') return true;
                 if (category == 'discover') return false;
                 return joinedIds.contains(channel.channelId);
               }
+
               final normalizedQuery = _query.trim().toLowerCase();
-              final filtered = allPublicChannels.where((channel) {
-                final isJoined = resolveJoined(channel);
-                if (_filter == 'joined' && !isJoined) {
-                  return false;
-                }
-                if (_filter == 'discover' && isJoined) {
-                  return false;
-                }
-                final haystack =
-                    '${channel.name} ${channel.description ?? ''}'.toLowerCase();
+              bool matchesQuery(ChannelModel channel) {
+                final haystack = '${channel.name} ${channel.description ?? ''}'
+                    .toLowerCase();
                 return normalizedQuery.isEmpty ||
                     haystack.contains(normalizedQuery);
-              }).toList(growable: false);
+              }
+
+              final filtered = allPublicChannels
+                  .where(matchesQuery)
+                  .toList(growable: false);
+
+              final discoverTop =
+                  allPublicChannels
+                      .where(_isPublicGroupChannel)
+                      .toList(growable: false)
+                    ..sort(
+                      (a, b) => (b.reputationScore ?? 0).compareTo(
+                        a.reputationScore ?? 0,
+                      ),
+                    );
+              final discoverTop10 = discoverTop
+                  .take(10)
+                  .toList(growable: false);
+              final discoverRankById = <int, int>{
+                for (var i = 0; i < discoverTop10.length; i++)
+                  discoverTop10[i].channelId: i + 1,
+              };
+              final discoverVisible = discoverTop10
+                  .where(matchesQuery)
+                  .toList(growable: false);
 
               return RefreshIndicator(
                 onRefresh: () async {
                   await Future.wait([
                     app.refreshChannels(silent: true),
-                    app.refreshPublicChannels(silent: true),
+                    app.refreshPublicChannels(filter: _filter, silent: true),
                   ]);
+                  if (!mounted) return;
+                  setState(() {
+                    _countsByFilter[_filter] = app.publicChannels.length;
+                  });
+                  await _refreshCountsForAll(app);
                 },
                 child: ListView(
                   padding: const EdgeInsets.fromLTRB(16, 18, 16, 24),
@@ -1150,17 +1362,29 @@ class _PublicConversationsScreenState extends State<_PublicConversationsScreen> 
                     const SizedBox(height: 10),
                     _PublicFilterBar(
                       selected: _filter,
-                      allCount: allPublicChannels.length,
-                      joinedCount: allPublicChannels
-                          .where(resolveJoined)
-                          .length,
-                      discoverCount: allPublicChannels
-                          .where((c) => !resolveJoined(c))
-                          .length,
-                      onSelected: (value) => setState(() => _filter = value),
+                      allCount: _countsByFilter['all'] ?? 0,
+                      joinedCount: _countsByFilter['joined'] ?? 0,
+                      discoverCount: _countsByFilter['discover'] ?? 0,
+                      onSelected: (value) {
+                        if (_filter == value) return;
+                        setState(() => _filter = value);
+                        _loadFilter(app, value, showLoader: true);
+                      },
                     ),
                     const SizedBox(height: 10),
-                    if (filtered.isEmpty)
+                    if (_isSwitchingFilter)
+                      const Padding(
+                        padding: EdgeInsets.only(top: 40),
+                        child: Center(
+                          child: CircularProgressIndicator(
+                            color: AppColors.cFCFAFE,
+                          ),
+                        ),
+                      )
+                    else if ((_filter == 'discover'
+                            ? discoverVisible
+                            : filtered)
+                        .isEmpty)
                       const Padding(
                         padding: EdgeInsets.only(top: 80),
                         child: Center(
@@ -1170,7 +1394,25 @@ class _PublicConversationsScreenState extends State<_PublicConversationsScreen> 
                           ),
                         ),
                       )
-                    else
+                    else if (_filter == 'discover') ...[
+                      const _DiscoverTopIntro(),
+                      const SizedBox(height: 10),
+                      ...discoverVisible.map((channel) {
+                        final joined = resolveJoined(channel);
+                        final rank = discoverRankById[channel.channelId] ?? 0;
+                        return _DiscoverTopChannelTile(
+                          channel: channel,
+                          rank: rank,
+                          joined: joined,
+                          onActionTap: () => _handleJoinChannelTap(
+                            context,
+                            app,
+                            channel,
+                            joined,
+                          ),
+                        );
+                      }),
+                    ] else
                       ...filtered.map((channel) {
                         final joined = resolveJoined(channel);
                         return Container(
@@ -1225,31 +1467,12 @@ class _PublicConversationsScreenState extends State<_PublicConversationsScreen> 
                               ),
                               const SizedBox(width: 8),
                               TextButton(
-                                onPressed: () async {
-                                  if (joined) {
-                                    await app.selectChannel(channel);
-                                  } else {
-                                    await app.joinPublicChannel(channel.channelId);
-                                    final joinedChannel = app.channels
-                                        .where(
-                                          (it) =>
-                                              it.channelId == channel.channelId,
-                                        )
-                                        .toList(growable: false);
-                                    if (joinedChannel.isNotEmpty) {
-                                      await app.selectChannel(joinedChannel.first);
-                                    }
-                                  }
-                                  if (!context.mounted) return;
-                                  final error = app.errorMessage;
-                                  if (error != null && error.isNotEmpty) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(content: Text(error)),
-                                    );
-                                    return;
-                                  }
-                                  Navigator.of(context).pop();
-                                },
+                                onPressed: () => _handleJoinChannelTap(
+                                  context,
+                                  app,
+                                  channel,
+                                  joined,
+                                ),
                                 style: TextButton.styleFrom(
                                   foregroundColor: AppColors.cFCFAFE,
                                   backgroundColor: AppColors.cFCFAFE.withValues(
@@ -1297,16 +1520,16 @@ class _PublicFilterBar extends StatelessWidget {
       children: [
         Expanded(
           child: _PublicFilterChip(
-            label: 'Toutes',
-            count: allCount,
-            isActive: selected == 'all',
-            onTap: () => onSelected('all'),
+            label: 'Top',
+            count: discoverCount,
+            isActive: selected == 'discover',
+            onTap: () => onSelected('discover'),
           ),
         ),
         const SizedBox(width: 8),
         Expanded(
           child: _PublicFilterChip(
-            label: 'Deja rejointes',
+            label: 'Rejoints',
             count: joinedCount,
             isActive: selected == 'joined',
             onTap: () => onSelected('joined'),
@@ -1315,10 +1538,10 @@ class _PublicFilterBar extends StatelessWidget {
         const SizedBox(width: 8),
         Expanded(
           child: _PublicFilterChip(
-            label: 'A decouvrir',
-            count: discoverCount,
-            isActive: selected == 'discover',
-            onTap: () => onSelected('discover'),
+            label: 'Tous',
+            count: allCount,
+            isActive: selected == 'all',
+            onTap: () => onSelected('all'),
           ),
         ),
       ],
@@ -1402,5 +1625,186 @@ class _PublicFilterChip extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+class _DiscoverTopIntro extends StatelessWidget {
+  const _DiscoverTopIntro();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0x4DFFD06A), Color(0x33D09EFE)],
+        ),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.cFCFAFE.withValues(alpha: 0.24)),
+      ),
+      child: const Row(
+        children: [
+          Icon(Icons.emoji_events_rounded, color: Color(0xFFFFD06A), size: 18),
+          SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              'Top 10 des groupes publics par reputation',
+              style: TextStyle(
+                color: AppColors.cFCFAFE,
+                fontSize: 12.5,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _DiscoverTopChannelTile extends StatelessWidget {
+  const _DiscoverTopChannelTile({
+    required this.channel,
+    required this.rank,
+    required this.joined,
+    required this.onActionTap,
+  });
+
+  final ChannelModel channel;
+  final int rank;
+  final bool joined;
+  final VoidCallback onActionTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final score = channel.reputationScore ?? 0;
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+      decoration: BoxDecoration(
+        gradient: AppGradients.gB1BCFBTo393566,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.cFCFAFE.withValues(alpha: 0.18)),
+      ),
+      child: Row(
+        children: [
+          _DiscoverRankBadge(rank: rank),
+          const SizedBox(width: 10),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(10),
+            child: AppRemoteImage(
+              url: channel.coverImage,
+              width: 48,
+              height: 48,
+              fit: BoxFit.cover,
+              fallbackIcon: Icons.groups_rounded,
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  channel.name,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: AppColors.cFCFAFE,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 15,
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 3,
+                  ),
+                  decoration: BoxDecoration(
+                    color: AppColors.cFCFAFE.withValues(alpha: 0.10),
+                    borderRadius: BorderRadius.circular(999),
+                    border: Border.all(
+                      color: AppColors.cFCFAFE.withValues(alpha: 0.22),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(
+                        Icons.local_fire_department_rounded,
+                        color: Color(0xFFFFC86A),
+                        size: 14,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        'Score: $score',
+                        style: const TextStyle(
+                          color: AppColors.cFCFAFE,
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          TextButton(
+            onPressed: onActionTap,
+            style: TextButton.styleFrom(
+              foregroundColor: AppColors.cFCFAFE,
+              backgroundColor: AppColors.cFCFAFE.withValues(alpha: 0.12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            child: Text(joined ? 'Ouvrir' : 'Rejoindre'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _DiscoverRankBadge extends StatelessWidget {
+  const _DiscoverRankBadge({required this.rank});
+
+  final int rank;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = _rankColors(rank);
+    return Container(
+      width: 30,
+      height: 30,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: colors,
+        ),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: AppColors.cFCFAFE.withValues(alpha: 0.35)),
+      ),
+      alignment: Alignment.center,
+      child: Text(
+        '#$rank',
+        style: const TextStyle(
+          color: AppColors.c121212,
+          fontWeight: FontWeight.w800,
+          fontSize: 12.5,
+        ),
+      ),
+    );
+  }
+
+  List<Color> _rankColors(int value) {
+    if (value == 1) return const [Color(0xFFFFE08A), Color(0xFFFFC34D)];
+    if (value == 2) return const [Color(0xFFE9EFFA), Color(0xFFBCC7DB)];
+    if (value == 3) return const [Color(0xFFF4C9A2), Color(0xFFD9946D)];
+    return const [Color(0xFFDCC8FF), Color(0xFFBFA0F7)];
   }
 }

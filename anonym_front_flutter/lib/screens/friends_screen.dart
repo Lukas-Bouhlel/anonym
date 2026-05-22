@@ -7,6 +7,7 @@ import '../providers/app_controller.dart';
 import '../screens/user_profile_screen.dart';
 import '../theme.dart';
 import '../widgets/app_remote_image.dart';
+import '../widgets/presence_badge.dart';
 
 class FriendsScreen extends StatefulWidget {
   const FriendsScreen({super.key});
@@ -197,6 +198,7 @@ class _FriendsScreenState extends State<FriendsScreen> {
           ...discoverableUsers.map(
             (user) => _DiscoverableUserTile(
               user: user,
+              app: app,
               onTap: () {
                 showModalBottomSheet(
                   context: context,
@@ -266,6 +268,7 @@ class _FriendsScreenState extends State<FriendsScreen> {
             ...incoming.map(
               (request) => _IncomingRequestTile(
                 request: request,
+                app: app,
                 onAccept: () => _respondIncoming(app, request.id, 'ACTIVE'),
                 onBlock: () => _respondIncoming(app, request.id, 'BLOQUED'),
               ),
@@ -280,6 +283,7 @@ class _FriendsScreenState extends State<FriendsScreen> {
             ...outgoing.map(
               (request) => _OutgoingRequestTile(
                 request: request,
+                app: app,
                 onCancel: () => _cancelOutgoing(app, request.id),
               ),
             ),
@@ -820,14 +824,28 @@ class _FriendTile extends StatelessWidget {
             ),
             child: Row(
               children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(11),
-                  child: AppRemoteImage(
-                    url: details?.avatar,
-                    width: 43,
-                    height: 43,
-                    fallbackIcon: Icons.person_outline_rounded,
-                  ),
+                Stack(
+                  children: [
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(11),
+                      child: AppRemoteImage(
+                        url: details?.avatar,
+                        width: 43,
+                        height: 43,
+                        fallbackIcon: Icons.person_outline_rounded,
+                      ),
+                    ),
+                    Positioned(
+                      right: 0,
+                      top: 0,
+                      child: PresenceBadge(
+                        presenceStatus: app.presenceStatusForUser(user.id),
+                        isCurrentUser: false,
+                        size: 11,
+                        borderColor: AppColors.cFCFAFE,
+                      ),
+                    ),
+                  ],
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -868,11 +886,13 @@ class _FriendTile extends StatelessWidget {
 class _IncomingRequestTile extends StatelessWidget {
   const _IncomingRequestTile({
     required this.request,
+    required this.app,
     required this.onAccept,
     required this.onBlock,
   });
 
   final FriendModel request;
+  final AppController app;
   final VoidCallback onAccept;
   final VoidCallback onBlock;
 
@@ -922,14 +942,28 @@ class _IncomingRequestTile extends StatelessWidget {
             ),
             child: Row(
               children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(11),
-                  child: AppRemoteImage(
-                    url: details?.avatar,
-                    width: 43,
-                    height: 43,
-                    fallbackIcon: Icons.person_outline_rounded,
-                  ),
+                Stack(
+                  children: [
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(11),
+                      child: AppRemoteImage(
+                        url: details?.avatar,
+                        width: 43,
+                        height: 43,
+                        fallbackIcon: Icons.person_outline_rounded,
+                      ),
+                    ),
+                    Positioned(
+                      right: 0,
+                      top: 0,
+                      child: PresenceBadge(
+                        presenceStatus: app.presenceStatusForUser(user.id),
+                        isCurrentUser: false,
+                        size: 11,
+                        borderColor: AppColors.cFCFAFE,
+                      ),
+                    ),
+                  ],
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -967,9 +1001,14 @@ class _IncomingRequestTile extends StatelessWidget {
 }
 
 class _OutgoingRequestTile extends StatelessWidget {
-  const _OutgoingRequestTile({required this.request, required this.onCancel});
+  const _OutgoingRequestTile({
+    required this.request,
+    required this.app,
+    required this.onCancel,
+  });
 
   final FriendModel request;
+  final AppController app;
   final VoidCallback onCancel;
 
   @override
@@ -1018,14 +1057,28 @@ class _OutgoingRequestTile extends StatelessWidget {
             ),
             child: Row(
               children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(11),
-                  child: AppRemoteImage(
-                    url: details?.avatar,
-                    width: 43,
-                    height: 43,
-                    fallbackIcon: Icons.person_outline_rounded,
-                  ),
+                Stack(
+                  children: [
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(11),
+                      child: AppRemoteImage(
+                        url: details?.avatar,
+                        width: 43,
+                        height: 43,
+                        fallbackIcon: Icons.person_outline_rounded,
+                      ),
+                    ),
+                    Positioned(
+                      right: 0,
+                      top: 0,
+                      child: PresenceBadge(
+                        presenceStatus: app.presenceStatusForUser(user.id),
+                        isCurrentUser: false,
+                        size: 11,
+                        borderColor: AppColors.cFCFAFE,
+                      ),
+                    ),
+                  ],
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -1068,11 +1121,13 @@ class _OutgoingRequestTile extends StatelessWidget {
 class _DiscoverableUserTile extends StatelessWidget {
   const _DiscoverableUserTile({
     required this.user,
+    required this.app,
     required this.onTap,
     required this.onAdd,
   });
 
   final UserModel user;
+  final AppController app;
   final VoidCallback onTap;
   final VoidCallback onAdd;
 
@@ -1096,14 +1151,28 @@ class _DiscoverableUserTile extends StatelessWidget {
           ),
           child: Row(
             children: [
-              ClipRRect(
-                borderRadius: BorderRadius.circular(11),
-                child: AppRemoteImage(
-                  url: user.avatar,
-                  width: 41,
-                  height: 41,
-                  fallbackIcon: Icons.person_outline_rounded,
-                ),
+              Stack(
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(11),
+                    child: AppRemoteImage(
+                      url: user.avatar,
+                      width: 41,
+                      height: 41,
+                      fallbackIcon: Icons.person_outline_rounded,
+                    ),
+                  ),
+                  Positioned(
+                    right: 0,
+                    top: 0,
+                    child: PresenceBadge(
+                      presenceStatus: app.presenceStatusForUser(user.id),
+                      isCurrentUser: false,
+                      size: 11,
+                      borderColor: AppColors.cFCFAFE,
+                    ),
+                  ),
+                ],
               ),
               const SizedBox(width: 12),
               Expanded(

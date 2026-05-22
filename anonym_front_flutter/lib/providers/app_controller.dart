@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
 
 import '../models/channel_message_model.dart';
 import '../models/channel_model.dart';
@@ -12,6 +13,7 @@ import '../models/payment_confirmation_model.dart';
 import '../models/shop_item_model.dart';
 import '../models/user_model.dart';
 import '../services/account_repository.dart';
+import '../services/api_client.dart';
 import '../services/channel_repository.dart';
 import '../services/friends_repository.dart';
 import '../services/inventory_repository.dart';
@@ -21,12 +23,14 @@ import '../services/private_message_repository.dart';
 import '../services/shop_repository.dart';
 import '../services/socket_service.dart';
 import '../utils/api_error_parser.dart';
+import '../utils/presence_utils.dart';
 import 'auth_controller.dart';
 
-class AppController extends ChangeNotifier {
+class AppController extends ChangeNotifier with WidgetsBindingObserver {
   AppController({
     required AuthController authController,
     required AccountRepository accountRepository,
+    required ApiClient apiClient,
     required FriendsRepository friendsRepository,
     required ChannelRepository channelRepository,
     required PrivateMessageRepository privateMessageRepository,
@@ -37,6 +41,7 @@ class AppController extends ChangeNotifier {
     required SocketService socketService,
   }) : _authController = authController,
        _accountRepository = accountRepository,
+       _apiClient = apiClient,
        _friendsRepository = friendsRepository,
        _channelRepository = channelRepository,
        _privateMessageRepository = privateMessageRepository,
@@ -45,6 +50,7 @@ class AppController extends ChangeNotifier {
        _paymentRepository = paymentRepository,
        _invoiceRepository = invoiceRepository,
        _socketService = socketService {
+    WidgetsBinding.instance.addObserver(this);
     _authListener = _handleAuthChange;
     _authController.addListener(_authListener);
     _handleAuthChange();
@@ -52,6 +58,7 @@ class AppController extends ChangeNotifier {
 
   final AuthController _authController;
   final AccountRepository _accountRepository;
+  final ApiClient _apiClient;
   final FriendsRepository _friendsRepository;
   final ChannelRepository _channelRepository;
   final PrivateMessageRepository _privateMessageRepository;
@@ -84,6 +91,8 @@ class AppController extends ChangeNotifier {
   List<InvoiceModel> _invoices = const [];
   List<UserModel> _allUsers = const [];
   final Map<int, LiveUserLocationModel> _liveLocationsByUserId = {};
+  final Map<int, String> _presenceByUserId = {};
+  String? _manualPresenceOverride;
 
   bool get isBootstrapping => _isBootstrapping;
   bool get isLoadingMessages => _isLoadingMessages;
@@ -106,6 +115,20 @@ class AppController extends ChangeNotifier {
   List<UserModel> get allUsers => _allUsers;
   List<LiveUserLocationModel> get liveUserLocations =>
       _liveLocationsByUserId.values.toList(growable: false);
+
+  String presenceStatusForUser(int userId, {bool isCurrentUser = false}) {
+    return PresenceUtils.effectiveForViewer(
+      _presenceByUserId[userId],
+      isCurrentUser: isCurrentUser,
+    );
+  }
+
+  String presenceLabelForUser(int userId, {bool isCurrentUser = false}) {
+    return PresenceUtils.label(
+      _presenceByUserId[userId],
+      isCurrentUser: isCurrentUser,
+    );
+  }
 
   bool isFriendRequestPending({int? userId, String? username}) {
     if (userId != null &&
@@ -206,6 +229,13 @@ class AppController extends ChangeNotifier {
     await _wrap(
       () async {
         _friends = await _friendsRepository.readAll();
+        for (final friend in _friends) {
+          final details = friend.friendDetails;
+          if (details == null || details.id <= 0) continue;
+          _presenceByUserId[details.id] = PresenceUtils.normalize(
+            details.presenceStatus,
+          );
+        }
       },
       silent: silent,
       fallbackMessage: 'Impossible de charger les amis',
@@ -221,6 +251,20 @@ class AppController extends ChangeNotifier {
         ]);
         _incomingFriendRequests = responses[0];
         _outgoingFriendRequests = responses[1];
+        for (final request in _incomingFriendRequests) {
+          final details = request.friendDetails;
+          if (details == null || details.id <= 0) continue;
+          _presenceByUserId[details.id] = PresenceUtils.normalize(
+            details.presenceStatus,
+          );
+        }
+        for (final request in _outgoingFriendRequests) {
+          final details = request.friendDetails;
+          if (details == null || details.id <= 0) continue;
+          _presenceByUserId[details.id] = PresenceUtils.normalize(
+            details.presenceStatus,
+          );
+        }
       },
       silent: silent,
       fallbackMessage: 'Impossible de charger les demandes d\'amis',
@@ -242,6 +286,12 @@ class AppController extends ChangeNotifier {
           if (user.id > 0) byId[user.id] = user;
         }
         _blockedUsers = byId.values.toList(growable: false);
+        for (final user in _blockedUsers) {
+          if (user.id <= 0) continue;
+          _presenceByUserId[user.id] = PresenceUtils.normalize(
+            user.presenceStatus,
+          );
+        }
       },
       silent: silent,
       fallbackMessage: 'Impossible de charger les utilisateurs bloqués',
@@ -252,6 +302,12 @@ class AppController extends ChangeNotifier {
     await _wrap(
       () async {
         _allUsers = await _accountRepository.readAllUsers();
+        for (final user in _allUsers) {
+          if (user.id <= 0) continue;
+          _presenceByUserId[user.id] = PresenceUtils.normalize(
+            user.presenceStatus,
+          );
+        }
       },
       silent: silent,
       fallbackMessage: 'Impossible de charger les utilisateurs',
@@ -294,16 +350,33 @@ class AppController extends ChangeNotifier {
     );
   }
 
-  Future<void> refreshPublicChannels({bool silent = false}) async {
+  Future<void> refreshPublicChannels({
+    String filter = 'all',
+    bool silent = false,
+  }) async {
     await _wrap(
       () async {
-        _publicChannels = await _channelRepository.readUserChannels(
-          filter: 'all',
-        );
+        _publicChannels = await loadJoinDirectoryChannels(filter: filter);
       },
       silent: silent,
       fallbackMessage: 'Impossible de charger les channels publics',
     );
+  }
+
+  Future<List<ChannelModel>> loadJoinDirectoryChannels({
+    String filter = 'all',
+  }) async {
+    final normalizedFilter = _normalizePublicChannelFilter(filter);
+    final fetched = await _channelRepository.readUserChannels(
+      filter: normalizedFilter,
+    );
+    if (normalizedFilter == 'discover') {
+      return _buildDiscoverTopChannels(fetched);
+    }
+    if (normalizedFilter == 'joined') {
+      return _excludePrivateDmChannels(fetched);
+    }
+    return fetched;
   }
 
   Future<void> refreshShop({bool silent = false}) async {
@@ -650,12 +723,15 @@ class AppController extends ChangeNotifier {
     }, fallbackMessage: 'Suppression du channel impossible');
   }
 
-  Future<void> joinPublicChannel(int channelId) async {
+  Future<void> joinPublicChannel(
+    int channelId, {
+    String publicFilter = 'all',
+  }) async {
     await _wrap(() async {
       await _channelRepository.joinPublic(channelId);
       await Future.wait([
         refreshChannels(silent: true),
-        refreshPublicChannels(silent: true),
+        refreshPublicChannels(filter: publicFilter, silent: true),
       ]);
     }, fallbackMessage: 'Impossible de rejoindre ce channel public');
   }
@@ -855,6 +931,23 @@ class AppController extends ChangeNotifier {
     }, fallbackMessage: 'Mise a jour profil impossible');
   }
 
+  Future<void> updateMyPresenceStatus(String presenceStatus) async {
+    await _wrap(() async {
+      final normalized = PresenceUtils.normalize(presenceStatus);
+      await _accountRepository.updatePresenceStatus(normalized);
+      final me = _authController.user;
+      if (me == null) return;
+      _presenceByUserId[me.id] = normalized;
+      if (normalized == PresenceUtils.dnd ||
+          normalized == PresenceUtils.invisible) {
+        _manualPresenceOverride = normalized;
+      } else {
+        _manualPresenceOverride = null;
+      }
+      _authController.setUser(me.copyWith(presenceStatus: normalized));
+    }, fallbackMessage: 'Mise a jour du statut impossible');
+  }
+
   Future<void> updatePassword({
     required String currentPassword,
     required String newPassword,
@@ -890,7 +983,10 @@ class AppController extends ChangeNotifier {
   void _handleAuthChange() {
     final currentUserId = _authController.user?.id;
     if (currentUserId == null) {
-      if (_activeUserId != null) _resetState();
+      if (_activeUserId != null) {
+        _sendInvisibleAndDisconnect();
+        _resetState();
+      }
       return;
     }
     if (_activeUserId == currentUserId) return;
@@ -900,14 +996,19 @@ class AppController extends ChangeNotifier {
 
   Future<void> _bootForLoggedInUser() async {
     _socketService.connect(
+      authToken: _apiClient.authToken,
       onNewMessage: _onNewMessageFromSocket,
       onMessageError: _onMessageErrorFromSocket,
       onLocationSnapshot: _onLocationSnapshotFromSocket,
       onLocationUpdate: _onLocationUpdateFromSocket,
       onLocationRemove: _onLocationRemoveFromSocket,
+      onPresenceUpdated: _onPresenceUpdatedFromSocket,
     );
     _socketService.requestLiveLocationsSnapshot();
     await refreshAll();
+    await _applyLifecyclePresence(
+      WidgetsBinding.instance.lifecycleState ?? AppLifecycleState.resumed,
+    );
   }
 
   void _onNewMessageFromSocket(ChannelMessageModel message) {
@@ -1015,6 +1116,85 @@ class AppController extends ChangeNotifier {
     notifyListeners();
   }
 
+  void _onPresenceUpdatedFromSocket(Map<String, dynamic> payload) {
+    final rawUserId = payload['userId'] ?? payload['user_id'] ?? payload['id'];
+    final rawStatus = payload['presence_status'] ?? payload['presenceStatus'];
+    int userId = 0;
+    if (rawUserId is int) {
+      userId = rawUserId;
+    } else if (rawUserId is num) {
+      userId = rawUserId.toInt();
+    } else if (rawUserId is String) {
+      userId = int.tryParse(rawUserId) ?? 0;
+    }
+    if (userId <= 0) return;
+
+    final normalized = PresenceUtils.normalize(rawStatus?.toString());
+    _presenceByUserId[userId] = normalized;
+
+    final me = _authController.user;
+    if (me != null && me.id == userId) {
+      _authController.setUser(me.copyWith(presenceStatus: normalized));
+      return;
+    }
+    notifyListeners();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (!_authController.isLoggedIn) return;
+    if (_activeUserId == null) return;
+    _applyLifecyclePresence(state);
+  }
+
+  Future<void> _applyLifecyclePresence(AppLifecycleState state) async {
+    if (_manualPresenceOverride == PresenceUtils.dnd ||
+        _manualPresenceOverride == PresenceUtils.invisible) {
+      return;
+    }
+    switch (state) {
+      case AppLifecycleState.resumed:
+        await _setPresenceSilently(PresenceUtils.online);
+        break;
+      case AppLifecycleState.inactive:
+      case AppLifecycleState.paused:
+        await _setPresenceSilently(PresenceUtils.idle);
+        break;
+      case AppLifecycleState.detached:
+        await _setPresenceSilently(PresenceUtils.invisible);
+        _socketService.disconnect();
+        break;
+      case AppLifecycleState.hidden:
+        break;
+    }
+  }
+
+  Future<void> _setPresenceSilently(String status) async {
+    final me = _authController.user;
+    if (me == null || me.id <= 0) return;
+    final normalized = PresenceUtils.normalize(status);
+    final current = PresenceUtils.normalize(_presenceByUserId[me.id]);
+    if (current == normalized) return;
+
+    try {
+      await _accountRepository.updatePresenceStatus(normalized);
+      _presenceByUserId[me.id] = normalized;
+      _authController.setUser(me.copyWith(presenceStatus: normalized));
+    } catch (_) {
+      // Keep lifecycle transitions best-effort without surfacing noisy errors.
+    }
+  }
+
+  void _sendInvisibleAndDisconnect() {
+    final me = _authController.user;
+    if (me != null && me.id > 0) {
+      _accountRepository
+          .updatePresenceStatus(PresenceUtils.invisible)
+          .catchError((_) {});
+    }
+    _socketService.disconnect();
+  }
+
   bool _isLocationPayloadValid(LiveUserLocationModel value) {
     if (value.userId <= 0) return false;
     if (value.latitude < -90 || value.latitude > 90) return false;
@@ -1047,8 +1227,47 @@ class AppController extends ChangeNotifier {
     return normalized == 'BLOCKED' || normalized == 'BLOQUED';
   }
 
+  String _normalizePublicChannelFilter(String filter) {
+    final normalized = filter.trim().toLowerCase();
+    switch (normalized) {
+      case 'joined':
+      case 'discover':
+      case 'all':
+        return normalized;
+      default:
+        return 'all';
+    }
+  }
+
+  List<ChannelModel> _buildDiscoverTopChannels(List<ChannelModel> channels) {
+    final discoverGroups = channels
+        .where((channel) {
+          final type = channel.channelType.trim().toUpperCase();
+          final visibility = channel.visibility.trim().toUpperCase();
+          return type == 'GROUP' && visibility == 'PUBLIC';
+        })
+        .toList(growable: false);
+
+    discoverGroups.sort(
+      (a, b) =>
+          (b.reputationScore ?? 0).compareTo(a.reputationScore ?? 0),
+    );
+    return discoverGroups.take(10).toList(growable: false);
+  }
+
+  List<ChannelModel> _excludePrivateDmChannels(List<ChannelModel> channels) {
+    return channels
+        .where(
+          (channel) => channel.channelType.trim().toUpperCase() != 'PRIVATE_DM',
+        )
+        .toList(growable: false);
+  }
+
   Future<void> _refreshCurrentUser() async {
     final me = await _accountRepository.readAccount();
+    if (me.id > 0) {
+      _presenceByUserId[me.id] = PresenceUtils.normalize(me.presenceStatus);
+    }
     _authController.setUser(me);
   }
 
@@ -1088,6 +1307,8 @@ class AppController extends ChangeNotifier {
     _invoices = const [];
     _allUsers = const [];
     _liveLocationsByUserId.clear();
+    _presenceByUserId.clear();
+    _manualPresenceOverride = null;
     _errorMessage = null;
     _messageError = null;
     _isBootstrapping = false;
@@ -1099,6 +1320,7 @@ class AppController extends ChangeNotifier {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _authController.removeListener(_authListener);
     _socketService.disconnect();
     super.dispose();

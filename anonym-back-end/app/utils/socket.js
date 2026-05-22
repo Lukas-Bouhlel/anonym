@@ -2,6 +2,24 @@ const { PrivateMessage, User, Inventory, Shop, Channel, UserChannel, Friend } = 
 const { Op } = require('sequelize');
 const { deleteUploadFiles } = require('./fileCleanup');
 let hasAllowNonFriendDmsColumnCache = null;
+const activePresenceConnections = new Map();
+
+const incrementPresenceConnections = (userId) => {
+    const key = String(userId);
+    const current = activePresenceConnections.get(key) || 0;
+    activePresenceConnections.set(key, current + 1);
+};
+
+const decrementPresenceConnections = (userId) => {
+    const key = String(userId);
+    const current = activePresenceConnections.get(key) || 0;
+    if (current <= 1) {
+        activePresenceConnections.delete(key);
+        return 0;
+    }
+    activePresenceConnections.set(key, current - 1);
+    return current - 1;
+};
 
 const hasAllowNonFriendDmsColumn = async () => {
     if (hasAllowNonFriendDmsColumnCache !== null) {
@@ -47,16 +65,34 @@ const markMessagesAsRead = async (channelId, userId) => {
 
 const initializeSocket = (io) => {
     io.on('connection', (socket) => {
+        const connectedUserId = socket?.userId;
+
+        if (connectedUserId) {
+            incrementPresenceConnections(connectedUserId);
+            User.update(
+                { presence_status: 'online' },
+                { where: { id: connectedUserId } }
+            ).then(() => {
+                io.emit('presenceUpdated', {
+                    userId: Number(connectedUserId),
+                    presence_status: 'online'
+                });
+            }).catch((error) => {
+                console.error('Error setting online presence:', error.message);
+            });
+        }
+
         socket.on('joinChannel', async (data) => {
-            const { channelId, userId } = data;
-            await markMessagesAsRead(channelId, userId);
-            const unreadCount = await getUnreadMessageCount(channelId, userId);
+            const { channelId } = data;
+            await markMessagesAsRead(channelId, connectedUserId);
+            const unreadCount = await getUnreadMessageCount(channelId, connectedUserId);
             io.to(channelId).emit('unreadCount', { count: unreadCount });
             socket.join(channelId);
         });
 
-        socket.on('privateMessage', async ({ senderId, content, channelId, imageUrl }) => {
+        socket.on('privateMessage', async ({ content, channelId, imageUrl }) => {
             try {
+                const senderId = Number(connectedUserId);
                 const channel = await Channel.findByPk(channelId);
                 if (!channel) {
                     socket.emit('messageError', { message: 'Chat introuvable.' });
@@ -123,7 +159,7 @@ const initializeSocket = (io) => {
                 });
 
                 const sender = await User.findByPk(senderId, {
-                    attributes: ['id', 'username', 'avatar'],
+                    attributes: ['id', 'username', 'avatar', 'presence_status'],
                     include: [
                         {
                             model: Inventory,
@@ -188,6 +224,35 @@ const initializeSocket = (io) => {
         });
 
         socket.on('disconnect', () => {
+            if (connectedUserId) {
+                const remainingConnections = decrementPresenceConnections(connectedUserId);
+                if (remainingConnections === 0) {
+                    User.findByPk(connectedUserId, { attributes: ['id', 'presence_status'] })
+                        .then(async (user) => {
+                            if (!user) return;
+
+                            // Rule:
+                            // - If user was auto-online, mark them offline when disconnected.
+                            // - If user manually chose a status (idle/dnd/invisible), keep it.
+                            if (user.presence_status === 'online') {
+                                await user.update({ presence_status: 'invisible' });
+                                io.emit('presenceUpdated', {
+                                    userId: Number(connectedUserId),
+                                    presence_status: 'offline'
+                                });
+                                return;
+                            }
+
+                            io.emit('presenceUpdated', {
+                                userId: Number(connectedUserId),
+                                presence_status: user.presence_status === 'invisible' ? 'offline' : user.presence_status
+                            });
+                        })
+                        .catch((error) => {
+                            console.error('Error updating disconnect presence:', error.message);
+                        });
+                }
+            }
             console.log(`Client disconnected: ${socket.id}`);
         });
     });

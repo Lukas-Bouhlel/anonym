@@ -13,6 +13,7 @@ const multer = require('../middlewares/mutler.js');
 router.get("/", authMiddleware, accountCtrl.readAccount);
 router.get('/users', authMiddleware, accountCtrl.readAll);
 router.put("/update", authMiddleware, normalizeEmailMiddleware, multer, generateAvatar, accountCtrl.update);
+router.patch('/presence', authMiddleware, accountCtrl.updatePresence);
 router.delete("/delete", authMiddleware, accountCtrl.delete);
 router.get("/:id", authMiddleware, accountCtrl.read);
 router.put('/password', authMiddleware, accountCtrl.updatePassword);

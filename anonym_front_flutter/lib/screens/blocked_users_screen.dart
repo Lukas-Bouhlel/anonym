@@ -6,6 +6,7 @@ import '../theme.dart';
 import '../widgets/app_remote_image.dart';
 import '../widgets/chrome/moji_back_button.dart';
 import '../widgets/modals/moji_confirm_modal.dart';
+import '../widgets/presence_badge.dart';
 
 class BlockedUsersScreen extends StatefulWidget {
   const BlockedUsersScreen({super.key});
@@ -76,6 +77,8 @@ class _BlockedUsersScreenState extends State<BlockedUsersScreen> {
                       (user) => Padding(
                         padding: const EdgeInsets.only(bottom: 10),
                         child: _BlockedUserCard(
+                          userId: user.id,
+                          presenceStatus: app.presenceStatusForUser(user.id),
                           username: user.username,
                           avatarUrl: user.avatar,
                           onUnblock: () => _confirmAndUnblock(user.id),
@@ -110,11 +113,15 @@ class _BlockedUsersScreenState extends State<BlockedUsersScreen> {
 
 class _BlockedUserCard extends StatelessWidget {
   const _BlockedUserCard({
+    required this.userId,
+    required this.presenceStatus,
     required this.username,
     required this.avatarUrl,
     required this.onUnblock,
   });
 
+  final int userId;
+  final String presenceStatus;
   final String username;
   final String? avatarUrl;
   final Future<void> Function() onUnblock;
@@ -133,14 +140,28 @@ class _BlockedUserCard extends StatelessWidget {
       ),
       child: Row(
         children: [
-          ClipRRect(
-            borderRadius: BorderRadius.circular(10),
-            child: AppRemoteImage(
-              url: avatarUrl,
-              width: 38,
-              height: 38,
-              fallbackIcon: Icons.person_outline_rounded,
-            ),
+          Stack(
+            children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(10),
+                child: AppRemoteImage(
+                  url: avatarUrl,
+                  width: 38,
+                  height: 38,
+                  fallbackIcon: Icons.person_outline_rounded,
+                ),
+              ),
+              Positioned(
+                right: -1,
+                top: -1,
+                child: PresenceBadge(
+                  presenceStatus: presenceStatus,
+                  isCurrentUser: false,
+                  size: 10,
+                  borderColor: AppColors.cFCFAFE,
+                ),
+              ),
+            ],
           ),
           const SizedBox(width: 12),
           Expanded(

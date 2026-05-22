@@ -52,6 +52,48 @@ const hasAllowNonFriendDmsColumn = async () => {
     return hasAllowNonFriendDmsColumnCache;
 };
 
+const computeChannelReputationScore = async (channelId) => {
+    const [messageCount, participantCount] = await Promise.all([
+        PrivateMessage.count({ where: { channel_id: channelId } }),
+        UserChannel.count({ where: { channel_id: channelId } })
+    ]);
+
+    return (messageCount * 1) + (participantCount * 2);
+};
+
+const refreshReputationScores = async (channels) => {
+    if (!channels.length) return [];
+
+    const channelsWithScores = await Promise.all(channels.map(async (channel) => {
+        const reputationScore = await computeChannelReputationScore(channel.channel_id);
+        if (channel.reputation_score !== reputationScore) {
+            await channel.update({ reputation_score: reputationScore });
+        }
+        return { channel, reputationScore };
+    }));
+
+    return channelsWithScores;
+};
+
+const updateChannelReputationScore = async (channelId) => {
+    const channel = await Channel.findByPk(channelId);
+    if (!channel) return null;
+
+    // Reputation only applies to public groups (exclude private DMs).
+    if (channel.channel_type !== 'GROUP' || channel.visibility !== 'PUBLIC') {
+        if (channel.reputation_score !== 0) {
+            await channel.update({ reputation_score: 0 });
+        }
+        return 0;
+    }
+
+    const reputationScore = await computeChannelReputationScore(channelId);
+    if (channel.reputation_score !== reputationScore) {
+        await channel.update({ reputation_score: reputationScore });
+    }
+    return reputationScore;
+};
+
 exports.create = async (req, res) => {
     try {
         const { name, description, channelType = 'GROUP', visibility = 'PRIVATE' } = req.body;
@@ -161,6 +203,8 @@ exports.create = async (req, res) => {
             await UserChannel.create({ user_id: targetUserId, channel_id: channel.channel_id });
         }
 
+        await updateChannelReputationScore(channel.channel_id);
+
         res.status(201).json(channel);
     } catch (error) {
         res.status(500).json({ message: error.message || 'Une erreur est survenue lors de la creation du channel.' });
@@ -189,6 +233,7 @@ exports.updateCoverImage = async (req, res) => {
 
         channel.cover_image = `${req.protocol}://${req.get("host")}/uploads/channels/covers/${req.file.filename}`;
         await channel.save();
+        await updateChannelReputationScore(channel.channel_id);
 
         return res.status(200).json({
             channel_id: channel.channel_id,
@@ -281,6 +326,7 @@ exports.invite = async (req, res) => {
         }
 
         await UserChannel.create({ user_id: userId, channel_id: channelId });
+        await updateChannelReputationScore(channelId);
 
         res.status(200).json({ message: 'Utilisateur ajoute au channel avec succes.' });
     } catch (error) {
@@ -348,6 +394,7 @@ exports.joinPublicChannel = async (req, res) => {
         }
 
         await UserChannel.create({ user_id: userId, channel_id: channelId });
+        await updateChannelReputationScore(channelId);
         return res.status(200).json({ message: 'Channel rejoint avec succes.' });
     } catch (error) {
         return res.status(500).json({ message: error.message || 'Erreur lors de la tentative de rejoindre ce channel.' });
@@ -391,6 +438,7 @@ exports.joinByInviteCode = async (req, res) => {
         }
 
         await UserChannel.create({ user_id: userId, channel_id: channel.channel_id });
+        await updateChannelReputationScore(channel.channel_id);
 
         invite.uses_count += 1;
         if (invite.max_uses !== null && invite.uses_count >= invite.max_uses) {
@@ -419,7 +467,8 @@ exports.getUnreadMessageCount = async (req, res) => {
 exports.getUserChannels = async (req, res) => {
     try {
         const userId = req.auth.userId;
-        const filter = typeof req.query.filter === 'string'
+        const hasExplicitFilter = typeof req.query.filter === 'string';
+        const filter = hasExplicitFilter
             ? req.query.filter.trim().toLowerCase()
             : 'all';
 
@@ -435,9 +484,11 @@ exports.getUserChannels = async (req, res) => {
             return res.status(404).json({ message: 'Utilisateur non trouve.' });
         }
 
-        const joinedChannelIds = new Set(user.Channels.map((channel) => channel.channel_id));
+        const joinedChannels = user.Channels;
 
-        const dmChannelIds = user.Channels
+        const joinedChannelIds = new Set(joinedChannels.map((channel) => channel.channel_id));
+
+        const dmChannelIds = joinedChannels
             .filter((channel) => channel.channel_type === 'PRIVATE_DM')
             .map((channel) => channel.channel_id);
 
@@ -484,7 +535,7 @@ exports.getUserChannels = async (req, res) => {
             }
         }
 
-        const joinedChannelsWithUnreadCount = await Promise.all(user.Channels.map(async (channel) => {
+        const joinedChannelsWithUnreadCount = await Promise.all(joinedChannels.map(async (channel) => {
             const unreadCount = await getUnreadMessageCount(channel.channel_id, userId);
             return {
                 channel_id: channel.channel_id,
@@ -504,13 +555,16 @@ exports.getUserChannels = async (req, res) => {
         const publicDiscoverChannels = await Channel.findAll({
             where: {
                 channel_type: 'GROUP',
-                visibility: 'PUBLIC',
-                channel_id: { [Op.notIn]: Array.from(joinedChannelIds) }
+                visibility: 'PUBLIC'
             },
-            order: [['createdAt', 'DESC']]
+            order: [['reputation_score', 'DESC'], ['createdAt', 'DESC']]
         });
 
-        const discoverChannels = publicDiscoverChannels.map((channel) => ({
+        const discoverChannelsWithScores = await refreshReputationScores(publicDiscoverChannels);
+        const discoverChannels = discoverChannelsWithScores
+            .sort((a, b) => b.reputationScore - a.reputationScore)
+            .slice(0, 10)
+            .map(({ channel, reputationScore }) => ({
             channel_id: channel.channel_id,
             name: channel.name,
             unreadCount: 0,
@@ -518,17 +572,24 @@ exports.getUserChannels = async (req, res) => {
             cover_image: channel.cover_image,
             channel_type: channel.channel_type,
             visibility: channel.visibility,
-            is_joined: false,
+            reputation_score: reputationScore,
+            is_joined: joinedChannelIds.has(channel.channel_id),
             list_category: 'discover',
             dm_peer: null
         }));
 
-        const channelsWithFilter = [
-            ...joinedChannelsWithUnreadCount,
-            ...discoverChannels
-        ].filter((channel) => {
+        const mergedChannels = filter === 'discover'
+            ? discoverChannels
+            : [
+                ...joinedChannelsWithUnreadCount,
+                ...discoverChannels.filter((channel) => !joinedChannelIds.has(channel.channel_id))
+            ];
+
+        const channelsWithFilter = mergedChannels.filter((channel) => {
+            if (filter === 'discover' && channel.channel_type === 'PRIVATE_DM') return false;
+            if (filter === 'all' && hasExplicitFilter && channel.channel_type === 'PRIVATE_DM') return false;
             if (filter === 'joined') return channel.is_joined === true;
-            if (filter === 'discover') return channel.is_joined === false;
+            if (filter === 'discover') return channel.list_category === 'discover';
             return true;
         });
 
@@ -660,6 +721,7 @@ exports.leaveChannel = async (req, res) => {
                 channel_id: id,
             },
         });
+        await updateChannelReputationScore(id);
 
         res.status(200).json({ message: 'Vous avez quitte le channel avec succes.' });
     } catch (error) {

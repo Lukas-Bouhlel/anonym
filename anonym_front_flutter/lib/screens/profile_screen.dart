@@ -4,20 +4,48 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
+import '../models/points_summary_model.dart';
 import '../providers/app_controller.dart';
 import '../providers/auth_controller.dart';
+import '../services/points_repository.dart';
 import '../theme.dart';
+import '../utils/presence_utils.dart';
 import '../widgets/app_remote_image.dart';
+import '../widgets/presence_badge.dart';
 import 'edit_profile_screen.dart';
 import 'settings_screen.dart';
 
-class ProfileScreen extends StatelessWidget {
+class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
+
+  @override
+  State<ProfileScreen> createState() => _ProfileScreenState();
+}
+
+class _ProfileScreenState extends State<ProfileScreen> {
+  late Future<PointsSummaryModel> _pointsFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _pointsFuture = _loadPoints();
+  }
+
+  Future<PointsSummaryModel> _loadPoints() {
+    return context.read<PointsRepository>().readMe();
+  }
+
+  Future<void> _reloadPoints() async {
+    final future = _loadPoints();
+    setState(() => _pointsFuture = future);
+    await future;
+  }
 
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthController>();
     final user = auth.user;
+    final isCurrentUser = user != null;
     final t = Theme.of(context).textTheme;
 
     return Consumer<AppController>(
@@ -26,6 +54,9 @@ class ProfileScreen extends StatelessWidget {
             .where((item) => item.active)
             .toList(growable: false);
         String activeDecoration = '';
+        final myPresence = user == null
+            ? PresenceUtils.offline
+            : app.presenceStatusForUser(user.id, isCurrentUser: true);
         if (activeItem.isNotEmpty) {
           final firstActive = activeItem.first;
           final fromInventory = (firstActive.shop?.content ?? '').trim();
@@ -46,6 +77,7 @@ class ProfileScreen extends StatelessWidget {
               auth.reloadCurrentUser(),
               app.refreshInventory(),
               app.refreshInvoices(),
+              _reloadPoints(),
             ]);
           },
           child: ListView(
@@ -88,6 +120,26 @@ class ProfileScreen extends StatelessWidget {
                                     fit: BoxFit.contain,
                                     fallbackIcon: Icons.blur_on_rounded,
                                   ),
+                                Positioned(
+                                  right: 0,
+                                  bottom: 0,
+                                  child: InkWell(
+                                    onTap: !isCurrentUser
+                                        ? null
+                                        : () => _showPresencePicker(
+                                            context,
+                                            app: app,
+                                            currentStatus: myPresence,
+                                          ),
+                                    borderRadius: BorderRadius.circular(999),
+                                    child: PresenceBadge(
+                                      presenceStatus: myPresence,
+                                      isCurrentUser: true,
+                                      size: 18,
+                                      borderColor: AppColors.cFCFAFE,
+                                    ),
+                                  ),
+                                ),
                               ],
                             ),
                           ),
@@ -153,7 +205,7 @@ class ProfileScreen extends StatelessWidget {
                                     mainAxisAlignment:
                                         MainAxisAlignment.spaceBetween,
                                     children: [
-                                      const Text(
+                                      Text(
                                         'Modifier le profil',
                                         style: TextStyle(
                                           color: AppColors.cFCFAFE,
@@ -219,130 +271,159 @@ class ProfileScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 20),
-              Row(
-                children: [
-                  Text(
-                    'Progression',
-                    style: t.displaySmall?.copyWith(height: 0.9),
-                  ),
-                  const SizedBox(width: 8),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      gradient: AppGradients.gD09EFEToD0BAFF,
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: const Text(
-                      'LVL 45',
-                      style: TextStyle(
-                        color: AppColors.cFCFAFE,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 16,
-                ),
-                decoration: BoxDecoration(
-                  color: AppColors.cB1BCFB.withValues(alpha: 0.2),
-                  borderRadius: BorderRadius.circular(18),
-                  border: Border.all(
-                    color: AppColors.cFCFAFE.withValues(alpha: 0.28),
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    ...List.generate(
-                      10,
-                      (index) => Expanded(
-                        child: Container(
-                          margin: const EdgeInsets.symmetric(horizontal: 3),
-                          height: 8,
-                          decoration: BoxDecoration(
-                            color: index < 5
-                                ? AppColors.cCFFFDD
-                                : AppColors.cFCFAFE,
-                            borderRadius: BorderRadius.circular(99),
-                          ),
+              FutureBuilder<PointsSummaryModel>(
+                future: _pointsFuture,
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 24),
+                      child: Center(
+                        child: CircularProgressIndicator(
+                          color: AppColors.cFCFAFE,
                         ),
                       ),
-                    ),
-                    const SizedBox(width: 8),
-                    const CircleAvatar(
-                      radius: 18,
-                      backgroundColor: AppColors.cDBE7FE,
-                      child: Text(
-                        '46',
-                        style: TextStyle(color: AppColors.c393566),
+                    );
+                  }
+
+                  if (snapshot.hasError || !snapshot.hasData) {
+                    return Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: AppColors.cB1BCFB.withValues(alpha: 0.2),
+                        borderRadius: BorderRadius.circular(18),
+                        border: Border.all(
+                          color: AppColors.cFCFAFE.withValues(alpha: 0.28),
+                        ),
                       ),
-                    ),
-                    const SizedBox(width: 6),
-                    const CircleAvatar(
-                      radius: 18,
-                      backgroundColor: AppColors.cCCD4F4,
-                      child: Text(
-                        '47',
-                        style: TextStyle(color: AppColors.c393566),
+                      child: const Text(
+                        'Progression indisponible pour le moment.',
+                        style: TextStyle(color: AppColors.cFCFAFE),
                       ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 24),
-              Text('Reputation', style: t.displaySmall?.copyWith(height: 0.9)),
-              const SizedBox(height: 12),
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: AppColors.cB1BCFB.withValues(alpha: 0.2),
-                  borderRadius: BorderRadius.circular(24),
-                  border: Border.all(
-                    color: AppColors.cFCFAFE.withValues(alpha: 0.3),
-                  ),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Row(
-                      children: [
-                        Icon(Icons.auto_awesome, color: AppColors.cCFFFDD),
-                        SizedBox(width: 8),
-                        Text(
-                          'Niveau 45',
-                          style: TextStyle(
-                            color: AppColors.cFCFAFE,
-                            fontSize: 32,
-                            height: 0.9,
-                            fontWeight: FontWeight.w800,
+                    );
+                  }
+
+                  final points = snapshot.data!;
+                  final level = points.user.level;
+
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Text(
+                            'Progression',
+                            style: t.displaySmall?.copyWith(height: 0.9),
+                          ),
+                          const SizedBox(width: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10),
+                            decoration: BoxDecoration(
+                              gradient: const LinearGradient(
+                                begin: Alignment.topCenter,
+                                end: Alignment.bottomCenter,
+                                colors: [AppColors.c9D5EDF, AppColors.cD0BAFF],
+                              ),
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(
+                                color: AppColors.whiteColor.withValues(
+                                  alpha: 0.50,
+                                ),
+                              ),
+                            ),
+                            child: Text(
+                              'LVL  ${level.level}',
+                              style: const TextStyle(
+                                fontFamily: AppTypography.displayFontFamily,
+                                color: AppColors.cFCFAFE,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      Container(
+                        height: 64,
+                        padding: const EdgeInsets.symmetric(horizontal: 8),
+                        decoration: BoxDecoration(
+                          color: AppColors.cFCFAFE.withValues(alpha: 0.05),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: AppColors.cFCFAFE.withValues(alpha: 0.34),
                           ),
                         ),
-                        Spacer(),
-                        Icon(Icons.more_vert, color: AppColors.cFCFAFE),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    const Text(
-                      'Graphique de la chaine de reputation',
-                      style: TextStyle(color: AppColors.cDBE7FE),
-                    ),
-                    const SizedBox(height: 12),
-                    SizedBox(
-                      height: 120,
-                      child: CustomPaint(
-                        painter: _ReputationLinePainter(),
-                        size: const Size(double.infinity, 120),
+                        child: _LevelTimelineBar(level: level),
                       ),
-                    ),
-                  ],
-                ),
+                      const SizedBox(height: 18),
+                      Text(
+                        'Réputation',
+                        style: t.displaySmall?.copyWith(height: 0.9),
+                      ),
+                      const SizedBox(height: 12),
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: AppColors.cB1BCFB.withValues(alpha: 0.2),
+                          borderRadius: BorderRadius.circular(24),
+                          border: Border.all(
+                            color: AppColors.cFCFAFE.withValues(alpha: 0.3),
+                          ),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                const Icon(
+                                  Icons.auto_awesome,
+                                  color: AppColors.cCFFFDD,
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  'Niveau ${level.level}',
+                                  style: const TextStyle(
+                                    color: AppColors.cFCFAFE,
+                                    fontSize: 32,
+                                    height: 0.9,
+                                    fontWeight: FontWeight.w800,
+                                  ),
+                                ),
+                                const Spacer(),
+                                Text(
+                                  '${points.totals.pointsEarned} pts',
+                                  style: const TextStyle(
+                                    color: AppColors.cCFFFDD,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              '${points.totals.messagesCount} messages sur une periode de ${points.period == 'day'
+                                  ? 'jours'
+                                  : points.period == 'week'
+                                  ? 'semaines'
+                                  : points.period == 'month'
+                                  ? 'mois'
+                                  : ""}',
+                              style: const TextStyle(color: AppColors.cDBE7FE),
+                            ),
+                            const SizedBox(height: 12),
+                            SizedBox(
+                              child: CustomPaint(
+                                painter: _ReputationLinePainter(
+                                  history: points.history,
+                                ),
+                                size: const Size(double.infinity, 120),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  );
+                },
               ),
             ],
           ),
@@ -373,6 +454,252 @@ class ProfileScreen extends StatelessWidget {
         },
       ),
     );
+  }
+
+  Future<void> _showPresencePicker(
+    BuildContext context, {
+    required AppController app,
+    required String currentStatus,
+  }) async {
+    final selected = await showModalBottomSheet<String>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) {
+        Widget tile(String status) {
+          return ListTile(
+            leading: PresenceBadge(
+              presenceStatus: status,
+              isCurrentUser: true,
+              size: 14,
+            ),
+            title: Text(
+              PresenceUtils.label(status, isCurrentUser: true),
+              style: const TextStyle(color: AppColors.cFCFAFE),
+            ),
+            trailing: currentStatus == status
+                ? const Icon(Icons.check, color: AppColors.cCFFFDD)
+                : null,
+            onTap: () => Navigator.of(context).pop(status),
+          );
+        }
+
+        return SafeArea(
+          top: false,
+          child: Container(
+            padding: const EdgeInsets.fromLTRB(0, 10, 0, 16),
+            decoration: BoxDecoration(
+              gradient: AppGradients.gB1BCFBTo393566,
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(28),
+              ),
+              border: Border.all(
+                color: AppColors.whiteColor.withValues(alpha: 0.2),
+                width: 1,
+              ),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 74,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: AppColors.whiteColor.withValues(alpha: 0.55),
+                    borderRadius: BorderRadius.circular(99),
+                  ),
+                ),
+                const SizedBox(height: 18),
+                const Text(
+                  'Changer le statut en ligne',
+                  style: TextStyle(
+                    color: AppColors.whiteColor,
+                    fontFamily: AppTypography.displayFontFamily,
+                    fontSize: 22,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Divider(
+                  height: 1,
+                  color: AppColors.whiteColor.withValues(alpha: 0.2),
+                ),
+                const SizedBox(height: 8),
+                tile(PresenceUtils.online),
+                tile(PresenceUtils.idle),
+                tile(PresenceUtils.dnd),
+                tile(PresenceUtils.invisible),
+                const SizedBox(height: 8),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+    if (selected == null || selected == currentStatus) return;
+    await app.updateMyPresenceStatus(selected);
+  }
+}
+
+class _LevelTimelineBar extends StatefulWidget {
+  const _LevelTimelineBar({required this.level});
+
+  final PointsLevelModel level;
+
+  @override
+  State<_LevelTimelineBar> createState() => _LevelTimelineBarState();
+}
+
+class _LevelTimelineBarState extends State<_LevelTimelineBar> {
+  final ScrollController _scrollController = ScrollController();
+  final GlobalKey _focusLevelKey = GlobalKey();
+  bool _didAutoScroll = false;
+
+  @override
+  void didUpdateWidget(covariant _LevelTimelineBar oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.level.level != widget.level.level) {
+      _didAutoScroll = false;
+    }
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    _scrollToCurrentIfNeeded();
+
+    final currentLevel = widget.level.level <= 0 ? 1 : widget.level.level;
+    final lastVisibleLevel = (currentLevel + 3).clamp(
+      currentLevel,
+      widget.level.maxLevel,
+    );
+
+    return SingleChildScrollView(
+      controller: _scrollController,
+      scrollDirection: Axis.horizontal,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 8),
+        child: Row(
+          children: [
+            for (var level = 1; level <= lastVisibleLevel; level++) ...[
+              _buildLevelNode(level, currentLevel),
+              if (level < lastVisibleLevel)
+                _buildLevelConnector(
+                  fromLevel: level,
+                  currentLevel: currentLevel,
+                  completionRatio: widget.level.completionRatio,
+                ),
+            ],
+            _buildTrailingHintDash(opacity: 0.42),
+            _buildTrailingHintDash(opacity: 0.18),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTrailingHintDash({required double opacity}) {
+    return Padding(
+      padding: EdgeInsets.only(right: 6),
+      child: Container(
+        width: 17,
+        height: 7,
+        decoration: BoxDecoration(
+          color: AppColors.cFCFAFE.withValues(alpha: opacity),
+          borderRadius: BorderRadius.circular(100),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLevelNode(int level, int currentLevel) {
+    final isValidated = level <= currentLevel;
+    final focusLevel = currentLevel + 1;
+    final key = level == focusLevel ? _focusLevelKey : null;
+
+    return Container(
+      key: key,
+      width: 50,
+      alignment: Alignment.center,
+      child: Container(
+        width: 30,
+        height: 30,
+        decoration: BoxDecoration(
+          color: isValidated ? AppColors.cCFFFDD : null,
+          gradient: !isValidated ? AppGradients.gB1BCFBToDBE7FE : null,
+          shape: BoxShape.circle,
+        ),
+        child: Center(
+          child: isValidated
+              ? const Icon(
+                  Icons.check_rounded,
+                  size: 20,
+                  color: AppColors.c393566,
+                  fontWeight: FontWeight.w700,
+                )
+              : Text(
+                  '$level',
+                  style: const TextStyle(
+                    color: AppColors.c393566,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 14,
+                  ),
+                ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLevelConnector({
+    required int fromLevel,
+    required int currentLevel,
+    required double completionRatio,
+  }) {
+    final filledCount = fromLevel < currentLevel
+        ? 3
+        : fromLevel == currentLevel
+        ? (completionRatio * 3).round().clamp(0, 3)
+        : 0;
+
+    return Row(
+      children: [
+        for (var dashIndex = 0; dashIndex < 3; dashIndex++)
+          Padding(
+            padding: EdgeInsets.only(right: dashIndex < 2 ? 6 : 0),
+            child: Container(
+              width: 17,
+              height: 7,
+              decoration: BoxDecoration(
+                color: dashIndex < filledCount
+                    ? AppColors.cCFFFDD
+                    : AppColors.whiteColor,
+                borderRadius: BorderRadius.circular(100),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
+  void _scrollToCurrentIfNeeded() {
+    if (_didAutoScroll) return;
+    _didAutoScroll = true;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final currentContext = _focusLevelKey.currentContext;
+      if (currentContext == null) return;
+      Scrollable.ensureVisible(
+        currentContext,
+        alignment: 0.5,
+        duration: Duration.zero,
+      );
+    });
   }
 }
 
@@ -549,6 +876,10 @@ class ShareProfileScreen extends StatelessWidget {
 }
 
 class _ReputationLinePainter extends CustomPainter {
+  _ReputationLinePainter({required this.history});
+
+  final List<PointsHistoryBucketModel> history;
+
   @override
   void paint(Canvas canvas, Size size) {
     final axis = Paint()
@@ -559,18 +890,23 @@ class _ReputationLinePainter extends CustomPainter {
       canvas.drawLine(Offset(0, y), Offset(size.width, y), axis);
     }
 
+    final values = history
+        .map((bucket) => bucket.pointsEarned.toDouble())
+        .where((value) => value >= 0)
+        .toList(growable: false);
+    if (values.length < 2) return;
+
+    final maxValue = values.reduce((a, b) => a > b ? a : b);
+    final safeMax = maxValue <= 0 ? 1.0 : maxValue;
+
     final path = Path();
-    final points = [
-      Offset(0, size.height * 0.75),
-      Offset(size.width * 0.1, size.height * 0.55),
-      Offset(size.width * 0.22, size.height * 0.62),
-      Offset(size.width * 0.32, size.height * 0.34),
-      Offset(size.width * 0.45, size.height * 0.64),
-      Offset(size.width * 0.58, size.height * 0.48),
-      Offset(size.width * 0.73, size.height * 0.7),
-      Offset(size.width * 0.86, size.height * 0.46),
-      Offset(size.width, size.height * 0.78),
-    ];
+    final points = <Offset>[];
+    for (var i = 0; i < values.length; i++) {
+      final x = (size.width * i) / (values.length - 1);
+      final y = size.height - ((values[i] / safeMax) * (size.height * 0.9));
+      points.add(Offset(x, y));
+    }
+
     path.moveTo(points.first.dx, points.first.dy);
     for (var i = 1; i < points.length; i++) {
       final previous = points[i - 1];
@@ -596,5 +932,7 @@ class _ReputationLinePainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+  bool shouldRepaint(covariant _ReputationLinePainter oldDelegate) {
+    return oldDelegate.history != history;
+  }
 }

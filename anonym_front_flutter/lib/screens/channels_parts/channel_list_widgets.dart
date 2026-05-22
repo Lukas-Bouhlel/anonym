@@ -14,10 +14,17 @@ String? _dmPeerFrameUrl(UserModel? user) {
 }
 
 class _ConversationTile extends StatelessWidget {
-  const _ConversationTile({required this.channel, required this.onTap});
+  const _ConversationTile({
+    required this.channel,
+    required this.onTap,
+    this.dmPresenceStatus,
+    this.dmPresenceLabel,
+  });
 
   final ChannelModel channel;
   final VoidCallback onTap;
+  final String? dmPresenceStatus;
+  final String? dmPresenceLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -96,18 +103,18 @@ class _ConversationTile extends StatelessWidget {
                             ),
                           ),
                   ),
-                  Positioned(
-                    right: -1,
-                    top: -1,
-                    child: Container(
-                      width: 12,
-                      height: 12,
-                      decoration: const BoxDecoration(
-                        color: AppColors.cCFFFDD,
-                        shape: BoxShape.circle,
+                  if (isDm)
+                    Positioned(
+                      right: 0,
+                      top: 0,
+                      child: PresenceBadge(
+                        presenceStatus:
+                            dmPresenceStatus ?? PresenceUtils.offline,
+                        isCurrentUser: false,
+                        size: 12,
+                        borderColor: AppColors.cFCFAFE,
                       ),
                     ),
-                  ),
                 ],
               ),
               const SizedBox(width: 10),
@@ -124,7 +131,17 @@ class _ConversationTile extends StatelessWidget {
                         fontWeight: FontWeight.w700,
                       ),
                     ),
-                    _ChannelTypeBadge(channel: channel),
+                    if (isDm)
+                      Text(
+                        dmPresenceLabel ?? 'Hors ligne',
+                        style: const TextStyle(
+                          color: AppColors.cDBE7FE,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      )
+                    else
+                      _ChannelTypeBadge(channel: channel),
                   ],
                 ),
               ),

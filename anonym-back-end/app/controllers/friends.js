@@ -1,5 +1,6 @@
 const { Op } = require('sequelize');
 const { Friend, User, Inventory, Shop } = require('../models');
+const { getLevelFromPoints } = require('../utils/points');
 
 const FRIEND_STATUS = {
     ACTIVE: 'ACTIVE',
@@ -10,7 +11,7 @@ const FRIEND_STATUS = {
 const friendDetailsInclude = {
     model: User,
     as: 'FriendDetails',
-    attributes: ['id', 'username', 'email', 'avatar', 'createdAt', 'updatedAt'],
+    attributes: ['id', 'username', 'email', 'avatar', 'total_points', 'presence_status', 'createdAt', 'updatedAt'],
     include: [
         {
             model: Inventory,
@@ -28,6 +29,45 @@ const friendDetailsInclude = {
     ]
 };
 
+const getPresenceForViewer = (user, viewerId) => {
+    const status = user?.presence_status || 'online';
+    if (status === 'invisible' && Number(user?.id) !== Number(viewerId)) {
+        return 'offline';
+    }
+    return status;
+};
+
+const addLevelToUser = (user, viewerId) => {
+    if (!user) return user;
+    const totalPoints = user.total_points || 0;
+    const { total_points, ...userWithoutTotalPoints } = user;
+    return {
+        ...userWithoutTotalPoints,
+        presence_status: getPresenceForViewer(user, viewerId),
+        level: getLevelFromPoints(totalPoints)
+    };
+};
+
+const addLevelToFriendRecord = (record, viewerId) => {
+    const plain = record.toJSON ? record.toJSON() : record;
+
+    if (plain.FriendDetails) {
+        return {
+            ...plain,
+            FriendDetails: addLevelToUser(plain.FriendDetails, viewerId)
+        };
+    }
+
+    if (plain.User) {
+        return {
+            ...plain,
+            User: addLevelToUser(plain.User, viewerId)
+        };
+    }
+
+    return plain;
+};
+
 exports.readAll = async (req, res) => {
     try {
         const userId = req.auth.userId;
@@ -36,7 +76,7 @@ exports.readAll = async (req, res) => {
             include: [friendDetailsInclude]
         });
 
-        res.status(200).json(friends);
+        res.status(200).json(friends.map((friend) => addLevelToFriendRecord(friend, userId)));
     } catch (error) {
         res.status(500).json({ message: error.message || 'An error occurred while retrieving friends.' });
     }
@@ -50,12 +90,12 @@ exports.readIncomingRequests = async (req, res) => {
             include: [{
                 model: User,
                 as: 'User',
-                attributes: ['id', 'username', 'email', 'avatar']
+                attributes: ['id', 'username', 'email', 'avatar', 'total_points', 'presence_status']
             }],
             order: [['createdAt', 'DESC']]
         });
 
-        res.status(200).json(requests);
+        res.status(200).json(requests.map((request) => addLevelToFriendRecord(request, userId)));
     } catch (error) {
         res.status(500).json({ message: error.message || 'An error occurred while retrieving incoming requests.' });
     }
@@ -70,7 +110,7 @@ exports.readOutgoingRequests = async (req, res) => {
             order: [['createdAt', 'DESC']]
         });
 
-        res.status(200).json(requests);
+        res.status(200).json(requests.map((request) => addLevelToFriendRecord(request, userId)));
     } catch (error) {
         res.status(500).json({ message: error.message || 'An error occurred while retrieving outgoing requests.' });
     }
@@ -85,7 +125,7 @@ exports.readBlockedUsers = async (req, res) => {
             order: [['updatedAt', 'DESC']]
         });
 
-        res.status(200).json(blockedUsers);
+        res.status(200).json(blockedUsers.map((blockedUser) => addLevelToFriendRecord(blockedUser, userId)));
     } catch (error) {
         res.status(500).json({ message: error.message || 'An error occurred while retrieving blocked users.' });
     }
@@ -103,7 +143,7 @@ exports.read = async (req, res) => {
             return res.status(404).json({ message: 'Ami non trouvÃ©.' });
         }
 
-        res.status(200).json(friend);
+        res.status(200).json(addLevelToFriendRecord(friend, req.auth.userId));
     } catch (error) {
         res.status(500).json({ message: error.message || 'An error occurred while retrieving the friend.' });
     }

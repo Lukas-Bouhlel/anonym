@@ -503,7 +503,6 @@ class _SheetShell extends StatelessWidget {
     return Padding(
       padding: EdgeInsets.only(bottom: mediaQuery.viewInsets.bottom),
       child: Container(
-        margin: const EdgeInsets.fromLTRB(12, 0, 12, 0),
         padding: EdgeInsets.fromLTRB(
           16,
           10,
@@ -530,6 +529,7 @@ class _SheetShell extends StatelessWidget {
               ),
               Text(
                 title,
+                textAlign: TextAlign.center,
                 style: const TextStyle(
                   fontFamily: AppTypography.displayFontFamily,
                   color: AppColors.cFCFAFE,

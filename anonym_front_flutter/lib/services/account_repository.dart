@@ -44,7 +44,7 @@ class AccountRepository {
       'username': username,
       'email': email,
       'bio': bio,
-      if (allowNonFriendDms != null) 'allow_non_friend_dms': allowNonFriendDms,
+      'allow_non_friend_dms': ?allowNonFriendDms,
       if (deleteAvatar) 'avatar': 'delete',
     };
 
@@ -85,5 +85,12 @@ class AccountRepository {
 
   Future<void> deleteAccount() async {
     await _dio.delete<void>('/api/account/delete');
+  }
+
+  Future<void> updatePresenceStatus(String presenceStatus) async {
+    await _dio.patch<void>(
+      '/api/account/presence',
+      data: {'presence_status': presenceStatus},
+    );
   }
 }

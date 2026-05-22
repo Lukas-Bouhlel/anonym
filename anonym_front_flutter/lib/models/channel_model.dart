@@ -10,6 +10,7 @@ class ChannelModel {
     this.unreadCount = 0,
     this.channelType = 'GROUP',
     this.visibility = 'PUBLIC',
+    this.reputationScore,
     this.coverImage,
     this.dmPeer,
     this.isJoined,
@@ -23,6 +24,7 @@ class ChannelModel {
   final int unreadCount;
   final String channelType;
   final String visibility;
+  final int? reputationScore;
   final String? coverImage;
   final UserModel? dmPeer;
   final bool? isJoined;
@@ -39,6 +41,9 @@ class ChannelModel {
       channelType: (json['channel_type'] ?? json['channelType'] ?? 'GROUP')
           .toString(),
       visibility: (json['visibility'] ?? 'PUBLIC').toString(),
+      reputationScore: _toNullableInt(
+        json['reputation_score'] ?? json['reputationScore'],
+      ),
       coverImage: MediaUrl.nullable(
         (json['cover_image'] ?? json['coverImage'])?.toString(),
       ),
@@ -59,6 +64,7 @@ class ChannelModel {
     int? unreadCount,
     String? channelType,
     String? visibility,
+    int? reputationScore,
     String? coverImage,
     UserModel? dmPeer,
     bool? isJoined,
@@ -72,6 +78,7 @@ class ChannelModel {
       unreadCount: unreadCount ?? this.unreadCount,
       channelType: channelType ?? this.channelType,
       visibility: visibility ?? this.visibility,
+      reputationScore: reputationScore ?? this.reputationScore,
       coverImage: coverImage ?? this.coverImage,
       dmPeer: dmPeer ?? this.dmPeer,
       isJoined: isJoined ?? this.isJoined,
@@ -84,6 +91,14 @@ class ChannelModel {
     if (value is num) return value.toInt();
     if (value is String) return int.tryParse(value) ?? 0;
     return 0;
+  }
+
+  static int? _toNullableInt(Object? value) {
+    if (value == null) return null;
+    if (value is int) return value;
+    if (value is num) return value.toInt();
+    if (value is String) return int.tryParse(value);
+    return null;
   }
 
   static bool? _toBool(Object? value) {

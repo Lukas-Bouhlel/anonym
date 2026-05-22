@@ -9,6 +9,9 @@ class _ChatDetailView extends StatefulWidget {
     required this.isDm,
     this.dmPeerName,
     this.dmPeerAvatarUrl,
+    this.dmPeerPresenceStatus,
+    this.dmPeerPresenceLabel,
+    this.onDmHeaderTap,
     required this.messageController,
     required this.editingMessage,
     required this.onCancelEdit,
@@ -31,6 +34,9 @@ class _ChatDetailView extends StatefulWidget {
   final bool isDm;
   final String? dmPeerName;
   final String? dmPeerAvatarUrl;
+  final String? dmPeerPresenceStatus;
+  final String? dmPeerPresenceLabel;
+  final VoidCallback? onDmHeaderTap;
   final TextEditingController messageController;
   final ChannelMessageModel? editingMessage;
   final VoidCallback onCancelEdit;
@@ -234,56 +240,88 @@ class _ChatDetailViewState extends State<_ChatDetailView> {
               children: [
                 MojiBackButton(onTap: widget.onBack),
                 const SizedBox(width: 10),
-                SizedBox(
-                  width: 44,
-                  height: 44,
-                  child: widget.isDm
-                      ? ClipOval(
-                          child: AppRemoteImage(
-                            url: headerAvatarUrl,
-                            width: 44,
-                            height: 44,
-                            fit: BoxFit.cover,
-                            fallbackIcon: Icons.person,
-                          ),
-                        )
-                      : Container(
-                          decoration: BoxDecoration(
-                            color: AppColors.cFCFAFE.withValues(alpha: 0.08),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                              color: AppColors.cFCFAFE.withValues(alpha: 0.20),
-                            ),
-                          ),
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(12),
-                            child: AppRemoteImage(
-                              url: headerAvatarUrl,
-                              width: 44,
-                              height: 44,
-                              fit: BoxFit.cover,
-                              fallbackIcon: Icons.alternate_email,
-                            ),
-                          ),
-                        ),
-                ),
-                const SizedBox(width: 12),
                 Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        headerTitle,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          color: AppColors.cFCFAFE,
-                          fontFamily: AppTypography.displayFontFamily,
-                          fontSize: 23,
-                          fontWeight: FontWeight.w600,
+                  child: InkWell(
+                    onTap: widget.isDm
+                        ? widget.onDmHeaderTap
+                        : (widget.showGroupMenu ? widget.onInfo : null),
+                    borderRadius: BorderRadius.circular(12),
+                    child: Row(
+                      children: [
+                        SizedBox(
+                          width: 44,
+                          height: 44,
+                          child: widget.isDm
+                              ? Stack(
+                                  children: [
+                                    ClipOval(
+                                      child: AppRemoteImage(
+                                        url: headerAvatarUrl,
+                                        width: 44,
+                                        height: 44,
+                                        fit: BoxFit.cover,
+                                        fallbackIcon: Icons.person,
+                                      ),
+                                    ),
+                                    Positioned(
+                                      right: 0,
+                                      top: 0,
+                                      child: PresenceBadge(
+                                        presenceStatus:
+                                            widget.dmPeerPresenceStatus ??
+                                            PresenceUtils.offline,
+                                        isCurrentUser: false,
+                                        size: 11,
+                                        borderColor: AppColors.cFCFAFE,
+                                      ),
+                                    ),
+                                  ],
+                                )
+                              : Container(
+                                  decoration: BoxDecoration(
+                                    color: AppColors.cFCFAFE.withValues(
+                                      alpha: 0.08,
+                                    ),
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(
+                                      color: AppColors.cFCFAFE.withValues(
+                                        alpha: 0.20,
+                                      ),
+                                    ),
+                                  ),
+                                  child: ClipRRect(
+                                    borderRadius: BorderRadius.circular(12),
+                                    child: AppRemoteImage(
+                                      url: headerAvatarUrl,
+                                      width: 44,
+                                      height: 44,
+                                      fit: BoxFit.cover,
+                                      fallbackIcon: Icons.alternate_email,
+                                    ),
+                                  ),
+                                ),
                         ),
-                      ),
-                    ],
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                headerTitle,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  color: AppColors.cFCFAFE,
+                                  fontFamily: AppTypography.displayFontFamily,
+                                  fontSize: 23,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
                 if (widget.showGroupMenu)
@@ -451,6 +489,30 @@ class _ChatDetailViewState extends State<_ChatDetailView> {
                             ownFrameUrl: widget.currentUserFrameUrl,
                             showBlockFooter: isLastInSenderBlock,
                             blockFooterLabel: blockFooterLabel,
+                            onAvatarTap:
+                                !own &&
+                                    message.sender != null &&
+                                    message.sender!.id > 0
+                                ? () {
+                                    showModalBottomSheet(
+                                      context: context,
+                                      isScrollControlled: true,
+                                      backgroundColor: Colors.transparent,
+                                      shape: const RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.vertical(
+                                          top: Radius.circular(28),
+                                        ),
+                                      ),
+                                      clipBehavior: Clip.antiAlias,
+                                      builder: (_) => FractionallySizedBox(
+                                        heightFactor: 0.86,
+                                        child: UserProfileScreen(
+                                          user: message.sender!,
+                                        ),
+                                      ),
+                                    );
+                                  }
+                                : null,
                             onEdit: own ? () => widget.onEdit(message) : null,
                             onDelete: own
                                 ? () => widget.onDelete(message)
@@ -747,6 +809,7 @@ class _MessageBubble extends StatelessWidget {
     this.ownFrameUrl,
     this.onEdit,
     this.onDelete,
+    this.onAvatarTap,
   });
 
   final bool own;
@@ -763,6 +826,7 @@ class _MessageBubble extends StatelessWidget {
   final String? ownFrameUrl;
   final VoidCallback? onEdit;
   final VoidCallback? onDelete;
+  final VoidCallback? onAvatarTap;
 
   @override
   Widget build(BuildContext context) {
@@ -781,7 +845,10 @@ class _MessageBubble extends StatelessWidget {
     final hasText = message.content.trim().isNotEmpty;
 
     final avatar = startsBlock
-        ? _ChatMessageAvatar(avatarUrl: avatarUrl, frameUrl: frameUrl)
+        ? GestureDetector(
+            onTap: (!own) ? onAvatarTap : null,
+            child: _ChatMessageAvatar(avatarUrl: avatarUrl, frameUrl: frameUrl),
+          )
         : const SizedBox(width: 52, height: 52);
 
     final messageColumn = Flexible(

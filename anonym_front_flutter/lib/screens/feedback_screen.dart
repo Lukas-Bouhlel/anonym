@@ -37,13 +37,19 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
 
   Future<void> _onSubmit() async {
     if (!_isValid || _submitting) return;
+    final authController = context.read<AuthController>();
+    final adminRepository = context.read<AdminRepository>();
+    final messenger = ScaffoldMessenger.of(context);
+    final navigator = Navigator.of(context);
+
     if (widget.confirmBeforeSubmit) {
       final confirmed = await _showSubmitConfirmModal();
+      if (!mounted) return;
       if (!confirmed) return;
     }
-    final userEmail = context.read<AuthController>().user?.email.trim() ?? '';
+    final userEmail = authController.user?.email.trim() ?? '';
     if (userEmail.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
+      messenger.showSnackBar(
         const SnackBar(content: Text('Email utilisateur introuvable')),
       );
       return;
@@ -52,19 +58,19 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
     try {
       final subject = _subjectCtrl.text.trim();
       final message = _messageCtrl.text.trim();
-      await context.read<AdminRepository>().report(
+      await adminRepository.report(
         email: userEmail,
         type: 'feedback',
         content: 'Sujet: $subject\n\n$message',
       );
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
+      messenger.showSnackBar(
         const SnackBar(content: Text('Feedback envoye')),
       );
-      Navigator.of(context).pop();
+      navigator.pop();
     } catch (error) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
+      messenger.showSnackBar(
         SnackBar(
           content: Text(
             ApiErrorParser.parse(

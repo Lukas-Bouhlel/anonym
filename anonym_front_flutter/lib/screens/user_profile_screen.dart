@@ -7,6 +7,7 @@ import '../providers/app_controller.dart';
 import '../providers/auth_controller.dart';
 import '../theme.dart';
 import '../widgets/app_remote_image.dart';
+import '../widgets/presence_badge.dart';
 import '../widgets/modals/moji_confirm_modal.dart';
 import 'feedback_screen.dart';
 import 'profile_screen.dart';
@@ -54,6 +55,10 @@ class UserProfileScreen extends StatelessWidget {
         ? formatDate(memberSinceDate)
         : '';
     final isOwnProfile = me?.id == user.id;
+    final presenceStatus = app.presenceStatusForUser(
+      user.id,
+      isCurrentUser: isOwnProfile,
+    );
     final publicCommunities = app.channels
         .where((channel) {
           final isPublicGroup =
@@ -129,17 +134,11 @@ class UserProfileScreen extends StatelessWidget {
                                       fallbackIcon: Icons.person,
                                     ),
                                   ),
-                                  Container(
-                                    width: 12,
-                                    height: 12,
-                                    decoration: BoxDecoration(
-                                      color: const Color(0xFF97F6C1),
-                                      border: Border.all(
-                                        color: AppColors.cFCFAFE,
-                                        width: 2,
-                                      ),
-                                      borderRadius: BorderRadius.circular(6),
-                                    ),
+                                  PresenceBadge(
+                                    presenceStatus: presenceStatus,
+                                    isCurrentUser: isOwnProfile,
+                                    size: 12,
+                                    borderColor: AppColors.cFCFAFE,
                                   ),
                                 ],
                               ),
@@ -247,32 +246,35 @@ class UserProfileScreen extends StatelessWidget {
                                   ],
                                 ),
                               ),
-                              // Container(
-                              //   padding: const EdgeInsets.symmetric(
-                              //     horizontal: 12,
-                              //     vertical: 6,
-                              //   ),
-                              //   decoration: BoxDecoration(
-                              //     gradient: AppGradients.gD09EFEToD0BAFF,
-                              //     borderRadius: BorderRadius.circular(16),
-                              //     boxShadow: [
-                              //       BoxShadow(
-                              //         color: AppColors.c393566.withOpacity(
-                              //           0.14,
-                              //         ),
-                              //         blurRadius: 10,
-                              //         offset: const Offset(0, 4),
-                              //       ),
-                              //     ],
-                              //   ),
-                              //   child: const Text(
-                              //     'LVL 45',
-                              //     style: TextStyle(
-                              //       color: AppColors.cFCFAFE,
-                              //       fontWeight: FontWeight.w800,
-                              //     ),
-                              //   ),
-                              // ),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 10,
+                                ),
+                                decoration: BoxDecoration(
+                                  gradient: const LinearGradient(
+                                    begin: Alignment.topCenter,
+                                    end: Alignment.bottomCenter,
+                                    colors: [
+                                      AppColors.c9D5EDF,
+                                      AppColors.cD0BAFF,
+                                    ],
+                                  ),
+                                  borderRadius: BorderRadius.circular(10),
+                                  border: Border.all(
+                                    color: AppColors.whiteColor.withValues(
+                                      alpha: 0.50,
+                                    ),
+                                  ),
+                                ),
+                                child: Text(
+                                  'LVL  ${user.level}',
+                                  style: const TextStyle(
+                                    fontFamily: AppTypography.displayFontFamily,
+                                    color: AppColors.cFCFAFE,
+                                    fontWeight: FontWeight.w800,
+                                  ),
+                                ),
+                              ),
                             ],
                           ),
                         ),
@@ -719,9 +721,7 @@ class UserProfileScreen extends StatelessWidget {
         await app.blockUser(user.id);
       }
     } else if (selected == 'report') {
-      await Navigator.of(
-        context,
-      ).push(
+      await Navigator.of(context).push(
         MaterialPageRoute(
           builder: (_) => const FeedbackScreen(confirmBeforeSubmit: true),
         ),

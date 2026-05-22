@@ -13,6 +13,7 @@ import 'services/friends_repository.dart';
 import 'services/inventory_repository.dart';
 import 'services/invoice_repository.dart';
 import 'services/payment_repository.dart';
+import 'services/points_repository.dart';
 import 'services/private_message_repository.dart';
 import 'services/session_service.dart';
 import 'services/shop_repository.dart';
@@ -36,6 +37,7 @@ void main() {
   final shopRepository = ShopRepository(apiClient.dio);
   final inventoryRepository = InventoryRepository(apiClient.dio);
   final paymentRepository = PaymentRepository(apiClient.dio);
+  final pointsRepository = PointsRepository(apiClient.dio);
   final invoiceRepository = InvoiceRepository(apiClient.dio);
   final socketService = SocketService();
 
@@ -53,6 +55,7 @@ void main() {
         Provider.value(value: shopRepository),
         Provider.value(value: inventoryRepository),
         Provider.value(value: paymentRepository),
+        Provider.value(value: pointsRepository),
         Provider.value(value: invoiceRepository),
         Provider.value(value: socketService),
         ChangeNotifierProvider(create: (_) => AuthController(authRepository)),
@@ -60,6 +63,7 @@ void main() {
           create: (context) => AppController(
             authController: context.read<AuthController>(),
             accountRepository: accountRepository,
+            apiClient: apiClient,
             friendsRepository: friendsRepository,
             channelRepository: channelRepository,
             privateMessageRepository: privateMessageRepository,
@@ -74,6 +78,7 @@ void main() {
                 AppController(
                   authController: authController,
                   accountRepository: accountRepository,
+                  apiClient: apiClient,
                   friendsRepository: friendsRepository,
                   channelRepository: channelRepository,
                   privateMessageRepository: privateMessageRepository,

@@ -88,7 +88,7 @@ class SettingsScreen extends StatelessWidget {
                 children: [
                   const MojiBackButton(),
                   const SizedBox(width: 14),
-                  Text('Parametres', style: t.displayMedium),
+                  Text('Paramètres', style: t.displayLarge),
                 ],
               ),
               const SizedBox(height: 24),
