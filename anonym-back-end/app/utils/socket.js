@@ -1,6 +1,7 @@
 const { PrivateMessage, User, Inventory, Shop, Channel, UserChannel, Friend } = require('../models');
 const { Op } = require('sequelize');
 const { deleteUploadFiles } = require('./fileCleanup');
+const { sendPushToUsers } = require('./pushNotifications');
 let hasAllowNonFriendDmsColumnCache = null;
 const activePresenceConnections = new Map();
 
@@ -68,6 +69,7 @@ const initializeSocket = (io) => {
         const connectedUserId = socket?.userId;
 
         if (connectedUserId) {
+            socket.join(`user:${connectedUserId}`);
             incrementPresenceConnections(connectedUserId);
             User.update(
                 { presence_status: 'online' },
@@ -182,6 +184,18 @@ const initializeSocket = (io) => {
                     imageUrl: message.image_url,
                     sender,
                     createdAt: message.createdAt
+                });
+
+                await sendPushToUsers({
+                    userIds: memberIds,
+                    excludeUserId: senderId,
+                    data: {
+                        event: 'newMessage',
+                        id: message.message_id,
+                        channelId,
+                        senderId,
+                        senderUsername: sender?.username || ''
+                    }
                 });
 
                 const unreadCount = await getUnreadMessageCount(channelId, senderId);

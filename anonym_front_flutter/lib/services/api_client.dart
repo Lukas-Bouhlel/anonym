@@ -4,6 +4,7 @@ import 'package:cookie_jar/cookie_jar.dart';
 import 'package:dio/dio.dart';
 import 'package:dio_cookie_manager/dio_cookie_manager.dart';
 import 'package:flutter/foundation.dart';
+import 'package:path_provider/path_provider.dart';
 
 import '../utils/app_config.dart';
 
@@ -33,10 +34,30 @@ class ApiClient {
     )..interceptors.add(CookieManager(_cookieJar));
   }
 
+  static Future<ApiClient> create({
+    CookieJar? cookieJar,
+  }) async {
+    if (cookieJar != null) {
+      return ApiClient(cookieJar: cookieJar);
+    }
+
+    if (kIsWeb) {
+      return ApiClient(cookieJar: CookieJar());
+    }
+
+    final appDir = await getApplicationSupportDirectory();
+    final storage = FileStorage('${appDir.path}/.cookies/');
+    final persistentJar = PersistCookieJar(
+      storage: storage,
+      ignoreExpires: false,
+    );
+    return ApiClient(cookieJar: persistentJar);
+  }
+
   final Dio dio;
   final CookieJar _cookieJar;
   late final Dio _refreshDio;
-  Completer<bool>? _refreshCompleter;
+  Completer<_RefreshOutcome>? _refreshCompleter;
   VoidCallback? _onSessionExpired;
 
   static const Set<String> _csrfProtectedPaths = {
@@ -77,9 +98,20 @@ class ApiClient {
           return;
         }
 
-        final refreshed = await _refreshOrWait();
-        if (!refreshed) {
-          handler.next(error);
+        final refreshOutcome = await _refreshOrWait();
+        if (!refreshOutcome.refreshed) {
+          if (refreshOutcome.authRejected) {
+            handler.next(error);
+            return;
+          }
+          handler.next(
+            DioException(
+              requestOptions: error.requestOptions,
+              type: DioExceptionType.connectionError,
+              error:
+                  'Auth refresh unavailable (network/server). Session kept locally.',
+            ),
+          );
           return;
         }
 
@@ -115,27 +147,28 @@ class ApiClient {
     return normalizedPath != '/api/auth/refresh';
   }
 
-  Future<bool> _refreshOrWait() async {
+  Future<_RefreshOutcome> _refreshOrWait() async {
     final pending = _refreshCompleter;
     if (pending != null) {
       return pending.future;
     }
 
-    final completer = Completer<bool>();
+    final completer = Completer<_RefreshOutcome>();
     _refreshCompleter = completer;
     try {
-      final ok = await _performRefreshRequest();
-      completer.complete(ok);
-      return ok;
+      final outcome = await _performRefreshRequest();
+      completer.complete(outcome);
+      return outcome;
     } catch (_) {
-      completer.complete(false);
-      return false;
+      const outcome = _RefreshOutcome.networkOrServerFailure();
+      completer.complete(outcome);
+      return outcome;
     } finally {
       _refreshCompleter = null;
     }
   }
 
-  Future<bool> _performRefreshRequest() async {
+  Future<_RefreshOutcome> _performRefreshRequest() async {
     try {
       final uri = Uri.parse(
         _refreshDio.options.baseUrl,
@@ -155,13 +188,14 @@ class ApiClient {
           },
         ),
       );
-      return true;
+      return const _RefreshOutcome.refreshed();
     } on DioException catch (e) {
       final code = e.response?.statusCode;
       if (code == 401 || code == 403) {
         _onSessionExpired?.call();
+        return const _RefreshOutcome.authRejected();
       }
-      return false;
+      return const _RefreshOutcome.networkOrServerFailure();
     }
   }
 
@@ -189,4 +223,23 @@ class ApiClient {
       type: DioExceptionType.unknown,
     );
   }
+}
+
+class _RefreshOutcome {
+  const _RefreshOutcome._({
+    required this.refreshed,
+    required this.authRejected,
+  });
+
+  const _RefreshOutcome.refreshed()
+    : this._(refreshed: true, authRejected: false);
+
+  const _RefreshOutcome.authRejected()
+    : this._(refreshed: false, authRejected: true);
+
+  const _RefreshOutcome.networkOrServerFailure()
+    : this._(refreshed: false, authRejected: false);
+
+  final bool refreshed;
+  final bool authRejected;
 }

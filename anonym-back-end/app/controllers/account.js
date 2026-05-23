@@ -1,4 +1,4 @@
-const { User, Inventory, Shop, Channel, PrivateMessage } = require('../models');
+const { User, Inventory, Shop, Channel, PrivateMessage, DevicePushToken } = require('../models');
 const bcrypt = require('bcrypt');
 const fs = require('fs');
 const path = require('path');
@@ -405,6 +405,77 @@ exports.updatePresence = async (req, res) => {
     } catch (error) {
         return res.status(500).json({
             message: error.message || 'Une erreur est survenue lors de la mise a jour du statut.'
+        });
+    }
+};
+
+exports.upsertPushToken = async (req, res) => {
+    try {
+        const userId = req.auth.userId;
+        const { token, platform } = req.body;
+        const allowedPlatforms = ['android', 'ios', 'web'];
+
+        if (!token || typeof token !== 'string') {
+            return res.status(400).json({ message: 'token is required.' });
+        }
+
+        if (!platform || !allowedPlatforms.includes(platform)) {
+            return res.status(400).json({
+                message: `platform must be one of: ${allowedPlatforms.join(', ')}`
+            });
+        }
+
+        const existingToken = await DevicePushToken.findOne({ where: { token } });
+        if (existingToken) {
+            existingToken.user_id = userId;
+            existingToken.platform = platform;
+            existingToken.is_active = true;
+            await existingToken.save();
+            return res.status(200).json({ message: 'Push token updated.' });
+        }
+
+        await DevicePushToken.create({
+            user_id: userId,
+            token,
+            platform,
+            is_active: true
+        });
+
+        return res.status(201).json({ message: 'Push token created.' });
+    } catch (error) {
+        return res.status(500).json({
+            message: error.message || 'Une erreur est survenue lors de l\'enregistrement du push token.'
+        });
+    }
+};
+
+exports.deletePushToken = async (req, res) => {
+    try {
+        const userId = req.auth.userId;
+        const { token } = req.body;
+
+        if (!token || typeof token !== 'string') {
+            return res.status(400).json({ message: 'token is required.' });
+        }
+
+        const tokenEntry = await DevicePushToken.findOne({
+            where: {
+                user_id: userId,
+                token
+            }
+        });
+
+        if (!tokenEntry) {
+            return res.status(404).json({ message: 'Push token not found.' });
+        }
+
+        tokenEntry.is_active = false;
+        await tokenEntry.save();
+
+        return res.status(204).send();
+    } catch (error) {
+        return res.status(500).json({
+            message: error.message || 'Une erreur est survenue lors de la suppression du push token.'
         });
     }
 };

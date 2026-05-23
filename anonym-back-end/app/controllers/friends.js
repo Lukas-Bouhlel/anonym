@@ -1,6 +1,7 @@
 const { Op } = require('sequelize');
 const { Friend, User, Inventory, Shop } = require('../models');
 const { getLevelFromPoints } = require('../utils/points');
+const { sendPushToUsers } = require('../utils/pushNotifications');
 
 const FRIEND_STATUS = {
     ACTIVE: 'ACTIVE',
@@ -197,6 +198,35 @@ exports.addFriend = async (req, res) => {
             status: FRIEND_STATUS.PENDING
         });
 
+        const senderUser = await User.findByPk(userId, {
+            attributes: ['id', 'username', 'avatar']
+        });
+        const io = req.app?.locals?.io;
+        if (io) {
+            io.to(`user:${friendId}`).emit('friendRequestReceived', {
+                requestId: newFriend.id,
+                status: newFriend.status,
+                createdAt: newFriend.createdAt,
+                sender: {
+                    id: userId,
+                    username: senderUser?.username || null,
+                    avatar: senderUser?.avatar || null
+                }
+            });
+
+        }
+
+        await sendPushToUsers({
+            userIds: [friendId],
+            data: {
+                event: 'friendRequestReceived',
+                requestId: newFriend.id,
+                senderId: userId,
+                senderUsername: senderUser?.username || ''
+            },
+            excludeUserId: userId
+        });
+
         res.status(201).json(newFriend);
     } catch (error) {
         res.status(500).json({ message: error.message || 'An error occurred while adding the friend.' });
@@ -228,6 +258,10 @@ exports.respondToRequest = async (req, res) => {
         incomingRequest.status = status;
         await incomingRequest.save();
 
+        const responderUser = await User.findByPk(userId, {
+            attributes: ['id', 'username', 'avatar']
+        });
+
         if (status === FRIEND_STATUS.ACTIVE) {
             const [reverseFriendship, created] = await Friend.findOrCreate({
                 where: {
@@ -241,6 +275,20 @@ exports.respondToRequest = async (req, res) => {
                 reverseFriendship.status = FRIEND_STATUS.ACTIVE;
                 await reverseFriendship.save();
             }
+        }
+
+        const io = req.app?.locals?.io;
+        if (io) {
+            io.to(`user:${incomingRequest.user_id}`).emit('friendRequestResponded', {
+                requestId: incomingRequest.id,
+                status: incomingRequest.status,
+                respondedAt: incomingRequest.updatedAt,
+                responder: {
+                    id: responderUser?.id || userId,
+                    username: responderUser?.username || null,
+                    avatar: responderUser?.avatar || null
+                }
+            });
         }
 
         return res.status(200).json(incomingRequest);
@@ -266,7 +314,17 @@ exports.cancelOutgoingRequest = async (req, res) => {
             return res.status(404).json({ message: 'Outgoing friend request not found.' });
         }
 
+        const receiverId = outgoingRequest.friend_id;
         await outgoingRequest.destroy();
+
+        const io = req.app?.locals?.io;
+        if (io) {
+            io.to(`user:${receiverId}`).emit('friendRequestCancelled', {
+                requestId,
+                cancelledBy: userId
+            });
+        }
+
         return res.status(204).send();
     } catch (error) {
         res.status(500).json({ message: error.message || 'An error occurred while cancelling the friend request.' });
@@ -309,6 +367,14 @@ exports.blockUser = async (req, res) => {
             }
         });
 
+        const io = req.app?.locals?.io;
+        if (io) {
+            io.to(`user:${targetUserId}`).emit('friendshipBlocked', {
+                blockedBy: userId,
+                blockedUserId: targetUserId
+            });
+        }
+
         return res.status(200).json(friendship);
     } catch (error) {
         res.status(500).json({ message: error.message || 'An error occurred while blocking this user.' });
@@ -337,6 +403,15 @@ exports.unblockUser = async (req, res) => {
         }
 
         await blockedFriendship.destroy();
+
+        const io = req.app?.locals?.io;
+        if (io) {
+            io.to(`user:${targetUserId}`).emit('friendshipUnblocked', {
+                unblockedBy: userId,
+                unblockedUserId: targetUserId
+            });
+        }
+
         return res.status(204).send();
     } catch (error) {
         res.status(500).json({ message: error.message || 'An error occurred while unblocking this user.' });
@@ -413,6 +488,18 @@ exports.delete = async (req, res) => {
 
         if (!deletedCount) {
             return res.status(404).json({ message: 'Friendship not found.' });
+        }
+
+        const io = req.app?.locals?.io;
+        if (io) {
+            io.to(`user:${userId}`).emit('friendshipDeleted', {
+                deletedBy: userId,
+                otherUserId: friendId
+            });
+            io.to(`user:${friendId}`).emit('friendshipDeleted', {
+                deletedBy: userId,
+                otherUserId: userId
+            });
         }
 
         return res.status(204).send();

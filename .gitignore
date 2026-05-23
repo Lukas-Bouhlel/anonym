@@ -152,3 +152,4 @@ Thumbs.db
 /anonym-back-end/docs
 /anonym-front-end/docs
 /anonym-front-end/.env.production
+/anonym-back-end/firebase-service-account.json

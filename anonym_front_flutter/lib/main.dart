@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
 
 import 'pages/app_page.dart';
@@ -15,13 +17,15 @@ import 'services/invoice_repository.dart';
 import 'services/payment_repository.dart';
 import 'services/points_repository.dart';
 import 'services/private_message_repository.dart';
+import 'services/push_notification_service.dart';
 import 'services/shop_repository.dart';
 import 'services/socket_service.dart';
 
-void main() {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await PushNotificationService.initializeFirebase();
 
-  final apiClient = ApiClient();
+  final apiClient = await ApiClient.create();
   final authRepository = AuthRepository(apiClient.dio, apiClient);
   final accountRepository = AccountRepository(apiClient.dio);
   final adminRepository = AdminRepository(apiClient.dio);
@@ -34,6 +38,13 @@ void main() {
   final pointsRepository = PointsRepository(apiClient.dio);
   final invoiceRepository = InvoiceRepository(apiClient.dio);
   final socketService = SocketService();
+  final isPushSupported =
+      !kIsWeb &&
+      (defaultTargetPlatform == TargetPlatform.android ||
+          defaultTargetPlatform == TargetPlatform.iOS);
+  final pushNotificationService = PushNotificationService(
+    isPushSupported ? FirebaseMessaging.instance : null,
+  );
 
   runApp(
     MultiProvider(
@@ -51,6 +62,7 @@ void main() {
         Provider.value(value: pointsRepository),
         Provider.value(value: invoiceRepository),
         Provider.value(value: socketService),
+        Provider.value(value: pushNotificationService),
         ChangeNotifierProvider(create: (_) => AuthController(authRepository)),
         ChangeNotifierProxyProvider<AuthController, AppController>(
           create: (context) => AppController(
@@ -65,6 +77,7 @@ void main() {
             paymentRepository: paymentRepository,
             invoiceRepository: invoiceRepository,
             socketService: socketService,
+            pushNotificationService: pushNotificationService,
           ),
           update: (context, authController, existingController) {
             return existingController ??
@@ -80,6 +93,7 @@ void main() {
                   paymentRepository: paymentRepository,
                   invoiceRepository: invoiceRepository,
                   socketService: socketService,
+                  pushNotificationService: pushNotificationService,
                 );
           },
         ),

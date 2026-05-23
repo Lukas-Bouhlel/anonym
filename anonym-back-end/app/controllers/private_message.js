@@ -1,6 +1,7 @@
 const { PrivateMessage, Channel, UserChannel, User, Inventory, Shop, Friend, UserPointDaily, sequelize } = require('../models');
 const { Op } = require('sequelize');
 const { deleteUploadFileIfExists } = require('../utils/fileCleanup');
+const { sendPushToUsers } = require('../utils/pushNotifications');
 let hasAllowNonFriendDmsColumnCache = null;
 
 const updateChannelReputationScore = async (channelId) => {
@@ -247,6 +248,24 @@ exports.sendMessageWithImage = async (req, res) => {
             });
             io.to(channelId.toString()).emit('unreadCount', { count: unreadCount });
         }
+
+        const channelMembers = await UserChannel.findAll({
+            where: { channel_id: channelId },
+            attributes: ['user_id'],
+            raw: true
+        });
+
+        await sendPushToUsers({
+            userIds: channelMembers.map((member) => member.user_id),
+            excludeUserId: userId,
+            data: {
+                event: 'newMessage',
+                id: message.message_id,
+                channelId,
+                senderId: userId,
+                senderUsername: sender?.username || ''
+            }
+        });
 
         return res.status(201).json({
             id: message.message_id,

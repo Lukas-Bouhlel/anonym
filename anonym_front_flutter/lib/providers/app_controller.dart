@@ -1,8 +1,12 @@
 import 'dart:math';
+import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
+import '../models/app_notification_model.dart';
 import '../models/channel_message_model.dart';
 import '../models/channel_model.dart';
 import '../models/friend_model.dart';
@@ -20,6 +24,7 @@ import '../services/inventory_repository.dart';
 import '../services/invoice_repository.dart';
 import '../services/payment_repository.dart';
 import '../services/private_message_repository.dart';
+import '../services/push_notification_service.dart';
 import '../services/shop_repository.dart';
 import '../services/socket_service.dart';
 import '../utils/api_error_parser.dart';
@@ -39,6 +44,7 @@ class AppController extends ChangeNotifier with WidgetsBindingObserver {
     required PaymentRepository paymentRepository,
     required InvoiceRepository invoiceRepository,
     required SocketService socketService,
+    required PushNotificationService pushNotificationService,
   }) : _authController = authController,
        _accountRepository = accountRepository,
        _apiClient = apiClient,
@@ -49,7 +55,8 @@ class AppController extends ChangeNotifier with WidgetsBindingObserver {
        _inventoryRepository = inventoryRepository,
        _paymentRepository = paymentRepository,
        _invoiceRepository = invoiceRepository,
-       _socketService = socketService {
+       _socketService = socketService,
+       _pushNotificationService = pushNotificationService {
     WidgetsBinding.instance.addObserver(this);
     _authListener = _handleAuthChange;
     _authController.addListener(_authListener);
@@ -67,6 +74,11 @@ class AppController extends ChangeNotifier with WidgetsBindingObserver {
   final PaymentRepository _paymentRepository;
   final InvoiceRepository _invoiceRepository;
   final SocketService _socketService;
+  final PushNotificationService _pushNotificationService;
+  StreamSubscription<String>? _pushTokenRefreshSubscription;
+  StreamSubscription<dynamic>? _pushOpenedAppSubscription;
+  StreamSubscription<dynamic>? _pushForegroundMessageSubscription;
+  String? _lastRegisteredPushToken;
 
   late final VoidCallback _authListener;
 
@@ -86,6 +98,8 @@ class AppController extends ChangeNotifier with WidgetsBindingObserver {
   ChannelModel? _selectedChannel;
   List<UserModel> _channelMembers = const [];
   List<ChannelMessageModel> _messages = const [];
+  List<AppNotificationModel> _notifications = const [];
+  Set<String> _readNotificationIds = <String>{};
   List<ShopItemModel> _shopItems = const [];
   List<InventoryItemModel> _inventoryItems = const [];
   List<InvoiceModel> _invoices = const [];
@@ -109,6 +123,9 @@ class AppController extends ChangeNotifier with WidgetsBindingObserver {
   ChannelModel? get selectedChannel => _selectedChannel;
   List<UserModel> get channelMembers => _channelMembers;
   List<ChannelMessageModel> get messages => _messages;
+  List<AppNotificationModel> get notifications => _notifications;
+  int get unreadNotificationsCount =>
+      _notifications.where((item) => !item.isRead).length;
   List<ShopItemModel> get shopItems => _shopItems;
   List<InventoryItemModel> get inventoryItems => _inventoryItems;
   List<InvoiceModel> get invoices => _invoices;
@@ -202,6 +219,7 @@ class AppController extends ChangeNotifier with WidgetsBindingObserver {
     notifyListeners();
 
     try {
+      await _loadReadNotificationIds();
       await Future.wait([
         _refreshCurrentUser(),
         refreshFriends(silent: true),
@@ -214,6 +232,8 @@ class AppController extends ChangeNotifier with WidgetsBindingObserver {
         refreshInventory(silent: true),
         refreshInvoices(silent: true),
       ]);
+      _rebuildPendingFriendRequestNotifications();
+      _rebuildChannelUnreadNotifications();
     } catch (e) {
       _errorMessage = ApiErrorParser.parse(
         e,
@@ -948,6 +968,33 @@ class AppController extends ChangeNotifier with WidgetsBindingObserver {
     }, fallbackMessage: 'Mise a jour du statut impossible');
   }
 
+  Future<bool> openChannelById(int channelId) async {
+    if (channelId <= 0) return false;
+    ChannelModel? target;
+    for (final channel in _channels) {
+      if (channel.channelId == channelId) {
+        target = channel;
+        break;
+      }
+    }
+    if (target == null) {
+      await refreshChannels(silent: true);
+      for (final channel in _channels) {
+        if (channel.channelId == channelId) {
+          target = channel;
+          break;
+        }
+      }
+    }
+    if (target == null) {
+      _errorMessage = 'Conversation introuvable.';
+      notifyListeners();
+      return false;
+    }
+    await selectChannel(target);
+    return _selectedChannel?.channelId == channelId;
+  }
+
   Future<void> updatePassword({
     required String currentPassword,
     required String newPassword,
@@ -980,6 +1027,23 @@ class AppController extends ChangeNotifier with WidgetsBindingObserver {
     notifyListeners();
   }
 
+  void markAllNotificationsAsRead() {
+    if (_notifications.isEmpty) return;
+    var didChange = false;
+    final nextReadIds = <String>{..._readNotificationIds};
+    final next = _notifications.map((item) {
+      nextReadIds.add(item.id);
+      if (item.isRead) return item;
+      didChange = true;
+      return item.copyWith(isRead: true);
+    }).toList(growable: false);
+    if (!didChange && nextReadIds.length == _readNotificationIds.length) return;
+    _notifications = next;
+    _readNotificationIds = nextReadIds;
+    _persistReadNotificationIds();
+    notifyListeners();
+  }
+
   void _handleAuthChange() {
     final currentUserId = _authController.user?.id;
     if (currentUserId == null) {
@@ -998,6 +1062,7 @@ class AppController extends ChangeNotifier with WidgetsBindingObserver {
     _socketService.connect(
       authToken: _apiClient.authToken,
       onNewMessage: _onNewMessageFromSocket,
+      onFriendRequestReceived: _onFriendRequestReceivedFromSocket,
       onMessageError: _onMessageErrorFromSocket,
       onLocationSnapshot: _onLocationSnapshotFromSocket,
       onLocationUpdate: _onLocationUpdateFromSocket,
@@ -1006,12 +1071,14 @@ class AppController extends ChangeNotifier with WidgetsBindingObserver {
     );
     _socketService.requestLiveLocationsSnapshot();
     await refreshAll();
+    await _setupPushNotifications();
     await _applyLifecyclePresence(
       WidgetsBinding.instance.lifecycleState ?? AppLifecycleState.resumed,
     );
   }
 
   void _onNewMessageFromSocket(ChannelMessageModel message) {
+    _pushNewMessageNotification(message);
     if (_selectedChannel == null) {
       refreshChannels(silent: true);
       return;
@@ -1028,6 +1095,38 @@ class AppController extends ChangeNotifier with WidgetsBindingObserver {
     _messages = [..._messages, enriched];
     notifyListeners();
     refreshChannels(silent: true);
+  }
+
+  void _onFriendRequestReceivedFromSocket(Map<String, dynamic> payload) {
+    final senderRaw = payload['sender'];
+    final sender = senderRaw is Map<String, dynamic>
+        ? senderRaw
+        : senderRaw is Map
+        ? Map<String, dynamic>.from(senderRaw)
+        : const <String, dynamic>{};
+
+    final senderId = _toInt(sender['id'] ?? sender['userId'] ?? sender['user_id']);
+    final meId = _authController.user?.id;
+    if (meId != null && senderId == meId) return;
+
+    final username = (sender['username'] ?? 'Utilisateur').toString().trim();
+    final createdAt = _parseDate(
+      payload['createdAt'] ?? payload['created_at'] ?? payload['date'],
+    );
+    final requestId = _toInt(payload['requestId'] ?? payload['request_id']);
+
+    _prependNotification(
+      AppNotificationModel(
+        id: 'fr-$requestId-${createdAt.microsecondsSinceEpoch}',
+        type: AppNotificationType.friendRequest,
+        title: "Vous avez recu une demande d'ami de $username",
+        subtitle: _formatNotificationTime(createdAt),
+        createdAt: createdAt,
+        avatarUrl: sender['avatar']?.toString(),
+        relatedUserId: senderId > 0 ? senderId : null,
+      ),
+    );
+    refreshFriendRequests(silent: true);
   }
 
   void _onMessageErrorFromSocket(String message) {
@@ -1192,7 +1291,125 @@ class AppController extends ChangeNotifier with WidgetsBindingObserver {
           .updatePresenceStatus(PresenceUtils.invisible)
           .catchError((_) {});
     }
+    final token = _lastRegisteredPushToken;
+    if (token != null && token.isNotEmpty) {
+      _accountRepository.unregisterPushToken(token: token).catchError((_) {});
+    }
+    _pushNotificationService.deleteToken();
     _socketService.disconnect();
+  }
+
+  Future<void> _setupPushNotifications() async {
+    final ready = await _pushNotificationService.initializeForDevice();
+    if (!ready) return;
+    await _syncCurrentPushToken();
+
+    _pushTokenRefreshSubscription?.cancel();
+    _pushTokenRefreshSubscription = _pushNotificationService.onTokenRefresh
+        .listen((token) {
+          _syncPushToken(token);
+        });
+
+    _pushOpenedAppSubscription?.cancel();
+    _pushOpenedAppSubscription = _pushNotificationService.onMessageOpenedApp
+        .listen(_handlePushMessageOpen);
+
+    _pushForegroundMessageSubscription?.cancel();
+    _pushForegroundMessageSubscription = _pushNotificationService.onMessage
+        .listen(_handleForegroundPushMessage);
+
+    final initialMessage = await _pushNotificationService.getInitialMessage();
+    if (initialMessage != null) {
+      _handlePushMessageOpen(initialMessage);
+    }
+  }
+
+  Future<void> _syncCurrentPushToken() async {
+    final token = await _pushNotificationService.getToken();
+    if (token == null || token.trim().isEmpty) return;
+    await _syncPushToken(token);
+  }
+
+  Future<void> _syncPushToken(String token) async {
+    final me = _authController.user;
+    final normalized = token.trim();
+    if (me == null || normalized.isEmpty) return;
+    if (_lastRegisteredPushToken == normalized) return;
+    try {
+      await _accountRepository.registerPushToken(
+        token: normalized,
+        platform: AccountRepository.currentDevicePlatform(),
+      );
+      _lastRegisteredPushToken = normalized;
+    } catch (_) {
+      // Keep push token sync best-effort.
+    }
+  }
+
+  void _handleForegroundPushMessage(dynamic message) {
+    if (message is! RemoteMessage) return;
+    _appendPushNotification(message);
+  }
+
+  void _handlePushMessageOpen(dynamic message) {
+    if (message is! RemoteMessage) return;
+    _appendPushNotification(message);
+    final channelId = _toInt(
+      message.data['channelId'] ??
+          message.data['channel_id'] ??
+          message.data['conversation_id'],
+    );
+    if (channelId > 0) {
+      openChannelById(channelId);
+    }
+  }
+
+  void _appendPushNotification(RemoteMessage message) {
+    final data = message.data;
+    final eventType = (data['event'] ?? data['type'] ?? '').toString().trim();
+    if (eventType == 'newMessage') {
+      final senderId = _toInt(data['senderId'] ?? data['sender_id']);
+      final meId = _authController.user?.id;
+      if (meId != null && senderId == meId) return;
+      final senderName = (data['senderUsername'] ?? data['sender_username'] ?? '')
+          .toString()
+          .trim();
+      final channelId = _toInt(data['channelId'] ?? data['channel_id']);
+      final now = DateTime.now();
+      _prependNotification(
+        AppNotificationModel(
+          id: 'push-msg-${data['id'] ?? now.microsecondsSinceEpoch}',
+          type: AppNotificationType.newMessage,
+          title: senderName.isEmpty
+              ? 'Vous avez recu un nouveau message'
+              : 'Vous avez recu un nouveau message de $senderName',
+          subtitle: _formatNotificationTime(now),
+          createdAt: now,
+          relatedUserId: senderId > 0 ? senderId : null,
+          relatedChannelId: channelId > 0 ? channelId : null,
+        ),
+      );
+      return;
+    }
+    if (eventType == 'friendRequestReceived') {
+      final senderId = _toInt(data['senderId'] ?? data['sender_id']);
+      final senderName = (data['senderUsername'] ?? data['sender_username'] ?? '')
+          .toString()
+          .trim();
+      final now = DateTime.now();
+      _prependNotification(
+        AppNotificationModel(
+          id: 'push-fr-${data['requestId'] ?? now.microsecondsSinceEpoch}',
+          type: AppNotificationType.friendRequest,
+          title: senderName.isEmpty
+              ? "Vous avez recu une demande d'ami"
+              : "Vous avez recu une demande d'ami de $senderName",
+          subtitle: _formatNotificationTime(now),
+          createdAt: now,
+          relatedUserId: senderId > 0 ? senderId : null,
+        ),
+      );
+    }
   }
 
   bool _isLocationPayloadValid(LiveUserLocationModel value) {
@@ -1216,6 +1433,137 @@ class AppController extends ChangeNotifier with WidgetsBindingObserver {
   }
 
   double _toRadians(double deg) => deg * 0.017453292519943295;
+
+  void _pushNewMessageNotification(ChannelMessageModel message) {
+    final meId = _authController.user?.id;
+    final senderId = message.senderId ?? message.sender?.id;
+    if (meId != null && senderId == meId) return;
+
+    final selectedId = _selectedChannel?.channelId;
+    if (selectedId != null && selectedId == message.channelId) {
+      // User is already in this conversation: no toast/notification needed.
+      return;
+    }
+
+    final senderName = message.sender?.username.trim();
+    final safeSenderName = (senderName == null || senderName.isEmpty)
+        ? 'Utilisateur'
+        : senderName;
+    final createdAt = message.createdAt ?? DateTime.now();
+
+    _prependNotification(
+      AppNotificationModel(
+        id: 'msg-${message.messageId}-${createdAt.microsecondsSinceEpoch}',
+        type: AppNotificationType.newMessage,
+        title: 'Vous avez recu un nouveau message de $safeSenderName',
+        subtitle: _formatNotificationTime(createdAt),
+        createdAt: createdAt,
+        avatarUrl: message.sender?.avatar ?? message.imageUrl,
+        relatedUserId: senderId,
+        relatedChannelId: message.channelId > 0 ? message.channelId : null,
+      ),
+    );
+  }
+
+  void _prependNotification(AppNotificationModel value) {
+    final incoming = value.copyWith(isRead: _readNotificationIds.contains(value.id));
+    final deduped = _notifications.where((item) => item.id != incoming.id);
+    final next = <AppNotificationModel>[incoming, ...deduped];
+    _notifications = next.take(100).toList(growable: false);
+    notifyListeners();
+  }
+
+  void _rebuildPendingFriendRequestNotifications() {
+    for (final request in _incomingFriendRequests) {
+      final status = request.status.trim().toUpperCase();
+      if (status != 'PENDING') continue;
+      final username =
+          request.friendDetails?.username.trim().isNotEmpty == true
+          ? request.friendDetails!.username.trim()
+          : 'Utilisateur';
+      _prependNotification(
+        AppNotificationModel(
+          id: 'fr-pending-${request.id}',
+          type: AppNotificationType.friendRequest,
+          title: "Vous avez recu une demande d'ami de $username",
+          subtitle: 'En attente',
+          createdAt: DateTime.now(),
+          avatarUrl: request.friendDetails?.avatar,
+          relatedUserId: request.friendId > 0 ? request.friendId : null,
+        ),
+      );
+    }
+  }
+
+  void _rebuildChannelUnreadNotifications() {
+    for (final channel in _channels) {
+      if (channel.unreadCount <= 0) continue;
+      final countLabel = channel.unreadCount > 1
+          ? '${channel.unreadCount} nouveaux messages'
+          : '1 nouveau message';
+      _prependNotification(
+        AppNotificationModel(
+          id: 'ch-unread-${channel.channelId}',
+          type: AppNotificationType.newMessage,
+          title: countLabel,
+          subtitle: channel.name.trim().isEmpty
+              ? 'Conversation'
+              : channel.name.trim(),
+          createdAt: DateTime.now(),
+          avatarUrl: channel.dmPeer?.avatar ?? channel.coverImage,
+          relatedUserId: channel.dmPeer?.id,
+          relatedChannelId: channel.channelId,
+        ),
+      );
+    }
+  }
+
+  Future<void> _loadReadNotificationIds() async {
+    final meId = _authController.user?.id;
+    if (meId == null || meId <= 0) {
+      _readNotificationIds = <String>{};
+      return;
+    }
+    final prefs = await SharedPreferences.getInstance();
+    final stored = prefs.getStringList(_readNotificationsStorageKey(meId)) ?? const <String>[];
+    _readNotificationIds = stored.toSet();
+  }
+
+  Future<void> _persistReadNotificationIds() async {
+    final meId = _authController.user?.id;
+    if (meId == null || meId <= 0) return;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setStringList(
+      _readNotificationsStorageKey(meId),
+      _readNotificationIds.toList(growable: false),
+    );
+  }
+
+  String _readNotificationsStorageKey(int userId) =>
+      'notifications_read_ids_v1_user_$userId';
+
+  String _formatNotificationTime(DateTime value) {
+    final local = value.toLocal();
+    final hour = local.hour.toString().padLeft(2, '0');
+    final minute = local.minute.toString().padLeft(2, '0');
+    return "Aujourd'hui a $hour:$minute";
+  }
+
+  DateTime _parseDate(dynamic raw) {
+    if (raw is DateTime) return raw;
+    if (raw is String) {
+      final parsed = DateTime.tryParse(raw);
+      if (parsed != null) return parsed;
+    }
+    return DateTime.now();
+  }
+
+  int _toInt(dynamic raw) {
+    if (raw is int) return raw;
+    if (raw is num) return raw.toInt();
+    if (raw is String) return int.tryParse(raw) ?? 0;
+    return 0;
+  }
 
   bool _isActiveFriendStatus(String status) {
     final normalized = status.trim().toUpperCase();
@@ -1302,6 +1650,8 @@ class AppController extends ChangeNotifier with WidgetsBindingObserver {
     _selectedChannel = null;
     _channelMembers = const [];
     _messages = const [];
+    _notifications = const [];
+    _readNotificationIds = <String>{};
     _shopItems = const [];
     _inventoryItems = const [];
     _invoices = const [];
@@ -1315,6 +1665,13 @@ class AppController extends ChangeNotifier with WidgetsBindingObserver {
     _isLoadingMessages = false;
     _isSubmitting = false;
     _socketService.disconnect();
+    _pushTokenRefreshSubscription?.cancel();
+    _pushOpenedAppSubscription?.cancel();
+    _pushForegroundMessageSubscription?.cancel();
+    _pushTokenRefreshSubscription = null;
+    _pushOpenedAppSubscription = null;
+    _pushForegroundMessageSubscription = null;
+    _lastRegisteredPushToken = null;
     notifyListeners();
   }
 
@@ -1323,6 +1680,9 @@ class AppController extends ChangeNotifier with WidgetsBindingObserver {
     WidgetsBinding.instance.removeObserver(this);
     _authController.removeListener(_authListener);
     _socketService.disconnect();
+    _pushTokenRefreshSubscription?.cancel();
+    _pushOpenedAppSubscription?.cancel();
+    _pushForegroundMessageSubscription?.cancel();
     super.dispose();
   }
 }

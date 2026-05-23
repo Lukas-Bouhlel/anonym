@@ -1,5 +1,5 @@
 import 'dart:convert';
-import 'dart:typed_data';
+import 'package:flutter/foundation.dart';
 
 import 'package:dio/dio.dart';
 
@@ -92,5 +92,47 @@ class AccountRepository {
       '/api/account/presence',
       data: {'presence_status': presenceStatus},
     );
+  }
+
+  Future<void> registerPushToken({
+    required String token,
+    required String platform,
+  }) async {
+    await _dio.post<void>(
+      '/api/account/push-token',
+      data: {
+        'token': token,
+        'platform': platform,
+      },
+    );
+  }
+
+  Future<void> unregisterPushToken({
+    required String token,
+  }) async {
+    await _dio.delete<void>(
+      '/api/account/push-token',
+      data: {'token': token},
+      options: Options(
+        extra: const {'skipAuthRefresh': true},
+      ),
+    );
+  }
+
+  static String currentDevicePlatform() {
+    switch (defaultTargetPlatform) {
+      case TargetPlatform.android:
+        return 'android';
+      case TargetPlatform.iOS:
+        return 'ios';
+      case TargetPlatform.macOS:
+        return 'macos';
+      case TargetPlatform.windows:
+        return 'windows';
+      case TargetPlatform.linux:
+        return 'linux';
+      case TargetPlatform.fuchsia:
+        return 'fuchsia';
+    }
   }
 }

@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../models/friend_model.dart';
 import '../models/user_model.dart';
 import '../providers/app_controller.dart';
+import '../screens/notifications_screen.dart';
 import '../screens/user_profile_screen.dart';
 import '../theme.dart';
 import '../widgets/app_remote_image.dart';
@@ -71,7 +72,97 @@ class _FriendsScreenState extends State<FriendsScreen> {
             children: [
               SafeArea(
                 bottom: false,
-                child: Text('Chercher', style: t.displayLarge),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text('Chercher', style: t.displayLarge),
+                    Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        IconButton(
+                          onPressed: () {
+                            Navigator.of(context).push(
+                              PageRouteBuilder(
+                                transitionDuration: const Duration(
+                                  milliseconds: 260,
+                                ),
+                                reverseTransitionDuration: const Duration(
+                                  milliseconds: 220,
+                                ),
+                                pageBuilder: (_, animation, _) {
+                                  return FadeTransition(
+                                    opacity: animation,
+                                    child: const NotificationsScreen(),
+                                  );
+                                },
+                                transitionsBuilder:
+                                    (_, animation, _, child) {
+                                      final slideAnimation = Tween<Offset>(
+                                        begin: const Offset(1, 0),
+                                        end: Offset.zero,
+                                      ).animate(
+                                        CurvedAnimation(
+                                          parent: animation,
+                                          curve: Curves.easeOutCubic,
+                                        ),
+                                      );
+                                      return SlideTransition(
+                                        position: slideAnimation,
+                                        child: child,
+                                      );
+                                    },
+                              ),
+                            );
+                          },
+                          icon: const Icon(
+                            Icons.notifications_none,
+                            color: AppColors.whiteColor,
+                            size: 27,
+                          ),
+                          style: IconButton.styleFrom(
+                            padding: EdgeInsets.zero,
+                            minimumSize: const Size(32, 32),
+                          ),
+                        ),
+                        if (app.unreadNotificationsCount > 0)
+                          Positioned(
+                            right: -2,
+                            top: -1,
+                            child: Container(
+                              constraints: const BoxConstraints(
+                                minWidth: 16,
+                                minHeight: 16,
+                              ),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 4,
+                              ),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFFF4D2D),
+                                borderRadius: BorderRadius.circular(999),
+                                border: Border.all(
+                                  color: AppColors.c121212.withValues(
+                                    alpha: 0.5,
+                                  ),
+                                ),
+                              ),
+                              alignment: Alignment.center,
+                              child: Text(
+                                app.unreadNotificationsCount > 99
+                                    ? '99+'
+                                    : '${app.unreadNotificationsCount}',
+                                style: const TextStyle(
+                                  color: AppColors.whiteColor,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w700,
+                                  height: 1.1,
+                                ),
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
               const SizedBox(height: 18),
               Row(
@@ -781,11 +872,9 @@ class _FriendTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final details = friend.friendDetails;
-    final user = details ?? UserModel(
-      id: friend.friendId,
-      username: 'Utilisateur',
-      email: '',
-    );
+    final user =
+        details ??
+        UserModel(id: friend.friendId, username: 'Utilisateur', email: '');
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 6),
@@ -800,9 +889,7 @@ class _FriendTile extends StatelessWidget {
               isScrollControlled: true,
               backgroundColor: Colors.transparent,
               shape: const RoundedRectangleBorder(
-                borderRadius: BorderRadius.vertical(
-                  top: Radius.circular(28),
-                ),
+                borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
               ),
               clipBehavior: Clip.antiAlias,
               builder: (_) => FractionallySizedBox(
@@ -899,11 +986,9 @@ class _IncomingRequestTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final details = request.friendDetails;
-    final user = details ?? UserModel(
-      id: request.friendId,
-      username: 'Utilisateur',
-      email: '',
-    );
+    final user =
+        details ??
+        UserModel(id: request.friendId, username: 'Utilisateur', email: '');
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 6),
@@ -918,9 +1003,7 @@ class _IncomingRequestTile extends StatelessWidget {
               isScrollControlled: true,
               backgroundColor: Colors.transparent,
               shape: const RoundedRectangleBorder(
-                borderRadius: BorderRadius.vertical(
-                  top: Radius.circular(28),
-                ),
+                borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
               ),
               clipBehavior: Clip.antiAlias,
               builder: (_) => FractionallySizedBox(
@@ -989,7 +1072,10 @@ class _IncomingRequestTile extends StatelessWidget {
                 IconButton(
                   tooltip: 'Refuser',
                   onPressed: onBlock,
-                  icon: const Icon(Icons.cancel_rounded, color: Color(0xFFFF9F9F)),
+                  icon: const Icon(
+                    Icons.cancel_rounded,
+                    color: Color(0xFFFF9F9F),
+                  ),
                 ),
               ],
             ),
@@ -1014,11 +1100,9 @@ class _OutgoingRequestTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final details = request.friendDetails;
-    final user = details ?? UserModel(
-      id: request.friendId,
-      username: 'Utilisateur',
-      email: '',
-    );
+    final user =
+        details ??
+        UserModel(id: request.friendId, username: 'Utilisateur', email: '');
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 6),
@@ -1033,9 +1117,7 @@ class _OutgoingRequestTile extends StatelessWidget {
               isScrollControlled: true,
               backgroundColor: Colors.transparent,
               shape: const RoundedRectangleBorder(
-                borderRadius: BorderRadius.vertical(
-                  top: Radius.circular(28),
-                ),
+                borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
               ),
               clipBehavior: Clip.antiAlias,
               builder: (_) => FractionallySizedBox(
@@ -1099,7 +1181,10 @@ class _OutgoingRequestTile extends StatelessWidget {
                       const SizedBox(height: 2),
                       const Text(
                         'En attente',
-                        style: TextStyle(color: AppColors.cDBE7FE, fontSize: 13),
+                        style: TextStyle(
+                          color: AppColors.cDBE7FE,
+                          fontSize: 13,
+                        ),
                       ),
                     ],
                   ),
@@ -1107,7 +1192,10 @@ class _OutgoingRequestTile extends StatelessWidget {
                 IconButton(
                   tooltip: 'Annuler',
                   onPressed: onCancel,
-                  icon: const Icon(Icons.close_rounded, color: AppColors.cFCFAFE),
+                  icon: const Icon(
+                    Icons.close_rounded,
+                    color: AppColors.cFCFAFE,
+                  ),
                 ),
               ],
             ),

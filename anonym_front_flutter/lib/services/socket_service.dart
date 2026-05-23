@@ -29,6 +29,7 @@ class SocketService {
   void connect({
     String? authToken,
     void Function(ChannelMessageModel message)? onNewMessage,
+    void Function(Map<String, dynamic> payload)? onFriendRequestReceived,
     void Function(String message)? onMessageError,
     void Function(List<dynamic> payload)? onLocationSnapshot,
     void Function(Map<String, dynamic> payload)? onLocationUpdate,
@@ -37,6 +38,7 @@ class SocketService {
   }) {
     if (_socket != null) {
       _registerMessageErrorListener(onMessageError);
+      _registerFriendRequestListener(onFriendRequestReceived);
       _registerLiveLocationListeners(
         onLocationSnapshot: onLocationSnapshot,
         onLocationUpdate: onLocationUpdate,
@@ -72,6 +74,7 @@ class SocketService {
         }
       });
     }
+    _registerFriendRequestListener(onFriendRequestReceived);
 
     _registerMessageErrorListener(onMessageError);
     _registerLiveLocationListeners(
@@ -94,6 +97,17 @@ class SocketService {
     _socket!.on('presenceUpdated', (data) {
       if (onPresenceUpdated == null || data is! Map) return;
       onPresenceUpdated(Map<String, dynamic>.from(data));
+    });
+  }
+
+  void _registerFriendRequestListener(
+    void Function(Map<String, dynamic> payload)? onFriendRequestReceived,
+  ) {
+    if (_socket == null) return;
+    _socket!.off('friendRequestReceived');
+    _socket!.on('friendRequestReceived', (data) {
+      if (onFriendRequestReceived == null || data is! Map) return;
+      onFriendRequestReceived(Map<String, dynamic>.from(data));
     });
   }
 
