@@ -107,10 +107,23 @@ class AppController extends ChangeNotifier with WidgetsBindingObserver {
   final Map<int, LiveUserLocationModel> _liveLocationsByUserId = {};
   final Map<int, String> _presenceByUserId = {};
   String? _manualPresenceOverride;
+  bool _isAppInForeground = true;
+  Timer? _socialRefreshDebounce;
+  bool _isRefreshingSocialState = false;
+  bool _hasQueuedSocialRefresh = false;
+  Timer? _sessionKeepAliveTimer;
+  bool _isRecoveringSocketSession = false;
+  DateTime? _lastSocketRecoveryAt;
+
+  void _rtLog(String message) {
+    // ignore: avoid_print
+    print('[FRIENDS-RT-FLUTTER] $message');
+  }
 
   bool get isBootstrapping => _isBootstrapping;
   bool get isLoadingMessages => _isLoadingMessages;
   bool get isSubmitting => _isSubmitting;
+  bool get isSocketConnected => _socketService.isConnected;
   String? get errorMessage => _errorMessage;
   String? get messageError => _messageError;
 
@@ -232,8 +245,6 @@ class AppController extends ChangeNotifier with WidgetsBindingObserver {
         refreshInventory(silent: true),
         refreshInvoices(silent: true),
       ]);
-      _rebuildPendingFriendRequestNotifications();
-      _rebuildChannelUnreadNotifications();
     } catch (e) {
       _errorMessage = ApiErrorParser.parse(
         e,
@@ -496,6 +507,7 @@ class AppController extends ChangeNotifier with WidgetsBindingObserver {
     await _wrap(() async {
       await _friendsRepository.unblockUserById(userId);
       await Future.wait([
+        refreshFriends(silent: true),
         refreshBlockedUsers(silent: true),
         refreshFriendRequests(silent: true),
       ]);
@@ -506,6 +518,7 @@ class AppController extends ChangeNotifier with WidgetsBindingObserver {
     await _wrap(() async {
       await _friendsRepository.blockUserById(userId);
       await Future.wait([
+        refreshFriends(silent: true),
         refreshBlockedUsers(silent: true),
         refreshFriendRequests(silent: true),
       ]);
@@ -615,12 +628,46 @@ class AppController extends ChangeNotifier with WidgetsBindingObserver {
     final normalized = content.trim();
     if (selected == null || userId == null || normalized.isEmpty) return;
     _messageError = null;
-    _socketService.sendPrivateMessage(
-      senderId: userId,
-      content: normalized,
-      channelId: selected.channelId,
-    );
-    notifyListeners();
+    if (_socketService.isConnected) {
+      _socketService.sendPrivateMessage(
+        senderId: userId,
+        content: normalized,
+        channelId: selected.channelId,
+      );
+      notifyListeners();
+      return;
+    }
+
+    await _recoverSocketSession(reason: 'send_message_socket_disconnected');
+    if (_socketService.isConnected) {
+      _socketService.sendPrivateMessage(
+        senderId: userId,
+        content: normalized,
+        channelId: selected.channelId,
+      );
+      notifyListeners();
+      return;
+    }
+
+    try {
+      final message = await _privateMessageRepository.sendWithImage(
+        channelId: selected.channelId,
+        content: normalized,
+      );
+      final alreadyExists = _messages.any(
+        (m) => m.messageId == message.messageId,
+      );
+      if (!alreadyExists) {
+        _messages = [..._messages, message];
+      }
+      notifyListeners();
+    } catch (e) {
+      _messageError = ApiErrorParser.parse(
+        e,
+        fallback: 'Envoi message impossible',
+      );
+      notifyListeners();
+    }
   }
 
   Future<void> sendMessageWithImage({
@@ -706,7 +753,43 @@ class AppController extends ChangeNotifier with WidgetsBindingObserver {
       _channelMembers = await _channelRepository.readChannelUsers(
         selected.channelId,
       );
+      await refreshChannels(silent: true);
     }, fallbackMessage: 'Invitation impossible');
+  }
+
+  Future<void> removeMemberFromSelectedChannel(int userId) async {
+    final selected = _selectedChannel;
+    final currentUserId = _authController.user?.id;
+    if (selected == null || currentUserId == null) return;
+
+    if (selected.channelType.trim().toUpperCase() == 'PRIVATE_DM') {
+      _errorMessage = 'Action indisponible sur une conversation privee.';
+      notifyListeners();
+      return;
+    }
+
+    if (selected.createdBy != currentUserId) {
+      _errorMessage = 'Seul l hote du groupe peut exclure un membre.';
+      notifyListeners();
+      return;
+    }
+
+    if (userId == currentUserId) {
+      _errorMessage = 'L hote ne peut pas s exclure lui-meme.';
+      notifyListeners();
+      return;
+    }
+
+    await _wrap(() async {
+      await _channelRepository.removeMember(
+        channelId: selected.channelId,
+        userId: userId,
+      );
+      _channelMembers = await _channelRepository.readChannelUsers(
+        selected.channelId,
+      );
+      await refreshChannels(silent: true);
+    }, fallbackMessage: 'Impossible d exclure ce membre');
   }
 
   Future<void> leaveSelectedChannel() async {
@@ -1031,12 +1114,14 @@ class AppController extends ChangeNotifier with WidgetsBindingObserver {
     if (_notifications.isEmpty) return;
     var didChange = false;
     final nextReadIds = <String>{..._readNotificationIds};
-    final next = _notifications.map((item) {
-      nextReadIds.add(item.id);
-      if (item.isRead) return item;
-      didChange = true;
-      return item.copyWith(isRead: true);
-    }).toList(growable: false);
+    final next = _notifications
+        .map((item) {
+          nextReadIds.add(item.id);
+          if (item.isRead) return item;
+          didChange = true;
+          return item.copyWith(isRead: true);
+        })
+        .toList(growable: false);
     if (!didChange && nextReadIds.length == _readNotificationIds.length) return;
     _notifications = next;
     _readNotificationIds = nextReadIds;
@@ -1059,17 +1144,8 @@ class AppController extends ChangeNotifier with WidgetsBindingObserver {
   }
 
   Future<void> _bootForLoggedInUser() async {
-    _socketService.connect(
-      authToken: _apiClient.authToken,
-      onNewMessage: _onNewMessageFromSocket,
-      onFriendRequestReceived: _onFriendRequestReceivedFromSocket,
-      onMessageError: _onMessageErrorFromSocket,
-      onLocationSnapshot: _onLocationSnapshotFromSocket,
-      onLocationUpdate: _onLocationUpdateFromSocket,
-      onLocationRemove: _onLocationRemoveFromSocket,
-      onPresenceUpdated: _onPresenceUpdatedFromSocket,
-    );
-    _socketService.requestLiveLocationsSnapshot();
+    await _connectSocketWithLatestAuth();
+    _startSessionKeepAlive();
     await refreshAll();
     await _setupPushNotifications();
     await _applyLifecyclePresence(
@@ -1077,20 +1153,127 @@ class AppController extends ChangeNotifier with WidgetsBindingObserver {
     );
   }
 
+  Future<void> _connectSocketWithLatestAuth() async {
+    final socketAuthHeaders = await _apiClient.buildSocketAuthHeaders();
+    final socketAuthToken = await _apiClient.buildSocketAuthToken();
+    _rtLog(
+      'boot socket user=${_authController.user?.id} hasToken=${socketAuthToken != null && socketAuthToken.trim().isNotEmpty}',
+    );
+    _socketService.connect(
+      authToken: socketAuthToken ?? _apiClient.authToken,
+      authHeaders: socketAuthHeaders,
+      onConnectError: _onSocketConnectError,
+      onNewMessage: _onNewMessageFromSocket,
+      onFriendRequestReceived: _onFriendRequestReceivedFromSocket,
+      onFriendRequestSent: _onFriendRequestSentFromSocket,
+      onFriendRequestResponded: _onFriendRequestRespondedFromSocket,
+      onFriendRequestCancelled: _onFriendRequestCancelledFromSocket,
+      onFriendshipBlocked: _onFriendshipBlockedFromSocket,
+      onFriendshipUnblocked: _onFriendshipUnblockedFromSocket,
+      onFriendshipDeleted: _onFriendshipDeletedFromSocket,
+      onFriendsStateUpdated: _onFriendsStateUpdatedFromSocket,
+      onChannelInvited: _onChannelInvitedFromSocket,
+      onChannelMemberRemoved: _onChannelMemberRemovedFromSocket,
+      onUserProfileUpdated: _onUserProfileUpdatedFromSocket,
+      onMessageError: _onMessageErrorFromSocket,
+      onLocationSnapshot: _onLocationSnapshotFromSocket,
+      onLocationUpdate: _onLocationUpdateFromSocket,
+      onLocationRemove: _onLocationRemoveFromSocket,
+      onPresenceUpdated: _onPresenceUpdatedFromSocket,
+    );
+    _socketService.requestLiveLocationsSnapshot();
+  }
+
+  void _startSessionKeepAlive() {
+    _sessionKeepAliveTimer?.cancel();
+    _sessionKeepAliveTimer = Timer.periodic(const Duration(minutes: 8), (_) {
+      unawaited(_performSessionKeepAliveTick());
+    });
+  }
+
+  void _stopSessionKeepAlive() {
+    _sessionKeepAliveTimer?.cancel();
+    _sessionKeepAliveTimer = null;
+  }
+
+  Future<void> _performSessionKeepAliveTick() async {
+    if (!_authController.isLoggedIn) return;
+    if (!_isAppInForeground) return;
+    try {
+      final refreshed = await _apiClient.refreshSession();
+      _rtLog('session keepalive refreshed=$refreshed');
+      if (!refreshed) return;
+      if (_socketService.isConnected) return;
+      await _recoverSocketSession(reason: 'keepalive_socket_disconnected');
+    } catch (_) {
+      // Best-effort keepalive; retry next tick.
+    }
+  }
+
+  void _onSocketConnectError(dynamic error) {
+    final message = error?.toString() ?? '';
+    _rtLog('socket connect_error callback=$message');
+    if (!_isSocketAuthError(message)) return;
+    unawaited(_recoverSocketSession(reason: 'socket_auth_error'));
+  }
+
+  bool _isSocketAuthError(String message) {
+    final normalized = message.toLowerCase();
+    return normalized.contains('auth') ||
+        normalized.contains('jwt') ||
+        normalized.contains('expired') ||
+        normalized.contains('token');
+  }
+
+  Future<void> _recoverSocketSession({required String reason}) async {
+    if (_isRecoveringSocketSession) return;
+    final now = DateTime.now();
+    final last = _lastSocketRecoveryAt;
+    if (last != null && now.difference(last) < const Duration(seconds: 10)) {
+      return;
+    }
+
+    _isRecoveringSocketSession = true;
+    _lastSocketRecoveryAt = now;
+    _rtLog('socket recover start reason=$reason');
+    try {
+      final refreshed = await _apiClient.refreshSession();
+      _rtLog('socket recover refreshSession=$refreshed');
+      if (!refreshed) return;
+
+      _socketService.disconnect();
+      await _connectSocketWithLatestAuth();
+      _scheduleSocialStateRefresh();
+    } catch (error) {
+      _rtLog('socket recover failed error=$error');
+    } finally {
+      _isRecoveringSocketSession = false;
+    }
+  }
+
   void _onNewMessageFromSocket(ChannelMessageModel message) {
-    _pushNewMessageNotification(message);
+    if (_shouldStoreInAppNotifications) {
+      _pushNewMessageNotification(message);
+    }
+    final incomingChannelId = message.channelId;
     if (_selectedChannel == null) {
+      refreshChannels(silent: true);
+      return;
+    }
+    if (incomingChannelId <= 0 ||
+        incomingChannelId != _selectedChannel!.channelId) {
       refreshChannels(silent: true);
       return;
     }
     final enriched = ChannelMessageModel(
       messageId: message.messageId,
       content: message.content,
-      channelId: _selectedChannel!.channelId,
+      channelId: incomingChannelId,
       senderId: message.senderId,
       status: message.status,
       createdAt: message.createdAt,
       sender: message.sender,
+      imageUrl: message.imageUrl,
     );
     _messages = [..._messages, enriched];
     notifyListeners();
@@ -1098,6 +1281,7 @@ class AppController extends ChangeNotifier with WidgetsBindingObserver {
   }
 
   void _onFriendRequestReceivedFromSocket(Map<String, dynamic> payload) {
+    _rtLog('onFriendRequestReceived payload=$payload');
     final senderRaw = payload['sender'];
     final sender = senderRaw is Map<String, dynamic>
         ? senderRaw
@@ -1105,7 +1289,9 @@ class AppController extends ChangeNotifier with WidgetsBindingObserver {
         ? Map<String, dynamic>.from(senderRaw)
         : const <String, dynamic>{};
 
-    final senderId = _toInt(sender['id'] ?? sender['userId'] ?? sender['user_id']);
+    final senderId = _toInt(
+      sender['id'] ?? sender['userId'] ?? sender['user_id'],
+    );
     final meId = _authController.user?.id;
     if (meId != null && senderId == meId) return;
 
@@ -1115,18 +1301,328 @@ class AppController extends ChangeNotifier with WidgetsBindingObserver {
     );
     final requestId = _toInt(payload['requestId'] ?? payload['request_id']);
 
+    if (_shouldStoreInAppNotifications) {
+      _prependNotification(
+        AppNotificationModel(
+          id: 'fr-$requestId-${createdAt.microsecondsSinceEpoch}',
+          type: AppNotificationType.friendRequest,
+          title: "Vous avez recu une demande d'ami de $username",
+          subtitle: _formatNotificationTime(createdAt),
+          createdAt: createdAt,
+          avatarUrl: sender['avatar']?.toString(),
+          relatedUserId: senderId > 0 ? senderId : null,
+        ),
+      );
+    }
+    _upsertIncomingRequestFromSocket(
+      payload: payload,
+      sender: sender,
+      senderId: senderId,
+      meId: meId,
+    );
+    _scheduleSocialStateRefresh(delay: const Duration(milliseconds: 180));
+  }
+
+  void _onFriendRequestRespondedFromSocket(Map<String, dynamic> payload) {
+    _rtLog('onFriendRequestResponded payload=$payload');
+    _scheduleSocialStateRefresh();
+  }
+
+  void _onFriendRequestSentFromSocket(Map<String, dynamic> payload) {
+    _rtLog('onFriendRequestSent payload=$payload');
+    _scheduleSocialStateRefresh();
+  }
+
+  void _onFriendRequestCancelledFromSocket(Map<String, dynamic> payload) {
+    _rtLog('onFriendRequestCancelled payload=$payload');
+    _scheduleSocialStateRefresh();
+  }
+
+  void _onFriendshipBlockedFromSocket(Map<String, dynamic> payload) {
+    _rtLog('onFriendshipBlocked payload=$payload');
+    _scheduleSocialStateRefresh();
+    unawaited(refreshChannels(silent: true));
+  }
+
+  void _onFriendshipUnblockedFromSocket(Map<String, dynamic> payload) {
+    _rtLog('onFriendshipUnblocked payload=$payload');
+    _scheduleSocialStateRefresh();
+  }
+
+  void _onFriendshipDeletedFromSocket(Map<String, dynamic> payload) {
+    _rtLog('onFriendshipDeleted payload=$payload');
+    _scheduleSocialStateRefresh();
+    unawaited(refreshChannels(silent: true));
+  }
+
+  void _onFriendsStateUpdatedFromSocket(Map<String, dynamic> payload) {
+    _rtLog('onFriendsStateUpdated payload=$payload');
+    _scheduleSocialStateRefresh();
+    unawaited(refreshChannels(silent: true));
+  }
+
+  void _onChannelInvitedFromSocket(Map<String, dynamic> payload) {
+    unawaited(refreshChannels(silent: true));
+    if (!_shouldStoreInAppNotifications) return;
+    final now = DateTime.now();
+    final channelName = (payload['channelName'] ?? payload['name'] ?? 'groupe')
+        .toString()
+        .trim();
+    final channelId = _toInt(payload['channelId'] ?? payload['channel_id']);
     _prependNotification(
       AppNotificationModel(
-        id: 'fr-$requestId-${createdAt.microsecondsSinceEpoch}',
-        type: AppNotificationType.friendRequest,
-        title: "Vous avez recu une demande d'ami de $username",
-        subtitle: _formatNotificationTime(createdAt),
-        createdAt: createdAt,
-        avatarUrl: sender['avatar']?.toString(),
-        relatedUserId: senderId > 0 ? senderId : null,
+        id: 'channel-invite-${channelId > 0 ? channelId : now.microsecondsSinceEpoch}',
+        type: AppNotificationType.newMessage,
+        title: 'Invitation recue',
+        subtitle: channelName.isEmpty ? 'Nouveau groupe' : channelName,
+        createdAt: now,
+        relatedChannelId: channelId > 0 ? channelId : null,
       ),
     );
-    refreshFriendRequests(silent: true);
+  }
+
+  void _onChannelMemberRemovedFromSocket(Map<String, dynamic> payload) {
+    final channelId = _toInt(payload['channelId'] ?? payload['channel_id']);
+    final removedUserId = _toInt(
+      payload['removedUserId'] ?? payload['removed_user_id'],
+    );
+    final currentUserId = _authController.user?.id;
+
+    unawaited(refreshChannels(silent: true));
+
+    final selected = _selectedChannel;
+    if (selected == null || selected.channelId != channelId) return;
+
+    if (currentUserId != null && removedUserId == currentUserId) {
+      _selectedChannel = null;
+      _messages = const [];
+      _channelMembers = const [];
+      notifyListeners();
+      return;
+    }
+
+    unawaited(() async {
+      try {
+        _channelMembers = await _channelRepository.readChannelUsers(channelId);
+        notifyListeners();
+      } catch (_) {
+        // Keep real-time refresh best-effort for this event.
+      }
+    }());
+  }
+
+  void _onUserProfileUpdatedFromSocket(Map<String, dynamic> payload) {
+    final userId = _toInt(
+      payload['userId'] ?? payload['user_id'] ?? payload['id'],
+    );
+    if (userId <= 0) return;
+    final usernameRaw = payload['username']?.toString();
+    final avatarRaw = payload['avatar']?.toString();
+    final bioRaw = payload['bio']?.toString();
+    final statusRaw = payload['presence_status'] ?? payload['presenceStatus'];
+    final normalizedPresence = PresenceUtils.normalize(statusRaw?.toString());
+
+    var didChange = false;
+    _allUsers = _allUsers
+        .map((user) {
+          if (user.id != userId) return user;
+          didChange = true;
+          return user.copyWith(
+            username: usernameRaw?.trim().isNotEmpty == true
+                ? usernameRaw?.trim()
+                : user.username,
+            avatar: avatarRaw ?? user.avatar,
+            bio: bioRaw ?? user.bio,
+            presenceStatus: normalizedPresence,
+          );
+        })
+        .toList(growable: false);
+
+    UserModel withUpdatedProfile(UserModel source) {
+      return source.copyWith(
+        username: usernameRaw?.trim().isNotEmpty == true
+            ? usernameRaw!.trim()
+            : source.username,
+        avatar: avatarRaw ?? source.avatar,
+        bio: bioRaw ?? source.bio,
+        presenceStatus: normalizedPresence,
+      );
+    }
+
+    FriendModel updateFriendModelWithDetails(FriendModel friend) {
+      final details = friend.friendDetails;
+      if (details == null || details.id != userId) return friend;
+      didChange = true;
+      return FriendModel(
+        id: friend.id,
+        userId: friend.userId,
+        friendId: friend.friendId,
+        status: friend.status,
+        friendDetails: withUpdatedProfile(details),
+      );
+    }
+
+    _friends = _friends
+        .map(updateFriendModelWithDetails)
+        .toList(growable: false);
+    _incomingFriendRequests = _incomingFriendRequests
+        .map(updateFriendModelWithDetails)
+        .toList(growable: false);
+    _outgoingFriendRequests = _outgoingFriendRequests
+        .map(updateFriendModelWithDetails)
+        .toList(growable: false);
+
+    _blockedUsers = _blockedUsers
+        .map((user) {
+          if (user.id != userId) return user;
+          didChange = true;
+          return withUpdatedProfile(user);
+        })
+        .toList(growable: false);
+
+    UserModel? updateDmPeer(UserModel? peer) {
+      if (peer == null || peer.id != userId) return peer;
+      didChange = true;
+      return withUpdatedProfile(peer);
+    }
+
+    _channels = _channels
+        .map((channel) {
+          final dmPeer = updateDmPeer(channel.dmPeer);
+          if (identical(dmPeer, channel.dmPeer)) return channel;
+          return channel.copyWith(dmPeer: dmPeer);
+        })
+        .toList(growable: false);
+    _publicChannels = _publicChannels
+        .map((channel) {
+          final dmPeer = updateDmPeer(channel.dmPeer);
+          if (identical(dmPeer, channel.dmPeer)) return channel;
+          return channel.copyWith(dmPeer: dmPeer);
+        })
+        .toList(growable: false);
+    _selectedChannel = _selectedChannel?.copyWith(
+      dmPeer: updateDmPeer(_selectedChannel?.dmPeer),
+    );
+
+    _channelMembers = _channelMembers
+        .map((member) {
+          if (member.id != userId) return member;
+          didChange = true;
+          return withUpdatedProfile(member);
+        })
+        .toList(growable: false);
+
+    _messages = _messages
+        .map((message) {
+          final sender = message.sender;
+          if (sender == null || sender.id != userId) return message;
+          didChange = true;
+          return ChannelMessageModel(
+            messageId: message.messageId,
+            content: message.content,
+            channelId: message.channelId,
+            senderId: message.senderId,
+            status: message.status,
+            createdAt: message.createdAt,
+            sender: withUpdatedProfile(sender),
+            imageUrl: message.imageUrl,
+          );
+        })
+        .toList(growable: false);
+
+    _presenceByUserId[userId] = normalizedPresence;
+
+    final me = _authController.user;
+    if (me != null && me.id == userId) {
+      _authController.setUser(withUpdatedProfile(me));
+      didChange = true;
+    }
+
+    if (didChange) {
+      notifyListeners();
+    }
+  }
+
+  void _upsertIncomingRequestFromSocket({
+    required Map<String, dynamic> payload,
+    required Map<String, dynamic> sender,
+    required int senderId,
+    required int? meId,
+  }) {
+    if (senderId <= 0 || meId == null || meId <= 0) return;
+
+    final requestId = _toInt(payload['requestId'] ?? payload['request_id']);
+    if (requestId <= 0) return;
+
+    final senderUser = UserModel.fromJson(<String, dynamic>{
+      'id': senderId,
+      'username': sender['username'] ?? 'Utilisateur',
+      'email': sender['email'] ?? '',
+      'avatar': sender['avatar'],
+      'bio': sender['bio'],
+      'presence_status': sender['presence_status'] ?? sender['presenceStatus'],
+    });
+
+    final incoming = FriendModel(
+      id: requestId,
+      userId: senderId,
+      friendId: meId,
+      status: 'PENDING',
+      friendDetails: senderUser,
+    );
+
+    final existingIndex = _incomingFriendRequests.indexWhere(
+      (request) =>
+          request.id == requestId ||
+          (request.userId == senderId &&
+              request.status.trim().toUpperCase() == 'PENDING'),
+    );
+
+    if (existingIndex >= 0) {
+      final updated = [..._incomingFriendRequests];
+      updated[existingIndex] = incoming;
+      _incomingFriendRequests = updated;
+    } else {
+      _incomingFriendRequests = [incoming, ..._incomingFriendRequests];
+    }
+
+    _presenceByUserId[senderId] = PresenceUtils.normalize(
+      senderUser.presenceStatus,
+    );
+    notifyListeners();
+  }
+
+  void _scheduleSocialStateRefresh({Duration delay = Duration.zero}) {
+    _socialRefreshDebounce?.cancel();
+    _socialRefreshDebounce = Timer(delay, () {
+      unawaited(_runSocialStateRefresh());
+    });
+  }
+
+  Future<void> _runSocialStateRefresh() async {
+    if (_isRefreshingSocialState) {
+      _hasQueuedSocialRefresh = true;
+      return;
+    }
+    _isRefreshingSocialState = true;
+    try {
+      await _refreshSocialStateFromSocket();
+    } finally {
+      _isRefreshingSocialState = false;
+      if (_hasQueuedSocialRefresh) {
+        _hasQueuedSocialRefresh = false;
+        unawaited(_runSocialStateRefresh());
+      }
+    }
+  }
+
+  Future<void> _refreshSocialStateFromSocket() async {
+    await Future.wait([
+      refreshFriends(silent: true),
+      refreshFriendRequests(silent: true),
+      refreshBlockedUsers(silent: true),
+      refreshUsers(silent: true),
+    ]);
   }
 
   void _onMessageErrorFromSocket(String message) {
@@ -1241,6 +1737,7 @@ class AppController extends ChangeNotifier with WidgetsBindingObserver {
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
+    _isAppInForeground = state == AppLifecycleState.resumed;
     if (!_authController.isLoggedIn) return;
     if (_activeUserId == null) return;
     _applyLifecyclePresence(state);
@@ -1285,6 +1782,7 @@ class AppController extends ChangeNotifier with WidgetsBindingObserver {
   }
 
   void _sendInvisibleAndDisconnect() {
+    _stopSessionKeepAlive();
     final me = _authController.user;
     if (me != null && me.id > 0) {
       _accountRepository
@@ -1348,12 +1846,14 @@ class AppController extends ChangeNotifier with WidgetsBindingObserver {
 
   void _handleForegroundPushMessage(dynamic message) {
     if (message is! RemoteMessage) return;
-    _appendPushNotification(message);
+    if (_shouldStoreInAppNotifications) {
+      _appendPushNotification(message);
+    }
   }
 
   void _handlePushMessageOpen(dynamic message) {
     if (message is! RemoteMessage) return;
-    _appendPushNotification(message);
+    _appendPushNotification(message, forceStore: true);
     final channelId = _toInt(
       message.data['channelId'] ??
           message.data['channel_id'] ??
@@ -1364,16 +1864,21 @@ class AppController extends ChangeNotifier with WidgetsBindingObserver {
     }
   }
 
-  void _appendPushNotification(RemoteMessage message) {
+  void _appendPushNotification(
+    RemoteMessage message, {
+    bool forceStore = false,
+  }) {
+    if (!forceStore && !_shouldStoreInAppNotifications) return;
     final data = message.data;
     final eventType = (data['event'] ?? data['type'] ?? '').toString().trim();
     if (eventType == 'newMessage') {
       final senderId = _toInt(data['senderId'] ?? data['sender_id']);
       final meId = _authController.user?.id;
       if (meId != null && senderId == meId) return;
-      final senderName = (data['senderUsername'] ?? data['sender_username'] ?? '')
-          .toString()
-          .trim();
+      final senderName =
+          (data['senderUsername'] ?? data['sender_username'] ?? '')
+              .toString()
+              .trim();
       final channelId = _toInt(data['channelId'] ?? data['channel_id']);
       final now = DateTime.now();
       _prependNotification(
@@ -1393,9 +1898,10 @@ class AppController extends ChangeNotifier with WidgetsBindingObserver {
     }
     if (eventType == 'friendRequestReceived') {
       final senderId = _toInt(data['senderId'] ?? data['sender_id']);
-      final senderName = (data['senderUsername'] ?? data['sender_username'] ?? '')
-          .toString()
-          .trim();
+      final senderName =
+          (data['senderUsername'] ?? data['sender_username'] ?? '')
+              .toString()
+              .trim();
       final now = DateTime.now();
       _prependNotification(
         AppNotificationModel(
@@ -1466,57 +1972,16 @@ class AppController extends ChangeNotifier with WidgetsBindingObserver {
   }
 
   void _prependNotification(AppNotificationModel value) {
-    final incoming = value.copyWith(isRead: _readNotificationIds.contains(value.id));
+    final incoming = value.copyWith(
+      isRead: _readNotificationIds.contains(value.id),
+    );
     final deduped = _notifications.where((item) => item.id != incoming.id);
     final next = <AppNotificationModel>[incoming, ...deduped];
     _notifications = next.take(100).toList(growable: false);
     notifyListeners();
   }
 
-  void _rebuildPendingFriendRequestNotifications() {
-    for (final request in _incomingFriendRequests) {
-      final status = request.status.trim().toUpperCase();
-      if (status != 'PENDING') continue;
-      final username =
-          request.friendDetails?.username.trim().isNotEmpty == true
-          ? request.friendDetails!.username.trim()
-          : 'Utilisateur';
-      _prependNotification(
-        AppNotificationModel(
-          id: 'fr-pending-${request.id}',
-          type: AppNotificationType.friendRequest,
-          title: "Vous avez recu une demande d'ami de $username",
-          subtitle: 'En attente',
-          createdAt: DateTime.now(),
-          avatarUrl: request.friendDetails?.avatar,
-          relatedUserId: request.friendId > 0 ? request.friendId : null,
-        ),
-      );
-    }
-  }
-
-  void _rebuildChannelUnreadNotifications() {
-    for (final channel in _channels) {
-      if (channel.unreadCount <= 0) continue;
-      final countLabel = channel.unreadCount > 1
-          ? '${channel.unreadCount} nouveaux messages'
-          : '1 nouveau message';
-      _prependNotification(
-        AppNotificationModel(
-          id: 'ch-unread-${channel.channelId}',
-          type: AppNotificationType.newMessage,
-          title: countLabel,
-          subtitle: channel.name.trim().isEmpty
-              ? 'Conversation'
-              : channel.name.trim(),
-          createdAt: DateTime.now(),
-          avatarUrl: channel.dmPeer?.avatar ?? channel.coverImage,
-          relatedUserId: channel.dmPeer?.id,
-          relatedChannelId: channel.channelId,
-        ),
-      );
-    }
-  }
+  bool get _shouldStoreInAppNotifications => !_isAppInForeground;
 
   Future<void> _loadReadNotificationIds() async {
     final meId = _authController.user?.id;
@@ -1525,7 +1990,9 @@ class AppController extends ChangeNotifier with WidgetsBindingObserver {
       return;
     }
     final prefs = await SharedPreferences.getInstance();
-    final stored = prefs.getStringList(_readNotificationsStorageKey(meId)) ?? const <String>[];
+    final stored =
+        prefs.getStringList(_readNotificationsStorageKey(meId)) ??
+        const <String>[];
     _readNotificationIds = stored.toSet();
   }
 
@@ -1597,8 +2064,7 @@ class AppController extends ChangeNotifier with WidgetsBindingObserver {
         .toList(growable: false);
 
     discoverGroups.sort(
-      (a, b) =>
-          (b.reputationScore ?? 0).compareTo(a.reputationScore ?? 0),
+      (a, b) => (b.reputationScore ?? 0).compareTo(a.reputationScore ?? 0),
     );
     return discoverGroups.take(10).toList(growable: false);
   }
@@ -1658,6 +2124,13 @@ class AppController extends ChangeNotifier with WidgetsBindingObserver {
     _allUsers = const [];
     _liveLocationsByUserId.clear();
     _presenceByUserId.clear();
+    _socialRefreshDebounce?.cancel();
+    _socialRefreshDebounce = null;
+    _stopSessionKeepAlive();
+    _isRecoveringSocketSession = false;
+    _lastSocketRecoveryAt = null;
+    _isRefreshingSocialState = false;
+    _hasQueuedSocialRefresh = false;
     _manualPresenceOverride = null;
     _errorMessage = null;
     _messageError = null;
@@ -1679,6 +2152,8 @@ class AppController extends ChangeNotifier with WidgetsBindingObserver {
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _authController.removeListener(_authListener);
+    _socialRefreshDebounce?.cancel();
+    _stopSessionKeepAlive();
     _socketService.disconnect();
     _pushTokenRefreshSubscription?.cancel();
     _pushOpenedAppSubscription?.cancel();

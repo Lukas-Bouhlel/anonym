@@ -1,5 +1,6 @@
 import 'dart:ui';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
@@ -19,13 +20,20 @@ class MojiGlassBottomNav extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final platform = Theme.of(context).platform;
+    final isMobile =
+        !kIsWeb &&
+        (platform == TargetPlatform.android || platform == TargetPlatform.iOS);
+    final extraLift = isMobile ? 12.0 : 0.0;
+
     return SafeArea(
       top: false,
       left: false,
       right: false,
-      minimum: const EdgeInsets.only(bottom: 12),
+      maintainBottomViewPadding: true,
+      minimum: EdgeInsets.only(bottom: isMobile ? 24 : 20),
       child: Padding(
-        padding: const EdgeInsets.only(left: 16, right: 16, top: 8),
+        padding: EdgeInsets.fromLTRB(16, 8, 16, extraLift),
         child: ClipRRect(
           borderRadius: BorderRadius.circular(24),
           child: BackdropFilter(

@@ -90,10 +90,13 @@ app.use(express.json());
  */
 const limiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 500, // Limite chaque IP à 500 requêtes par fenêtre
+    max: Number(process.env.RATE_LIMIT_WRITE_MAX || 1200),
     validate: {trustProxy: false},
+    standardHeaders: true,
+    legacyHeaders: false,
+    skip: (req) => ['GET', 'HEAD', 'OPTIONS'].includes((req.method || '').toUpperCase()),
     message: {
-        message: "Trop de requêtes effectuées depuis cette adresse IP, veuillez réessayer plus tard.",
+        message: "Trop de requetes d'ecriture effectuees depuis cette adresse IP, veuillez reessayer plus tard.",
     },
 });
 
@@ -110,8 +113,9 @@ app.use(limiter);
  */
 const speedLimiter = slowDown({
     windowMs: 15 * 60 * 1000, // Période de 15 minutes
-    delayAfter: 50, // Commence à ralentir les requêtes après 50 requêtes dans la fenêtre
-    delayMs: () => 500, // Délai fixe de 500 ms par requête supplémentaire
+    delayAfter: Number(process.env.RATE_LIMIT_WRITE_DELAY_AFTER || 250),
+    delayMs: () => Number(process.env.RATE_LIMIT_WRITE_DELAY_MS || 150),
+    skip: (req) => ['GET', 'HEAD', 'OPTIONS'].includes((req.method || '').toUpperCase()),
     validate: {trustProxy: false}
 });
 

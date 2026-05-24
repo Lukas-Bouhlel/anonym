@@ -229,10 +229,9 @@ class _ChatDetailViewState extends State<_ChatDetailView> {
         : widget.selected.coverImage;
 
     return SafeArea(
-      bottom: false,
+      maintainBottomViewPadding: true,
       child: Column(
         children: [
-          // ── Header ──────────────────────────────────────────────────────
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 10, 20, 14),
             child: Row(
@@ -611,7 +610,7 @@ class _ChatDetailViewState extends State<_ChatDetailView> {
                             borderRadius: BorderRadius.circular(25),
                           ),
                           child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.end,
+                            crossAxisAlignment: CrossAxisAlignment.center,
                             children: [
                               _GradientSquareIcon(
                                 icon: Icons.add,
@@ -625,7 +624,7 @@ class _ChatDetailViewState extends State<_ChatDetailView> {
                                   textInputAction: TextInputAction.newline,
                                   minLines: 1,
                                   maxLines: 5,
-                                  textAlignVertical: TextAlignVertical.bottom,
+                                  textAlignVertical: TextAlignVertical.center,
                                   onSubmitted: (_) => _handleSend(),
                                   cursorColor: AppColors.whiteColor,
                                   style: const TextStyle(
@@ -653,7 +652,7 @@ class _ChatDetailViewState extends State<_ChatDetailView> {
                                     focusedErrorBorder: InputBorder.none,
                                     contentPadding: const EdgeInsets.symmetric(
                                       horizontal: 8,
-                                      vertical: 14,
+                                      vertical: 10,
                                     ),
                                     isCollapsed: true,
                                   ),
@@ -837,6 +836,7 @@ class _MessageBubble extends StatelessWidget {
       bottomRight: Radius.circular(own ? 14 : 0),
     );
     final startsBlock = own ? showOwnAuthorBlock : showAuthorBlock;
+    final showIdentityOnThisMessage = own ? startsBlock : true;
     final avatarUrl = own ? ownAvatarUrl : senderAvatarUrl;
     final frameUrl = own ? ownFrameUrl : senderFrameUrl;
     final displayName = own ? ownName : senderName;
@@ -844,7 +844,7 @@ class _MessageBubble extends StatelessWidget {
     final hasImage = message.imageUrl != null && message.imageUrl!.isNotEmpty;
     final hasText = message.content.trim().isNotEmpty;
 
-    final avatar = startsBlock
+    final avatar = showIdentityOnThisMessage
         ? GestureDetector(
             onTap: (!own) ? onAvatarTap : null,
             child: _ChatMessageAvatar(avatarUrl: avatarUrl, frameUrl: frameUrl),
@@ -857,7 +857,7 @@ class _MessageBubble extends StatelessWidget {
             ? CrossAxisAlignment.start
             : CrossAxisAlignment.end,
         children: [
-          if (startsBlock) ...[
+          if (showIdentityOnThisMessage) ...[
             Transform.translate(
               offset: const Offset(0, 8),
               child: Padding(

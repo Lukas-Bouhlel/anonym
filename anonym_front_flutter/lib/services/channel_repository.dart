@@ -103,6 +103,19 @@ class ChannelRepository {
     }
   }
 
+  Future<void> removeMember({
+    required int channelId,
+    required int userId,
+  }) async {
+    try {
+      await _dio.delete<void>('/api/channels/$channelId/members/$userId');
+    } on DioException catch (e) {
+      final statusCode = e.response?.statusCode ?? 0;
+      if (statusCode != 404 && statusCode != 405) rethrow;
+      await _dio.delete<void>('/api/channel/$channelId/members/$userId');
+    }
+  }
+
   Future<List<ChannelModel>> readUserChannels({String? filter}) async {
     List<dynamic>? payload;
     final query = <String, dynamic>{};

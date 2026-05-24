@@ -78,6 +78,10 @@ const ChannelMessages = ({ user, socket, channel, setPage }) => {
     useEffect(() => {
         if (socket) {
             socket.on('newMessage', (messageData) => {
+                const incomingChannelId = Number(messageData?.channelId ?? messageData?.channel_id ?? 0);
+                if (Number(channelId) > 0 && incomingChannelId > 0 && incomingChannelId !== Number(channelId)) {
+                    return;
+                }
                 setMessages((prevMessages) => [...prevMessages, messageData]);
             });
 
@@ -85,7 +89,7 @@ const ChannelMessages = ({ user, socket, channel, setPage }) => {
                 socket.off('newMessage'); // Nettoyage
             };
         }
-    }, [socket]);
+    }, [socket, channelId]);
 
     // Rejoindre le chanal et écouter les messages
     useEffect(() => {

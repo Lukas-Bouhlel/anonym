@@ -19,6 +19,7 @@ router.get('/user', authMiddleware, channelCtrl.getUserChannels);
 router.get('/:id/unreadCount', authMiddleware, channelCtrl.getUnreadMessageCount);
 router.get('/:id/users', authMiddleware, channelCtrl.getChannelUsers);
 router.get('/:id/messages', authMiddleware, channelCtrl.getChannelMessages);
+router.delete('/:id/members/:userId', authMiddleware, channelCtrl.removeMember);
 router.delete('/leave/:id', authMiddleware, channelCtrl.leaveChannel);
 router.delete('/:id', authMiddleware, channelCtrl.deleteChannel);
 

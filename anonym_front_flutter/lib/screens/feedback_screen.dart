@@ -9,10 +9,7 @@ import '../widgets/chrome/moji_back_button.dart';
 import '../widgets/modals/moji_confirm_modal.dart';
 
 class FeedbackScreen extends StatefulWidget {
-  const FeedbackScreen({
-    super.key,
-    this.confirmBeforeSubmit = false,
-  });
+  const FeedbackScreen({super.key, this.confirmBeforeSubmit = false});
 
   final bool confirmBeforeSubmit;
 
@@ -26,7 +23,8 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
   bool _submitting = false;
 
   bool get _isValid =>
-      _subjectCtrl.text.trim().isNotEmpty && _messageCtrl.text.trim().isNotEmpty;
+      _subjectCtrl.text.trim().isNotEmpty &&
+      _messageCtrl.text.trim().isNotEmpty;
 
   @override
   void dispose() {
@@ -64,9 +62,7 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
         content: 'Sujet: $subject\n\n$message',
       );
       if (!mounted) return;
-      messenger.showSnackBar(
-        const SnackBar(content: Text('Feedback envoye')),
-      );
+      messenger.showSnackBar(const SnackBar(content: Text('Feedback envoye')));
       navigator.pop();
     } catch (error) {
       if (!mounted) return;
@@ -116,7 +112,7 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
             ),
           ),
           SafeArea(
-            bottom: false,
+            maintainBottomViewPadding: true,
             child: Padding(
               padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
               child: Column(
@@ -172,7 +168,9 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
                     child: SizedBox(
                       width: double.infinity,
                       child: FilledButton(
-                        onPressed: (_isValid && !_submitting) ? _onSubmit : null,
+                        onPressed: (_isValid && !_submitting)
+                            ? _onSubmit
+                            : null,
                         style: FilledButton.styleFrom(
                           backgroundColor: AppColors.whiteColor,
                           foregroundColor: AppColors.c393566,

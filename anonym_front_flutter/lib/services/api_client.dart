@@ -9,10 +9,9 @@ import 'package:path_provider/path_provider.dart';
 import '../utils/app_config.dart';
 
 class ApiClient {
-  ApiClient({
-    CookieJar? cookieJar,
-  }) : _cookieJar = cookieJar ?? CookieJar(),
-       dio = Dio(
+  ApiClient({CookieJar? cookieJar})
+    : _cookieJar = cookieJar ?? CookieJar(),
+      dio = Dio(
         BaseOptions(
           baseUrl: AppConfig.apiBaseUrl,
           connectTimeout: const Duration(seconds: 20),
@@ -34,9 +33,7 @@ class ApiClient {
     )..interceptors.add(CookieManager(_cookieJar));
   }
 
-  static Future<ApiClient> create({
-    CookieJar? cookieJar,
-  }) async {
+  static Future<ApiClient> create({CookieJar? cookieJar}) async {
     if (cookieJar != null) {
       return ApiClient(cookieJar: cookieJar);
     }
@@ -79,6 +76,33 @@ class ApiClient {
 
   Future<void> clearSessionData() async {
     await _cookieJar.deleteAll();
+  }
+
+  Future<Map<String, dynamic>> buildSocketAuthHeaders() async {
+    final uri = Uri.parse(AppConfig.apiBaseUrl);
+    final cookies = await _cookieJar.loadForRequest(uri);
+    if (cookies.isEmpty) return const <String, dynamic>{};
+    final cookieHeader = cookies
+        .map((cookie) => '${cookie.name}=${cookie.value}')
+        .join('; ');
+    if (cookieHeader.trim().isEmpty) return const <String, dynamic>{};
+    return <String, dynamic>{'Cookie': cookieHeader};
+  }
+
+  Future<String?> buildSocketAuthToken() async {
+    final uri = Uri.parse(AppConfig.apiBaseUrl);
+    final cookies = await _cookieJar.loadForRequest(uri);
+    for (final cookie in cookies) {
+      if (cookie.name != 'token') continue;
+      final value = cookie.value.trim();
+      if (value.isNotEmpty) return value;
+    }
+    return null;
+  }
+
+  Future<bool> refreshSession() async {
+    final outcome = await _refreshOrWait();
+    return outcome.refreshed;
   }
 
   Interceptor _buildAuthInterceptor() {
@@ -173,21 +197,43 @@ class ApiClient {
       final uri = Uri.parse(
         _refreshDio.options.baseUrl,
       ).replace(path: '/api/auth/refresh');
-      final csrfToken = await _readCsrfToken(uri);
-      final headers = <String, dynamic>{};
-      if (csrfToken != null && csrfToken.isNotEmpty) {
-        headers['X-CSRF-Token'] = csrfToken;
+      Future<void> performRefreshRequest() async {
+        final csrfToken = await _readCsrfToken(uri);
+        final headers = <String, dynamic>{};
+        if (csrfToken != null && csrfToken.isNotEmpty) {
+          headers['X-CSRF-Token'] = csrfToken;
+        }
+        await _refreshDio.post<void>(
+          '/api/auth/refresh',
+          options: Options(
+            headers: headers,
+            extra: const {'withCredentials': true, 'skipAuthRefresh': true},
+          ),
+        );
       }
-      await _refreshDio.post<void>(
-        '/api/auth/refresh',
-        options: Options(
-          headers: headers,
-          extra: const {
-            'withCredentials': true,
-            'skipAuthRefresh': true,
-          },
-        ),
-      );
+
+      try {
+        await performRefreshRequest();
+      } on DioException catch (refreshError) {
+        if ((refreshError.response?.statusCode ?? 0) != 403) {
+          rethrow;
+        }
+
+        // Re-prime CSRF cookie then retry once.
+        try {
+          await _refreshDio.get<void>(
+            '/api/account',
+            options: Options(
+              extra: {'withCredentials': true, 'skipAuthRefresh': true},
+            ),
+          );
+        } catch (_) {
+          // Best-effort: route may still return 401, cookie can still be issued.
+        }
+
+        await performRefreshRequest();
+      }
+
       return const _RefreshOutcome.refreshed();
     } on DioException catch (e) {
       final code = e.response?.statusCode;

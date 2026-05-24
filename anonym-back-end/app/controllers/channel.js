@@ -2,6 +2,7 @@ const crypto = require('crypto');
 const { Channel, PrivateMessage, User, UserChannel, Inventory, Shop, ChannelInvite, Friend } = require('../models');
 const { Op } = require('sequelize');
 const { deleteUploadFileIfExists, deleteUploadFiles } = require('../utils/fileCleanup');
+const { sendPushToUsers } = require('../utils/pushNotifications');
 let hasAllowNonFriendDmsColumnCache = null;
 
 const getUnreadMessageCount = async (channelId, userId) => {
@@ -52,6 +53,19 @@ const hasAllowNonFriendDmsColumn = async () => {
     return hasAllowNonFriendDmsColumnCache;
 };
 
+const hasBlockedRelationship = async (userAId, userBId) => {
+    const blockedFriendship = await Friend.findOne({
+        where: {
+            status: 'BLOQUED',
+            [Op.or]: [
+                { user_id: userAId, friend_id: userBId },
+                { user_id: userBId, friend_id: userAId }
+            ]
+        }
+    });
+    return Boolean(blockedFriendship);
+};
+
 const computeChannelReputationScore = async (channelId) => {
     const [messageCount, participantCount] = await Promise.all([
         PrivateMessage.count({ where: { channel_id: channelId } }),
@@ -94,6 +108,51 @@ const updateChannelReputationScore = async (channelId) => {
     return reputationScore;
 };
 
+const resolveDirectMessageChannel = async (userAId, userBId) => {
+    const candidateMemberships = await UserChannel.findAll({
+        attributes: [
+            'channel_id',
+            [UserChannel.sequelize.fn('COUNT', UserChannel.sequelize.fn('DISTINCT', UserChannel.sequelize.col('user_id'))), 'memberCount']
+        ],
+        where: {
+            user_id: { [Op.in]: [userAId, userBId] }
+        },
+        group: ['channel_id'],
+        having: UserChannel.sequelize.literal('COUNT(DISTINCT user_id) = 2'),
+        raw: true
+    });
+
+    if (candidateMemberships.length > 0) {
+        const candidateChannelIds = candidateMemberships.map((row) => row.channel_id);
+        const existingDm = await Channel.findOne({
+            where: {
+                channel_id: { [Op.in]: candidateChannelIds },
+                channel_type: 'PRIVATE_DM'
+            },
+            order: [['channel_id', 'ASC']]
+        });
+
+        if (existingDm) {
+            await UserChannel.findOrCreate({ where: { user_id: userAId, channel_id: existingDm.channel_id } });
+            await UserChannel.findOrCreate({ where: { user_id: userBId, channel_id: existingDm.channel_id } });
+            return existingDm;
+        }
+    }
+
+    const dmChannel = await Channel.create({
+        name: null,
+        description: null,
+        cover_image: null,
+        channel_type: 'PRIVATE_DM',
+        visibility: 'PRIVATE',
+        created_by: userAId
+    });
+
+    await UserChannel.findOrCreate({ where: { user_id: userAId, channel_id: dmChannel.channel_id } });
+    await UserChannel.findOrCreate({ where: { user_id: userBId, channel_id: dmChannel.channel_id } });
+    return dmChannel;
+};
+
 exports.create = async (req, res) => {
     try {
         const { name, description, channelType = 'GROUP', visibility = 'PRIVATE' } = req.body;
@@ -124,6 +183,13 @@ exports.create = async (req, res) => {
             targetUserId = parseInt(memberIds[0], 10);
             if (!Number.isInteger(targetUserId) || targetUserId === userId) {
                 return res.status(400).json({ message: 'Utilisateur prive invalide.' });
+            }
+
+            const blockedRelationshipExists = await hasBlockedRelationship(userId, targetUserId);
+            if (blockedRelationshipExists) {
+                return res.status(403).json({
+                    message: 'Impossible de creer un message prive: cette relation est bloquee.'
+                });
             }
 
             const allowNonFriendDmsColumnExists = await hasAllowNonFriendDmsColumn();
@@ -302,6 +368,7 @@ exports.invite = async (req, res) => {
     try {
         const { channelId, userId } = req.body;
         const requesterId = req.auth.userId;
+        const invitedUserId = parseInt(userId, 10);
 
         const channel = await Channel.findByPk(channelId);
         if (!channel) {
@@ -317,16 +384,103 @@ exports.invite = async (req, res) => {
             return res.status(403).json({ message: 'Vous ne faites pas partie de ce channel.' });
         }
 
+        if (!Number.isInteger(invitedUserId) || invitedUserId <= 0) {
+            return res.status(400).json({ message: 'Utilisateur invite invalide.' });
+        }
+
+        const invitedUser = await User.findByPk(invitedUserId, {
+            attributes: ['id', 'username', 'avatar']
+        });
+        if (!invitedUser) {
+            return res.status(404).json({ message: 'Utilisateur invite introuvable.' });
+        }
+
         const existingUserChannel = await UserChannel.findOne({
-            where: { user_id: userId, channel_id: channelId }
+            where: { user_id: invitedUserId, channel_id: channelId }
         });
 
         if (existingUserChannel) {
             return res.status(400).json({ message: 'Cet utilisateur est deja membre de ce channel.' });
         }
 
-        await UserChannel.create({ user_id: userId, channel_id: channelId });
+        await UserChannel.create({ user_id: invitedUserId, channel_id: channelId });
         await updateChannelReputationScore(channelId);
+
+        const blockedRelationshipExists = await hasBlockedRelationship(requesterId, invitedUserId);
+        if (blockedRelationshipExists) {
+            const io = req.app?.locals?.io;
+            if (io) {
+                io.to(`user:${invitedUserId}`).emit('channelInvited', {
+                    channelId: Number(channelId),
+                    channelName: channel.name || 'groupe',
+                    invitedBy: requesterId
+                });
+            }
+
+            return res.status(200).json({
+                message: 'Utilisateur ajoute au channel avec succes.'
+            });
+        }
+
+        const requester = await User.findByPk(requesterId, {
+            attributes: ['id', 'username', 'avatar'],
+            include: [
+                {
+                    model: Inventory,
+                    where: { active: true },
+                    attributes: ['item_id', 'article_id', 'active'],
+                    include: [
+                        {
+                            model: Shop,
+                            attributes: ['title', 'type', 'content', 'amount']
+                        }
+                    ],
+                    required: false
+                }
+            ]
+        });
+
+        const dmChannel = await resolveDirectMessageChannel(requesterId, invitedUserId);
+        const invitationMessage = await PrivateMessage.create({
+            sender_id: requesterId,
+            content: `${requester?.username || 'Un utilisateur'} vous a invite dans le groupe "${channel.name || 'groupe'}".`,
+            image_url: null,
+            channel_id: dmChannel.channel_id,
+            status: 'unread',
+            createdAt: new Date()
+        });
+
+        const io = req.app?.locals?.io;
+        if (io) {
+            const invitationPayload = {
+                id: invitationMessage.message_id,
+                content: invitationMessage.content,
+                imageUrl: invitationMessage.image_url,
+                channelId: dmChannel.channel_id,
+                sender: requester,
+                createdAt: invitationMessage.createdAt
+            };
+            io.to(`user:${requesterId}`).emit('newMessage', invitationPayload);
+            io.to(`user:${invitedUserId}`).emit('newMessage', invitationPayload);
+
+            io.to(`user:${invitedUserId}`).emit('channelInvited', {
+                channelId: Number(channelId),
+                channelName: channel.name || 'groupe',
+                invitedBy: requesterId
+            });
+        }
+
+        await sendPushToUsers({
+            userIds: [invitedUserId],
+            excludeUserId: requesterId,
+            data: {
+                event: 'newMessage',
+                id: invitationMessage.message_id,
+                channelId: dmChannel.channel_id,
+                senderId: requesterId,
+                senderUsername: requester?.username || ''
+            }
+        });
 
         res.status(200).json({ message: 'Utilisateur ajoute au channel avec succes.' });
     } catch (error) {
@@ -687,6 +841,71 @@ exports.getChannelMessages = async (req, res) => {
         res.status(200).json(messages);
     } catch (error) {
         res.status(500).json({ message: error.message || 'Une erreur est survenue lors de la recuperation des messages.' });
+    }
+};
+
+exports.removeMember = async (req, res) => {
+    try {
+        const channelId = parseInt(req.params.id, 10);
+        const targetUserId = parseInt(req.params.userId, 10);
+        const requesterId = req.auth.userId;
+
+        if (!Number.isInteger(channelId) || channelId <= 0) {
+            return res.status(400).json({ message: 'Channel invalide.' });
+        }
+
+        if (!Number.isInteger(targetUserId) || targetUserId <= 0) {
+            return res.status(400).json({ message: 'Utilisateur invalide.' });
+        }
+
+        const channel = await Channel.findByPk(channelId);
+        if (!channel) {
+            return res.status(404).json({ message: 'Channel non trouve.' });
+        }
+
+        if (channel.channel_type !== 'GROUP') {
+            return res.status(400).json({ message: 'Seuls les groupes permettent l exclusion d un membre.' });
+        }
+
+        if (channel.created_by !== requesterId) {
+            return res.status(403).json({ message: "Seul l hote du groupe peut exclure un membre." });
+        }
+
+        if (targetUserId === requesterId) {
+            return res.status(400).json({ message: 'L hote ne peut pas s exclure lui-meme via cette action.' });
+        }
+
+        const membership = await UserChannel.findOne({
+            where: {
+                channel_id: channelId,
+                user_id: targetUserId
+            }
+        });
+
+        if (!membership) {
+            return res.status(404).json({ message: 'Membre introuvable dans ce groupe.' });
+        }
+
+        await membership.destroy();
+        await updateChannelReputationScore(channelId);
+
+        const io = req.app?.locals?.io;
+        if (io) {
+            const payload = {
+                channelId,
+                removedUserId: targetUserId,
+                removedBy: requesterId,
+                removedAt: new Date().toISOString()
+            };
+
+            io.to(channelId).emit('channelMemberRemoved', payload);
+            io.to(`user:${requesterId}`).emit('channelMemberRemoved', payload);
+            io.to(`user:${targetUserId}`).emit('channelMemberRemoved', payload);
+        }
+
+        return res.status(200).json({ message: 'Membre exclu du groupe avec succes.' });
+    } catch (error) {
+        return res.status(500).json({ message: error.message || 'Erreur lors de l exclusion du membre.' });
     }
 };
 

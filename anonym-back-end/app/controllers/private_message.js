@@ -43,6 +43,19 @@ const hasAllowNonFriendDmsColumn = async () => {
     return hasAllowNonFriendDmsColumnCache;
 };
 
+const hasBlockedRelationship = async (userAId, userBId) => {
+    const blockedFriendship = await Friend.findOne({
+        where: {
+            status: 'BLOQUED',
+            [Op.or]: [
+                { user_id: userAId, friend_id: userBId },
+                { user_id: userBId, friend_id: userAId }
+            ]
+        }
+    });
+    return Boolean(blockedFriendship);
+};
+
 /**
  * @module privateMessageController
  * @description Ce module contient des fonctions pour gérer les messages privés, y compris la mise à jour et la suppression des messages.
@@ -95,6 +108,13 @@ exports.sendMessageWithImage = async (req, res) => {
             const recipient = members.find((member) => member.user_id !== userId);
             if (!recipient) {
                 return res.status(400).json({ message: 'Discussion privee invalide.' });
+            }
+
+            const blockedRelationshipExists = await hasBlockedRelationship(userId, recipient.user_id);
+            if (blockedRelationshipExists) {
+                return res.status(403).json({
+                    message: 'Impossible d envoyer un message: cette relation est bloquee.'
+                });
             }
 
             const allowNonFriendDmsColumnExists = await hasAllowNonFriendDmsColumn();
@@ -226,15 +246,30 @@ exports.sendMessageWithImage = async (req, res) => {
         });
 
         // Émettre l'événement Socket.io en temps réel
+        const channelMembers = await UserChannel.findAll({
+            where: { channel_id: channelId },
+            attributes: ['user_id'],
+            raw: true
+        });
+
         const io = req.app.locals.io;
         if (io) {
-            io.to(channelId.toString()).emit('newMessage', {
+            const messagePayload = {
                 id: message.message_id,
                 content: message.content,
                 imageUrl: message.image_url,
+                channelId: Number(channelId),
                 sender,
                 createdAt: message.createdAt
-            });
+            };
+
+            if (channel.channel_type === 'PRIVATE_DM') {
+                for (const member of channelMembers) {
+                    io.to(`user:${member.user_id}`).emit('newMessage', messagePayload);
+                }
+            } else {
+                io.to(channelId.toString()).emit('newMessage', messagePayload);
+            }
 
             // Mettre à jour le compte des messages non lus
             const unreadCount = await PrivateMessage.count({
@@ -248,12 +283,6 @@ exports.sendMessageWithImage = async (req, res) => {
             });
             io.to(channelId.toString()).emit('unreadCount', { count: unreadCount });
         }
-
-        const channelMembers = await UserChannel.findAll({
-            where: { channel_id: channelId },
-            attributes: ['user_id'],
-            raw: true
-        });
 
         await sendPushToUsers({
             userIds: channelMembers.map((member) => member.user_id),

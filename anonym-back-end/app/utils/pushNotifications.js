@@ -10,9 +10,45 @@ let firebaseEnabled = false;
 
 const INVALID_TOKEN_ERROR_CODES = new Set([
     'messaging/invalid-registration-token',
-    'messaging/registration-token-not-registered',
-    'messaging/invalid-argument'
+    'messaging/registration-token-not-registered'
 ]);
+
+const isInvalidTokenError = (error) => {
+    const code = error?.code;
+    if (!code) return false;
+    if (INVALID_TOKEN_ERROR_CODES.has(code)) return true;
+    if (code !== 'messaging/invalid-argument') return false;
+
+    const details = `${error?.message || ''}`.toLowerCase();
+    return details.includes('registration token')
+        || details.includes('device token')
+        || details.includes('not a valid fcm');
+};
+
+const buildNotificationContent = (data = {}) => {
+    const event = String(data.event || data.type || '').trim();
+    switch (event) {
+    case 'newMessage': {
+        const sender = String(data.senderUsername || data.sender_username || '').trim();
+        return {
+            title: sender ? `Nouveau message de ${sender}` : 'Nouveau message',
+            body: 'Ouvrez l\'application pour lire le message.'
+        };
+    }
+    case 'friendRequestReceived': {
+        const sender = String(data.senderUsername || data.sender_username || '').trim();
+        return {
+            title: 'Nouvelle demande d\'ami',
+            body: sender ? `${sender} vous a envoye une demande.` : 'Vous avez recu une nouvelle demande.'
+        };
+    }
+    default:
+        return {
+            title: 'Anonym',
+            body: 'Vous avez une nouvelle notification.'
+        };
+    }
+};
 
 const initFirebase = () => {
     if (firebaseInitialized) {
@@ -93,21 +129,51 @@ const sendPushToUsers = async ({
         const tokens = activeTokens.map((entry) => entry.token).filter(Boolean);
         if (tokens.length === 0) return;
 
+        const normalizedData = Object.entries(data || {}).reduce((acc, [key, value]) => {
+            if (value !== undefined && value !== null) {
+                acc[key] = String(value);
+            }
+            return acc;
+        }, {});
+        const notification = buildNotificationContent(normalizedData);
+
         const response = await admin.messaging().sendEachForMulticast({
             tokens,
-            data: Object.entries(data || {}).reduce((acc, [key, value]) => {
-                if (value !== undefined && value !== null) {
-                    acc[key] = String(value);
+            data: normalizedData,
+            notification,
+            android: {
+                priority: 'high',
+                notification: {
+                    sound: 'default'
                 }
-                return acc;
-            }, {})
+            },
+            apns: {
+                headers: {
+                    'apns-priority': '10'
+                },
+                payload: {
+                    aps: {
+                        alert: {
+                            title: notification.title,
+                            body: notification.body
+                        },
+                        sound: 'default',
+                        badge: 1
+                    }
+                }
+            },
+            webpush: {
+                notification: {
+                    title: notification.title,
+                    body: notification.body
+                }
+            }
         });
 
         const invalidTokens = [];
         response.responses.forEach((result, index) => {
             if (!result.success && result.error) {
-                const errorCode = result.error.code;
-                if (INVALID_TOKEN_ERROR_CODES.has(errorCode)) {
+                if (isInvalidTokenError(result.error)) {
                     invalidTokens.push(tokens[index]);
                 }
             }

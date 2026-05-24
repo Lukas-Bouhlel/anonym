@@ -26,25 +26,94 @@ class SocketService {
 
   bool get isConnected => _socket?.connected ?? false;
 
+  void _log(String message) {
+    // ignore: avoid_print
+    print('[SOCKET-FLUTTER] $message');
+  }
+
   void connect({
     String? authToken,
+    Map<String, dynamic>? authHeaders,
+    void Function(dynamic error)? onConnectError,
     void Function(ChannelMessageModel message)? onNewMessage,
     void Function(Map<String, dynamic> payload)? onFriendRequestReceived,
+    void Function(Map<String, dynamic> payload)? onFriendRequestSent,
+    void Function(Map<String, dynamic> payload)? onFriendRequestResponded,
+    void Function(Map<String, dynamic> payload)? onFriendRequestCancelled,
+    void Function(Map<String, dynamic> payload)? onFriendshipBlocked,
+    void Function(Map<String, dynamic> payload)? onFriendshipUnblocked,
+    void Function(Map<String, dynamic> payload)? onFriendshipDeleted,
+    void Function(Map<String, dynamic> payload)? onFriendsStateUpdated,
+    void Function(Map<String, dynamic> payload)? onChannelInvited,
+    void Function(Map<String, dynamic> payload)? onChannelMemberRemoved,
+    void Function(Map<String, dynamic> payload)? onUserProfileUpdated,
     void Function(String message)? onMessageError,
     void Function(List<dynamic> payload)? onLocationSnapshot,
     void Function(Map<String, dynamic> payload)? onLocationUpdate,
     void Function(int userId)? onLocationRemove,
     void Function(Map<String, dynamic> payload)? onPresenceUpdated,
   }) {
+    _log(
+      'connect() existing=${_socket != null} authToken=${authToken != null && authToken.trim().isNotEmpty} headers=${authHeaders?.keys.join(",") ?? "none"}',
+    );
     if (_socket != null) {
       _registerMessageErrorListener(onMessageError);
       _registerFriendRequestListener(onFriendRequestReceived);
+      _registerSocialEventListener(
+        eventName: 'friendRequestSent',
+        onEvent: onFriendRequestSent,
+      );
+      _registerSocialEventListener(
+        eventName: 'friendRequestResponded',
+        onEvent: onFriendRequestResponded,
+      );
+      _registerSocialEventListener(
+        eventName: 'friendRequestCancelled',
+        onEvent: onFriendRequestCancelled,
+      );
+      _registerSocialEventListener(
+        eventName: 'friendshipBlocked',
+        onEvent: onFriendshipBlocked,
+      );
+      _registerSocialEventListener(
+        eventName: 'friendshipUnblocked',
+        onEvent: onFriendshipUnblocked,
+      );
+      _registerSocialEventListener(
+        eventName: 'friendshipDeleted',
+        onEvent: onFriendshipDeleted,
+      );
+      _registerSocialEventListener(
+        eventName: 'friendsStateUpdated',
+        onEvent: onFriendsStateUpdated,
+      );
+      _registerSocialEventListener(
+        eventName: 'channelInvited',
+        onEvent: onChannelInvited,
+      );
+      _registerSocialEventListener(
+        eventName: 'channelMemberRemoved',
+        onEvent: onChannelMemberRemoved,
+      );
+      _registerSocialEventListener(
+        eventName: 'userProfileUpdated',
+        onEvent: onUserProfileUpdated,
+      );
       _registerLiveLocationListeners(
         onLocationSnapshot: onLocationSnapshot,
         onLocationUpdate: onLocationUpdate,
         onLocationRemove: onLocationRemove,
       );
       _registerPresenceListener(onPresenceUpdated);
+      _socket!.off('connect_error');
+      _socket!.on('connect_error', (error) {
+        _log('connect_error=$error');
+        if (onConnectError != null) onConnectError(error);
+      });
+      if (!(_socket?.connected ?? false)) {
+        _log('existing socket not connected -> connect()');
+        _socket?.connect();
+      }
       return;
     }
 
@@ -57,6 +126,7 @@ class SocketService {
               'token': authToken.trim(),
           })
           .setExtraHeaders(<String, dynamic>{
+            ...?authHeaders,
             if (authToken != null && authToken.trim().isNotEmpty)
               'Authorization': 'Bearer ${authToken.trim()}',
           })
@@ -75,6 +145,46 @@ class SocketService {
       });
     }
     _registerFriendRequestListener(onFriendRequestReceived);
+    _registerSocialEventListener(
+      eventName: 'friendRequestSent',
+      onEvent: onFriendRequestSent,
+    );
+    _registerSocialEventListener(
+      eventName: 'friendRequestResponded',
+      onEvent: onFriendRequestResponded,
+    );
+    _registerSocialEventListener(
+      eventName: 'friendRequestCancelled',
+      onEvent: onFriendRequestCancelled,
+    );
+    _registerSocialEventListener(
+      eventName: 'friendshipBlocked',
+      onEvent: onFriendshipBlocked,
+    );
+    _registerSocialEventListener(
+      eventName: 'friendshipUnblocked',
+      onEvent: onFriendshipUnblocked,
+    );
+    _registerSocialEventListener(
+      eventName: 'friendshipDeleted',
+      onEvent: onFriendshipDeleted,
+    );
+    _registerSocialEventListener(
+      eventName: 'friendsStateUpdated',
+      onEvent: onFriendsStateUpdated,
+    );
+    _registerSocialEventListener(
+      eventName: 'channelInvited',
+      onEvent: onChannelInvited,
+    );
+    _registerSocialEventListener(
+      eventName: 'channelMemberRemoved',
+      onEvent: onChannelMemberRemoved,
+    );
+    _registerSocialEventListener(
+      eventName: 'userProfileUpdated',
+      onEvent: onUserProfileUpdated,
+    );
 
     _registerMessageErrorListener(onMessageError);
     _registerLiveLocationListeners(
@@ -85,6 +195,19 @@ class SocketService {
     _registerPresenceListener(onPresenceUpdated);
     _socket!.on('connect', (_) => requestLiveLocationsSnapshot());
     _socket!.on('reconnect', (_) => requestLiveLocationsSnapshot());
+    _socket!.on('connect', (_) {
+      _log('connected id=${_socket?.id}');
+    });
+    _socket!.on('disconnect', (reason) {
+      _log('disconnected reason=$reason');
+    });
+    _socket!.on('connect_error', (error) {
+      _log('connect_error=$error');
+      if (onConnectError != null) onConnectError(error);
+    });
+    _socket!.on('reconnect', (_) {
+      _log('reconnected id=${_socket?.id}');
+    });
 
     _socket!.connect();
   }
@@ -106,8 +229,22 @@ class SocketService {
     if (_socket == null) return;
     _socket!.off('friendRequestReceived');
     _socket!.on('friendRequestReceived', (data) {
+      _log('event friendRequestReceived payload=$data');
       if (onFriendRequestReceived == null || data is! Map) return;
       onFriendRequestReceived(Map<String, dynamic>.from(data));
+    });
+  }
+
+  void _registerSocialEventListener({
+    required String eventName,
+    void Function(Map<String, dynamic> payload)? onEvent,
+  }) {
+    if (_socket == null) return;
+    _socket!.off(eventName);
+    _socket!.on(eventName, (data) {
+      _log('event $eventName payload=$data');
+      if (onEvent == null || data is! Map) return;
+      onEvent(Map<String, dynamic>.from(data));
     });
   }
 

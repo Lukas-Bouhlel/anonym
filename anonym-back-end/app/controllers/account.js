@@ -237,6 +237,19 @@ exports.update = async (req, res) => {
 
         await user.save();
 
+        const io = req.app?.locals?.io;
+        if (io) {
+            io.emit('userProfileUpdated', {
+                userId: user.id,
+                username: user.username,
+                avatar: user.avatar,
+                bio: user.bio,
+                allow_non_friend_dms: user.allow_non_friend_dms,
+                presence_status: getPresenceForViewer(user, userId),
+                updatedAt: user.updatedAt
+            });
+        }
+
         res.status(200).json(user);
     } catch (error) {
         res.status(500).json({

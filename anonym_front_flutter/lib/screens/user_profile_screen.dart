@@ -335,127 +335,131 @@ class UserProfileScreen extends StatelessWidget {
                           ),
                         ),
                         const SizedBox(height: 24),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: SizedBox(
-                                height: 46,
-                                child: FilledButton(
-                                  onPressed: isOwnProfile
-                                      ? null
-                                      : () async {
-                                          await app.createPrivateDm(
-                                            targetUserId: user.id,
-                                          );
-                                          if (!context.mounted) return;
-                                          if (app.errorMessage != null &&
-                                              app.errorMessage!.isNotEmpty) {
-                                            ScaffoldMessenger.of(
-                                              context,
-                                            ).showSnackBar(
-                                              SnackBar(
-                                                content: Text(
-                                                  app.errorMessage!,
-                                                ),
-                                              ),
+                        SafeArea(
+                          top: false,
+                          maintainBottomViewPadding: true,
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: SizedBox(
+                                  height: 46,
+                                  child: FilledButton(
+                                    onPressed: isOwnProfile
+                                        ? null
+                                        : () async {
+                                            await app.createPrivateDm(
+                                              targetUserId: user.id,
                                             );
-                                            return;
-                                          }
-                                          Navigator.of(context).pop();
-                                        },
-                                  style: FilledButton.styleFrom(
-                                    backgroundColor: AppColors.c393566,
-                                    foregroundColor: AppColors.cFCFAFE,
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                      side: BorderSide(
-                                        color: AppColors.cFCFAFE.withValues(
-                                          alpha: 0.50,
+                                            if (!context.mounted) return;
+                                            if (app.errorMessage != null &&
+                                                app.errorMessage!.isNotEmpty) {
+                                              ScaffoldMessenger.of(
+                                                context,
+                                              ).showSnackBar(
+                                                SnackBar(
+                                                  content: Text(
+                                                    app.errorMessage!,
+                                                  ),
+                                                ),
+                                              );
+                                              return;
+                                            }
+                                            Navigator.of(context).pop();
+                                          },
+                                    style: FilledButton.styleFrom(
+                                      backgroundColor: AppColors.c393566,
+                                      foregroundColor: AppColors.cFCFAFE,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                        side: BorderSide(
+                                          color: AppColors.cFCFAFE.withValues(
+                                            alpha: 0.50,
+                                          ),
                                         ),
                                       ),
                                     ),
-                                  ),
-                                  child: const Text(
-                                    'Envoyer un message',
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.w700,
-                                      fontFamily:
-                                          AppTypography.primaryFontFamily,
+                                    child: const Text(
+                                      'Envoyer un message',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.w700,
+                                        fontFamily:
+                                            AppTypography.primaryFontFamily,
+                                      ),
                                     ),
                                   ),
                                 ),
                               ),
-                            ),
-                            const SizedBox(width: 12),
-                            Container(
-                              width: 56,
-                              height: 46,
-                              decoration: BoxDecoration(
-                                gradient: AppGradients.gB1BCFBTo393566,
-                                borderRadius: BorderRadius.circular(12),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: AppColors.c393566.withValues(
-                                      alpha: 0.18,
+                              const SizedBox(width: 12),
+                              Container(
+                                width: 46,
+                                height: 46,
+                                decoration: BoxDecoration(
+                                  gradient: AppGradients.gB1BCFBTo393566,
+                                  borderRadius: BorderRadius.circular(12),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: AppColors.c393566.withValues(
+                                        alpha: 0.18,
+                                      ),
+                                      blurRadius: 16,
+                                      offset: const Offset(0, 6),
                                     ),
-                                    blurRadius: 16,
-                                    offset: const Offset(0, 6),
+                                  ],
+                                ),
+                                child: IconButton(
+                                  onPressed: () {
+                                    Navigator.of(context).push(
+                                      PageRouteBuilder<void>(
+                                        transitionDuration: const Duration(
+                                          milliseconds: 260,
+                                        ),
+                                        reverseTransitionDuration:
+                                            const Duration(milliseconds: 220),
+                                        pageBuilder:
+                                            (
+                                              context,
+                                              animation,
+                                              secondaryAnimation,
+                                            ) => ShareProfileScreen(
+                                              username: user.username,
+                                            ),
+                                        transitionsBuilder:
+                                            (
+                                              context,
+                                              animation,
+                                              secondaryAnimation,
+                                              child,
+                                            ) {
+                                              final offset =
+                                                  Tween<Offset>(
+                                                    begin: const Offset(1, 0),
+                                                    end: Offset.zero,
+                                                  ).animate(
+                                                    CurvedAnimation(
+                                                      parent: animation,
+                                                      curve:
+                                                          Curves.easeOutCubic,
+                                                    ),
+                                                  );
+                                              return SlideTransition(
+                                                position: offset,
+                                                child: child,
+                                              );
+                                            },
+                                      ),
+                                    );
+                                  },
+                                  icon: const Icon(
+                                    Icons.reply_rounded,
+                                    color: AppColors.cFCFAFE,
+                                    size: 28,
                                   ),
-                                ],
-                              ),
-                              child: IconButton(
-                                onPressed: () {
-                                  Navigator.of(context).push(
-                                    PageRouteBuilder<void>(
-                                      transitionDuration: const Duration(
-                                        milliseconds: 260,
-                                      ),
-                                      reverseTransitionDuration: const Duration(
-                                        milliseconds: 220,
-                                      ),
-                                      pageBuilder:
-                                          (
-                                            context,
-                                            animation,
-                                            secondaryAnimation,
-                                          ) => ShareProfileScreen(
-                                            username: user.username,
-                                          ),
-                                      transitionsBuilder:
-                                          (
-                                            context,
-                                            animation,
-                                            secondaryAnimation,
-                                            child,
-                                          ) {
-                                            final offset =
-                                                Tween<Offset>(
-                                                  begin: const Offset(1, 0),
-                                                  end: Offset.zero,
-                                                ).animate(
-                                                  CurvedAnimation(
-                                                    parent: animation,
-                                                    curve: Curves.easeOutCubic,
-                                                  ),
-                                                );
-                                            return SlideTransition(
-                                              position: offset,
-                                              child: child,
-                                            );
-                                          },
-                                    ),
-                                  );
-                                },
-                                icon: const Icon(
-                                  Icons.reply_rounded,
-                                  color: AppColors.cFCFAFE,
-                                  size: 28,
                                 ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
-                        const SizedBox(height: 16),
+                        const SizedBox(height: 8),
                       ],
                     ),
                   ),

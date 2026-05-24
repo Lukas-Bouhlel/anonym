@@ -47,11 +47,19 @@ class PushNotificationService {
     if (!_isSupportedPlatform || _messaging == null) return false;
     if (_isInitialized) return true;
     try {
-      await _messaging.requestPermission(
+      await _messaging.setAutoInitEnabled(true);
+      final settings = await _messaging.requestPermission(
         alert: true,
         badge: true,
         sound: true,
       );
+      final status = settings.authorizationStatus;
+      final isAuthorized =
+          status == AuthorizationStatus.authorized ||
+          status == AuthorizationStatus.provisional;
+      if (!isAuthorized) {
+        return false;
+      }
       await _messaging.setForegroundNotificationPresentationOptions(
         alert: true,
         badge: true,

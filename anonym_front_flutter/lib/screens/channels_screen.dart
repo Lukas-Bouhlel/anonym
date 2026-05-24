@@ -18,6 +18,7 @@ import '../utils/app_date_format.dart';
 import '../utils/presence_utils.dart';
 import '../widgets/app_remote_image.dart';
 import '../widgets/chrome/moji_back_button.dart';
+import '../widgets/modals/moji_confirm_modal.dart';
 import '../widgets/presence_badge.dart';
 
 import 'dart:io';
@@ -234,14 +235,16 @@ class _ChannelsScreenState extends State<ChannelsScreen> {
                 ...channels.map(
                   (channel) => _ConversationTile(
                     channel: channel,
-                    dmPresenceStatus: channel.channelType.trim().toUpperCase() ==
-                            'PRIVATE_DM' &&
-                        channel.dmPeer != null
+                    dmPresenceStatus:
+                        channel.channelType.trim().toUpperCase() ==
+                                'PRIVATE_DM' &&
+                            channel.dmPeer != null
                         ? app.presenceStatusForUser(channel.dmPeer!.id)
                         : null,
-                    dmPresenceLabel: channel.channelType.trim().toUpperCase() ==
-                            'PRIVATE_DM' &&
-                        channel.dmPeer != null
+                    dmPresenceLabel:
+                        channel.channelType.trim().toUpperCase() ==
+                                'PRIVATE_DM' &&
+                            channel.dmPeer != null
                         ? app.presenceLabelForUser(channel.dmPeer!.id)
                         : null,
                     onTap: () => app.selectChannel(channel),
@@ -300,44 +303,37 @@ class _ChannelsScreenState extends State<ChannelsScreen> {
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
       builder: (sheetContext) {
-        final bottomSafe = MediaQuery.of(sheetContext).padding.bottom;
-        return SafeArea(
-          child: Container(
-            margin: const EdgeInsets.fromLTRB(12, 0, 12, 0),
-            padding: EdgeInsets.fromLTRB(12, 10, 12, 14 + bottomSafe),
-            decoration: BoxDecoration(
-              gradient: AppGradients.gB1BCFBTo393566,
-              borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(24),
-              ),
-              border: Border.all(
-                color: AppColors.cFCFAFE.withValues(alpha: 0.3),
-              ),
-            ),
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    width: 44,
-                    height: 4,
-                    margin: const EdgeInsets.only(bottom: 8),
-                    decoration: BoxDecoration(
-                      color: AppColors.cFCFAFE.withValues(alpha: 0.45),
-                      borderRadius: BorderRadius.circular(99),
-                    ),
+        return Container(
+          margin: const EdgeInsets.fromLTRB(12, 0, 12, 0),
+          padding: const EdgeInsets.fromLTRB(12, 10, 12, 14),
+          decoration: BoxDecoration(
+            gradient: AppGradients.gB1BCFBTo393566,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+            border: Border.all(color: AppColors.cFCFAFE.withValues(alpha: 0.3)),
+          ),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 44,
+                  height: 4,
+                  margin: const EdgeInsets.only(bottom: 8),
+                  decoration: BoxDecoration(
+                    color: AppColors.cFCFAFE.withValues(alpha: 0.45),
+                    borderRadius: BorderRadius.circular(99),
                   ),
-                  const SizedBox(height: 8),
-                  _InfoRow(
-                    icon: Icons.login_rounded,
-                    label: 'Rejoindre une conversation',
-                    onTap: () async {
-                      Navigator.of(sheetContext).pop();
-                      await _openJoinPublicDirectoryScreen(parentContext, app);
-                    },
-                  ),
-                ],
-              ),
+                ),
+                const SizedBox(height: 8),
+                _InfoRow(
+                  icon: Icons.login_rounded,
+                  label: 'Rejoindre une conversation',
+                  onTap: () async {
+                    Navigator.of(sheetContext).pop();
+                    await _openJoinPublicDirectoryScreen(parentContext, app);
+                  },
+                ),
+              ],
             ),
           ),
         );
@@ -610,91 +606,160 @@ class _ChannelsScreenState extends State<ChannelsScreen> {
   ) async {
     await app.selectChannel(channel);
     if (!context.mounted) return;
+    final currentUserId = context.read<AuthController>().user?.id;
+    final isHost = currentUserId != null && channel.createdBy == currentUserId;
+
     await showModalBottomSheet<void>(
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
       builder: (context) {
-        final members = app.channelMembers;
-        final bottomSafe = MediaQuery.of(context).padding.bottom;
-        return Container(
-          margin: const EdgeInsets.fromLTRB(12, 0, 12, 0),
-          padding: EdgeInsets.fromLTRB(14, 10, 14, 16 + bottomSafe),
-          decoration: BoxDecoration(
-            gradient: AppGradients.gB1BCFBTo393566,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-            border: Border.all(
-              color: AppColors.cFCFAFE.withValues(alpha: 0.3),
-              width: 1,
-            ),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 44,
-                height: 4,
-                margin: const EdgeInsets.only(bottom: 10),
-                decoration: BoxDecoration(
-                  color: AppColors.cFCFAFE.withValues(alpha: 0.45),
-                  borderRadius: BorderRadius.circular(99),
+        return Consumer<AppController>(
+          builder: (context, sheetApp, _) {
+            final members = sheetApp.channelMembers;
+            final bottomSafe = MediaQuery.of(context).padding.bottom;
+            return Container(
+              margin: const EdgeInsets.fromLTRB(12, 0, 12, 0),
+              padding: EdgeInsets.fromLTRB(14, 10, 14, 16 + bottomSafe),
+              decoration: BoxDecoration(
+                gradient: AppGradients.gB1BCFBTo393566,
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(24),
+                ),
+                border: Border.all(
+                  color: AppColors.cFCFAFE.withValues(alpha: 0.3),
+                  width: 1,
                 ),
               ),
-              const Text(
-                'Membres du groupe',
-                style: TextStyle(
-                  fontFamily: AppTypography.displayFontFamily,
-                  color: AppColors.cFCFAFE,
-                  fontSize: 20,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              const SizedBox(height: 12),
-              Flexible(
-                child: ListView.separated(
-                  shrinkWrap: true,
-                  itemCount: members.length,
-                  separatorBuilder: (_, _) => Divider(
-                    height: 1,
-                    color: AppColors.cFCFAFE.withValues(alpha: 0.18),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 44,
+                    height: 4,
+                    margin: const EdgeInsets.only(bottom: 10),
+                    decoration: BoxDecoration(
+                      color: AppColors.cFCFAFE.withValues(alpha: 0.45),
+                      borderRadius: BorderRadius.circular(99),
+                    ),
                   ),
-                  itemBuilder: (context, index) {
-                    final member = members[index];
-                    return ListTile(
-                      contentPadding: EdgeInsets.zero,
-                      leading: _MemberAvatar(member: member),
-                      onTap: () {
-                        showModalBottomSheet(
-                          context: context,
-                          isScrollControlled: true,
-                          backgroundColor: Colors.transparent,
-                          shape: const RoundedRectangleBorder(
-                            borderRadius: BorderRadius.vertical(
-                              top: Radius.circular(28),
-                            ),
+                  const Text(
+                    'Membres du groupe',
+                    style: TextStyle(
+                      fontFamily: AppTypography.displayFontFamily,
+                      color: AppColors.cFCFAFE,
+                      fontSize: 20,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Flexible(
+                    child: ListView.separated(
+                      shrinkWrap: true,
+                      itemCount: members.length,
+                      separatorBuilder: (_, _) => Divider(
+                        height: 1,
+                        color: AppColors.cFCFAFE.withValues(alpha: 0.18),
+                      ),
+                      itemBuilder: (context, index) {
+                        final member = members[index];
+                        final canExclude =
+                            isHost &&
+                            member.id != channel.createdBy &&
+                            member.id != currentUserId;
+                        return ListTile(
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 1,
                           ),
-                          clipBehavior: Clip.antiAlias,
-                          builder: (_) => FractionallySizedBox(
-                            heightFactor: 0.86,
-                            child: UserProfileScreen(user: member),
+                          leading: _MemberAvatar(member: member),
+                          onTap: () {
+                            showModalBottomSheet(
+                              context: context,
+                              isScrollControlled: true,
+                              backgroundColor: Colors.transparent,
+                              shape: const RoundedRectangleBorder(
+                                borderRadius: BorderRadius.vertical(
+                                  top: Radius.circular(28),
+                                ),
+                              ),
+                              clipBehavior: Clip.antiAlias,
+                              builder: (_) => FractionallySizedBox(
+                                heightFactor: 0.86,
+                                child: UserProfileScreen(user: member),
+                              ),
+                            );
+                          },
+                          title: Text(
+                            member.username.isNotEmpty
+                                ? member.username
+                                : 'User #${member.id}',
+                            style: const TextStyle(color: AppColors.cFCFAFE),
                           ),
+                          trailing: canExclude
+                              ? IconButton(
+                                  tooltip: 'Exclure du groupe',
+                                  icon: const Icon(
+                                    Icons.person_remove_rounded,
+                                    color: AppColors.cFF6565,
+                                  ),
+                                  onPressed: () async {
+                                    final shouldRemove =
+                                        await _confirmMemberExclusion(
+                                          context,
+                                          member,
+                                        );
+                                    if (!shouldRemove) return;
+                                    await sheetApp
+                                        .removeMemberFromSelectedChannel(
+                                          member.id,
+                                        );
+                                    if (!context.mounted) return;
+                                    if (sheetApp.errorMessage != null &&
+                                        sheetApp.errorMessage!.isNotEmpty) {
+                                      ScaffoldMessenger.of(
+                                        context,
+                                      ).showSnackBar(
+                                        SnackBar(
+                                          content: Text(sheetApp.errorMessage!),
+                                        ),
+                                      );
+                                    }
+                                  },
+                                )
+                              : null,
                         );
                       },
-                      title: Text(
-                        member.username.isNotEmpty
-                            ? member.username
-                            : 'User #${member.id}',
-                        style: const TextStyle(color: AppColors.cFCFAFE),
-                      ),
-                    );
-                  },
-                ),
+                    ),
+                  ),
+                ],
               ),
-            ],
-          ),
+            );
+          },
         );
       },
     );
+  }
+
+  Future<bool> _confirmMemberExclusion(
+    BuildContext context,
+    UserModel member,
+  ) async {
+    final username = member.username.trim().isEmpty
+        ? 'cet utilisateur'
+        : member.username.trim();
+    final confirmed = await showDialog<bool>(
+      context: context,
+      barrierDismissible: true,
+      builder: (dialogContext) => MojiConfirmModal(
+        title: 'Exclure $username ?',
+        description: 'Cette action retire immediatement ce membre du groupe.',
+        confirmLabel: 'Exclure',
+        onConfirm: () => Navigator.of(dialogContext).pop(true),
+        onCancel: () => Navigator.of(dialogContext).pop(false),
+      ),
+    );
+    return confirmed == true;
   }
 
   Future<void> _showInviteSheet(
@@ -1123,7 +1188,7 @@ class _PublicConversationsScreenState extends State<_PublicConversationsScreen>
 
   void _startRealtimeRefresh() {
     _realtimeTimer?.cancel();
-    _realtimeTimer = Timer.periodic(const Duration(seconds: 8), (_) {
+    _realtimeTimer = Timer.periodic(const Duration(seconds: 20), (_) {
       _refreshRealtime();
     });
   }

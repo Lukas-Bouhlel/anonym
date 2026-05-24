@@ -64,7 +64,7 @@ const io = new Server(httpServer, {
       },
       credentials: true,
       methods: ['GET', 'POST', 'PUT', 'DELETE'],
-      allowedHeaders: ['Content-Type', 'Authorization']
+      allowedHeaders: ['Content-Type', 'Authorization', 'Cookie']
   }
 });
 
@@ -84,6 +84,7 @@ httpServer.listen(port, () => {
  * Exposition de l'instance io pour les contrôleurs
  */
 app.locals.io = io;
+app.set('io', io);
 
 /**
  * Initialisation des sockets

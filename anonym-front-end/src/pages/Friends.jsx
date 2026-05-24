@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import axios from 'axios';
 import { useApi } from '../context/ApiContext';
+import { useSocket } from '../context/SocketContext';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import spaceman from '../assets/images/icons/spaceman.svg'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -17,6 +18,7 @@ import Popup from "../components/Utils/Popup";
  */
 const Friends = () => {
     const { api_url } = useApi();
+    const { socket } = useSocket();
     const [choiceFriendsType, setChoiceFriendsType] = useState('online');
     const [usernameToAdd, setUsernameToAdd] = useState('');
     const [addStatus, setAddStatus] = useState();
@@ -46,6 +48,29 @@ const Friends = () => {
         queryKey: ['friends'],
         queryFn: fetchFriends
     });
+
+    useEffect(() => {
+        if (!socket) return;
+        const refresh = () => refetch();
+        socket.on('friendRequestReceived', refresh);
+        socket.on('friendRequestSent', refresh);
+        socket.on('friendRequestResponded', refresh);
+        socket.on('friendRequestCancelled', refresh);
+        socket.on('friendshipDeleted', refresh);
+        socket.on('friendshipBlocked', refresh);
+        socket.on('friendshipUnblocked', refresh);
+        socket.on('friendsStateUpdated', refresh);
+        return () => {
+            socket.off('friendRequestReceived', refresh);
+            socket.off('friendRequestSent', refresh);
+            socket.off('friendRequestResponded', refresh);
+            socket.off('friendRequestCancelled', refresh);
+            socket.off('friendshipDeleted', refresh);
+            socket.off('friendshipBlocked', refresh);
+            socket.off('friendshipUnblocked', refresh);
+            socket.off('friendsStateUpdated', refresh);
+        };
+    }, [socket, refetch]);
 
     /**
      * Envoie une demande d'ami à un utilisateur.

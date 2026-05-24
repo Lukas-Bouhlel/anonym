@@ -73,14 +73,24 @@ class FriendsRepository {
     required int requestId,
     required String status,
   }) async {
-    await _dio.put<void>(
-      '/api/friends/requests/$requestId/respond',
-      data: {'status': status},
-    );
+    try {
+      await _dio.put<void>(
+        '/api/friends/requests/$requestId/respond',
+        data: {'status': status},
+      );
+    } on DioException catch (e) {
+      if (_isAlreadyHandledRequestError(e)) return;
+      rethrow;
+    }
   }
 
   Future<void> cancelOutgoingRequest(int requestId) async {
-    await _dio.delete<void>('/api/friends/requests/$requestId');
+    try {
+      await _dio.delete<void>('/api/friends/requests/$requestId');
+    } on DioException catch (e) {
+      if (_isAlreadyHandledRequestError(e)) return;
+      rethrow;
+    }
   }
 
   Future<List<UserModel>> readBlockedUsers() async {
@@ -112,5 +122,17 @@ class FriendsRepository {
 
   Future<void> unblockUserById(int userId) async {
     await _dio.delete<void>('/api/friends/$userId/block');
+  }
+
+  bool _isAlreadyHandledRequestError(DioException error) {
+    final statusCode = error.response?.statusCode ?? 0;
+    if (statusCode != 404) return false;
+    final payload = error.response?.data;
+    final message = payload is Map<String, dynamic>
+        ? (payload['message'] ?? '').toString().toLowerCase()
+        : payload?.toString().toLowerCase() ?? '';
+    return message.contains('not found') ||
+        message.contains('introuvable') ||
+        message.contains('friend request');
   }
 }

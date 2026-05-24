@@ -80,66 +80,71 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     final action = await showModalBottomSheet<String>(
       context: context,
       backgroundColor: Colors.transparent,
-      builder: (context) => Container(
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 20),
-        decoration: BoxDecoration(
-          gradient: AppGradients.gB1BCFBTo393566,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-          border: Border.all(color: AppColors.cFCFAFE.withValues(alpha: 0.35)),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (_isDesktopOrWebAvatarPicker)
+      builder: (context) {
+        final bottomInset = MediaQuery.viewPaddingOf(context).bottom;
+        return Container(
+          padding: EdgeInsets.fromLTRB(16, 16, 16, 20 + bottomInset),
+          decoration: BoxDecoration(
+            gradient: AppGradients.gB1BCFBTo393566,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+            border: Border.all(
+              color: AppColors.cFCFAFE.withValues(alpha: 0.35),
+            ),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (_isDesktopOrWebAvatarPicker)
+                ListTile(
+                  leading: const Icon(
+                    Icons.photo_library_outlined,
+                    color: AppColors.whiteColor,
+                  ),
+                  title: const Text(
+                    'Changer d\'avatar',
+                    style: TextStyle(color: AppColors.whiteColor),
+                  ),
+                  onTap: () => Navigator.of(context).pop('gallery'),
+                )
+              else ...[
+                ListTile(
+                  leading: const Icon(
+                    Icons.photo_library_outlined,
+                    color: AppColors.whiteColor,
+                  ),
+                  title: const Text(
+                    'Galerie',
+                    style: TextStyle(color: AppColors.whiteColor),
+                  ),
+                  onTap: () => Navigator.of(context).pop('gallery'),
+                ),
+                ListTile(
+                  leading: const Icon(
+                    Icons.camera_alt_outlined,
+                    color: AppColors.whiteColor,
+                  ),
+                  title: const Text(
+                    'Camera',
+                    style: TextStyle(color: AppColors.whiteColor),
+                  ),
+                  onTap: () => Navigator.of(context).pop('camera'),
+                ),
+              ],
               ListTile(
                 leading: const Icon(
-                  Icons.photo_library_outlined,
+                  Icons.delete_outline,
                   color: AppColors.whiteColor,
                 ),
                 title: const Text(
-                  'Changer d\'avatar',
+                  'Supprimer la photo de profil',
                   style: TextStyle(color: AppColors.whiteColor),
                 ),
-                onTap: () => Navigator.of(context).pop('gallery'),
-              )
-            else ...[
-              ListTile(
-                leading: const Icon(
-                  Icons.photo_library_outlined,
-                  color: AppColors.whiteColor,
-                ),
-                title: const Text(
-                  'Galerie',
-                  style: TextStyle(color: AppColors.whiteColor),
-                ),
-                onTap: () => Navigator.of(context).pop('gallery'),
-              ),
-              ListTile(
-                leading: const Icon(
-                  Icons.camera_alt_outlined,
-                  color: AppColors.whiteColor,
-                ),
-                title: const Text(
-                  'Camera',
-                  style: TextStyle(color: AppColors.whiteColor),
-                ),
-                onTap: () => Navigator.of(context).pop('camera'),
+                onTap: () => Navigator.of(context).pop('delete'),
               ),
             ],
-            ListTile(
-              leading: const Icon(
-                Icons.delete_outline,
-                color: AppColors.whiteColor,
-              ),
-              title: const Text(
-                'Supprimer la photo de profil',
-                style: TextStyle(color: AppColors.whiteColor),
-              ),
-              onTap: () => Navigator.of(context).pop('delete'),
-            ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
     if (!mounted || action == null) return;
 

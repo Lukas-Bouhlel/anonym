@@ -19,6 +19,7 @@ class FriendModel {
     final detailsJson =
         json['FriendDetails'] ??
         json['friendDetails'] ??
+        json['User'] ??
         json['UserDetails'] ??
         json['userDetails'] ??
         json['user'] ??

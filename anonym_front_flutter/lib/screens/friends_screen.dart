@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -22,18 +24,22 @@ class _FriendsScreenState extends State<FriendsScreen> {
   _FriendScreenMode _mode = _FriendScreenMode.list;
   _FriendListFilter _listFilter = _FriendListFilter.friends;
   bool _isLoadingInitialFriends = false;
+  bool _isRealtimeSyncRunning = false;
   String _query = '';
+  Timer? _realtimeSyncTimer;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadFriendsAtOpen();
+      _startRealtimeSync();
     });
   }
 
   @override
   void dispose() {
+    _realtimeSyncTimer?.cancel();
     _searchController.dispose();
     super.dispose();
   }
@@ -95,9 +101,9 @@ class _FriendsScreenState extends State<FriendsScreen> {
                                     child: const NotificationsScreen(),
                                   );
                                 },
-                                transitionsBuilder:
-                                    (_, animation, _, child) {
-                                      final slideAnimation = Tween<Offset>(
+                                transitionsBuilder: (_, animation, _, child) {
+                                  final slideAnimation =
+                                      Tween<Offset>(
                                         begin: const Offset(1, 0),
                                         end: Offset.zero,
                                       ).animate(
@@ -106,11 +112,11 @@ class _FriendsScreenState extends State<FriendsScreen> {
                                           curve: Curves.easeOutCubic,
                                         ),
                                       );
-                                      return SlideTransition(
-                                        position: slideAnimation,
-                                        child: child,
-                                      );
-                                    },
+                                  return SlideTransition(
+                                    position: slideAnimation,
+                                    child: child,
+                                  );
+                                },
                               ),
                             );
                           },
@@ -360,8 +366,8 @@ class _FriendsScreenState extends State<FriendsScreen> {
               (request) => _IncomingRequestTile(
                 request: request,
                 app: app,
-                onAccept: () => _respondIncoming(app, request.id, 'ACTIVE'),
-                onBlock: () => _respondIncoming(app, request.id, 'BLOQUED'),
+                onAccept: () => _respondIncoming(app, request.id, 'ACCEPTED'),
+                onBlock: () => _respondIncoming(app, request.id, 'DECLINED'),
               ),
             ),
         ],
@@ -405,6 +411,32 @@ class _FriendsScreenState extends State<FriendsScreen> {
     setState(() => _isLoadingInitialFriends = false);
   }
 
+  void _startRealtimeSync() {
+    _realtimeSyncTimer?.cancel();
+    _realtimeSyncTimer = Timer.periodic(const Duration(seconds: 20), (_) {
+      unawaited(_runRealtimeSyncTick());
+    });
+  }
+
+  Future<void> _runRealtimeSyncTick() async {
+    if (!mounted || _isRealtimeSyncRunning) return;
+    final app = context.read<AppController>();
+    if (app.isBootstrapping) return;
+    if (app.isSocketConnected) return;
+
+    _isRealtimeSyncRunning = true;
+    try {
+      await Future.wait([
+        app.refreshFriendRequests(silent: true),
+        app.refreshFriends(silent: true),
+        if (_mode == _FriendScreenMode.add || _query.isNotEmpty)
+          app.refreshUsers(silent: true),
+      ]);
+    } finally {
+      _isRealtimeSyncRunning = false;
+    }
+  }
+
   bool _matchesFriend(FriendModel friend) {
     if (_query.isEmpty) return true;
     final username = friend.friendDetails?.username.toLowerCase() ?? '';
@@ -443,73 +475,70 @@ class _FriendsScreenState extends State<FriendsScreen> {
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
       builder: (sheetContext) {
-        return SafeArea(
-          top: false,
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(8, 0, 8, 0),
-            child: Container(
-              padding: const EdgeInsets.fromLTRB(0, 10, 0, 16),
-              decoration: BoxDecoration(
-                gradient: AppGradients.gB1BCFBTo393566,
-                borderRadius: const BorderRadius.vertical(
-                  top: Radius.circular(28),
+        return Padding(
+          padding: const EdgeInsets.fromLTRB(8, 0, 8, 0),
+          child: Container(
+            padding: const EdgeInsets.fromLTRB(0, 10, 0, 16),
+            decoration: BoxDecoration(
+              gradient: AppGradients.gB1BCFBTo393566,
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(28),
+              ),
+              border: Border.all(
+                color: AppColors.whiteColor.withValues(alpha: 0.2),
+                width: 1,
+              ),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 74,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: AppColors.whiteColor.withValues(alpha: 0.55),
+                    borderRadius: BorderRadius.circular(99),
+                  ),
                 ),
-                border: Border.all(
+                const SizedBox(height: 18),
+                Text(
+                  'Actions amis',
+                  style: TextStyle(
+                    color: AppColors.whiteColor,
+                    fontFamily: AppTypography.displayFontFamily,
+                    fontSize: 22,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Divider(
+                  height: 1,
                   color: AppColors.whiteColor.withValues(alpha: 0.2),
-                  width: 1,
                 ),
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    width: 74,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: AppColors.whiteColor.withValues(alpha: 0.55),
-                      borderRadius: BorderRadius.circular(99),
-                    ),
+                const SizedBox(height: 16),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 14),
+                  child: Column(
+                    children: [
+                      _ModalActionTile(
+                        title: 'Voir mes amis',
+                        onTap: () {
+                          Navigator.of(sheetContext).pop();
+                          setState(() => _mode = _FriendScreenMode.list);
+                        },
+                      ),
+                      const SizedBox(height: 10),
+                      _ModalActionTile(
+                        title: 'Ajouter un ami',
+                        onTap: () {
+                          Navigator.of(sheetContext).pop();
+                          setState(() => _mode = _FriendScreenMode.add);
+                        },
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 18),
-                  Text(
-                    'Actions amis',
-                    style: TextStyle(
-                      color: AppColors.whiteColor,
-                      fontFamily: AppTypography.displayFontFamily,
-                      fontSize: 22,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  Divider(
-                    height: 1,
-                    color: AppColors.whiteColor.withValues(alpha: 0.2),
-                  ),
-                  const SizedBox(height: 16),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 14),
-                    child: Column(
-                      children: [
-                        _ModalActionTile(
-                          title: 'Voir mes amis',
-                          onTap: () {
-                            Navigator.of(sheetContext).pop();
-                            setState(() => _mode = _FriendScreenMode.list);
-                          },
-                        ),
-                        const SizedBox(height: 10),
-                        _ModalActionTile(
-                          title: 'Ajouter un ami',
-                          onTap: () {
-                            Navigator.of(sheetContext).pop();
-                            setState(() => _mode = _FriendScreenMode.add);
-                          },
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
         );
@@ -986,9 +1015,7 @@ class _IncomingRequestTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final details = request.friendDetails;
-    final user =
-        details ??
-        UserModel(id: request.friendId, username: 'Utilisateur', email: '');
+    final user = details ?? _resolveIncomingRequestUser(app, request);
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 6),
@@ -1066,7 +1093,7 @@ class _IncomingRequestTile extends StatelessWidget {
                   onPressed: onAccept,
                   icon: const Icon(
                     Icons.check_circle_rounded,
-                    color: AppColors.cCFFFDD,
+                    color: AppColors.success,
                   ),
                 ),
                 IconButton(
@@ -1074,7 +1101,7 @@ class _IncomingRequestTile extends StatelessWidget {
                   onPressed: onBlock,
                   icon: const Icon(
                     Icons.cancel_rounded,
-                    color: Color(0xFFFF9F9F),
+                    color: AppColors.danger,
                   ),
                 ),
               ],
@@ -1083,6 +1110,18 @@ class _IncomingRequestTile extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  UserModel _resolveIncomingRequestUser(
+    AppController app,
+    FriendModel request,
+  ) {
+    for (final candidate in app.allUsers) {
+      if (candidate.id == request.userId) {
+        return candidate;
+      }
+    }
+    return UserModel(id: request.userId, username: 'Utilisateur', email: '');
   }
 }
 

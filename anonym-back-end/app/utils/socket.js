@@ -37,6 +37,19 @@ const hasAllowNonFriendDmsColumn = async () => {
     return hasAllowNonFriendDmsColumnCache;
 };
 
+const hasBlockedRelationship = async (userAId, userBId) => {
+    const blockedFriendship = await Friend.findOne({
+        where: {
+            status: 'BLOQUED',
+            [Op.or]: [
+                { user_id: userAId, friend_id: userBId },
+                { user_id: userBId, friend_id: userAId }
+            ]
+        }
+    });
+    return Boolean(blockedFriendship);
+};
+
 const getUnreadMessageCount = async (channelId, userId) => {
     return await PrivateMessage.count({
         where: {
@@ -67,9 +80,11 @@ const markMessagesAsRead = async (channelId, userId) => {
 const initializeSocket = (io) => {
     io.on('connection', (socket) => {
         const connectedUserId = socket?.userId;
+        console.log(`[SOCKET] connection socketId=${socket.id} userId=${connectedUserId || 'unknown'}`);
 
         if (connectedUserId) {
             socket.join(`user:${connectedUserId}`);
+            console.log(`[SOCKET] join user room user:${connectedUserId} socketId=${socket.id}`);
             incrementPresenceConnections(connectedUserId);
             User.update(
                 { presence_status: 'online' },
@@ -86,6 +101,7 @@ const initializeSocket = (io) => {
 
         socket.on('joinChannel', async (data) => {
             const { channelId } = data;
+            console.log(`[SOCKET] joinChannel userId=${connectedUserId} channelId=${channelId}`);
             await markMessagesAsRead(channelId, connectedUserId);
             const unreadCount = await getUnreadMessageCount(channelId, connectedUserId);
             io.to(channelId).emit('unreadCount', { count: unreadCount });
@@ -119,6 +135,12 @@ const initializeSocket = (io) => {
 
                 if (channel.channel_type === 'PRIVATE_DM') {
                     const receiverId = memberIds.find((id) => id !== senderId);
+                    const blockedRelationshipExists = await hasBlockedRelationship(senderId, receiverId);
+                    if (blockedRelationshipExists) {
+                        socket.emit('messageError', { message: 'Impossible d envoyer un message: cette relation est bloquee.' });
+                        return;
+                    }
+
                     const allowNonFriendDmsColumnExists = await hasAllowNonFriendDmsColumn();
                     const receiver = await User.findByPk(receiverId, {
                         attributes: allowNonFriendDmsColumnExists ? ['id', 'allow_non_friend_dms'] : ['id']
@@ -178,13 +200,22 @@ const initializeSocket = (io) => {
                     ]
                 });
 
-                io.to(channelId).emit('newMessage', {
+                const messagePayload = {
                     id: message.message_id,
                     content: message.content,
                     imageUrl: message.image_url,
+                    channelId,
                     sender,
                     createdAt: message.createdAt
-                });
+                };
+
+                if (channel.channel_type === 'PRIVATE_DM') {
+                    for (const memberId of memberIds) {
+                        io.to(`user:${memberId}`).emit('newMessage', messagePayload);
+                    }
+                } else {
+                    io.to(channelId).emit('newMessage', messagePayload);
+                }
 
                 await sendPushToUsers({
                     userIds: memberIds,
@@ -206,6 +237,7 @@ const initializeSocket = (io) => {
         });
 
         socket.on('leaveChannel', async ({ channelId }) => {
+            console.log(`[SOCKET] leaveChannel userId=${connectedUserId} channelId=${channelId}`);
             socket.leave(channelId);
         });
 
@@ -267,7 +299,7 @@ const initializeSocket = (io) => {
                         });
                 }
             }
-            console.log(`Client disconnected: ${socket.id}`);
+            console.log(`[SOCKET] disconnected socketId=${socket.id} userId=${connectedUserId || 'unknown'}`);
         });
     });
 };
