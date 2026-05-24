@@ -28,6 +28,7 @@ import '../services/push_notification_service.dart';
 import '../services/shop_repository.dart';
 import '../services/socket_service.dart';
 import '../utils/api_error_parser.dart';
+import '../utils/profile_share_payload.dart';
 import '../utils/presence_utils.dart';
 import 'auth_controller.dart';
 
@@ -106,6 +107,7 @@ class AppController extends ChangeNotifier with WidgetsBindingObserver {
   List<UserModel> _allUsers = const [];
   final Map<int, LiveUserLocationModel> _liveLocationsByUserId = {};
   final Map<int, String> _presenceByUserId = {};
+  final Map<int, Future<List<ChannelModel>>> _publicGroupsByUserFuture = {};
   String? _manualPresenceOverride;
   bool _isAppInForeground = true;
   Timer? _socialRefreshDebounce;
@@ -410,6 +412,74 @@ class AppController extends ChangeNotifier with WidgetsBindingObserver {
     return fetched;
   }
 
+  Future<List<ChannelModel>> publicGroupsForUser(
+    int userId, {
+    bool forceRefresh = false,
+  }) {
+    if (userId <= 0) return Future.value(const <ChannelModel>[]);
+    if (forceRefresh || !_publicGroupsByUserFuture.containsKey(userId)) {
+      _publicGroupsByUserFuture[userId] = _fetchPublicGroupsForUser(userId);
+    }
+    return _publicGroupsByUserFuture[userId]!;
+  }
+
+  Future<List<ChannelModel>> _fetchPublicGroupsForUser(int userId) async {
+    final currentUserId = _authController.user?.id;
+    if (currentUserId != null && currentUserId == userId) {
+      return _channels
+          .where(
+            (channel) =>
+                channel.channelType.trim().toUpperCase() == 'GROUP' &&
+                channel.visibility.trim().toUpperCase() == 'PUBLIC',
+          )
+          .toList(growable: false);
+    }
+
+    final fetched = await loadJoinDirectoryChannels(filter: 'all');
+    final byId = <int, ChannelModel>{};
+
+    for (final channel in fetched) {
+      final isPublicGroup =
+          channel.channelType.trim().toUpperCase() == 'GROUP' &&
+          channel.visibility.trim().toUpperCase() == 'PUBLIC';
+      if (!isPublicGroup) continue;
+      byId[channel.channelId] = channel;
+    }
+
+    for (final channel in _channels) {
+      final isPublicGroup =
+          channel.channelType.trim().toUpperCase() == 'GROUP' &&
+          channel.visibility.trim().toUpperCase() == 'PUBLIC';
+      if (!isPublicGroup) continue;
+      byId[channel.channelId] = byId[channel.channelId] ?? channel;
+    }
+
+    final matches = <ChannelModel>[];
+    for (final channel in byId.values) {
+      if (channel.createdBy == userId) {
+        matches.add(channel);
+        continue;
+      }
+      try {
+        final members = await _channelRepository.readChannelUsers(
+          channel.channelId,
+        );
+        final isMember = members.any((member) => member.id == userId);
+        if (isMember) {
+          matches.add(channel);
+        }
+      } catch (_) {
+        // Ignore individual channel lookup failures.
+      }
+    }
+
+    matches.sort(
+      (a, b) =>
+          a.name.trim().toLowerCase().compareTo(b.name.trim().toLowerCase()),
+    );
+    return matches;
+  }
+
   Future<void> refreshShop({bool silent = false}) async {
     await _wrap(
       () async {
@@ -586,6 +656,55 @@ class AppController extends ChangeNotifier with WidgetsBindingObserver {
       );
       await selectChannel(channelToOpen);
     }, fallbackMessage: 'Creation de conversation privee impossible');
+  }
+
+  Future<int> shareProfileToUsers({
+    required int profileUserId,
+    required String profileUsername,
+    required List<int> targetUserIds,
+  }) async {
+    final normalizedName = profileUsername.trim();
+    final uniqueTargetUserIds = targetUserIds
+        .where((id) => id > 0)
+        .toSet()
+        .toList(growable: false);
+    if (profileUserId <= 0 ||
+        normalizedName.isEmpty ||
+        uniqueTargetUserIds.isEmpty) {
+      return 0;
+    }
+
+    var sentCount = 0;
+    final senderId = _authController.user?.id;
+    await _wrap(() async {
+      final payload = ProfileSharePayloadCodec.encode(
+        ProfileSharePayload(userId: profileUserId, username: normalizedName),
+      );
+      for (final targetUserId in uniqueTargetUserIds) {
+        final dm = await _channelRepository.create(
+          channelType: 'PRIVATE_DM',
+          memberIds: [targetUserId],
+        );
+        if (dm.channelId <= 0) continue;
+        if (_socketService.isConnected && senderId != null && senderId > 0) {
+          _socketService.sendPrivateMessage(
+            senderId: senderId,
+            content: payload,
+            channelId: dm.channelId,
+          );
+        } else {
+          await _privateMessageRepository.sendWithImage(
+            channelId: dm.channelId,
+            content: payload,
+          );
+        }
+        sentCount++;
+      }
+      if (sentCount > 0) {
+        await refreshChannels(silent: true);
+      }
+    }, fallbackMessage: 'Partage du profil impossible');
+    return sentCount;
   }
 
   Future<void> selectChannel(ChannelModel channel) async {
@@ -1894,6 +2013,7 @@ class AppController extends ChangeNotifier with WidgetsBindingObserver {
           relatedChannelId: channelId > 0 ? channelId : null,
         ),
       );
+      unawaited(refreshChannels(silent: true));
       return;
     }
     if (eventType == 'friendRequestReceived') {
@@ -2124,6 +2244,7 @@ class AppController extends ChangeNotifier with WidgetsBindingObserver {
     _allUsers = const [];
     _liveLocationsByUserId.clear();
     _presenceByUserId.clear();
+    _publicGroupsByUserFuture.clear();
     _socialRefreshDebounce?.cancel();
     _socialRefreshDebounce = null;
     _stopSessionKeepAlive();

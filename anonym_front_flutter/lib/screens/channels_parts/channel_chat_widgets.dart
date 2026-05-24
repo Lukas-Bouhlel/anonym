@@ -843,6 +843,40 @@ class _MessageBubble extends StatelessWidget {
 
     final hasImage = message.imageUrl != null && message.imageUrl!.isNotEmpty;
     final hasText = message.content.trim().isNotEmpty;
+    final sharedProfilePayload = hasText
+        ? ProfileSharePayloadCodec.tryDecode(message.content)
+        : null;
+    final hasSharedProfile = sharedProfilePayload != null;
+
+    Future<void> openSharedProfile(ProfileSharePayload payload) async {
+      final app = context.read<AppController>();
+      UserModel? sharedUser;
+      for (final user in app.allUsers) {
+        if (user.id == payload.userId) {
+          sharedUser = user;
+          break;
+        }
+      }
+      sharedUser ??= UserModel(
+        id: payload.userId,
+        username: payload.username,
+        email: '',
+      );
+
+      await showModalBottomSheet(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: Colors.transparent,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+        ),
+        clipBehavior: Clip.antiAlias,
+        builder: (_) => FractionallySizedBox(
+          heightFactor: 0.86,
+          child: UserProfileScreen(user: sharedUser!),
+        ),
+      );
+    }
 
     final avatar = showIdentityOnThisMessage
         ? GestureDetector(
@@ -916,17 +950,24 @@ class _MessageBubble extends StatelessWidget {
                       padding: hasImage
                           ? const EdgeInsets.fromLTRB(14, 0, 14, 14)
                           : EdgeInsets.zero,
-                      child: Text(
-                        message.content,
-                        style: TextStyle(
-                          color: own
-                              ? AppColors.whiteColor
-                              : AppColors.textPrimary,
-                          fontSize: 15,
-                          fontFamily: AppTypography.displayFontFamily,
-                          height: 1.35,
-                        ),
-                      ),
+                      child: hasSharedProfile
+                          ? _SharedProfileMessageCard(
+                              own: own,
+                              payload: sharedProfilePayload,
+                              onTap: () =>
+                                  openSharedProfile(sharedProfilePayload),
+                            )
+                          : Text(
+                              message.content,
+                              style: TextStyle(
+                                color: own
+                                    ? AppColors.whiteColor
+                                    : AppColors.textPrimary,
+                                fontSize: 15,
+                                fontFamily: AppTypography.displayFontFamily,
+                                height: 1.35,
+                              ),
+                            ),
                     ),
                   ],
                 ],
@@ -1072,6 +1113,77 @@ class _MessageBubble extends StatelessWidget {
 }
 
 // ─── Widgets inchangés ────────────────────────────────────────────────────────
+
+class _SharedProfileMessageCard extends StatelessWidget {
+  const _SharedProfileMessageCard({
+    required this.own,
+    required this.payload,
+    required this.onTap,
+  });
+
+  final bool own;
+  final ProfileSharePayload payload;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final textColor = own ? AppColors.whiteColor : AppColors.textPrimary;
+    final subtleColor = own
+        ? AppColors.whiteColor.withValues(alpha: 0.82)
+        : AppColors.textPrimary.withValues(alpha: 0.78);
+    final outlineColor = own
+        ? AppColors.whiteColor.withValues(alpha: 0.20)
+        : AppColors.c393566.withValues(alpha: 0.18);
+    return InkWell(
+      borderRadius: BorderRadius.circular(12),
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+        decoration: BoxDecoration(
+          color: Colors.transparent,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: outlineColor),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.person_pin_circle_outlined, color: textColor, size: 20),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'Compte partage',
+                    style: TextStyle(
+                      color: subtleColor,
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    payload.username,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: textColor,
+                      fontSize: 14.5,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 6),
+            Icon(Icons.chevron_right_rounded, color: textColor, size: 22),
+          ],
+        ),
+      ),
+    );
+  }
+}
 
 class _ChatMessageAvatar extends StatelessWidget {
   const _ChatMessageAvatar({required this.avatarUrl, required this.frameUrl});

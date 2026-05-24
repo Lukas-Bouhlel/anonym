@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
 import '../models/points_summary_model.dart';
+import '../models/user_model.dart';
 import '../providers/app_controller.dart';
 import '../providers/auth_controller.dart';
 import '../services/points_repository.dart';
@@ -233,7 +234,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           InkWell(
                             onTap: () => _showShareModal(
                               context,
+                              userId: user?.id ?? 0,
                               username: user?.username ?? 'Utilisateur',
+                              avatarUrl: user?.avatar,
                             ),
                             borderRadius: BorderRadius.circular(18),
                             child: Container(
@@ -434,14 +437,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Future<void> _showShareModal(
     BuildContext context, {
+    required int userId,
     required String username,
+    String? avatarUrl,
   }) async {
     await Navigator.of(context).push(
       PageRouteBuilder<void>(
         transitionDuration: const Duration(milliseconds: 260),
         reverseTransitionDuration: const Duration(milliseconds: 220),
         pageBuilder: (context, animation, secondaryAnimation) =>
-            ShareProfileScreen(username: username),
+            ShareProfileScreen(
+              userId: userId,
+              username: username,
+              avatarUrl: avatarUrl,
+            ),
         transitionsBuilder: (context, animation, secondaryAnimation, child) {
           final offset =
               Tween<Offset>(
@@ -703,14 +712,332 @@ class _LevelTimelineBarState extends State<_LevelTimelineBar> {
   }
 }
 
-class ShareProfileScreen extends StatelessWidget {
-  const ShareProfileScreen({super.key, required this.username});
+class ShareProfileScreen extends StatefulWidget {
+  const ShareProfileScreen({
+    super.key,
+    required this.userId,
+    required this.username,
+    this.avatarUrl,
+  });
 
+  final int userId;
   final String username;
+  final String? avatarUrl;
+
+  @override
+  State<ShareProfileScreen> createState() => _ShareProfileScreenState();
+}
+
+class _ShareProfileScreenState extends State<ShareProfileScreen> {
+  Future<void> _openShareToFriendsSheet(BuildContext context) async {
+    final app = context.read<AppController>();
+    final messenger = ScaffoldMessenger.of(context);
+    final profileUserId = widget.userId;
+    final profileUsername = widget.username.trim();
+
+    if (profileUserId <= 0 || profileUsername.isEmpty) {
+      messenger.showSnackBar(
+        const SnackBar(content: Text('Profil impossible a partager.')),
+      );
+      return;
+    }
+
+    final friends = _buildFriendTargets(app);
+    if (friends.isEmpty) {
+      messenger.showSnackBar(
+        const SnackBar(content: Text('Aucun ami disponible pour le partage.')),
+      );
+      return;
+    }
+
+    var query = '';
+    final selectedUserIds = <int>{};
+    var sending = false;
+
+    await showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (sheetContext) {
+        return StatefulBuilder(
+          builder: (sheetContext, setModalState) {
+            final filteredFriends = friends
+                .where(
+                  (friend) =>
+                      query.isEmpty ||
+                      friend.username.toLowerCase().contains(query),
+                )
+                .toList(growable: false);
+            final canSend = selectedUserIds.isNotEmpty && !sending;
+
+            return Container(
+              constraints: BoxConstraints(
+                maxHeight: MediaQuery.of(sheetContext).size.height * 0.86,
+              ),
+              padding: EdgeInsets.fromLTRB(
+                14,
+                10,
+                14,
+                16 + MediaQuery.viewPaddingOf(sheetContext).bottom,
+              ),
+              decoration: BoxDecoration(
+                gradient: AppGradients.gB1BCFBTo393566,
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(24),
+                ),
+                border: Border.all(
+                  color: AppColors.cFCFAFE.withValues(alpha: 0.3),
+                ),
+              ),
+              child: Column(
+                children: [
+                  Container(
+                    width: 44,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: AppColors.cFCFAFE.withValues(alpha: 0.45),
+                      borderRadius: BorderRadius.circular(99),
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  const Text(
+                    'Partager avec mes amis',
+                    style: TextStyle(
+                      color: AppColors.cFCFAFE,
+                      fontFamily: AppTypography.displayFontFamily,
+                      fontSize: 22,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Container(
+                    height: 46,
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    decoration: BoxDecoration(
+                      color: AppColors.cFCFAFE.withValues(alpha: 0.07),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(
+                        color: AppColors.cFCFAFE.withValues(alpha: 0.16),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(
+                          Icons.search_rounded,
+                          color: AppColors.cFCFAFE,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: TextField(
+                            onChanged: (value) {
+                              setModalState(
+                                () => query = value.trim().toLowerCase(),
+                              );
+                            },
+                            style: const TextStyle(
+                              color: AppColors.cFCFAFE,
+                              fontSize: 14,
+                            ),
+                            decoration: const InputDecoration(
+                              hintText: 'Rechercher un ami',
+                              border: InputBorder.none,
+                              enabledBorder: InputBorder.none,
+                              focusedBorder: InputBorder.none,
+                              isCollapsed: true,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Expanded(
+                    child: filteredFriends.isEmpty
+                        ? const Center(
+                            child: Text(
+                              'Aucun ami trouve.',
+                              style: TextStyle(color: AppColors.cDBE7FE),
+                            ),
+                          )
+                        : ListView.separated(
+                            padding: EdgeInsets.zero,
+                            itemCount: filteredFriends.length,
+                            separatorBuilder: (_, _) =>
+                                const SizedBox(height: 8),
+                            itemBuilder: (context, index) {
+                              final friend = filteredFriends[index];
+                              final checked = selectedUserIds.contains(
+                                friend.userId,
+                              );
+                              return InkWell(
+                                borderRadius: BorderRadius.circular(14),
+                                onTap: sending
+                                    ? null
+                                    : () {
+                                        setModalState(() {
+                                          if (checked) {
+                                            selectedUserIds.remove(
+                                              friend.userId,
+                                            );
+                                          } else {
+                                            selectedUserIds.add(friend.userId);
+                                          }
+                                        });
+                                      },
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 10,
+                                    vertical: 8,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.cFCFAFE.withValues(
+                                      alpha: 0.08,
+                                    ),
+                                    borderRadius: BorderRadius.circular(14),
+                                    border: Border.all(
+                                      color: AppColors.cFCFAFE.withValues(
+                                        alpha: checked ? 0.45 : 0.18,
+                                      ),
+                                    ),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      ClipOval(
+                                        child: AppRemoteImage(
+                                          url: friend.avatarUrl,
+                                          width: 40,
+                                          height: 40,
+                                          fit: BoxFit.cover,
+                                          fallbackIcon: Icons.person,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 10),
+                                      Expanded(
+                                        child: Text(
+                                          friend.username,
+                                          style: const TextStyle(
+                                            color: AppColors.cFCFAFE,
+                                            fontWeight: FontWeight.w700,
+                                          ),
+                                        ),
+                                      ),
+                                      Checkbox(
+                                        value: checked,
+                                        onChanged: sending
+                                            ? null
+                                            : (value) {
+                                                setModalState(() {
+                                                  if (value == true) {
+                                                    selectedUserIds.add(
+                                                      friend.userId,
+                                                    );
+                                                  } else {
+                                                    selectedUserIds.remove(
+                                                      friend.userId,
+                                                    );
+                                                  }
+                                                });
+                                              },
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                  ),
+                  const SizedBox(height: 10),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 52,
+                    child: FilledButton(
+                      onPressed: !canSend
+                          ? null
+                          : () async {
+                              setModalState(() => sending = true);
+                              final sentCount = await app.shareProfileToUsers(
+                                profileUserId: profileUserId,
+                                profileUsername: profileUsername,
+                                targetUserIds: selectedUserIds.toList(),
+                              );
+                              if (!sheetContext.mounted) return;
+                              setModalState(() => sending = false);
+                              if (app.errorMessage != null) {
+                                messenger.showSnackBar(
+                                  SnackBar(content: Text(app.errorMessage!)),
+                                );
+                                return;
+                              }
+                              Navigator.of(sheetContext).pop();
+                              messenger.showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                    sentCount <= 1
+                                        ? 'Profil partage en message prive.'
+                                        : 'Profil partage a $sentCount amis.',
+                                  ),
+                                ),
+                              );
+                            },
+                      style: FilledButton.styleFrom(
+                        backgroundColor: AppColors.cFCFAFE,
+                        foregroundColor: AppColors.c121212,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: Text(
+                        sending
+                            ? 'Envoi en cours...'
+                            : 'Envoyer (${selectedUserIds.length})',
+                        style: const TextStyle(fontWeight: FontWeight.w700),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  List<_ShareFriendTarget> _buildFriendTargets(AppController app) {
+    final dedup = <int, _ShareFriendTarget>{};
+    for (final friend in app.friends) {
+      if (friend.status.trim().toUpperCase() != 'ACTIVE') continue;
+      final friendId = friend.friendId;
+      if (friendId <= 0) continue;
+      final fromDetails = friend.friendDetails;
+      UserModel? fallbackFromUsers;
+      for (final user in app.allUsers) {
+        if (user.id == friendId) {
+          fallbackFromUsers = user;
+          break;
+        }
+      }
+      final username =
+          (fromDetails?.username ?? fallbackFromUsers?.username ?? '').trim();
+      if (username.isEmpty) continue;
+      final avatarUrl = fromDetails?.avatar ?? fallbackFromUsers?.avatar;
+      dedup[friendId] = _ShareFriendTarget(
+        userId: friendId,
+        username: username,
+        avatarUrl: avatarUrl,
+      );
+    }
+    final values = dedup.values.toList(growable: false);
+    values.sort(
+      (a, b) => a.username.toLowerCase().compareTo(b.username.toLowerCase()),
+    );
+    return values;
+  }
 
   @override
   Widget build(BuildContext context) {
     final t = Theme.of(context).textTheme;
+    final username = widget.username;
     final profileLink = 'https://anonym.app/u/$username';
 
     return Scaffold(
@@ -778,13 +1105,7 @@ class ShareProfileScreen extends StatelessWidget {
                   width: double.infinity,
                   height: 54,
                   child: FilledButton(
-                    onPressed: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Partage bientot disponible.'),
-                        ),
-                      );
-                    },
+                    onPressed: () => _openShareToFriendsSheet(context),
                     style: FilledButton.styleFrom(
                       backgroundColor: AppColors.cFCFAFE,
                       foregroundColor: AppColors.c121212,
@@ -873,6 +1194,18 @@ class ShareProfileScreen extends StatelessWidget {
       ),
     );
   }
+}
+
+class _ShareFriendTarget {
+  const _ShareFriendTarget({
+    required this.userId,
+    required this.username,
+    required this.avatarUrl,
+  });
+
+  final int userId;
+  final String username;
+  final String? avatarUrl;
 }
 
 class _ReputationLinePainter extends CustomPainter {

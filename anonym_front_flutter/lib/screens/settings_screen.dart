@@ -17,6 +17,7 @@ import 'password_screen.dart';
 import 'blocked_users_screen.dart';
 import 'faq_screen.dart';
 import 'feedback_screen.dart';
+import 'notifications_screen.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -199,7 +200,36 @@ class SettingsScreen extends StatelessWidget {
                       ),
                     ),
                   ),
-                  const _SettingsItem(label: 'Notifications'),
+                  _SettingsItem(
+                    label: 'Notifications',
+                    onTap: () => Navigator.of(context).push(
+                      PageRouteBuilder<void>(
+                        transitionDuration: const Duration(milliseconds: 260),
+                        reverseTransitionDuration: const Duration(
+                          milliseconds: 220,
+                        ),
+                        pageBuilder: (context, animation, secondaryAnimation) =>
+                            const NotificationsScreen(),
+                        transitionsBuilder:
+                            (context, animation, secondaryAnimation, child) {
+                              final offset =
+                                  Tween<Offset>(
+                                    begin: const Offset(1, 0),
+                                    end: Offset.zero,
+                                  ).animate(
+                                    CurvedAnimation(
+                                      parent: animation,
+                                      curve: Curves.easeOutCubic,
+                                    ),
+                                  );
+                              return SlideTransition(
+                                position: offset,
+                                child: child,
+                              );
+                            },
+                      ),
+                    ),
+                  ),
                 ],
               ),
               const SizedBox(height: 20),

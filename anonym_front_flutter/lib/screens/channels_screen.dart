@@ -15,6 +15,7 @@ import 'group_settings_screen.dart';
 import 'user_profile_screen.dart';
 import '../theme.dart';
 import '../utils/app_date_format.dart';
+import '../utils/profile_share_payload.dart';
 import '../utils/presence_utils.dart';
 import '../widgets/app_remote_image.dart';
 import '../widgets/chrome/moji_back_button.dart';
@@ -327,7 +328,7 @@ class _ChannelsScreenState extends State<ChannelsScreen> {
                 const SizedBox(height: 8),
                 _InfoRow(
                   icon: Icons.login_rounded,
-                  label: 'Rejoindre une conversation',
+                  label: 'Rejoindre un groupe',
                   onTap: () async {
                     Navigator.of(sheetContext).pop();
                     await _openJoinPublicDirectoryScreen(parentContext, app);
@@ -350,7 +351,7 @@ class _ChannelsScreenState extends State<ChannelsScreen> {
         transitionDuration: const Duration(milliseconds: 260),
         reverseTransitionDuration: const Duration(milliseconds: 220),
         pageBuilder: (context, animation, secondaryAnimation) =>
-            const _PublicConversationsScreen(),
+            const PublicConversationsScreen(),
         transitionsBuilder: (context, animation, secondaryAnimation, child) {
           final offset =
               Tween<Offset>(
@@ -410,6 +411,7 @@ class _ChannelsScreenState extends State<ChannelsScreen> {
     BuildContext context,
     AppController app,
   ) async {
+    final parentContext = context;
     final selected = app.selectedChannel;
     if (selected == null) return;
     final isPrivateDm =
@@ -479,8 +481,8 @@ class _ChannelsScreenState extends State<ChannelsScreen> {
                       label: 'Modifier le groupe',
                       onTap: () async {
                         Navigator.of(context).pop();
-                        if (!context.mounted) return;
-                        await Navigator.of(context).push(
+                        if (!parentContext.mounted) return;
+                        await Navigator.of(parentContext).push(
                           MaterialPageRoute(
                             builder: (_) =>
                                 GroupSettingsScreen(channel: selected),
@@ -495,8 +497,8 @@ class _ChannelsScreenState extends State<ChannelsScreen> {
                     label: 'Voir les membres du groupe',
                     onTap: () async {
                       Navigator.of(context).pop();
-                      if (!context.mounted) return;
-                      await _showMembersSheet(context, app, selected);
+                      if (!parentContext.mounted) return;
+                      await _showMembersSheet(parentContext, app, selected);
                     },
                   ),
                   const SizedBox(height: 8),
@@ -505,10 +507,34 @@ class _ChannelsScreenState extends State<ChannelsScreen> {
                     label: 'Creer une invitation',
                     onTap: () async {
                       Navigator.of(context).pop();
-                      if (!context.mounted) return;
-                      await _showInviteSheet(context, app, selected);
+                      if (!parentContext.mounted) return;
+                      await _showInviteSheet(parentContext, app, selected);
                     },
                   ),
+                  if (!isCreator) ...[
+                    const SizedBox(height: 8),
+                    _InfoRow(
+                      icon: Icons.logout_rounded,
+                      label: 'Quitter le groupe',
+                      onTap: () async {
+                        Navigator.of(context).pop();
+                        if (!parentContext.mounted) return;
+                        final shouldLeave = await _confirmLeaveGroup(
+                          parentContext,
+                          selected,
+                        );
+                        if (!shouldLeave) return;
+                        await app.leaveSelectedChannel();
+                        if (!parentContext.mounted) return;
+                        if (app.errorMessage != null &&
+                            app.errorMessage!.isNotEmpty) {
+                          ScaffoldMessenger.of(parentContext).showSnackBar(
+                            SnackBar(content: Text(app.errorMessage!)),
+                          );
+                        }
+                      },
+                    ),
+                  ],
                   const SizedBox(height: 8),
                   Container(
                     padding: const EdgeInsets.symmetric(
@@ -604,7 +630,10 @@ class _ChannelsScreenState extends State<ChannelsScreen> {
     AppController app,
     ChannelModel channel,
   ) async {
-    await app.selectChannel(channel);
+    final selectedChannelId = app.selectedChannel?.channelId;
+    if (selectedChannelId != channel.channelId) {
+      await app.selectChannel(channel);
+    }
     if (!context.mounted) return;
     final currentUserId = context.read<AuthController>().user?.id;
     final isHost = currentUserId != null && channel.createdBy == currentUserId;
@@ -755,6 +784,27 @@ class _ChannelsScreenState extends State<ChannelsScreen> {
         title: 'Exclure $username ?',
         description: 'Cette action retire immediatement ce membre du groupe.',
         confirmLabel: 'Exclure',
+        onConfirm: () => Navigator.of(dialogContext).pop(true),
+        onCancel: () => Navigator.of(dialogContext).pop(false),
+      ),
+    );
+    return confirmed == true;
+  }
+
+  Future<bool> _confirmLeaveGroup(
+    BuildContext context,
+    ChannelModel channel,
+  ) async {
+    final groupName = channel.name.trim();
+    final safeName = groupName.isEmpty ? 'ce groupe' : groupName;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      barrierDismissible: true,
+      builder: (dialogContext) => MojiConfirmModal(
+        title: 'Quitter $safeName ?',
+        description:
+            'Tu ne recevras plus les messages du groupe. Tu pourras le rejoindre de nouveau plus tard.',
+        confirmLabel: 'Quitter',
         onConfirm: () => Navigator.of(dialogContext).pop(true),
         onCancel: () => Navigator.of(dialogContext).pop(false),
       ),
@@ -1136,15 +1186,15 @@ class _ChannelsScreenState extends State<ChannelsScreen> {
   }
 }
 
-class _PublicConversationsScreen extends StatefulWidget {
-  const _PublicConversationsScreen();
+class PublicConversationsScreen extends StatefulWidget {
+  const PublicConversationsScreen({super.key});
 
   @override
-  State<_PublicConversationsScreen> createState() =>
+  State<PublicConversationsScreen> createState() =>
       _PublicConversationsScreenState();
 }
 
-class _PublicConversationsScreenState extends State<_PublicConversationsScreen>
+class _PublicConversationsScreenState extends State<PublicConversationsScreen>
     with WidgetsBindingObserver {
   String _query = '';
   String _filter = 'all';

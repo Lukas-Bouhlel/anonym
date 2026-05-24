@@ -11,7 +11,6 @@ import '../widgets/chrome/moji_glass_bottom_nav.dart';
 import 'channels_screen.dart';
 import 'friends_screen.dart';
 import 'home_screen.dart';
-import 'placeholder_screen.dart';
 import 'profile_screen.dart';
 
 class AppShellScreen extends StatefulWidget {
@@ -139,15 +138,7 @@ class _AppShellScreenState extends State<AppShellScreen> {
                 onTap: () async {
                   Navigator.of(sheetContext).pop();
                   if (!context.mounted) return;
-                  await Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) => const PlaceholderScreen(
-                        title: 'Rejoindre un groupe',
-                        description:
-                            'Ecran dedie a finaliser: recherche, liste des groupes publics et demande d acces privee.',
-                      ),
-                    ),
-                  );
+                  await _openJoinPublicDirectoryScreen(context);
                 },
               ),
             ],
@@ -487,6 +478,27 @@ class _AppShellScreenState extends State<AppShellScreen> {
           },
         );
       },
+    );
+  }
+
+  Future<void> _openJoinPublicDirectoryScreen(BuildContext context) async {
+    await Navigator.of(context).push(
+      PageRouteBuilder<void>(
+        transitionDuration: const Duration(milliseconds: 260),
+        reverseTransitionDuration: const Duration(milliseconds: 220),
+        pageBuilder: (context, animation, secondaryAnimation) =>
+            const PublicConversationsScreen(),
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          final offset =
+              Tween<Offset>(
+                begin: const Offset(1, 0),
+                end: Offset.zero,
+              ).animate(
+                CurvedAnimation(parent: animation, curve: Curves.easeOutCubic),
+              );
+          return SlideTransition(position: offset, child: child);
+        },
+      ),
     );
   }
 }

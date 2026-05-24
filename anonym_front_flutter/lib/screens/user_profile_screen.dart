@@ -59,16 +59,7 @@ class UserProfileScreen extends StatelessWidget {
       user.id,
       isCurrentUser: isOwnProfile,
     );
-    final publicCommunities = app.channels
-        .where((channel) {
-          final isPublicGroup =
-              channel.channelType.trim().toUpperCase() == 'GROUP' &&
-              channel.visibility.trim().toUpperCase() == 'PUBLIC';
-          if (!isPublicGroup) return false;
-          if (isOwnProfile) return true;
-          return channel.createdBy == user.id;
-        })
-        .toList(growable: false);
+    final publicCommunitiesFuture = app.publicGroupsForUser(user.id);
 
     return Scaffold(
       backgroundColor: Colors.transparent,
@@ -302,36 +293,97 @@ class UserProfileScreen extends StatelessWidget {
                                 ),
                               ),
                             ),
-                            child: publicCommunities.isEmpty
-                                ? const Center(
+                            child: FutureBuilder<List<ChannelModel>>(
+                              future: publicCommunitiesFuture,
+                              builder: (context, snapshot) {
+                                if (snapshot.connectionState ==
+                                    ConnectionState.waiting) {
+                                  return const Center(
+                                    child: SizedBox(
+                                      width: 24,
+                                      height: 24,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2.4,
+                                        color: AppColors.cFCFAFE,
+                                      ),
+                                    ),
+                                  );
+                                }
+
+                                final publicCommunities =
+                                    snapshot.data ?? const [];
+                                if (publicCommunities.isEmpty) {
+                                  return const Center(
                                     child: Text(
-                                      'Aucune communaute publique.',
+                                      'Aucun groupes publique.',
                                       style: TextStyle(
                                         color: AppColors.cDBE7FE,
                                         fontSize: 13,
                                       ),
                                     ),
-                                  )
-                                : ListView.separated(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 14,
-                                      vertical: 10,
-                                    ),
-                                    itemCount: publicCommunities.length,
-                                    separatorBuilder: (_, _) =>
-                                        const SizedBox(height: 2),
-                                    itemBuilder: (context, index) {
-                                      final channel = publicCommunities[index];
-                                      return _CommunityConversationTile(
-                                        channel: channel,
-                                        onTap: () async {
-                                          await app.selectChannel(channel);
-                                          if (!context.mounted) return;
-                                          Navigator.of(context).pop();
-                                        },
-                                      );
-                                    },
+                                  );
+                                }
+
+                                return ListView.separated(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 14,
+                                    vertical: 10,
                                   ),
+                                  itemCount: publicCommunities.length,
+                                  separatorBuilder: (_, _) =>
+                                      const SizedBox(height: 2),
+                                  itemBuilder: (context, index) {
+                                    final channel = publicCommunities[index];
+                                    return _CommunityConversationTile(
+                                      channel: channel,
+                                      onTap: () async {
+                                        final alreadyJoined = app.channels.any(
+                                          (item) =>
+                                              item.channelId ==
+                                              channel.channelId,
+                                        );
+                                        if (!alreadyJoined) {
+                                          await app.joinPublicChannel(
+                                            channel.channelId,
+                                            publicFilter: 'all',
+                                          );
+                                          if (!context.mounted) return;
+                                          if (app.errorMessage != null &&
+                                              app.errorMessage!.isNotEmpty) {
+                                            ScaffoldMessenger.of(
+                                              context,
+                                            ).showSnackBar(
+                                              SnackBar(
+                                                content: Text(
+                                                  app.errorMessage!,
+                                                ),
+                                              ),
+                                            );
+                                            return;
+                                          }
+                                        }
+                                        await app.openChannelById(
+                                          channel.channelId,
+                                        );
+                                        if (!context.mounted) return;
+                                        if (app.errorMessage != null &&
+                                            app.errorMessage!.isNotEmpty) {
+                                          ScaffoldMessenger.of(
+                                            context,
+                                          ).showSnackBar(
+                                            SnackBar(
+                                              content: Text(app.errorMessage!),
+                                            ),
+                                          );
+                                          return;
+                                        }
+                                        Navigator.of(context).pop();
+                                      },
+                                    );
+                                  },
+                                );
+                              },
+                            ),
                           ),
                         ),
                         const SizedBox(height: 24),
@@ -421,7 +473,9 @@ class UserProfileScreen extends StatelessWidget {
                                               animation,
                                               secondaryAnimation,
                                             ) => ShareProfileScreen(
+                                              userId: user.id,
                                               username: user.username,
+                                              avatarUrl: user.avatar,
                                             ),
                                         transitionsBuilder:
                                             (
@@ -844,7 +898,7 @@ class _CommunityConversationTile extends StatelessWidget {
                     Text(
                       (channel.description ?? '').trim().isNotEmpty
                           ? channel.description!.trim()
-                          : 'Lorem ipsum ...',
+                          : '',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
