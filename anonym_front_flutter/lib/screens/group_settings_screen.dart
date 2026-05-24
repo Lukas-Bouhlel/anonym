@@ -58,7 +58,8 @@ class _GroupSettingsScreenState extends State<GroupSettingsScreen> {
     final app = context.watch<AppController>();
     final isPrivate = _visibility == 'PRIVATE';
     final currentUserId = context.watch<AuthController>().user?.id;
-    final isCreator = currentUserId != null && currentUserId == widget.channel.createdBy;
+    final isCreator =
+        currentUserId != null && currentUserId == widget.channel.createdBy;
 
     return Scaffold(
       backgroundColor: Colors.transparent,
@@ -103,10 +104,7 @@ class _GroupSettingsScreenState extends State<GroupSettingsScreen> {
                       const SizedBox(height: 28),
                       const _SectionLabel('Nom du groupe'),
                       const SizedBox(height: 8),
-                      _GlassTextField(
-                        controller: _nameController,
-                        hint: '',
-                      ),
+                      _GlassTextField(controller: _nameController, hint: ''),
                       const SizedBox(height: 20),
                       const _SectionLabel('Description'),
                       const SizedBox(height: 8),
@@ -115,8 +113,8 @@ class _GroupSettingsScreenState extends State<GroupSettingsScreen> {
                         hint: '',
                         maxLines: 3,
                       ),
-                       const SizedBox(height: 28),
-                       const _SectionLabel('Icône'),
+                      const SizedBox(height: 28),
+                      const _SectionLabel('Icône'),
                       const SizedBox(height: 4),
                       Text(
                         "Nous recommandons une taille d'image d'au moins 512 x 512.",
@@ -137,7 +135,9 @@ class _GroupSettingsScreenState extends State<GroupSettingsScreen> {
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(10),
                                 ),
-                                padding: const EdgeInsets.symmetric(vertical: 14),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 14,
+                                ),
                               ),
                               child: const Text(
                                 "Changer l'icône du groupe",
@@ -152,8 +152,10 @@ class _GroupSettingsScreenState extends State<GroupSettingsScreen> {
                           SizedBox(
                             width: double.infinity,
                             child: OutlinedButton(
-                              onPressed: _imagePath != null ||
-                                      ((widget.channel.coverImage ?? '').isNotEmpty &&
+                              onPressed:
+                                  _imagePath != null ||
+                                      ((widget.channel.coverImage ?? '')
+                                              .isNotEmpty &&
                                           !_removeCurrentIcon)
                                   ? () => setState(() {
                                       _imagePath = null;
@@ -163,13 +165,17 @@ class _GroupSettingsScreenState extends State<GroupSettingsScreen> {
                               style: OutlinedButton.styleFrom(
                                 foregroundColor: AppColors.whiteColor,
                                 side: BorderSide(
-                                  color: AppColors.cFCFAFE.withValues(alpha: 0.10),
+                                  color: AppColors.cFCFAFE.withValues(
+                                    alpha: 0.10,
+                                  ),
                                 ),
                                 backgroundColor: AppColors.danger,
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(14),
                                 ),
-                                padding: const EdgeInsets.symmetric(vertical: 14),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 14,
+                                ),
                               ),
                               child: const Text(
                                 "Supprimer l'icône",
@@ -212,7 +218,9 @@ class _GroupSettingsScreenState extends State<GroupSettingsScreen> {
                       ),
                       const SizedBox(height: 12),
                       _DangerButton(
-                        label: isCreator ? 'Supprimer le groupe' : 'Quitter le groupe',
+                        label: isCreator
+                            ? 'Supprimer le groupe'
+                            : 'Quitter le groupe',
                         icon: Icons.exit_to_app_rounded,
                         onPressed: () => _handleLeaveOrDelete(isCreator),
                       ),
@@ -230,7 +238,10 @@ class _GroupSettingsScreenState extends State<GroupSettingsScreen> {
   Future<void> _pickIcon() async {
     final file = await fs.openFile(
       acceptedTypeGroups: const [
-        fs.XTypeGroup(label: 'images', extensions: ['jpg', 'jpeg', 'png', 'webp']),
+        fs.XTypeGroup(
+          label: 'images',
+          extensions: ['jpg', 'jpeg', 'png', 'webp'],
+        ),
       ],
     );
     if (file == null || file.path.isEmpty) return;
@@ -250,7 +261,9 @@ class _GroupSettingsScreenState extends State<GroupSettingsScreen> {
     if (!mounted) return;
     final error = context.read<AppController>().errorMessage;
     if (error != null && error.isNotEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error)));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(error)));
       return;
     }
     Navigator.of(context).pop();
@@ -268,7 +281,9 @@ class _GroupSettingsScreenState extends State<GroupSettingsScreen> {
     if (!mounted) return;
     final error = app.errorMessage;
     if (error != null && error.isNotEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error)));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(error)));
       return;
     }
     Navigator.of(context).pop();
@@ -280,6 +295,7 @@ class _GroupSettingsScreenState extends State<GroupSettingsScreen> {
       barrierDismissible: true,
       builder: (context) {
         return MojiConfirmModal(
+          type: MojiConfirmModalType.danger,
           title: 'Supprimer ce groupe ?',
           description:
               "Cette action est définitive. Tous les messages et accès au groupe seront supprimés.",
@@ -293,10 +309,7 @@ class _GroupSettingsScreenState extends State<GroupSettingsScreen> {
 }
 
 class _PrivacyToggleCard extends StatelessWidget {
-  const _PrivacyToggleCard({
-    required this.isPrivate,
-    required this.onChanged,
-  });
+  const _PrivacyToggleCard({required this.isPrivate, required this.onChanged});
   final bool isPrivate;
   final ValueChanged<bool> onChanged;
 
@@ -536,10 +549,15 @@ class _GlassTextField extends StatelessWidget {
         style: const TextStyle(color: AppColors.cFCFAFE, fontSize: 15),
         decoration: InputDecoration(
           hintText: hint,
-          hintStyle: TextStyle(color: AppColors.cFCFAFE.withValues(alpha: 0.38)),
+          hintStyle: TextStyle(
+            color: AppColors.cFCFAFE.withValues(alpha: 0.38),
+          ),
           filled: false,
           border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 14,
+            vertical: 14,
+          ),
         ),
       ),
     );
@@ -580,10 +598,15 @@ class _GradientButton extends StatelessWidget {
         child: TextButton(
           onPressed: onPressed,
           style: TextButton.styleFrom(
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
             foregroundColor: AppColors.cFCFAFE,
             disabledForegroundColor: AppColors.cFCFAFE.withValues(alpha: 0.5),
-            textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+            textStyle: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+            ),
           ),
           child: loading
               ? const SizedBox(
@@ -628,9 +651,14 @@ class _DangerButton extends StatelessWidget {
         child: TextButton(
           onPressed: onPressed,
           style: TextButton.styleFrom(
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
             foregroundColor: AppColors.danger,
-            textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+            textStyle: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+            ),
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,

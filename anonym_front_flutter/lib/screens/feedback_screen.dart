@@ -38,7 +38,6 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
     final authController = context.read<AuthController>();
     final adminRepository = context.read<AdminRepository>();
     final messenger = ScaffoldMessenger.of(context);
-    final navigator = Navigator.of(context);
 
     if (widget.confirmBeforeSubmit) {
       final confirmed = await _showSubmitConfirmModal();
@@ -62,8 +61,9 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
         content: 'Sujet: $subject\n\n$message',
       );
       if (!mounted) return;
-      messenger.showSnackBar(const SnackBar(content: Text('Feedback envoye')));
-      navigator.pop();
+      await _showSubmitSuccessModal();
+      if (!mounted) return;
+      Navigator.of(context).pop();
     } catch (error) {
       if (!mounted) return;
       messenger.showSnackBar(
@@ -86,6 +86,7 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
       context: context,
       barrierDismissible: true,
       builder: (dialogContext) => MojiConfirmModal(
+        type: MojiConfirmModalType.warning,
         title: 'Envoyer ce signalement ?',
         description:
             'Ton signalement va etre transmis a l equipe pour verification.',
@@ -95,6 +96,23 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
       ),
     );
     return confirmed == true;
+  }
+
+  Future<void> _showSubmitSuccessModal() async {
+    await showDialog<void>(
+      context: context,
+      barrierDismissible: true,
+      builder: (dialogContext) => MojiConfirmModal(
+        type: MojiConfirmModalType.success,
+        title: 'Feedback envoye',
+        description:
+            'Merci pour ton retour. L equipe va le traiter rapidement.',
+        confirmLabel: 'Super',
+        cancelLabel: 'Fermer',
+        onConfirm: () => Navigator.of(dialogContext).pop(),
+        onCancel: () => Navigator.of(dialogContext).pop(),
+      ),
+    );
   }
 
   @override

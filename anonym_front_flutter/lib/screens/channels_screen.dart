@@ -814,6 +814,7 @@ class _ChannelsScreenState extends State<ChannelsScreen> {
       context: context,
       barrierDismissible: true,
       builder: (dialogContext) => MojiConfirmModal(
+        type: MojiConfirmModalType.danger,
         title: 'Exclure $username ?',
         description: 'Cette action retire immediatement ce membre du groupe.',
         confirmLabel: 'Exclure',
@@ -834,6 +835,7 @@ class _ChannelsScreenState extends State<ChannelsScreen> {
       context: context,
       barrierDismissible: true,
       builder: (dialogContext) => MojiConfirmModal(
+        type: MojiConfirmModalType.warning,
         title: 'Quitter $safeName ?',
         description:
             'Tu ne recevras plus les messages du groupe. Tu pourras le rejoindre de nouveau plus tard.',

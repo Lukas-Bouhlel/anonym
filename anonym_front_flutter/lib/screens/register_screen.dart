@@ -1,4 +1,4 @@
-﻿import 'dart:async';
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
@@ -8,6 +8,7 @@ import '../providers/auth_controller.dart';
 import '../routes/app_routes.dart';
 import '../theme.dart';
 import '../validators/password_validators.dart';
+import '../widgets/modals/moji_confirm_modal.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -158,10 +159,7 @@ class _RegisterScreenState extends State<RegisterScreen>
 
     if (_currentStep == 0) {
       if (!_passwordsMatch) {
-        _showSnack(
-          'Les mots de passe ne correspondent pas.',
-          isError: true,
-        );
+        _showSnack('Les mots de passe ne correspondent pas.', isError: true);
         return;
       }
       final sent = await auth.requestRegisterCode(
@@ -197,8 +195,27 @@ class _RegisterScreenState extends State<RegisterScreen>
         );
         return;
       }
+      await _showRegistrationSuccessModal();
+      if (!mounted) return;
       context.go(AppRoutes.app);
     }
+  }
+
+  Future<void> _showRegistrationSuccessModal() async {
+    await showDialog<void>(
+      context: context,
+      barrierDismissible: true,
+      builder: (dialogContext) => MojiConfirmModal(
+        type: MojiConfirmModalType.success,
+        title: 'Inscription terminee',
+        description:
+            'Ton compte est pret. Tu peux maintenant commencer sur Anonym.',
+        confirmLabel: 'Continuer',
+        cancelLabel: 'Fermer',
+        onConfirm: () => Navigator.of(dialogContext).pop(),
+        onCancel: () => Navigator.of(dialogContext).pop(),
+      ),
+    );
   }
 
   void _goToNextStep() {
@@ -270,11 +287,7 @@ class _RegisterScreenState extends State<RegisterScreen>
     }
   }
 
-  void _showSnack(
-    String message, {
-    bool isError = false,
-    Color? textColor,
-  }) {
+  void _showSnack(String message, {bool isError = false, Color? textColor}) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message, style: TextStyle(color: textColor)),
@@ -583,8 +596,9 @@ class _RegisterScreenState extends State<RegisterScreen>
               children: [
                 const TextSpan(text: 'Entre le code reçu sur ton e-mail '),
                 TextSpan(
-                  text:
-                      _emailCtrl.text.trim().isEmpty ? 'Votre e-mail' : _emailCtrl.text.trim(),
+                  text: _emailCtrl.text.trim().isEmpty
+                      ? 'Votre e-mail'
+                      : _emailCtrl.text.trim(),
                   style: const TextStyle(
                     color: AppColors.success,
                     fontWeight: FontWeight.w600,
@@ -613,7 +627,9 @@ class _RegisterScreenState extends State<RegisterScreen>
 
   String _buttonText(bool isBusy) {
     if (isBusy) {
-      return _currentStep == 0 ? 'Envoi du code en cours...' : 'Vérification en cours...';
+      return _currentStep == 0
+          ? 'Envoi du code en cours...'
+          : 'Vérification en cours...';
     }
     return _currentStep == 0 ? 'Continuer' : "Valider l'inscription";
   }
@@ -800,11 +816,7 @@ class _ModernFieldState extends State<_ModernField> {
           child: Row(
             children: [
               const SizedBox(width: 12),
-              Icon(
-                widget.icon,
-                size: 16,
-                color: AppColors.whiteColor,
-              ),
+              Icon(widget.icon, size: 16, color: AppColors.whiteColor),
               const SizedBox(width: 10),
               Expanded(
                 child: TextField(
@@ -861,6 +873,7 @@ class _ModernFieldState extends State<_ModernField> {
     );
   }
 }
+
 class _PasswordChecklist extends StatefulWidget {
   const _PasswordChecklist({required this.password, required this.showState});
 
@@ -896,8 +909,14 @@ class _PasswordChecklistState extends State<_PasswordChecklist> {
 
     final oldRules = _rulesFor(oldWidget.password);
     final newRules = _rulesFor(widget.password);
-    final oldMissingLabel = oldRules.where((r) => !r.$2).map((r) => r.$1).firstOrNull;
-    final newMissingLabel = newRules.where((r) => !r.$2).map((r) => r.$1).firstOrNull;
+    final oldMissingLabel = oldRules
+        .where((r) => !r.$2)
+        .map((r) => r.$1)
+        .firstOrNull;
+    final newMissingLabel = newRules
+        .where((r) => !r.$2)
+        .map((r) => r.$1)
+        .firstOrNull;
 
     if (oldMissingLabel != null &&
         oldMissingLabel != newMissingLabel &&
@@ -951,7 +970,9 @@ class _PasswordChecklistState extends State<_PasswordChecklist> {
                     height: 7,
                     child: Stack(
                       children: [
-                        Container(color: AppColors.whiteColor.withValues(alpha: 0.16)),
+                        Container(
+                          color: AppColors.whiteColor.withValues(alpha: 0.16),
+                        ),
                         AnimatedFractionallySizedBox(
                           duration: const Duration(milliseconds: 320),
                           curve: Curves.easeOutCubic,
@@ -1001,10 +1022,8 @@ class _PasswordChecklistState extends State<_PasswordChecklist> {
                         tween: Tween(begin: 0.7, end: 1),
                         duration: const Duration(milliseconds: 350),
                         curve: Curves.easeOutBack,
-                        builder: (context, scale, child) => Transform.scale(
-                          scale: scale,
-                          child: child,
-                        ),
+                        builder: (context, scale, child) =>
+                            Transform.scale(scale: scale, child: child),
                         child: const Icon(
                           Icons.check_circle_rounded,
                           color: AppColors.success,
@@ -1230,4 +1249,3 @@ class _VerificationCodeFieldState extends State<_VerificationCodeField> {
     );
   }
 }
-

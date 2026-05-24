@@ -99,6 +99,7 @@ class _BlockedUsersScreenState extends State<BlockedUsersScreen> {
       context: context,
       barrierDismissible: true,
       builder: (dialogContext) => MojiConfirmModal(
+        type: MojiConfirmModalType.warning,
         title: 'Debloquer cet utilisateur ?',
         description: 'Il pourra de nouveau te contacter et interagir avec toi.',
         confirmLabel: 'Debloquer',
@@ -134,9 +135,7 @@ class _BlockedUserCard extends StatelessWidget {
       decoration: BoxDecoration(
         gradient: AppGradients.gB1BCFBTo393566,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: AppColors.whiteColor.withValues(alpha: 0.28),
-        ),
+        border: Border.all(color: AppColors.whiteColor.withValues(alpha: 0.28)),
       ),
       child: Row(
         children: [
@@ -195,10 +194,7 @@ class _BlockedUserCard extends StatelessWidget {
                 ),
                 child: const Text(
                   'Débloquer',
-                  style: TextStyle(
-                    fontWeight: FontWeight.w700,
-                    fontSize: 13,
-                  ),
+                  style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
                 ),
               ),
             ),

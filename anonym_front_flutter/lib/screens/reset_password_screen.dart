@@ -8,6 +8,7 @@ import '../routes/app_routes.dart';
 import '../theme.dart';
 import '../validators/auth_validators.dart';
 import '../validators/password_validators.dart';
+import '../widgets/modals/moji_confirm_modal.dart';
 
 class ResetPasswordScreen extends StatefulWidget {
   const ResetPasswordScreen({super.key, this.token});
@@ -80,20 +81,8 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen>
     if (!mounted) return;
 
     if (success) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            _hasToken
-                ? 'Mot de passe réinitialisé avec succès.'
-                : 'Email de réinitialisation envoyé.',
-            style: const TextStyle(color: AppColors.textPrimary),
-          ),
-          backgroundColor: AppColors.success,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-          margin: const EdgeInsets.all(16),
-        ),
-      );
+      await _showResetSuccessModal();
+      if (!mounted) return;
       context.go(AppRoutes.login);
       return;
     }
@@ -117,10 +106,31 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen>
     }
   }
 
+  Future<void> _showResetSuccessModal() async {
+    final title = _hasToken ? 'Mot de passe reinitialise' : 'Email envoye';
+    final description = _hasToken
+        ? 'Ton mot de passe a bien ete mis a jour. Tu peux maintenant te connecter.'
+        : 'Un email de reinitialisation vient d etre envoye. Verifie ta boite mail.';
+    await showDialog<void>(
+      context: context,
+      barrierDismissible: true,
+      builder: (dialogContext) => MojiConfirmModal(
+        type: MojiConfirmModalType.success,
+        title: title,
+        description: description,
+        confirmLabel: 'Continuer',
+        cancelLabel: 'Fermer',
+        onConfirm: () => Navigator.of(dialogContext).pop(),
+        onCancel: () => Navigator.of(dialogContext).pop(),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthController>();
-    final showConfirmMismatch = _hasToken &&
+    final showConfirmMismatch =
+        _hasToken &&
         _hasTriedSubmit &&
         _passwordController.text.trim().isNotEmpty &&
         _confirmPasswordController.text.trim().isNotEmpty &&
@@ -157,7 +167,9 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen>
                                     ? 'Choisis ton nouveau mot de passe.'
                                     : 'Saisis ton email pour recevoir un lien de réinitialisation.',
                                 style: TextStyle(
-                                  color: AppColors.whiteColor.withValues(alpha: 0.65),
+                                  color: AppColors.whiteColor.withValues(
+                                    alpha: 0.65,
+                                  ),
                                   fontSize: 13,
                                   height: 1.5,
                                 ),
@@ -178,8 +190,10 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen>
                                   icon: Icons.lock_rounded,
                                   controller: _passwordController,
                                   isPassword: true,
-                                  onChanged: (_) => setState(() => _passTouched = true),
-                                  validator: PasswordValidators.validateAsString,
+                                  onChanged: (_) =>
+                                      setState(() => _passTouched = true),
+                                  validator:
+                                      PasswordValidators.validateAsString,
                                 ),
                                 const SizedBox(height: 10),
                                 _PasswordChecklist(
@@ -192,18 +206,25 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen>
                                   icon: Icons.lock_outline_rounded,
                                   controller: _confirmPasswordController,
                                   isPassword: true,
-                                  onChanged: (_) => setState(() => _confirmTouched = true),
-                                  trailingIcon: _confirmTouched &&
-                                          _confirmPasswordController.text.trim().isNotEmpty
+                                  onChanged: (_) =>
+                                      setState(() => _confirmTouched = true),
+                                  trailingIcon:
+                                      _confirmTouched &&
+                                          _confirmPasswordController.text
+                                              .trim()
+                                              .isNotEmpty
                                       ? (_passwordsMatch
-                                          ? Icons.check_circle_rounded
-                                          : Icons.cancel_rounded)
+                                            ? Icons.check_circle_rounded
+                                            : Icons.cancel_rounded)
                                       : null,
-                                  trailingColor: _confirmTouched &&
-                                          _confirmPasswordController.text.trim().isNotEmpty
+                                  trailingColor:
+                                      _confirmTouched &&
+                                          _confirmPasswordController.text
+                                              .trim()
+                                              .isNotEmpty
                                       ? (_passwordsMatch
-                                          ? AppColors.success
-                                          : AppColors.danger)
+                                            ? AppColors.success
+                                            : AppColors.danger)
                                       : null,
                                   validator: (value) {
                                     final text = (value ?? '').trim();
@@ -235,8 +256,8 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen>
                         label: auth.isBusy
                             ? '...'
                             : _hasToken
-                                ? 'Changer le mot de passe'
-                                : 'Envoyer',
+                            ? 'Changer le mot de passe'
+                            : 'Envoyer',
                         isBusy: auth.isBusy,
                         isEnabled: _canSubmitPasswordUpdate,
                         onTap: _submit,
@@ -265,7 +286,9 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen>
               right: -60 + t * 15,
               child: _GlowOrb(
                 size: 260,
-                color: const Color(0xFFB1BCFB).withValues(alpha: 0.18 + t * 0.06),
+                color: const Color(
+                  0xFFB1BCFB,
+                ).withValues(alpha: 0.18 + t * 0.06),
               ),
             ),
             Positioned(
@@ -273,7 +296,9 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen>
               left: -80,
               child: _GlowOrb(
                 size: 220,
-                color: const Color(0xFF393566).withValues(alpha: 0.35 + t * 0.1),
+                color: const Color(
+                  0xFF393566,
+                ).withValues(alpha: 0.35 + t * 0.1),
               ),
             ),
           ],
@@ -289,7 +314,9 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen>
         const SizedBox(width: 16),
         Expanded(
           child: Text(
-            _hasToken ? 'Nouveau mot de passe' : 'Réinitialiser le mot de passe',
+            _hasToken
+                ? 'Nouveau mot de passe'
+                : 'Réinitialiser le mot de passe',
             style: Theme.of(context).textTheme.headlineLarge,
           ),
         ),
@@ -335,7 +362,9 @@ class _BackButton extends StatelessWidget {
         decoration: BoxDecoration(
           color: AppColors.whiteColor.withValues(alpha: 0.12),
           borderRadius: BorderRadius.circular(11),
-          border: Border.all(color: AppColors.whiteColor.withValues(alpha: 0.15)),
+          border: Border.all(
+            color: AppColors.whiteColor.withValues(alpha: 0.15),
+          ),
         ),
         child: const Icon(
           Icons.arrow_back_ios_new_rounded,
@@ -382,8 +411,9 @@ class _PrimaryButton extends StatelessWidget {
                     height: 20,
                     child: CircularProgressIndicator(
                       strokeWidth: 2,
-                      valueColor:
-                          AlwaysStoppedAnimation<Color>(AppColors.c393566),
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        AppColors.c393566,
+                      ),
                     ),
                   )
                 : Text(
@@ -437,7 +467,8 @@ class _ModernFieldState extends State<_ModernField> {
   @override
   void initState() {
     super.initState();
-    _focus = FocusNode()..addListener(() => setState(() => _focused = _focus.hasFocus));
+    _focus = FocusNode()
+      ..addListener(() => setState(() => _focused = _focus.hasFocus));
   }
 
   @override
@@ -571,10 +602,14 @@ class _PasswordChecklistState extends State<_PasswordChecklist> {
 
     final oldRules = _rulesFor(oldWidget.password);
     final newRules = _rulesFor(widget.password);
-    final oldMissingLabel =
-        oldRules.where((r) => !r.$2).map((r) => r.$1).firstOrNull;
-    final newMissingLabel =
-        newRules.where((r) => !r.$2).map((r) => r.$1).firstOrNull;
+    final oldMissingLabel = oldRules
+        .where((r) => !r.$2)
+        .map((r) => r.$1)
+        .firstOrNull;
+    final newMissingLabel = newRules
+        .where((r) => !r.$2)
+        .map((r) => r.$1)
+        .firstOrNull;
 
     if (oldMissingLabel != null &&
         oldMissingLabel != newMissingLabel &&
@@ -628,7 +663,9 @@ class _PasswordChecklistState extends State<_PasswordChecklist> {
                     height: 7,
                     child: Stack(
                       children: [
-                        Container(color: AppColors.whiteColor.withValues(alpha: 0.16)),
+                        Container(
+                          color: AppColors.whiteColor.withValues(alpha: 0.16),
+                        ),
                         AnimatedFractionallySizedBox(
                           duration: const Duration(milliseconds: 320),
                           curve: Curves.easeOutCubic,
@@ -671,79 +708,77 @@ class _PasswordChecklistState extends State<_PasswordChecklist> {
                     ),
                   )
                 : _justCompletedLabel != null
-                    ? Row(
-                        key: ValueKey('just-done-$_justCompletedLabel'),
-                        children: [
-                          TweenAnimationBuilder<double>(
-                            tween: Tween(begin: 0.7, end: 1),
-                            duration: const Duration(milliseconds: 350),
-                            curve: Curves.easeOutBack,
-                            builder: (context, scale, child) => Transform.scale(
-                              scale: scale,
-                              child: child,
-                            ),
-                            child: const Icon(
-                              Icons.check_circle_rounded,
-                              color: AppColors.success,
-                              size: 16,
-                            ),
+                ? Row(
+                    key: ValueKey('just-done-$_justCompletedLabel'),
+                    children: [
+                      TweenAnimationBuilder<double>(
+                        tween: Tween(begin: 0.7, end: 1),
+                        duration: const Duration(milliseconds: 350),
+                        curve: Curves.easeOutBack,
+                        builder: (context, scale, child) =>
+                            Transform.scale(scale: scale, child: child),
+                        child: const Icon(
+                          Icons.check_circle_rounded,
+                          color: AppColors.success,
+                          size: 16,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          _justCompletedLabel!,
+                          style: const TextStyle(
+                            color: AppColors.success,
+                            fontSize: 12.5,
+                            fontWeight: FontWeight.w700,
                           ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              _justCompletedLabel!,
-                              style: const TextStyle(
-                                color: AppColors.success,
-                                fontSize: 12.5,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
+                        ),
+                      ),
+                    ],
+                  )
+                : nextMissing == null
+                ? const Row(
+                    key: ValueKey('done'),
+                    children: [
+                      Icon(
+                        Icons.check_circle_rounded,
+                        color: AppColors.success,
+                        size: 16,
+                      ),
+                      SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Mot de passe conforme',
+                          style: TextStyle(
+                            color: AppColors.success,
+                            fontSize: 12.5,
+                            fontWeight: FontWeight.w600,
                           ),
-                        ],
-                      )
-                    : nextMissing == null
-                        ? const Row(
-                            key: ValueKey('done'),
-                            children: [
-                              Icon(
-                                Icons.check_circle_rounded,
-                                color: AppColors.success,
-                                size: 16,
-                              ),
-                              SizedBox(width: 8),
-                              Expanded(
-                                child: Text(
-                                  'Mot de passe conforme',
-                                  style: TextStyle(
-                                    color: AppColors.success,
-                                    fontSize: 12.5,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          )
-                        : Row(
-                            key: ValueKey(nextMissing.$1),
-                            children: [
-                              const Icon(
-                                Icons.radio_button_unchecked_rounded,
-                                color: AppColors.cDBE7FE,
-                                size: 15,
-                              ),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: Text(
-                                  nextMissing.$1,
-                                  style: const TextStyle(
-                                    color: AppColors.cDBE7FE,
-                                    fontSize: 12.5,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ),
-                            ],
+                        ),
+                      ),
+                    ],
+                  )
+                : Row(
+                    key: ValueKey(nextMissing.$1),
+                    children: [
+                      const Icon(
+                        Icons.radio_button_unchecked_rounded,
+                        color: AppColors.cDBE7FE,
+                        size: 15,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          nextMissing.$1,
+                          style: const TextStyle(
+                            color: AppColors.cDBE7FE,
+                            fontSize: 12.5,
+                            fontWeight: FontWeight.w600,
                           ),
+                        ),
+                      ),
+                    ],
+                  ),
           ),
         ],
       ),

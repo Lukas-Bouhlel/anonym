@@ -27,6 +27,7 @@ class SettingsScreen extends StatelessWidget {
       context: context,
       barrierDismissible: true,
       builder: (dialogContext) => MojiConfirmModal(
+        type: MojiConfirmModalType.warning,
         title: 'Se deconnecter ?',
         description: 'Tu vas etre deconnecte de ton compte sur cet appareil.',
         confirmLabel: 'Se deconnecter',
@@ -42,11 +43,11 @@ class SettingsScreen extends StatelessWidget {
       context: context,
       barrierDismissible: true,
       builder: (dialogContext) => MojiConfirmModal(
+        type: MojiConfirmModalType.danger,
         title: 'Supprimer le compte ?',
         description:
             'Cette action est definitive. Ton compte et tes donnees seront supprimes.',
         confirmLabel: 'Supprimer le compte',
-        confirmGradient: const [AppColors.danger, AppColors.danger],
         onConfirm: () => Navigator.of(dialogContext).pop(true),
         onCancel: () => Navigator.of(dialogContext).pop(false),
       ),

@@ -724,6 +724,7 @@ class UserProfileScreen extends StatelessWidget {
       if (isFriend) {
         final confirmed = await _showConfirmModal(
           context: context,
+          type: MojiConfirmModalType.danger,
           title: 'Supprimer cet ami ?',
           description:
               'Cette personne sera retiree de ta liste d\'amis. Tu pourras la rajouter plus tard.',
@@ -742,6 +743,7 @@ class UserProfileScreen extends StatelessWidget {
         }
         final confirmed = await _showConfirmModal(
           context: context,
+          type: MojiConfirmModalType.warning,
           title: 'Retirer la demande d\'ami ?',
           description:
               'La demande en attente sera annulee et la personne ne la verra plus.',
@@ -766,6 +768,7 @@ class UserProfileScreen extends StatelessWidget {
       if (blocked) {
         final confirmed = await _showConfirmModal(
           context: context,
+          type: MojiConfirmModalType.success,
           title: 'Debloquer cet utilisateur ?',
           description:
               'Il pourra de nouveau te contacter et interagir avec toi.',
@@ -776,6 +779,7 @@ class UserProfileScreen extends StatelessWidget {
       } else {
         final confirmed = await _showConfirmModal(
           context: context,
+          type: MojiConfirmModalType.danger,
           title: 'Bloquer cet utilisateur ?',
           description:
               'Tu ne verras plus ses interactions et il ne pourra plus te contacter.',
@@ -802,6 +806,7 @@ class UserProfileScreen extends StatelessWidget {
 
   Future<bool> _showConfirmModal({
     required BuildContext context,
+    required MojiConfirmModalType type,
     required String title,
     required String description,
     required String confirmLabel,
@@ -810,6 +815,7 @@ class UserProfileScreen extends StatelessWidget {
       context: context,
       barrierDismissible: true,
       builder: (dialogContext) => MojiConfirmModal(
+        type: type,
         title: title,
         description: description,
         confirmLabel: confirmLabel,
