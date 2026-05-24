@@ -551,7 +551,7 @@ class _FriendsScreenState extends State<FriendsScreen> {
                           setState(() => _mode = _FriendScreenMode.list);
                         },
                       ),
-                      const SizedBox(height: 10),
+                      const SizedBox(height: 5),
                       _ModalActionTile(
                         title: 'Ajouter un ami',
                         onTap: () {

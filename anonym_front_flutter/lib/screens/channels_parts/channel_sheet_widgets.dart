@@ -127,7 +127,7 @@ class _MemberAvatar extends StatelessWidget {
   String? _activeFrameUrl(UserModel user) {
     for (final item in user.inventories) {
       if (!item.active) continue;
-      if (item.userId != user.id) continue;
+      if (item.userId > 0 && item.userId != user.id) continue;
       final shop = item.shop;
       if (shop == null) continue;
       if (shop.type.trim().toUpperCase() != 'CADRE') continue;

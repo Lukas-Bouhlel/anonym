@@ -1374,6 +1374,13 @@ class AppController extends ChangeNotifier with WidgetsBindingObserver {
       }
       return;
     }
+    if (_activeUserId != null && _activeUserId != currentUserId) {
+      _rtLog(
+        'auth switch oldUser=$_activeUserId newUser=$currentUserId -> reset realtime state',
+      );
+      // Do not reuse old realtime state/socket when the authenticated user changes.
+      _resetState();
+    }
     if (_activeUserId == currentUserId) return;
     _activeUserId = currentUserId;
     _bootForLoggedInUser();

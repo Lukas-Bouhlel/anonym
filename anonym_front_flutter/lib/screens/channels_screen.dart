@@ -100,7 +100,7 @@ class _ChannelsScreenState extends State<ChannelsScreen> {
               ? (app.userById(dmPeerBase.id) ?? dmPeerBase)
               : dmPeerBase;
           final dmPeerForFrame = dmPeerBase != null && dmPeerBase.id > 0
-              ? app.userById(dmPeerBase.id)
+              ? (app.userById(dmPeerBase.id) ?? dmPeerBase)
               : null;
           final dmPeerName = (dmPeer?.username ?? '').trim();
           final hasDmPeerName = dmPeerName.isNotEmpty;
@@ -395,7 +395,7 @@ class _ChannelsScreenState extends State<ChannelsScreen> {
     if (user == null || user.id <= 0) return null;
     for (final item in user.inventories) {
       if (!item.active) continue;
-      if (item.userId != user.id) continue;
+      if (item.userId > 0 && item.userId != user.id) continue;
       final fromInventory = item.shop;
       if (fromInventory != null) {
         final content = fromInventory.content.trim();

@@ -58,78 +58,16 @@ class SocketService {
       'connect() existing=${_socket != null} authToken=${authToken != null && authToken.trim().isNotEmpty} headers=${authHeaders?.keys.join(",") ?? "none"}',
     );
     if (_socket != null) {
-      _registerMessageErrorListener(onMessageError);
-      _registerFriendRequestListener(onFriendRequestReceived);
-      _registerSocialEventListener(
-        eventName: 'friendRequestSent',
-        onEvent: onFriendRequestSent,
-      );
-      _registerSocialEventListener(
-        eventName: 'friendRequestResponded',
-        onEvent: onFriendRequestResponded,
-      );
-      _registerSocialEventListener(
-        eventName: 'friendRequestCancelled',
-        onEvent: onFriendRequestCancelled,
-      );
-      _registerSocialEventListener(
-        eventName: 'friendshipBlocked',
-        onEvent: onFriendshipBlocked,
-      );
-      _registerSocialEventListener(
-        eventName: 'friendshipUnblocked',
-        onEvent: onFriendshipUnblocked,
-      );
-      _registerSocialEventListener(
-        eventName: 'friendshipDeleted',
-        onEvent: onFriendshipDeleted,
-      );
-      _registerSocialEventListener(
-        eventName: 'friendsStateUpdated',
-        onEvent: onFriendsStateUpdated,
-      );
-      _registerSocialEventListener(
-        eventName: 'channelInvited',
-        onEvent: onChannelInvited,
-      );
-      _registerSocialEventListener(
-        eventName: 'channelMemberRemoved',
-        onEvent: onChannelMemberRemoved,
-      );
-      _registerSocialEventListener(
-        eventName: 'channelUpdated',
-        onEvent: onChannelUpdated,
-      );
-      _registerSocialEventListener(
-        eventName: 'groupUpdated',
-        onEvent: onChannelUpdated,
-      );
-      _registerSocialEventListener(
-        eventName: 'userProfileUpdated',
-        onEvent: onUserProfileUpdated,
-      );
-      _registerLiveLocationListeners(
-        onLocationSnapshot: onLocationSnapshot,
-        onLocationUpdate: onLocationUpdate,
-        onLocationRemove: onLocationRemove,
-      );
-      _registerPresenceListener(onPresenceUpdated);
-      _socket!.off('connect_error');
-      _socket!.on('connect_error', (error) {
-        _log('connect_error=$error');
-        if (onConnectError != null) onConnectError(error);
-      });
-      if (!(_socket?.connected ?? false)) {
-        _log('existing socket not connected -> connect()');
-        _socket?.connect();
-      }
-      return;
+      _log('connect() replacing existing socket to refresh auth context');
+      disconnect();
     }
 
     _socket = io.io(
       AppConfig.apiBaseUrl,
       io.OptionBuilder()
           .setTransports(['websocket', 'polling'])
+          .enableForceNew()
+          .disableMultiplex()
           .setAuth(<String, dynamic>{
             if (authToken != null && authToken.trim().isNotEmpty)
               'token': authToken.trim(),
@@ -404,7 +342,14 @@ class SocketService {
   }
 
   void disconnect() {
-    _socket?.dispose();
+    final socket = _socket;
+    if (socket == null) return;
+    try {
+      socket.clearListeners();
+      socket.dispose();
+    } catch (_) {
+      // Best-effort shutdown to avoid leaving stale managers/sessions alive.
+    }
     _socket = null;
   }
 }
