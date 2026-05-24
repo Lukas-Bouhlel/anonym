@@ -46,6 +46,7 @@ class SocketService {
     void Function(Map<String, dynamic> payload)? onFriendsStateUpdated,
     void Function(Map<String, dynamic> payload)? onChannelInvited,
     void Function(Map<String, dynamic> payload)? onChannelMemberRemoved,
+    void Function(Map<String, dynamic> payload)? onChannelUpdated,
     void Function(Map<String, dynamic> payload)? onUserProfileUpdated,
     void Function(String message)? onMessageError,
     void Function(List<dynamic> payload)? onLocationSnapshot,
@@ -94,6 +95,14 @@ class SocketService {
       _registerSocialEventListener(
         eventName: 'channelMemberRemoved',
         onEvent: onChannelMemberRemoved,
+      );
+      _registerSocialEventListener(
+        eventName: 'channelUpdated',
+        onEvent: onChannelUpdated,
+      );
+      _registerSocialEventListener(
+        eventName: 'groupUpdated',
+        onEvent: onChannelUpdated,
       );
       _registerSocialEventListener(
         eventName: 'userProfileUpdated',
@@ -180,6 +189,14 @@ class SocketService {
     _registerSocialEventListener(
       eventName: 'channelMemberRemoved',
       onEvent: onChannelMemberRemoved,
+    );
+    _registerSocialEventListener(
+      eventName: 'channelUpdated',
+      onEvent: onChannelUpdated,
+    );
+    _registerSocialEventListener(
+      eventName: 'groupUpdated',
+      onEvent: onChannelUpdated,
     );
     _registerSocialEventListener(
       eventName: 'userProfileUpdated',

@@ -25,6 +25,28 @@ const isUserChannelMember = async (channelId, userId) => {
 };
 
 const buildInviteCode = () => crypto.randomBytes(24).toString('hex');
+const groupInvitePayloadPrefix = 'ANONYM_GROUP_INVITE:';
+const encodeGroupInvitePayload = ({
+    channelId,
+    channelName,
+    channelDescription,
+    channelCoverImage,
+    channelVisibility,
+    inviteCode,
+    invitedByUserId,
+    invitedByUsername
+}) => {
+    return `${groupInvitePayloadPrefix}${JSON.stringify({
+        channelId,
+        channelName,
+        channelDescription: channelDescription || '',
+        channelCoverImage: channelCoverImage || null,
+        channelVisibility: channelVisibility || 'PRIVATE',
+        inviteCode,
+        invitedByUserId,
+        invitedByUsername
+    })}`;
+};
 const parseMaybeJsonArray = (value) => {
     if (Array.isArray(value)) return value;
     if (typeof value === 'string') {
@@ -403,9 +425,6 @@ exports.invite = async (req, res) => {
             return res.status(400).json({ message: 'Cet utilisateur est deja membre de ce channel.' });
         }
 
-        await UserChannel.create({ user_id: invitedUserId, channel_id: channelId });
-        await updateChannelReputationScore(channelId);
-
         const blockedRelationshipExists = await hasBlockedRelationship(requesterId, invitedUserId);
         if (blockedRelationshipExists) {
             const io = req.app?.locals?.io;
@@ -418,7 +437,7 @@ exports.invite = async (req, res) => {
             }
 
             return res.status(200).json({
-                message: 'Utilisateur ajoute au channel avec succes.'
+                message: 'Invitation envoyee.'
             });
         }
 
@@ -441,9 +460,28 @@ exports.invite = async (req, res) => {
         });
 
         const dmChannel = await resolveDirectMessageChannel(requesterId, invitedUserId);
+        const invite = await ChannelInvite.create({
+            channel_id: channelId,
+            code: buildInviteCode(),
+            created_by: requesterId,
+            expires_at: new Date(Date.now() + (7 * 24 * 60 * 60 * 1000)),
+            max_uses: 1,
+            uses_count: 0,
+            is_active: true
+        });
+        const invitationContent = encodeGroupInvitePayload({
+            channelId: Number(channelId),
+            channelName: channel.name || 'groupe',
+            channelDescription: channel.description || '',
+            channelCoverImage: channel.cover_image || null,
+            channelVisibility: channel.visibility || 'PRIVATE',
+            inviteCode: invite.code,
+            invitedByUserId: requesterId,
+            invitedByUsername: requester?.username || 'Un utilisateur'
+        });
         const invitationMessage = await PrivateMessage.create({
             sender_id: requesterId,
-            content: `${requester?.username || 'Un utilisateur'} vous a invite dans le groupe "${channel.name || 'groupe'}".`,
+            content: invitationContent,
             image_url: null,
             channel_id: dmChannel.channel_id,
             status: 'unread',
@@ -466,7 +504,8 @@ exports.invite = async (req, res) => {
             io.to(`user:${invitedUserId}`).emit('channelInvited', {
                 channelId: Number(channelId),
                 channelName: channel.name || 'groupe',
-                invitedBy: requesterId
+                invitedBy: requesterId,
+                inviteCode: invite.code
             });
         }
 
@@ -482,7 +521,10 @@ exports.invite = async (req, res) => {
             }
         });
 
-        res.status(200).json({ message: 'Utilisateur ajoute au channel avec succes.' });
+        res.status(200).json({
+            message: 'Invitation envoyee.',
+            inviteCode: invite.code
+        });
     } catch (error) {
         res.status(500).json({ message: error.message || 'Erreur lors de l ajout de l utilisateur au channel.' });
     }

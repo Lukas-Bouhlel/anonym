@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
 
@@ -15,6 +14,7 @@ import 'group_settings_screen.dart';
 import 'user_profile_screen.dart';
 import '../theme.dart';
 import '../utils/app_date_format.dart';
+import '../utils/group_invite_payload.dart';
 import '../utils/profile_share_payload.dart';
 import '../utils/presence_utils.dart';
 import '../widgets/app_remote_image.dart';
@@ -43,6 +43,7 @@ class _ChannelsScreenState extends State<ChannelsScreen> {
   ChannelMessageModel? _editingMessage;
   String _query = '';
   String? _lastShownMessageError;
+  final Set<int> _hydratedDmPeerIds = <int>{};
 
   @override
   void dispose() {
@@ -89,17 +90,26 @@ class _ChannelsScreenState extends State<ChannelsScreen> {
           final hasMemberPeer = (dmPeerFromMembers?.username ?? '')
               .trim()
               .isNotEmpty;
-          final dmPeer = hasMemberPeer ? dmPeerFromMembers : selected.dmPeer;
+          final dmPeerBase = hasMemberPeer
+              ? dmPeerFromMembers
+              : selected.dmPeer;
+          if (isDm && dmPeerBase != null && dmPeerBase.id > 0) {
+            _hydrateDmPeerDetailsIfNeeded(app, dmPeerBase.id);
+          }
+          final dmPeer = dmPeerBase != null && dmPeerBase.id > 0
+              ? (app.userById(dmPeerBase.id) ?? dmPeerBase)
+              : dmPeerBase;
           final dmPeerName = (dmPeer?.username ?? '').trim();
           final hasDmPeerName = dmPeerName.isNotEmpty;
           return _ChatDetailView(
             currentUserId: currentUser?.id,
             currentUserName: currentUser?.username,
             currentUserAvatarUrl: currentUser?.avatar,
-            currentUserFrameUrl: _activeFrameUrlFromUser(currentUser),
+            currentUserFrameUrl: _activeFrameUrlFromUser(app, currentUser),
             isDm: isDm,
             dmPeerName: hasDmPeerName ? dmPeerName : null,
             dmPeerAvatarUrl: dmPeer?.avatar,
+            dmPeerFrameUrl: isDm ? _activeFrameUrlFromUser(app, dmPeer) : null,
             dmPeerPresenceStatus: isDm && dmPeer != null
                 ? app.presenceStatusForUser(dmPeer.id)
                 : null,
@@ -258,6 +268,16 @@ class _ChannelsScreenState extends State<ChannelsScreen> {
     );
   }
 
+  void _hydrateDmPeerDetailsIfNeeded(AppController app, int userId) {
+    if (userId <= 0) return;
+    if (_hydratedDmPeerIds.contains(userId)) return;
+    _hydratedDmPeerIds.add(userId);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      unawaited(app.hydrateUserDetails(userId));
+    });
+  }
+
   void _sendText(AppController app) {
     final text = _messageController.text.trim();
     if (text.isEmpty) return;
@@ -366,17 +386,30 @@ class _ChannelsScreenState extends State<ChannelsScreen> {
     );
   }
 
-  String? _activeFrameUrlFromUser(UserModel? user) {
+  String? _activeFrameUrlFromUser(AppController app, UserModel? user) {
     if (user == null) return null;
+    String? fallbackContent;
     for (final item in user.inventories) {
       if (!item.active) continue;
-      final shop = item.shop;
-      if (shop == null) continue;
-      if (shop.type.trim().toUpperCase() != 'CADRE') continue;
-      final content = shop.content.trim();
-      if (content.isNotEmpty) return content;
+      final fromInventory = item.shop;
+      if (fromInventory != null) {
+        final content = fromInventory.content.trim();
+        if (content.isNotEmpty) {
+          if (fromInventory.type.trim().toUpperCase() == 'CADRE') {
+            return content;
+          }
+          fallbackContent ??= content;
+        }
+      }
+      for (final shopItem in app.shopItems) {
+        if (shopItem.articleId != item.articleId) continue;
+        final content = shopItem.content.trim();
+        if (content.isEmpty) continue;
+        if (shopItem.type.trim().toUpperCase() == 'CADRE') return content;
+        fallbackContent ??= content;
+      }
     }
-    return null;
+    return fallbackContent;
   }
 
   Future<void> _deleteMessage(
@@ -822,9 +855,8 @@ class _ChannelsScreenState extends State<ChannelsScreen> {
 
     var query = '';
     final invitedUserIds = <int>{};
-    String? inviteLink;
-    bool isGeneratingLink = false;
-    bool didRequestInitialLink = false;
+    final selectedUserIds = <int>{};
+    bool isInvitingUsers = false;
 
     await showModalBottomSheet<void>(
       context: context,
@@ -833,45 +865,6 @@ class _ChannelsScreenState extends State<ChannelsScreen> {
       builder: (context) {
         return StatefulBuilder(
           builder: (context, setModalState) {
-            if (!didRequestInitialLink) {
-              didRequestInitialLink = true;
-              WidgetsBinding.instance.addPostFrameCallback((_) async {
-                if (!context.mounted) return;
-                setModalState(() => isGeneratingLink = true);
-                final payload = await app.createInviteLinkForSelectedChannel(
-                  mode: 'PERMANENT',
-                );
-                if (!context.mounted) return;
-                final code = (payload?['code'] ?? '').toString().trim();
-                final apiLink =
-                    (payload?['link'] ??
-                            payload?['url'] ??
-                            payload?['inviteLink'])
-                        ?.toString()
-                        .trim();
-                setModalState(() {
-                  if (apiLink != null && apiLink.isNotEmpty) {
-                    inviteLink = apiLink;
-                  } else if (code.isNotEmpty) {
-                    inviteLink = 'https://anonym.app/invite/$code';
-                  } else {
-                    inviteLink = null;
-                  }
-                  isGeneratingLink = false;
-                });
-                if (payload == null || inviteLink == null) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(
-                        app.errorMessage ??
-                            'Creation du lien d invitation impossible',
-                      ),
-                    ),
-                  );
-                }
-              });
-            }
-
             final bottomSafe = MediaQuery.of(context).padding.bottom;
             final eligibleFriends = app.availableFriendsForSelectedChannel
                 .where((friend) {
@@ -914,6 +907,7 @@ class _ChannelsScreenState extends State<ChannelsScreen> {
                     ),
                     Text(
                       'Inviter des amis sur ${channel.name}',
+                      textAlign: TextAlign.center,
                       style: const TextStyle(
                         fontFamily: AppTypography.displayFontFamily,
                         color: AppColors.cFCFAFE,
@@ -978,20 +972,57 @@ class _ChannelsScreenState extends State<ChannelsScreen> {
                               itemBuilder: (context, index) {
                                 final friend = eligibleFriends[index];
                                 final user = friend.friendDetails!;
+                                final resolvedUser =
+                                    app.userById(user.id) ?? user;
+                                final frameUrl = _activeFrameUrlFromUser(
+                                  app,
+                                  resolvedUser,
+                                );
                                 final invited = invitedUserIds.contains(
                                   user.id,
                                 );
+                                final selectedForInvite = selectedUserIds
+                                    .contains(user.id);
                                 return ListTile(
                                   contentPadding: EdgeInsets.zero,
-                                  leading: CircleAvatar(
-                                    backgroundColor: AppColors.cFCFAFE
-                                        .withValues(alpha: 0.12),
-                                    child: AppRemoteImage(
-                                      url: user.avatar,
-                                      width: 36,
-                                      height: 36,
-                                      fit: BoxFit.cover,
-                                      fallbackIcon: Icons.person_outline,
+                                  leading: SizedBox(
+                                    width: 42,
+                                    height: 42,
+                                    child: Stack(
+                                      alignment: Alignment.center,
+                                      children: [
+                                        Container(
+                                          width: 42,
+                                          height: 42,
+                                          decoration: BoxDecoration(
+                                            color: AppColors.c393566,
+                                            shape: BoxShape.circle,
+                                            border: Border.all(
+                                              color: AppColors.cFCFAFE
+                                                  .withValues(alpha: 0.18),
+                                            ),
+                                          ),
+                                          child: ClipOval(
+                                            child: AppRemoteImage(
+                                              url: resolvedUser.avatar,
+                                              width: 40,
+                                              height: 40,
+                                              fit: BoxFit.cover,
+                                              fallbackIcon:
+                                                  Icons.person_outline,
+                                            ),
+                                          ),
+                                        ),
+                                        if (frameUrl != null)
+                                          IgnorePointer(
+                                            child: AppRemoteImage(
+                                              url: frameUrl,
+                                              width: 42,
+                                              height: 42,
+                                              fit: BoxFit.contain,
+                                            ),
+                                          ),
+                                      ],
                                     ),
                                   ),
                                   title: Text(
@@ -1003,67 +1034,61 @@ class _ChannelsScreenState extends State<ChannelsScreen> {
                                       fontWeight: FontWeight.w700,
                                     ),
                                   ),
-                                  subtitle: user.email.trim().isEmpty
-                                      ? null
-                                      : Text(
-                                          user.email,
-                                          style: const TextStyle(
-                                            color: AppColors.cDBE7FE,
-                                          ),
-                                        ),
                                   trailing: SizedBox(
-                                    width: 110,
-                                    height: 42,
-                                    child: TextButton(
-                                      onPressed: invited
-                                          ? null
-                                          : () async {
-                                              await app
-                                                  .inviteUsersToSelectedChannel(
-                                                    [user.id],
-                                                  );
-                                              if (!context.mounted) return;
-                                              final error = app.errorMessage;
-                                              if (error != null &&
-                                                  error.isNotEmpty) {
-                                                ScaffoldMessenger.of(
-                                                  context,
-                                                ).showSnackBar(
-                                                  SnackBar(
-                                                    content: Text(error),
-                                                  ),
-                                                );
-                                                return;
-                                              }
-                                              setModalState(() {
-                                                invitedUserIds.add(user.id);
-                                              });
-                                            },
-                                      style: TextButton.styleFrom(
-                                        backgroundColor: invited
+                                    width: 34,
+                                    height: 34,
+                                    child: DecoratedBox(
+                                      decoration: BoxDecoration(
+                                        color: invited
                                             ? AppColors.cFCFAFE.withValues(
                                                 alpha: 0.18,
                                               )
+                                            : selectedForInvite
+                                            ? AppColors.cFCFAFE.withValues(
+                                                alpha: 0.20,
+                                              )
                                             : AppColors.cFCFAFE.withValues(
-                                                alpha: 0.10,
+                                                alpha: 0.08,
                                               ),
-                                        side: BorderSide(
+                                        borderRadius: BorderRadius.circular(10),
+                                        border: Border.all(
                                           color: AppColors.cFCFAFE.withValues(
-                                            alpha: 0.30,
-                                          ),
-                                        ),
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(
-                                            14,
+                                            alpha: 0.28,
                                           ),
                                         ),
                                       ),
-                                      child: Text(
-                                        invited ? 'Invite' : 'Inviter',
-                                        style: const TextStyle(
-                                          color: AppColors.cFCFAFE,
-                                          fontWeight: FontWeight.w700,
+                                      child: Checkbox(
+                                        value: invited
+                                            ? true
+                                            : selectedForInvite,
+                                        onChanged: invited
+                                            ? null
+                                            : (value) {
+                                                setModalState(() {
+                                                  if (value == true) {
+                                                    selectedUserIds.add(
+                                                      user.id,
+                                                    );
+                                                  } else {
+                                                    selectedUserIds.remove(
+                                                      user.id,
+                                                    );
+                                                  }
+                                                });
+                                              },
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(
+                                            4,
+                                          ),
                                         ),
+                                        side: BorderSide(
+                                          color: AppColors.cFCFAFE.withValues(
+                                            alpha: 0.60,
+                                          ),
+                                          width: 1.4,
+                                        ),
+                                        checkColor: AppColors.c393566,
+                                        activeColor: AppColors.cFCFAFE,
                                       ),
                                     ),
                                   ),
@@ -1072,107 +1097,91 @@ class _ChannelsScreenState extends State<ChannelsScreen> {
                             ),
                     ),
                     const SizedBox(height: 10),
-                    const Text(
-                      "Ou envoyer un lien d'invitation a un ami",
-                      style: TextStyle(
-                        fontFamily: AppTypography.displayFontFamily,
-                        color: AppColors.cFCFAFE,
-                        fontSize: 17,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Container(
-                      height: 62,
-                      padding: const EdgeInsets.fromLTRB(10, 8, 8, 8),
-                      decoration: BoxDecoration(
-                        gradient: AppGradients.gB1BCFBTo393566,
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(
-                          color: AppColors.cFCFAFE.withValues(alpha: 0.20),
+                    SizedBox(
+                      width: double.infinity,
+                      height: 48,
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          gradient: isInvitingUsers || selectedUserIds.isEmpty
+                              ? null
+                              : AppGradients.gB1BCFBTo393566,
+                          color: isInvitingUsers || selectedUserIds.isEmpty
+                              ? AppColors.cFCFAFE.withValues(alpha: 0.08)
+                              : null,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: AppColors.cFCFAFE.withValues(alpha: 0.25),
+                          ),
                         ),
-                      ),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              isGeneratingLink
-                                  ? 'Generation du lien...'
-                                  : (inviteLink ?? 'Lien indisponible'),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                color: AppColors.cFCFAFE.withValues(
-                                  alpha: inviteLink == null ? 0.65 : 1,
-                                ),
-                                fontSize: 16,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-                          SizedBox(
-                            height: 46,
-                            child: DecoratedBox(
-                              decoration: BoxDecoration(
-                                gradient: inviteLink == null || isGeneratingLink
-                                    ? null
-                                    : AppGradients.gB1BCFBTo393566,
-                                color: inviteLink == null || isGeneratingLink
-                                    ? AppColors.cFCFAFE.withValues(alpha: 0.12)
-                                    : null,
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: TextButton(
-                                onPressed:
-                                    inviteLink == null || isGeneratingLink
-                                    ? null
-                                    : () async {
-                                        await Clipboard.setData(
-                                          ClipboardData(text: inviteLink!),
-                                        );
-                                        if (!context.mounted) return;
-                                        ScaffoldMessenger.of(
-                                          context,
-                                        ).showSnackBar(
-                                          const SnackBar(
-                                            content: Text(
-                                              'Lien d invitation copie.',
-                                            ),
-                                          ),
-                                        );
-                                      },
-                                style: TextButton.styleFrom(
-                                  foregroundColor: AppColors.whiteColor,
-                                  disabledForegroundColor: AppColors.cFCFAFE
-                                      .withValues(alpha: 0.50),
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 24,
-                                  ),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                ),
-                                child: isGeneratingLink
-                                    ? const SizedBox(
-                                        width: 18,
-                                        height: 18,
-                                        child: CircularProgressIndicator(
-                                          strokeWidth: 2,
-                                          color: AppColors.cFCFAFE,
-                                        ),
+                        child: FilledButton(
+                          onPressed: isInvitingUsers || selectedUserIds.isEmpty
+                              ? null
+                              : () async {
+                                  setModalState(() => isInvitingUsers = true);
+                                  final targetUserIds = selectedUserIds
+                                      .where(
+                                        (id) => !invitedUserIds.contains(id),
                                       )
-                                    : const Text(
-                                        'Copier',
-                                        style: TextStyle(
-                                          fontWeight: FontWeight.w700,
-                                          color: AppColors.whiteColor,
-                                          fontSize: 16,
-                                        ),
+                                      .toList(growable: false);
+                                  await app.inviteUsersToSelectedChannel(
+                                    targetUserIds,
+                                  );
+                                  if (!context.mounted) return;
+                                  final error = app.errorMessage;
+                                  if (error != null && error.isNotEmpty) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(content: Text(error)),
+                                    );
+                                    setModalState(
+                                      () => isInvitingUsers = false,
+                                    );
+                                    return;
+                                  }
+                                  setModalState(() {
+                                    invitedUserIds.addAll(targetUserIds);
+                                    selectedUserIds.removeAll(targetUserIds);
+                                    isInvitingUsers = false;
+                                  });
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(
+                                        targetUserIds.length > 1
+                                            ? '${targetUserIds.length} invitations envoyees.'
+                                            : 'Invitation envoyee.',
                                       ),
-                              ),
+                                    ),
+                                  );
+                                },
+                          style: FilledButton.styleFrom(
+                            backgroundColor: Colors.transparent,
+                            disabledBackgroundColor: Colors.transparent,
+                            foregroundColor: AppColors.cFCFAFE,
+                            shadowColor: Colors.transparent,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
                             ),
                           ),
-                        ],
+                          child: isInvitingUsers
+                              ? const SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: AppColors.cFCFAFE,
+                                  ),
+                                )
+                              : Text(
+                                  selectedUserIds.isEmpty
+                                      ? 'Selectionner des amis'
+                                      : selectedUserIds.length == 1
+                                      ? 'Inviter 1 ami'
+                                      : 'Inviter ${selectedUserIds.length} amis',
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 15,
+                                  ),
+                                ),
+                        ),
                       ),
                     ),
                   ],

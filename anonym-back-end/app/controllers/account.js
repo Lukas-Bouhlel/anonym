@@ -40,6 +40,20 @@ const serializeUserForViewer = (user, viewerId) => {
     };
 };
 
+const activeInventoryInclude = [
+    {
+        model: Inventory,
+        where: { active: true },
+        include: [
+            {
+                model: Shop,
+                attributes: ['title', 'type', 'content', 'amount']
+            }
+        ],
+        required: false
+    }
+];
+
 /**
  * @module UserController
  */
@@ -101,7 +115,8 @@ exports.read = async (req, res) => {
         const userId = req.params.id;
         const user = await User.findOne({
             where: { id: userId },
-            attributes: { exclude: ['password'] } // Exclure le champ 'password'
+            attributes: { exclude: ['password'] }, // Exclure le champ 'password'
+            include: activeInventoryInclude
         });
 
         if (!user) {
@@ -128,7 +143,8 @@ exports.read = async (req, res) => {
 exports.readAll = async (req, res) => {
     try {
         const users = await User.findAll({
-            attributes: { exclude: ['password'] } // Exclure le champ 'password'
+            attributes: { exclude: ['password'] }, // Exclure le champ 'password'
+            include: activeInventoryInclude
         });
 
         if (!users) {

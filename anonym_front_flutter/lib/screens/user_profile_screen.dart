@@ -20,6 +20,8 @@ class UserProfileScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final app = context.watch<AppController>();
     final me = context.watch<AuthController>().user;
+    final displayUser = _resolveDisplayUser(app, user);
+    final frameUrl = _activeFrameUrlForUser(app, displayUser);
     final moreButtonKey = GlobalKey();
     final t = Theme.of(context).textTheme;
 
@@ -41,25 +43,17 @@ class UserProfileScreen extends StatelessWidget {
       return '${dt.day} ${months[dt.month - 1]} ${dt.year}';
     }
 
-    DateTime? memberSinceDate = user.createdAt;
-    if (memberSinceDate == null && user.id > 0) {
-      for (final candidate in app.allUsers) {
-        if (candidate.id == user.id) {
-          memberSinceDate = candidate.createdAt;
-          break;
-        }
-      }
-    }
+    final memberSinceDate = displayUser.createdAt;
 
     final memberSince = memberSinceDate != null
         ? formatDate(memberSinceDate)
         : '';
-    final isOwnProfile = me?.id == user.id;
+    final isOwnProfile = me?.id == displayUser.id;
     final presenceStatus = app.presenceStatusForUser(
-      user.id,
+      displayUser.id,
       isCurrentUser: isOwnProfile,
     );
-    final publicCommunitiesFuture = app.publicGroupsForUser(user.id);
+    final publicCommunitiesFuture = app.publicGroupsForUser(displayUser.id);
 
     return Scaffold(
       backgroundColor: Colors.transparent,
@@ -114,22 +108,34 @@ class UserProfileScreen extends StatelessWidget {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Stack(
-                                alignment: Alignment.bottomRight,
+                                alignment: Alignment.center,
                                 children: [
-                                  ClipRRect(
-                                    borderRadius: BorderRadius.circular(16),
+                                  ClipOval(
                                     child: AppRemoteImage(
-                                      url: user.avatar,
+                                      url: displayUser.avatar,
                                       width: 60,
                                       height: 60,
                                       fallbackIcon: Icons.person,
                                     ),
                                   ),
-                                  PresenceBadge(
-                                    presenceStatus: presenceStatus,
-                                    isCurrentUser: isOwnProfile,
-                                    size: 12,
-                                    borderColor: AppColors.cFCFAFE,
+                                  if (frameUrl != null)
+                                    IgnorePointer(
+                                      child: AppRemoteImage(
+                                        url: frameUrl,
+                                        width: 66,
+                                        height: 66,
+                                        fit: BoxFit.contain,
+                                      ),
+                                    ),
+                                  Positioned(
+                                    right: 0,
+                                    bottom: 0,
+                                    child: PresenceBadge(
+                                      presenceStatus: presenceStatus,
+                                      isCurrentUser: isOwnProfile,
+                                      size: 12,
+                                      borderColor: AppColors.cFCFAFE,
+                                    ),
                                   ),
                                 ],
                               ),
@@ -139,16 +145,16 @@ class UserProfileScreen extends StatelessWidget {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      user.username,
+                                      displayUser.username,
                                       style: t.displayMedium?.copyWith(
                                         height: 0.9,
                                       ),
                                     ),
                                     const SizedBox(height: 6),
                                     Text(
-                                      (user.bio ?? '').trim().isEmpty
+                                      (displayUser.bio ?? '').trim().isEmpty
                                           ? ''
-                                          : user.bio!,
+                                          : displayUser.bio!,
                                       style: const TextStyle(
                                         color: AppColors.cDBE7FE,
                                         fontSize: 14,
@@ -176,7 +182,7 @@ class UserProfileScreen extends StatelessWidget {
                                         _showProfileMenu(
                                           context,
                                           app,
-                                          user,
+                                          displayUser,
                                           buttonRect,
                                         );
                                       },
@@ -258,7 +264,7 @@ class UserProfileScreen extends StatelessWidget {
                                   ),
                                 ),
                                 child: Text(
-                                  'LVL  ${user.level}',
+                                  'LVL  ${displayUser.level}',
                                   style: const TextStyle(
                                     fontFamily: AppTypography.displayFontFamily,
                                     color: AppColors.cFCFAFE,
@@ -400,7 +406,7 @@ class UserProfileScreen extends StatelessWidget {
                                         ? null
                                         : () async {
                                             await app.createPrivateDm(
-                                              targetUserId: user.id,
+                                              targetUserId: displayUser.id,
                                             );
                                             if (!context.mounted) return;
                                             if (app.errorMessage != null &&
@@ -473,9 +479,9 @@ class UserProfileScreen extends StatelessWidget {
                                               animation,
                                               secondaryAnimation,
                                             ) => ShareProfileScreen(
-                                              userId: user.id,
-                                              username: user.username,
-                                              avatarUrl: user.avatar,
+                                              userId: displayUser.id,
+                                              username: displayUser.username,
+                                              avatarUrl: displayUser.avatar,
                                             ),
                                         transitionsBuilder:
                                             (
@@ -813,6 +819,58 @@ class UserProfileScreen extends StatelessWidget {
     );
     return confirmed == true;
   }
+}
+
+UserModel _resolveDisplayUser(AppController app, UserModel fallback) {
+  for (final candidate in app.allUsers) {
+    if (candidate.id != fallback.id) continue;
+    return fallback.copyWith(
+      username: fallback.username.trim().isNotEmpty
+          ? fallback.username
+          : candidate.username,
+      email: fallback.email.trim().isNotEmpty
+          ? fallback.email
+          : candidate.email,
+      level: fallback.level > 0 ? fallback.level : candidate.level,
+      createdAt: fallback.createdAt ?? candidate.createdAt,
+      avatar: (fallback.avatar?.trim().isNotEmpty ?? false)
+          ? fallback.avatar
+          : candidate.avatar,
+      bio: (fallback.bio?.trim().isNotEmpty ?? false)
+          ? fallback.bio
+          : candidate.bio,
+      roles: fallback.roles ?? candidate.roles,
+      presenceStatus: fallback.presenceStatus ?? candidate.presenceStatus,
+      inventories: candidate.inventories.isNotEmpty
+          ? candidate.inventories
+          : fallback.inventories,
+    );
+  }
+  return fallback;
+}
+
+String? _activeFrameUrlForUser(AppController app, UserModel user) {
+  String? fallbackContent;
+  for (final item in user.inventories) {
+    if (!item.active) continue;
+    final fromInventory = item.shop;
+    if (fromInventory != null) {
+      final content = fromInventory.content.trim();
+      if (content.isNotEmpty) {
+        final itemType = fromInventory.type.trim().toUpperCase();
+        if (itemType == 'CADRE') return content;
+        fallbackContent ??= content;
+      }
+    }
+    for (final shopItem in app.shopItems) {
+      if (shopItem.articleId != item.articleId) continue;
+      final content = shopItem.content.trim();
+      if (content.isEmpty) continue;
+      if (shopItem.type.trim().toUpperCase() == 'CADRE') return content;
+      fallbackContent ??= content;
+    }
+  }
+  return fallbackContent;
 }
 
 class _CommunityConversationTile extends StatelessWidget {

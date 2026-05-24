@@ -3,6 +3,8 @@ import 'package:flutter_svg/flutter_svg.dart';
 
 import '../../theme.dart';
 
+enum MojiConfirmModalType { success, warning, danger }
+
 class MojiConfirmModal extends StatelessWidget {
   const MojiConfirmModal({
     super.key,
@@ -10,7 +12,8 @@ class MojiConfirmModal extends StatelessWidget {
     required this.description,
     required this.confirmLabel,
     this.cancelLabel = 'Annuler',
-    this.confirmGradient = const [AppColors.c393566, AppColors.c393566],
+    this.type = MojiConfirmModalType.warning,
+    this.confirmGradient,
     this.backgroundColor = Colors.transparent,
     this.onConfirm,
     this.onCancel,
@@ -20,13 +23,51 @@ class MojiConfirmModal extends StatelessWidget {
   final String description;
   final String confirmLabel;
   final String cancelLabel;
-  final List<Color> confirmGradient;
+  final MojiConfirmModalType type;
+  final List<Color>? confirmGradient;
   final Color backgroundColor;
   final VoidCallback? onConfirm;
   final VoidCallback? onCancel;
 
+  String get _iconAssetPath {
+    switch (type) {
+      case MojiConfirmModalType.success:
+        return 'assets/icons/success.svg';
+      case MojiConfirmModalType.danger:
+        return 'assets/icons/danger.svg';
+      case MojiConfirmModalType.warning:
+        return 'assets/icons/warning.svg';
+    }
+  }
+
+  Size get _iconSize {
+    switch (type) {
+      case MojiConfirmModalType.success:
+        return const Size(74, 74);
+      case MojiConfirmModalType.danger:
+        return const Size(65, 65);
+      case MojiConfirmModalType.warning:
+        return const Size(74, 65);
+    }
+  }
+
+  List<Color> get _resolvedConfirmGradient {
+    if (confirmGradient != null && confirmGradient!.isNotEmpty) {
+      return confirmGradient!;
+    }
+    switch (type) {
+      case MojiConfirmModalType.success:
+        return const [Color(0xFF25BA72), Color(0xFF25BA72)];
+      case MojiConfirmModalType.danger:
+        return const [Color(0xFFFF5B4F), Color(0xFFFF5B4F)];
+      case MojiConfirmModalType.warning:
+        return const [AppColors.c393566, AppColors.c393566];
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final iconSize = _iconSize;
     return Dialog(
       backgroundColor: Colors.transparent,
       insetPadding: const EdgeInsets.symmetric(horizontal: 28, vertical: 24),
@@ -45,9 +86,9 @@ class MojiConfirmModal extends StatelessWidget {
               height: 80,
               child: Center(
                 child: SvgPicture.asset(
-                  'assets/icons/warning.svg',
-                  width: 90,
-                  height: 80,
+                  _iconAssetPath,
+                  width: iconSize.width,
+                  height: iconSize.height,
                   fit: BoxFit.contain,
                 ),
               ),
@@ -83,7 +124,7 @@ class MojiConfirmModal extends StatelessWidget {
                   gradient: LinearGradient(
                     begin: Alignment.centerLeft,
                     end: Alignment.centerRight,
-                    colors: confirmGradient,
+                    colors: _resolvedConfirmGradient,
                   ),
                   borderRadius: BorderRadius.circular(18),
                 ),

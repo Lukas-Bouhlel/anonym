@@ -27,6 +27,7 @@ class _FriendsScreenState extends State<FriendsScreen> {
   bool _isRealtimeSyncRunning = false;
   String _query = '';
   Timer? _realtimeSyncTimer;
+  final Set<int> _hydratedDiscoverableUserIds = <int>{};
 
   @override
   void initState() {
@@ -269,6 +270,7 @@ class _FriendsScreenState extends State<FriendsScreen> {
   }
 
   Widget _buildAddMode(AppController app, List<UserModel> discoverableUsers) {
+    _prefetchDiscoverableUsersDetails(app, discoverableUsers);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -411,6 +413,27 @@ class _FriendsScreenState extends State<FriendsScreen> {
     setState(() => _isLoadingInitialFriends = false);
   }
 
+  void _prefetchDiscoverableUsersDetails(
+    AppController app,
+    List<UserModel> discoverableUsers,
+  ) {
+    if (discoverableUsers.isEmpty) return;
+    final idsToHydrate = <int>[];
+    for (final user in discoverableUsers.take(12)) {
+      if (user.id <= 0) continue;
+      if (_hydratedDiscoverableUserIds.contains(user.id)) continue;
+      _hydratedDiscoverableUserIds.add(user.id);
+      idsToHydrate.add(user.id);
+    }
+    if (idsToHydrate.isEmpty) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      for (final userId in idsToHydrate) {
+        unawaited(app.hydrateUserDetails(userId));
+      }
+    });
+  }
+
   void _startRealtimeSync() {
     _realtimeSyncTimer?.cancel();
     _realtimeSyncTimer = Timer.periodic(const Duration(seconds: 20), (_) {
@@ -470,6 +493,7 @@ class _FriendsScreenState extends State<FriendsScreen> {
   }
 
   Future<void> _showModeModal(BuildContext context) async {
+    final app = context.read<AppController>();
     await showModalBottomSheet<void>(
       context: context,
       backgroundColor: Colors.transparent,
@@ -533,6 +557,7 @@ class _FriendsScreenState extends State<FriendsScreen> {
                         onTap: () {
                           Navigator.of(sheetContext).pop();
                           setState(() => _mode = _FriendScreenMode.add);
+                          unawaited(app.refreshUsers(silent: true));
                         },
                       ),
                     ],
@@ -602,6 +627,120 @@ class _FriendsScreenState extends State<FriendsScreen> {
 enum _FriendScreenMode { list, add }
 
 enum _FriendListFilter { friends, incoming, outgoing }
+
+UserModel _resolveUserForAvatar(AppController app, UserModel fallback) {
+  for (final candidate in app.allUsers) {
+    if (candidate.id != fallback.id) continue;
+    return fallback.copyWith(
+      username: fallback.username.trim().isNotEmpty
+          ? fallback.username
+          : candidate.username,
+      email: fallback.email.trim().isNotEmpty
+          ? fallback.email
+          : candidate.email,
+      level: fallback.level > 0 ? fallback.level : candidate.level,
+      createdAt: fallback.createdAt ?? candidate.createdAt,
+      avatar: (fallback.avatar?.trim().isNotEmpty ?? false)
+          ? fallback.avatar
+          : candidate.avatar,
+      bio: (fallback.bio?.trim().isNotEmpty ?? false)
+          ? fallback.bio
+          : candidate.bio,
+      roles: fallback.roles ?? candidate.roles,
+      presenceStatus: fallback.presenceStatus ?? candidate.presenceStatus,
+      inventories: candidate.inventories.isNotEmpty
+          ? candidate.inventories
+          : fallback.inventories,
+    );
+  }
+  return fallback;
+}
+
+String? _activeFrameUrlForUser(AppController app, UserModel user) {
+  String? fallbackContent;
+  for (final item in user.inventories) {
+    if (!item.active) continue;
+    final fromInventory = item.shop;
+    if (fromInventory != null) {
+      final content = fromInventory.content.trim();
+      if (content.isNotEmpty) {
+        final itemType = fromInventory.type.trim().toUpperCase();
+        if (itemType == 'CADRE') return content;
+        fallbackContent ??= content;
+      }
+    }
+    for (final shopItem in app.shopItems) {
+      if (shopItem.articleId != item.articleId) continue;
+      final content = shopItem.content.trim();
+      if (content.isEmpty) continue;
+      if (shopItem.type.trim().toUpperCase() == 'CADRE') return content;
+      fallbackContent ??= content;
+    }
+  }
+  return fallbackContent;
+}
+
+class _UserAvatarWithDecoration extends StatelessWidget {
+  const _UserAvatarWithDecoration({
+    required this.app,
+    required this.user,
+    required this.size,
+    required this.badgeSize,
+    required this.fallbackIcon,
+  });
+
+  final AppController app;
+  final UserModel user;
+  final double size;
+  final double badgeSize;
+  final IconData fallbackIcon;
+
+  @override
+  Widget build(BuildContext context) {
+    final frameUrl = _activeFrameUrlForUser(app, user);
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        SizedBox(
+          width: size,
+          height: size,
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              ClipOval(
+                child: AppRemoteImage(
+                  url: user.avatar,
+                  width: size,
+                  height: size,
+                  fallbackIcon: fallbackIcon,
+                ),
+              ),
+              if (frameUrl != null)
+                IgnorePointer(
+                  child: AppRemoteImage(
+                    url: frameUrl,
+                    width: size + 4,
+                    height: size + 4,
+                    fit: BoxFit.contain,
+                  ),
+                ),
+            ],
+          ),
+        ),
+        Positioned(
+          right: 0,
+          top: 0,
+          child: PresenceBadge(
+            presenceStatus: app.presenceStatusForUser(user.id),
+            isCurrentUser: false,
+            size: badgeSize,
+            borderColor: AppColors.cFCFAFE,
+          ),
+        ),
+      ],
+    );
+  }
+}
 
 class _ListFilterBar extends StatelessWidget {
   const _ListFilterBar({
@@ -904,6 +1043,7 @@ class _FriendTile extends StatelessWidget {
     final user =
         details ??
         UserModel(id: friend.friendId, username: 'Utilisateur', email: '');
+    final displayUser = _resolveUserForAvatar(app, user);
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 6),
@@ -923,7 +1063,7 @@ class _FriendTile extends StatelessWidget {
               clipBehavior: Clip.antiAlias,
               builder: (_) => FractionallySizedBox(
                 heightFactor: 0.86,
-                child: UserProfileScreen(user: user),
+                child: UserProfileScreen(user: displayUser),
               ),
             );
           },
@@ -940,33 +1080,17 @@ class _FriendTile extends StatelessWidget {
             ),
             child: Row(
               children: [
-                Stack(
-                  children: [
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(11),
-                      child: AppRemoteImage(
-                        url: details?.avatar,
-                        width: 43,
-                        height: 43,
-                        fallbackIcon: Icons.person_outline_rounded,
-                      ),
-                    ),
-                    Positioned(
-                      right: 0,
-                      top: 0,
-                      child: PresenceBadge(
-                        presenceStatus: app.presenceStatusForUser(user.id),
-                        isCurrentUser: false,
-                        size: 11,
-                        borderColor: AppColors.cFCFAFE,
-                      ),
-                    ),
-                  ],
+                _UserAvatarWithDecoration(
+                  app: app,
+                  user: displayUser,
+                  size: 43,
+                  badgeSize: 11,
+                  fallbackIcon: Icons.person_outline_rounded,
                 ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
-                    details?.username ?? 'Utilisateur',
+                    displayUser.username,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
@@ -1016,6 +1140,7 @@ class _IncomingRequestTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final details = request.friendDetails;
     final user = details ?? _resolveIncomingRequestUser(app, request);
+    final displayUser = _resolveUserForAvatar(app, user);
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 6),
@@ -1035,7 +1160,7 @@ class _IncomingRequestTile extends StatelessWidget {
               clipBehavior: Clip.antiAlias,
               builder: (_) => FractionallySizedBox(
                 heightFactor: 0.86,
-                child: UserProfileScreen(user: user),
+                child: UserProfileScreen(user: displayUser),
               ),
             );
           },
@@ -1052,33 +1177,17 @@ class _IncomingRequestTile extends StatelessWidget {
             ),
             child: Row(
               children: [
-                Stack(
-                  children: [
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(11),
-                      child: AppRemoteImage(
-                        url: details?.avatar,
-                        width: 43,
-                        height: 43,
-                        fallbackIcon: Icons.person_outline_rounded,
-                      ),
-                    ),
-                    Positioned(
-                      right: 0,
-                      top: 0,
-                      child: PresenceBadge(
-                        presenceStatus: app.presenceStatusForUser(user.id),
-                        isCurrentUser: false,
-                        size: 11,
-                        borderColor: AppColors.cFCFAFE,
-                      ),
-                    ),
-                  ],
+                _UserAvatarWithDecoration(
+                  app: app,
+                  user: displayUser,
+                  size: 43,
+                  badgeSize: 11,
+                  fallbackIcon: Icons.person_outline_rounded,
                 ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
-                    details?.username ?? 'Utilisateur',
+                    displayUser.username,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
@@ -1142,6 +1251,7 @@ class _OutgoingRequestTile extends StatelessWidget {
     final user =
         details ??
         UserModel(id: request.friendId, username: 'Utilisateur', email: '');
+    final displayUser = _resolveUserForAvatar(app, user);
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 6),
@@ -1161,7 +1271,7 @@ class _OutgoingRequestTile extends StatelessWidget {
               clipBehavior: Clip.antiAlias,
               builder: (_) => FractionallySizedBox(
                 heightFactor: 0.86,
-                child: UserProfileScreen(user: user),
+                child: UserProfileScreen(user: displayUser),
               ),
             );
           },
@@ -1178,28 +1288,12 @@ class _OutgoingRequestTile extends StatelessWidget {
             ),
             child: Row(
               children: [
-                Stack(
-                  children: [
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(11),
-                      child: AppRemoteImage(
-                        url: details?.avatar,
-                        width: 43,
-                        height: 43,
-                        fallbackIcon: Icons.person_outline_rounded,
-                      ),
-                    ),
-                    Positioned(
-                      right: 0,
-                      top: 0,
-                      child: PresenceBadge(
-                        presenceStatus: app.presenceStatusForUser(user.id),
-                        isCurrentUser: false,
-                        size: 11,
-                        borderColor: AppColors.cFCFAFE,
-                      ),
-                    ),
-                  ],
+                _UserAvatarWithDecoration(
+                  app: app,
+                  user: displayUser,
+                  size: 43,
+                  badgeSize: 11,
+                  fallbackIcon: Icons.person_outline_rounded,
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -1208,7 +1302,7 @@ class _OutgoingRequestTile extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        details?.username ?? 'Utilisateur',
+                        displayUser.username,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
@@ -1260,73 +1354,64 @@ class _DiscoverableUserTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 6),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: Container(
-          height: 68,
-          padding: const EdgeInsets.symmetric(horizontal: 12),
-          decoration: BoxDecoration(
-            color: AppColors.cB1BCFB.withValues(alpha: 0.14),
+    return FutureBuilder<UserModel?>(
+      future: app.hydrateUserDetails(user.id),
+      builder: (context, snapshot) {
+        final hydrated = snapshot.data;
+        final displayUser = _resolveUserForAvatar(app, hydrated ?? user);
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 6),
+          child: InkWell(
+            onTap: onTap,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: AppColors.cFCFAFE.withValues(alpha: 0.36),
-              width: 1,
-            ),
-          ),
-          child: Row(
-            children: [
-              Stack(
+            child: Container(
+              height: 68,
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              decoration: BoxDecoration(
+                color: AppColors.cB1BCFB.withValues(alpha: 0.14),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: AppColors.cFCFAFE.withValues(alpha: 0.36),
+                  width: 1,
+                ),
+              ),
+              child: Row(
                 children: [
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(11),
-                    child: AppRemoteImage(
-                      url: user.avatar,
-                      width: 41,
-                      height: 41,
-                      fallbackIcon: Icons.person_outline_rounded,
+                  _UserAvatarWithDecoration(
+                    app: app,
+                    user: displayUser,
+                    size: 41,
+                    badgeSize: 11,
+                    fallbackIcon: Icons.person_outline_rounded,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      displayUser.username,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: AppColors.cFCFAFE,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
                   ),
-                  Positioned(
-                    right: 0,
-                    top: 0,
-                    child: PresenceBadge(
-                      presenceStatus: app.presenceStatusForUser(user.id),
-                      isCurrentUser: false,
-                      size: 11,
-                      borderColor: AppColors.cFCFAFE,
+                  IconButton(
+                    onPressed: onAdd,
+                    icon: const Icon(
+                      Icons.person_add_alt_1_rounded,
+                      color: AppColors.cFCFAFE,
+                      size: 22,
                     ),
+                    tooltip: 'Envoyer une demande',
                   ),
                 ],
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  user.username,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: AppColors.cFCFAFE,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
-              IconButton(
-                onPressed: onAdd,
-                icon: const Icon(
-                  Icons.person_add_alt_1_rounded,
-                  color: AppColors.cFCFAFE,
-                  size: 22,
-                ),
-                tooltip: 'Envoyer une demande',
-              ),
-            ],
+            ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 }

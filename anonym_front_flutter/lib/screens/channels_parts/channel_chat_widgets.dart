@@ -9,6 +9,7 @@ class _ChatDetailView extends StatefulWidget {
     required this.isDm,
     this.dmPeerName,
     this.dmPeerAvatarUrl,
+    this.dmPeerFrameUrl,
     this.dmPeerPresenceStatus,
     this.dmPeerPresenceLabel,
     this.onDmHeaderTap,
@@ -34,6 +35,7 @@ class _ChatDetailView extends StatefulWidget {
   final bool isDm;
   final String? dmPeerName;
   final String? dmPeerAvatarUrl;
+  final String? dmPeerFrameUrl;
   final String? dmPeerPresenceStatus;
   final String? dmPeerPresenceLabel;
   final VoidCallback? onDmHeaderTap;
@@ -227,6 +229,12 @@ class _ChatDetailViewState extends State<_ChatDetailView> {
     final headerAvatarUrl = widget.isDm
         ? widget.dmPeerAvatarUrl
         : widget.selected.coverImage;
+    final headerDmFrameUrl =
+        widget.isDm &&
+            (widget.dmPeerFrameUrl == null ||
+                widget.dmPeerFrameUrl!.trim().isEmpty)
+        ? _inferDmPeerFrameUrlFromMessages()
+        : widget.dmPeerFrameUrl;
 
     return SafeArea(
       maintainBottomViewPadding: true,
@@ -253,14 +261,28 @@ class _ChatDetailViewState extends State<_ChatDetailView> {
                           child: widget.isDm
                               ? Stack(
                                   children: [
-                                    ClipOval(
-                                      child: AppRemoteImage(
-                                        url: headerAvatarUrl,
-                                        width: 44,
-                                        height: 44,
-                                        fit: BoxFit.cover,
-                                        fallbackIcon: Icons.person,
-                                      ),
+                                    Stack(
+                                      alignment: Alignment.center,
+                                      children: [
+                                        ClipOval(
+                                          child: AppRemoteImage(
+                                            url: headerAvatarUrl,
+                                            width: 44,
+                                            height: 44,
+                                            fit: BoxFit.cover,
+                                            fallbackIcon: Icons.person,
+                                          ),
+                                        ),
+                                        if (headerDmFrameUrl != null)
+                                          IgnorePointer(
+                                            child: AppRemoteImage(
+                                              url: headerDmFrameUrl,
+                                              width: 48,
+                                              height: 48,
+                                              fit: BoxFit.contain,
+                                            ),
+                                          ),
+                                      ],
                                     ),
                                     Positioned(
                                       right: 0,
@@ -695,13 +717,32 @@ class _ChatDetailViewState extends State<_ChatDetailView> {
 
   String? _activeFrameUrlFromUser(UserModel? user) {
     if (user == null) return null;
+    String? fallbackContent;
     for (final item in user.inventories) {
       if (!item.active) continue;
       final shop = item.shop;
       if (shop == null) continue;
-      if (shop.type.trim().toUpperCase() != 'CADRE') continue;
       final content = shop.content.trim();
-      if (content.isNotEmpty) return content;
+      if (content.isEmpty) continue;
+      if (shop.type.trim().toUpperCase() == 'CADRE') return content;
+      fallbackContent ??= content;
+    }
+    return fallbackContent;
+  }
+
+  String? _inferDmPeerFrameUrlFromMessages() {
+    if (!widget.isDm) return null;
+    for (var i = widget.messages.length - 1; i >= 0; i--) {
+      final message = widget.messages[i];
+      final sender = message.sender;
+      if (sender == null) continue;
+      final isCurrentUserMessage =
+          widget.currentUserId != null && sender.id == widget.currentUserId;
+      if (isCurrentUserMessage) continue;
+      final frame = _activeFrameUrlFromUser(sender);
+      if (frame != null && frame.trim().isNotEmpty) {
+        return frame;
+      }
     }
     return null;
   }
@@ -846,7 +887,11 @@ class _MessageBubble extends StatelessWidget {
     final sharedProfilePayload = hasText
         ? ProfileSharePayloadCodec.tryDecode(message.content)
         : null;
+    final groupInvitePayload = hasText
+        ? GroupInvitePayloadCodec.tryDecode(message.content)
+        : null;
     final hasSharedProfile = sharedProfilePayload != null;
+    final hasGroupInvite = groupInvitePayload != null;
 
     Future<void> openSharedProfile(ProfileSharePayload payload) async {
       final app = context.read<AppController>();
@@ -861,6 +906,7 @@ class _MessageBubble extends StatelessWidget {
         id: payload.userId,
         username: payload.username,
         email: '',
+        avatar: payload.avatarUrl,
       );
 
       await showModalBottomSheet(
@@ -875,6 +921,214 @@ class _MessageBubble extends StatelessWidget {
           heightFactor: 0.86,
           child: UserProfileScreen(user: sharedUser!),
         ),
+      );
+    }
+
+    Future<void> openGroupInvitePreview(GroupInvitePayload payload) async {
+      final app = context.read<AppController>();
+      final alreadyJoined = app.channels.any(
+        (channel) => channel.channelId == payload.channelId,
+      );
+      final isPrivate =
+          payload.channelVisibility.trim().toUpperCase() == 'PRIVATE';
+      final subtitle = payload.channelDescription.trim().isEmpty
+          ? (isPrivate
+                ? "Le groupe a limite l'acces a ce profil."
+                : 'Le groupe est visible dans les invitations.')
+          : payload.channelDescription.trim();
+      await showModalBottomSheet<void>(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: Colors.transparent,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+        ),
+        clipBehavior: Clip.antiAlias,
+        builder: (sheetContext) {
+          return FractionallySizedBox(
+            heightFactor: 0.48,
+            child: Container(
+              decoration: const BoxDecoration(
+                gradient: AppGradients.gB1BCFBTo393566,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+              ),
+              child: SafeArea(
+                top: false,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    const SizedBox(height: 12),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: Center(
+                        child: Container(
+                          width: 44,
+                          height: 4,
+                          decoration: BoxDecoration(
+                            color: AppColors.cFCFAFE.withValues(alpha: 0.45),
+                            borderRadius: BorderRadius.circular(99),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+                    const Text(
+                      'Invitation de groupe',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: AppColors.whiteColor,
+                        fontFamily: AppTypography.displayFontFamily,
+                        fontSize: 22,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+                    Divider(
+                      height: 1,
+                      color: AppColors.whiteColor.withValues(alpha: 0.2),
+                    ),
+                    Expanded(
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.all(16),
+                              decoration: BoxDecoration(
+                                color: AppColors.cFCFAFE.withValues(
+                                  alpha: 0.06,
+                                ),
+                                borderRadius: BorderRadius.circular(18),
+                                border: Border.all(
+                                  color: AppColors.cFCFAFE.withValues(
+                                    alpha: 0.16,
+                                  ),
+                                ),
+                              ),
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  _GroupInviteAvatar(
+                                    coverImageUrl: payload.channelCoverImage,
+                                    isPrivate: isPrivate,
+                                    size: 56,
+                                  ),
+                                  const SizedBox(width: 14),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          payload.channelName,
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: const TextStyle(
+                                            color: AppColors.cFCFAFE,
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.w700,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          subtitle,
+                                          maxLines: 2,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: TextStyle(
+                                            color: AppColors.cFCFAFE.withValues(
+                                              alpha: 0.60,
+                                            ),
+                                            fontSize: 14,
+                                            height: 1.35,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const Spacer(),
+                            SizedBox(
+                              width: double.infinity,
+                              height: 48,
+                              child: FilledButton(
+                                onPressed: () async {
+                                  if (alreadyJoined) {
+                                    Navigator.of(sheetContext).pop();
+                                    await app.openChannelById(
+                                      payload.channelId,
+                                    );
+                                    if (!context.mounted) return;
+                                    final error = app.errorMessage;
+                                    if (error != null && error.isNotEmpty) {
+                                      ScaffoldMessenger.of(
+                                        context,
+                                      ).showSnackBar(
+                                        SnackBar(content: Text(error)),
+                                      );
+                                    }
+                                    return;
+                                  }
+                                  if (payload.inviteCode.trim().isEmpty) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text('Invitation invalide.'),
+                                      ),
+                                    );
+                                    return;
+                                  }
+                                  await app.joinByInviteCode(
+                                    payload.inviteCode,
+                                  );
+                                  if (!context.mounted) return;
+                                  final error = app.errorMessage;
+                                  if (error != null && error.isNotEmpty) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(content: Text(error)),
+                                    );
+                                    return;
+                                  }
+                                  Navigator.of(sheetContext).pop();
+                                  await app.openChannelById(payload.channelId);
+                                },
+                                style: FilledButton.styleFrom(
+                                  backgroundColor: AppColors.cFCFAFE.withValues(
+                                    alpha: 0.16,
+                                  ),
+                                  foregroundColor: AppColors.cFCFAFE,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                    side: BorderSide(
+                                      color: AppColors.cFCFAFE.withValues(
+                                        alpha: 0.30,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                child: Text(
+                                  alreadyJoined
+                                      ? 'Ouvrir le groupe'
+                                      : 'Rejoindre le groupe',
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w800,
+                                    fontSize: 15,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        },
       );
     }
 
@@ -956,6 +1210,13 @@ class _MessageBubble extends StatelessWidget {
                               payload: sharedProfilePayload,
                               onTap: () =>
                                   openSharedProfile(sharedProfilePayload),
+                            )
+                          : hasGroupInvite
+                          ? _GroupInviteMessageCard(
+                              own: own,
+                              payload: groupInvitePayload,
+                              onTap: () =>
+                                  openGroupInvitePreview(groupInvitePayload),
                             )
                           : Text(
                               message.content,
@@ -1127,6 +1388,7 @@ class _SharedProfileMessageCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final app = context.read<AppController>();
     final textColor = own ? AppColors.whiteColor : AppColors.textPrimary;
     final subtleColor = own
         ? AppColors.whiteColor.withValues(alpha: 0.82)
@@ -1134,6 +1396,111 @@ class _SharedProfileMessageCard extends StatelessWidget {
     final outlineColor = own
         ? AppColors.whiteColor.withValues(alpha: 0.20)
         : AppColors.c393566.withValues(alpha: 0.18);
+    return FutureBuilder<UserModel?>(
+      future: app.hydrateUserDetails(payload.userId),
+      builder: (context, snapshot) {
+        final fallbackUser = app.userById(payload.userId);
+        final resolvedUser = snapshot.data ?? fallbackUser;
+        final resolvedAvatarUrl =
+            (payload.avatarUrl?.trim().isNotEmpty ?? false)
+            ? payload.avatarUrl
+            : resolvedUser?.avatar;
+        final resolvedFrameUrl = (payload.frameUrl?.trim().isNotEmpty ?? false)
+            ? payload.frameUrl
+            : _activeFrameUrlFromUser(resolvedUser);
+
+        return InkWell(
+          borderRadius: BorderRadius.circular(12),
+          onTap: onTap,
+          child: Container(
+            padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+            decoration: BoxDecoration(
+              color: Colors.transparent,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: outlineColor),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.max,
+              children: [
+                _ChatMessageAvatar(
+                  avatarUrl: resolvedAvatarUrl,
+                  frameUrl: resolvedFrameUrl,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        'Compte partage',
+                        style: TextStyle(
+                          color: subtleColor,
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        payload.username,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: textColor,
+                          fontSize: 14.5,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 6),
+                Icon(Icons.chevron_right_rounded, color: textColor, size: 22),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  String? _activeFrameUrlFromUser(UserModel? user) {
+    if (user == null) return null;
+    for (final item in user.inventories) {
+      if (!item.active) continue;
+      final shop = item.shop;
+      if (shop == null) continue;
+      final content = shop.content.trim();
+      if (content.isEmpty) continue;
+      if (shop.type.trim().toUpperCase() == 'CADRE') return content;
+    }
+    return null;
+  }
+}
+
+class _GroupInviteMessageCard extends StatelessWidget {
+  const _GroupInviteMessageCard({
+    required this.own,
+    required this.payload,
+    required this.onTap,
+  });
+
+  final bool own;
+  final GroupInvitePayload payload;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final isPrivate =
+        payload.channelVisibility.trim().toUpperCase() == 'PRIVATE';
+    final textColor = own ? AppColors.whiteColor : AppColors.textPrimary;
+    final subtleColor = own
+        ? AppColors.whiteColor.withValues(alpha: 0.82)
+        : AppColors.textPrimary.withValues(alpha: 0.78);
+    final outlineColor = own
+        ? AppColors.whiteColor.withValues(alpha: 0.20)
+        : AppColors.c393566.withValues(alpha: 0.18);
+
     return InkWell(
       borderRadius: BorderRadius.circular(12),
       onTap: onTap,
@@ -1145,17 +1512,21 @@ class _SharedProfileMessageCard extends StatelessWidget {
           border: Border.all(color: outlineColor),
         ),
         child: Row(
-          mainAxisSize: MainAxisSize.min,
+          mainAxisSize: MainAxisSize.max,
           children: [
-            Icon(Icons.person_pin_circle_outlined, color: textColor, size: 20),
-            const SizedBox(width: 8),
+            _GroupInviteAvatar(
+              coverImageUrl: payload.channelCoverImage,
+              isPrivate: isPrivate,
+              size: 56,
+            ),
+            const SizedBox(width: 10),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
-                    'Compte partage',
+                    'Invitation de groupe',
                     style: TextStyle(
                       color: subtleColor,
                       fontSize: 12.5,
@@ -1164,7 +1535,7 @@ class _SharedProfileMessageCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    payload.username,
+                    payload.channelName,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
@@ -1185,6 +1556,73 @@ class _SharedProfileMessageCard extends StatelessWidget {
   }
 }
 
+class _GroupInviteAvatar extends StatelessWidget {
+  const _GroupInviteAvatar({
+    required this.coverImageUrl,
+    required this.isPrivate,
+    this.size = 56,
+  });
+
+  final String? coverImageUrl;
+  final bool isPrivate;
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    final badgeSize = size <= 52 ? 18.0 : 20.0;
+    final iconSize = size <= 52 ? 11.0 : 12.0;
+    final imageRadius = size <= 52 ? 12.0 : 14.0;
+    return SizedBox(
+      width: size,
+      height: size,
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Container(
+            width: size,
+            height: size,
+            decoration: BoxDecoration(
+              color: AppColors.c393566,
+              borderRadius: BorderRadius.circular(imageRadius),
+              border: Border.all(
+                color: AppColors.cFCFAFE.withValues(alpha: 0.2),
+              ),
+            ),
+            clipBehavior: Clip.antiAlias,
+            child: AppRemoteImage(
+              url: coverImageUrl,
+              width: size,
+              height: size,
+              fit: BoxFit.cover,
+              fallbackIcon: Icons.alternate_email_rounded,
+            ),
+          ),
+          Positioned(
+            right: -4,
+            bottom: -4,
+            child: Container(
+              width: badgeSize,
+              height: badgeSize,
+              decoration: BoxDecoration(
+                color: AppColors.c393566,
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: AppColors.cFCFAFE.withValues(alpha: 0.25),
+                ),
+              ),
+              child: Icon(
+                isPrivate ? Icons.lock_rounded : Icons.public_rounded,
+                size: iconSize,
+                color: AppColors.cFCFAFE,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _ChatMessageAvatar extends StatelessWidget {
   const _ChatMessageAvatar({required this.avatarUrl, required this.frameUrl});
 
@@ -1197,11 +1635,10 @@ class _ChatMessageAvatar extends StatelessWidget {
       width: 52,
       height: 52,
       child: Stack(
-        alignment: Alignment.center,
         children: [
           Container(
-            width: 50,
-            height: 50,
+            width: 52,
+            height: 52,
             decoration: BoxDecoration(
               color: AppColors.c393566,
               shape: BoxShape.circle,

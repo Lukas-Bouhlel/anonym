@@ -108,11 +108,20 @@ class AppController extends ChangeNotifier with WidgetsBindingObserver {
   final Map<int, LiveUserLocationModel> _liveLocationsByUserId = {};
   final Map<int, String> _presenceByUserId = {};
   final Map<int, Future<List<ChannelModel>>> _publicGroupsByUserFuture = {};
+  final Map<int, Future<UserModel?>> _userDetailsHydrationById = {};
   String? _manualPresenceOverride;
   bool _isAppInForeground = true;
   Timer? _socialRefreshDebounce;
   bool _isRefreshingSocialState = false;
   bool _hasQueuedSocialRefresh = false;
+  Timer? _realtimeChannelsRefreshDebounce;
+  Timer? _realtimeProfileStatsRefreshDebounce;
+  bool _isRefreshingRealtimeChannels = false;
+  bool _hasQueuedRealtimeChannelsRefresh = false;
+  bool _isRefreshingRealtimeProfileStats = false;
+  bool _hasQueuedRealtimeProfileStatsRefresh = false;
+  int _realtimeStatsVersion = 0;
+  String _lastPublicChannelsFilter = 'all';
   Timer? _sessionKeepAliveTimer;
   bool _isRecoveringSocketSession = false;
   DateTime? _lastSocketRecoveryAt;
@@ -147,6 +156,15 @@ class AppController extends ChangeNotifier with WidgetsBindingObserver {
   List<UserModel> get allUsers => _allUsers;
   List<LiveUserLocationModel> get liveUserLocations =>
       _liveLocationsByUserId.values.toList(growable: false);
+  int get realtimeStatsVersion => _realtimeStatsVersion;
+
+  UserModel? userById(int userId) {
+    if (userId <= 0) return null;
+    for (final user in _allUsers) {
+      if (user.id == userId) return user;
+    }
+    return null;
+  }
 
   String presenceStatusForUser(int userId, {bool isCurrentUser = false}) {
     return PresenceUtils.effectiveForViewer(
@@ -347,6 +365,37 @@ class AppController extends ChangeNotifier with WidgetsBindingObserver {
     );
   }
 
+  Future<UserModel?> hydrateUserDetails(
+    int userId, {
+    bool forceRefresh = false,
+  }) async {
+    if (userId <= 0) return null;
+
+    if (!forceRefresh) {
+      final existing = userById(userId);
+      if (existing != null && existing.inventories.isNotEmpty) {
+        return existing;
+      }
+      final inflight = _userDetailsHydrationById[userId];
+      if (inflight != null) return inflight;
+    }
+
+    final future = () async {
+      try {
+        final fetched = await _accountRepository.readUserById(userId);
+        _upsertUserInAllUsers(fetched);
+        return fetched;
+      } catch (_) {
+        return null;
+      } finally {
+        _userDetailsHydrationById.remove(userId);
+      }
+    }();
+
+    _userDetailsHydrationById[userId] = future;
+    return future;
+  }
+
   Future<void> refreshChannels({bool silent = false}) async {
     await _wrap(
       () async {
@@ -377,6 +426,7 @@ class AppController extends ChangeNotifier with WidgetsBindingObserver {
             _selectedChannel = match.first;
           }
         }
+        _publicGroupsByUserFuture.clear();
       },
       silent: silent,
       fallbackMessage: 'Impossible de charger les channels',
@@ -387,9 +437,14 @@ class AppController extends ChangeNotifier with WidgetsBindingObserver {
     String filter = 'all',
     bool silent = false,
   }) async {
+    final normalizedFilter = _normalizePublicChannelFilter(filter);
+    _lastPublicChannelsFilter = normalizedFilter;
     await _wrap(
       () async {
-        _publicChannels = await loadJoinDirectoryChannels(filter: filter);
+        _publicChannels = await loadJoinDirectoryChannels(
+          filter: normalizedFilter,
+        );
+        _publicGroupsByUserFuture.clear();
       },
       silent: silent,
       fallbackMessage: 'Impossible de charger les channels publics',
@@ -662,6 +717,8 @@ class AppController extends ChangeNotifier with WidgetsBindingObserver {
     required int profileUserId,
     required String profileUsername,
     required List<int> targetUserIds,
+    String? profileAvatarUrl,
+    String? profileFrameUrl,
   }) async {
     final normalizedName = profileUsername.trim();
     final uniqueTargetUserIds = targetUserIds
@@ -677,8 +734,19 @@ class AppController extends ChangeNotifier with WidgetsBindingObserver {
     var sentCount = 0;
     final senderId = _authController.user?.id;
     await _wrap(() async {
+      final resolvedAvatarUrl = (profileAvatarUrl?.trim().isNotEmpty ?? false)
+          ? profileAvatarUrl!.trim()
+          : _resolveSharedProfileAvatarUrl(profileUserId);
+      final resolvedFrameUrl = (profileFrameUrl?.trim().isNotEmpty ?? false)
+          ? profileFrameUrl!.trim()
+          : _resolveSharedProfileFrameUrl(profileUserId);
       final payload = ProfileSharePayloadCodec.encode(
-        ProfileSharePayload(userId: profileUserId, username: normalizedName),
+        ProfileSharePayload(
+          userId: profileUserId,
+          username: normalizedName,
+          avatarUrl: resolvedAvatarUrl,
+          frameUrl: resolvedFrameUrl,
+        ),
       );
       for (final targetUserId in uniqueTargetUserIds) {
         final dm = await _channelRepository.create(
@@ -705,6 +773,45 @@ class AppController extends ChangeNotifier with WidgetsBindingObserver {
       }
     }, fallbackMessage: 'Partage du profil impossible');
     return sentCount;
+  }
+
+  String? _resolveSharedProfileAvatarUrl(int userId) {
+    if (userId <= 0) return null;
+    final me = _authController.user;
+    if (me != null && me.id == userId) {
+      final avatar = me.avatar?.trim();
+      if (avatar != null && avatar.isNotEmpty) return avatar;
+    }
+    final fromAllUsers = userById(userId);
+    final avatar = fromAllUsers?.avatar?.trim();
+    if (avatar != null && avatar.isNotEmpty) return avatar;
+    return null;
+  }
+
+  String? _resolveSharedProfileFrameUrl(int userId) {
+    if (userId <= 0) return null;
+    final me = _authController.user;
+    if (me != null && me.id == userId) {
+      final frame = _activeFrameUrlFromUser(me);
+      if (frame != null && frame.isNotEmpty) return frame;
+    }
+    final fromAllUsers = userById(userId);
+    final frame = _activeFrameUrlFromUser(fromAllUsers);
+    if (frame != null && frame.isNotEmpty) return frame;
+    return null;
+  }
+
+  String? _activeFrameUrlFromUser(UserModel? user) {
+    if (user == null) return null;
+    for (final item in user.inventories) {
+      if (!item.active) continue;
+      final shop = item.shop;
+      if (shop == null) continue;
+      final content = shop.content.trim();
+      if (content.isEmpty) continue;
+      if (shop.type.trim().toUpperCase() == 'CADRE') return content;
+    }
+    return null;
   }
 
   Future<void> selectChannel(ChannelModel channel) async {
@@ -753,6 +860,7 @@ class AppController extends ChangeNotifier with WidgetsBindingObserver {
         content: normalized,
         channelId: selected.channelId,
       );
+      _scheduleRealtimeMessageDerivedRefreshes();
       notifyListeners();
       return;
     }
@@ -764,6 +872,7 @@ class AppController extends ChangeNotifier with WidgetsBindingObserver {
         content: normalized,
         channelId: selected.channelId,
       );
+      _scheduleRealtimeMessageDerivedRefreshes();
       notifyListeners();
       return;
     }
@@ -779,6 +888,7 @@ class AppController extends ChangeNotifier with WidgetsBindingObserver {
       if (!alreadyExists) {
         _messages = [..._messages, message];
       }
+      _scheduleRealtimeMessageDerivedRefreshes();
       notifyListeners();
     } catch (e) {
       _messageError = ApiErrorParser.parse(
@@ -818,6 +928,7 @@ class AppController extends ChangeNotifier with WidgetsBindingObserver {
         _messages = [..._messages, message];
         notifyListeners();
       }
+      _scheduleRealtimeMessageDerivedRefreshes();
     } catch (e) {
       _messageError = ApiErrorParser.parse(
         e,
@@ -999,7 +1110,10 @@ class AppController extends ChangeNotifier with WidgetsBindingObserver {
         channelId: selected.channelId,
         imageFilePath: imageFilePath,
       );
-      await refreshChannels(silent: true);
+      await Future.wait([
+        refreshChannels(silent: true),
+        refreshPublicChannels(filter: _lastPublicChannelsFilter, silent: true),
+      ]);
       final refreshed = _channels.where(
         (channel) => channel.channelId == selected.channelId,
       );
@@ -1058,7 +1172,10 @@ class AppController extends ChangeNotifier with WidgetsBindingObserver {
         );
       }
 
-      await refreshChannels(silent: true);
+      await Future.wait([
+        refreshChannels(silent: true),
+        refreshPublicChannels(filter: _lastPublicChannelsFilter, silent: true),
+      ]);
       final refreshed = _channels.where(
         (channel) => channel.channelId == selected.channelId,
       );
@@ -1293,6 +1410,7 @@ class AppController extends ChangeNotifier with WidgetsBindingObserver {
       onFriendsStateUpdated: _onFriendsStateUpdatedFromSocket,
       onChannelInvited: _onChannelInvitedFromSocket,
       onChannelMemberRemoved: _onChannelMemberRemovedFromSocket,
+      onChannelUpdated: _onChannelUpdatedFromSocket,
       onUserProfileUpdated: _onUserProfileUpdatedFromSocket,
       onMessageError: _onMessageErrorFromSocket,
       onLocationSnapshot: _onLocationSnapshotFromSocket,
@@ -1374,14 +1492,15 @@ class AppController extends ChangeNotifier with WidgetsBindingObserver {
     if (_shouldStoreInAppNotifications) {
       _pushNewMessageNotification(message);
     }
+    _scheduleRealtimeMessageDerivedRefreshes();
     final incomingChannelId = message.channelId;
     if (_selectedChannel == null) {
-      refreshChannels(silent: true);
+      unawaited(refreshChannels(silent: true));
       return;
     }
     if (incomingChannelId <= 0 ||
         incomingChannelId != _selectedChannel!.channelId) {
-      refreshChannels(silent: true);
+      unawaited(refreshChannels(silent: true));
       return;
     }
     final enriched = ChannelMessageModel(
@@ -1396,7 +1515,7 @@ class AppController extends ChangeNotifier with WidgetsBindingObserver {
     );
     _messages = [..._messages, enriched];
     notifyListeners();
-    refreshChannels(silent: true);
+    unawaited(refreshChannels(silent: true));
   }
 
   void _onFriendRequestReceivedFromSocket(Map<String, dynamic> payload) {
@@ -1481,7 +1600,7 @@ class AppController extends ChangeNotifier with WidgetsBindingObserver {
   }
 
   void _onChannelInvitedFromSocket(Map<String, dynamic> payload) {
-    unawaited(refreshChannels(silent: true));
+    _scheduleRealtimeChannelsRefresh();
     if (!_shouldStoreInAppNotifications) return;
     final now = DateTime.now();
     final channelName = (payload['channelName'] ?? payload['name'] ?? 'groupe')
@@ -1507,7 +1626,7 @@ class AppController extends ChangeNotifier with WidgetsBindingObserver {
     );
     final currentUserId = _authController.user?.id;
 
-    unawaited(refreshChannels(silent: true));
+    _scheduleRealtimeChannelsRefresh();
 
     final selected = _selectedChannel;
     if (selected == null || selected.channelId != channelId) return;
@@ -1528,6 +1647,11 @@ class AppController extends ChangeNotifier with WidgetsBindingObserver {
         // Keep real-time refresh best-effort for this event.
       }
     }());
+  }
+
+  void _onChannelUpdatedFromSocket(Map<String, dynamic> payload) {
+    _rtLog('onChannelUpdated payload=$payload');
+    _scheduleRealtimeChannelsRefresh();
   }
 
   void _onUserProfileUpdatedFromSocket(Map<String, dynamic> payload) {
@@ -1709,6 +1833,72 @@ class AppController extends ChangeNotifier with WidgetsBindingObserver {
       senderUser.presenceStatus,
     );
     notifyListeners();
+  }
+
+  void _scheduleRealtimeMessageDerivedRefreshes() {
+    _scheduleRealtimeChannelsRefresh();
+    _scheduleRealtimeProfileStatsRefresh();
+  }
+
+  void _scheduleRealtimeChannelsRefresh({
+    Duration delay = const Duration(milliseconds: 260),
+  }) {
+    _realtimeChannelsRefreshDebounce?.cancel();
+    _realtimeChannelsRefreshDebounce = Timer(delay, () {
+      unawaited(_runRealtimeChannelsRefresh());
+    });
+  }
+
+  Future<void> _runRealtimeChannelsRefresh() async {
+    if (_isRefreshingRealtimeChannels) {
+      _hasQueuedRealtimeChannelsRefresh = true;
+      return;
+    }
+    _isRefreshingRealtimeChannels = true;
+    try {
+      await Future.wait([
+        refreshChannels(silent: true),
+        refreshPublicChannels(filter: _lastPublicChannelsFilter, silent: true),
+      ]);
+    } catch (_) {
+      // Keep realtime refresh best-effort.
+    } finally {
+      _isRefreshingRealtimeChannels = false;
+      if (_hasQueuedRealtimeChannelsRefresh) {
+        _hasQueuedRealtimeChannelsRefresh = false;
+        unawaited(_runRealtimeChannelsRefresh());
+      }
+    }
+  }
+
+  void _scheduleRealtimeProfileStatsRefresh({
+    Duration delay = const Duration(milliseconds: 700),
+  }) {
+    _realtimeProfileStatsRefreshDebounce?.cancel();
+    _realtimeProfileStatsRefreshDebounce = Timer(delay, () {
+      unawaited(_runRealtimeProfileStatsRefresh());
+    });
+  }
+
+  Future<void> _runRealtimeProfileStatsRefresh() async {
+    if (_isRefreshingRealtimeProfileStats) {
+      _hasQueuedRealtimeProfileStatsRefresh = true;
+      return;
+    }
+    _isRefreshingRealtimeProfileStats = true;
+    try {
+      await _refreshCurrentUser();
+      _realtimeStatsVersion++;
+      notifyListeners();
+    } catch (_) {
+      // Keep realtime refresh best-effort.
+    } finally {
+      _isRefreshingRealtimeProfileStats = false;
+      if (_hasQueuedRealtimeProfileStatsRefresh) {
+        _hasQueuedRealtimeProfileStatsRefresh = false;
+        unawaited(_runRealtimeProfileStatsRefresh());
+      }
+    }
   }
 
   void _scheduleSocialStateRefresh({Duration delay = Duration.zero}) {
@@ -2013,7 +2203,7 @@ class AppController extends ChangeNotifier with WidgetsBindingObserver {
           relatedChannelId: channelId > 0 ? channelId : null,
         ),
       );
-      unawaited(refreshChannels(silent: true));
+      _scheduleRealtimeMessageDerivedRefreshes();
       return;
     }
     if (eventType == 'friendRequestReceived') {
@@ -2205,6 +2395,24 @@ class AppController extends ChangeNotifier with WidgetsBindingObserver {
     _authController.setUser(me);
   }
 
+  void _upsertUserInAllUsers(UserModel incoming) {
+    if (incoming.id <= 0) return;
+    final existingIndex = _allUsers.indexWhere(
+      (user) => user.id == incoming.id,
+    );
+    if (existingIndex < 0) {
+      _allUsers = [..._allUsers, incoming];
+    } else {
+      final next = [..._allUsers];
+      next[existingIndex] = incoming;
+      _allUsers = next;
+    }
+    _presenceByUserId[incoming.id] = PresenceUtils.normalize(
+      incoming.presenceStatus,
+    );
+    notifyListeners();
+  }
+
   Future<void> _wrap(
     Future<void> Function() callback, {
     required String fallbackMessage,
@@ -2245,13 +2453,24 @@ class AppController extends ChangeNotifier with WidgetsBindingObserver {
     _liveLocationsByUserId.clear();
     _presenceByUserId.clear();
     _publicGroupsByUserFuture.clear();
+    _userDetailsHydrationById.clear();
     _socialRefreshDebounce?.cancel();
     _socialRefreshDebounce = null;
+    _realtimeChannelsRefreshDebounce?.cancel();
+    _realtimeChannelsRefreshDebounce = null;
+    _realtimeProfileStatsRefreshDebounce?.cancel();
+    _realtimeProfileStatsRefreshDebounce = null;
     _stopSessionKeepAlive();
     _isRecoveringSocketSession = false;
     _lastSocketRecoveryAt = null;
     _isRefreshingSocialState = false;
     _hasQueuedSocialRefresh = false;
+    _isRefreshingRealtimeChannels = false;
+    _hasQueuedRealtimeChannelsRefresh = false;
+    _isRefreshingRealtimeProfileStats = false;
+    _hasQueuedRealtimeProfileStatsRefresh = false;
+    _realtimeStatsVersion = 0;
+    _lastPublicChannelsFilter = 'all';
     _manualPresenceOverride = null;
     _errorMessage = null;
     _messageError = null;
@@ -2274,6 +2493,8 @@ class AppController extends ChangeNotifier with WidgetsBindingObserver {
     WidgetsBinding.instance.removeObserver(this);
     _authController.removeListener(_authListener);
     _socialRefreshDebounce?.cancel();
+    _realtimeChannelsRefreshDebounce?.cancel();
+    _realtimeProfileStatsRefreshDebounce?.cancel();
     _stopSessionKeepAlive();
     _socketService.disconnect();
     _pushTokenRefreshSubscription?.cancel();
