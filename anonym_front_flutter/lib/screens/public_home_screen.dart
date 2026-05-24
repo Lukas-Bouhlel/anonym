@@ -36,7 +36,7 @@ class PublicHomeScreen extends StatelessWidget {
                 width: double.infinity,
                 height: 52,
                 child: FilledButton(
-                  onPressed: () => context.go(AppRoutes.register),
+                  onPressed: () => context.push(AppRoutes.register),
                   style: FilledButton.styleFrom(
                     backgroundColor: AppColors.whiteColor,
                     foregroundColor: AppColors.c393566,
@@ -52,7 +52,7 @@ class PublicHomeScreen extends StatelessWidget {
                 width: double.infinity,
                 height: 52,
                 child: OutlinedButton(
-                  onPressed: () => context.go(AppRoutes.login),
+                  onPressed: () => context.push(AppRoutes.login),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: AppColors.whiteColor,
                     side: BorderSide(

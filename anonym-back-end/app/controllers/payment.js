@@ -13,6 +13,14 @@ const getEnvVar = (baseName) => {
 
 const normalizeBaseUrl = (value) => String(value || '').replace(/\/$/, '');
 const appendPath = (baseUrl, pathSuffix) => `${normalizeBaseUrl(baseUrl)}${pathSuffix}`;
+const isHttpLink = (url) => /^https?:\/\//i.test(String(url || '').trim());
+
+const buildBridgeBaseUrl = (req) => {
+    const protocol = req.protocol || 'http';
+    const host = req.get?.('host');
+    if (!host) return '';
+    return `${protocol}://${host}`;
+};
 
 const getPaymentSuccessBaseUrl = (isMobile) => {
     const webDefault = isProduction ? process.env.ORIGIN_PROD : process.env.ORIGIN;
@@ -59,6 +67,8 @@ exports.create = async (req, res) => {
 
         const successBaseUrl = getPaymentSuccessBaseUrl(isMobile);
         const cancelBaseUrl = getPaymentCancelBaseUrl(isMobile);
+        const bridgeBaseUrl = buildBridgeBaseUrl(req);
+        const requiresBridge = isMobile && (!isHttpLink(successBaseUrl) || !isHttpLink(cancelBaseUrl));
 
         if (!successBaseUrl) {
             return res.status(500).json({ message: 'Payment success URL is not configured.' });
@@ -66,6 +76,10 @@ exports.create = async (req, res) => {
 
         if (!cancelBaseUrl) {
             return res.status(500).json({ message: 'Payment cancel URL is not configured.' });
+        }
+
+        if (requiresBridge && !bridgeBaseUrl) {
+            return res.status(500).json({ message: 'Payment bridge URL is not configured.' });
         }
 
         // Trouver le produit
@@ -86,6 +100,14 @@ exports.create = async (req, res) => {
             return res.status(400).json({ message: 'You have already purchased this item.' });
         }
 
+        const successUrl = (isMobile && !isHttpLink(successBaseUrl))
+            ? `${appendPath(bridgeBaseUrl, '/open-payment-success')}?session_id={CHECKOUT_SESSION_ID}`
+            : `${appendPath(successBaseUrl, '/app/success')}?session_id={CHECKOUT_SESSION_ID}`;
+
+        const cancelUrl = (isMobile && !isHttpLink(cancelBaseUrl))
+            ? appendPath(bridgeBaseUrl, '/open-payment-cancel')
+            : appendPath(cancelBaseUrl, '/app');
+
         // Creer une session de paiement Stripe
         const session = await stripe.checkout.sessions.create({
             payment_method_types: ['card'],
@@ -101,8 +123,8 @@ exports.create = async (req, res) => {
                 quantity: 1,
             }],
             mode: 'payment',
-            success_url: `${appendPath(successBaseUrl, '/app/success')}?session_id={CHECKOUT_SESSION_ID}`,
-            cancel_url: appendPath(cancelBaseUrl, '/app'),
+            success_url: successUrl,
+            cancel_url: cancelUrl,
             metadata: {
                 userId: userId,
                 articleId: article_id

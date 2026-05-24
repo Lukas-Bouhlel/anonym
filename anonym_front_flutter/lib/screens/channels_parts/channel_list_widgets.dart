@@ -1,9 +1,10 @@
 part of '../channels_screen.dart';
 
 String? _dmPeerFrameUrl(UserModel? user) {
-  if (user == null) return null;
+  if (user == null || user.id <= 0) return null;
   for (final item in user.inventories) {
     if (!item.active) continue;
+    if (item.userId != user.id) continue;
     final shop = item.shop;
     if (shop == null) continue;
     if (shop.type.trim().toUpperCase() != 'CADRE') continue;

@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter/foundation.dart';
 
@@ -15,6 +16,25 @@ import '../screens/profile_screen.dart';
 import '../screens/support_screen.dart';
 
 GoRouter buildRouter(AuthController authController) {
+  CustomTransitionPage<void> buildSlidePage({
+    required GoRouterState state,
+    required Widget child,
+  }) {
+    return CustomTransitionPage<void>(
+      key: state.pageKey,
+      transitionDuration: const Duration(milliseconds: 260),
+      reverseTransitionDuration: const Duration(milliseconds: 220),
+      child: child,
+      transitionsBuilder: (context, animation, secondaryAnimation, child) {
+        final offset =
+            Tween<Offset>(begin: const Offset(1, 0), end: Offset.zero).animate(
+              CurvedAnimation(parent: animation, curve: Curves.easeOutCubic),
+            );
+        return SlideTransition(position: offset, child: child);
+      },
+    );
+  }
+
   return GoRouter(
     initialLocation: AppRoutes.root,
     refreshListenable: authController,
@@ -42,14 +62,10 @@ GoRouter buildRouter(AuthController authController) {
           location.startsWith('${AppRoutes.home}/') ||
           location == AppRoutes.profile ||
           location == AppRoutes.admin;
-      final isResetRoute =
-          location == AppRoutes.resetPassword ||
-          location == '${AppRoutes.resetPassword}/';
       final isAuthFlow =
           location == AppRoutes.auth ||
           location == AppRoutes.login ||
-          location == AppRoutes.register ||
-          isResetRoute;
+          location == AppRoutes.register;
 
       if (authController.isBootstrapping) {
         if (kDebugMode) {
@@ -116,7 +132,8 @@ GoRouter buildRouter(AuthController authController) {
       ),
       GoRoute(
         path: AppRoutes.auth,
-        builder: (context, state) => const PublicHomeScreen(),
+        pageBuilder: (context, state) =>
+            buildSlidePage(state: state, child: const PublicHomeScreen()),
       ),
       GoRoute(
         path: AppRoutes.discover,
@@ -148,11 +165,13 @@ GoRouter buildRouter(AuthController authController) {
       ),
       GoRoute(
         path: AppRoutes.login,
-        builder: (context, state) => const LoginScreen(),
+        pageBuilder: (context, state) =>
+            buildSlidePage(state: state, child: const LoginScreen()),
       ),
       GoRoute(
         path: AppRoutes.register,
-        builder: (context, state) => const RegisterScreen(),
+        pageBuilder: (context, state) =>
+            buildSlidePage(state: state, child: const RegisterScreen()),
       ),
       GoRoute(
         path: AppRoutes.resetPassword,

@@ -22,6 +22,26 @@ import 'notifications_screen.dart';
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
 
+  Future<void> _pushSlide(BuildContext context, Widget child) {
+    return Navigator.of(context).push(
+      PageRouteBuilder<void>(
+        transitionDuration: const Duration(milliseconds: 260),
+        reverseTransitionDuration: const Duration(milliseconds: 220),
+        pageBuilder: (context, animation, secondaryAnimation) => child,
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          final offset =
+              Tween<Offset>(
+                begin: const Offset(1, 0),
+                end: Offset.zero,
+              ).animate(
+                CurvedAnimation(parent: animation, curve: Curves.easeOutCubic),
+              );
+          return SlideTransition(position: offset, child: child);
+        },
+      ),
+    );
+  }
+
   Future<bool> _confirmLogout(BuildContext context) async {
     final confirmed = await showDialog<bool>(
       context: context,
@@ -96,11 +116,7 @@ class SettingsScreen extends StatelessWidget {
               const SizedBox(height: 24),
               _CardContainer(
                 child: InkWell(
-                  onTap: () => Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) => const EditProfileScreen(),
-                    ),
-                  ),
+                  onTap: () => _pushSlide(context, const EditProfileScreen()),
                   borderRadius: BorderRadius.circular(16),
                   child: Row(
                     children: [
@@ -169,67 +185,29 @@ class SettingsScreen extends StatelessWidget {
                 items: [
                   _SettingsItem(
                     label: 'Inventaire',
-                    onTap: () => Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => const InventoryScreen(),
-                      ),
-                    ),
+                    onTap: () => _pushSlide(context, const InventoryScreen()),
                   ),
                   _SettingsItem(
                     label: 'Boutique',
-                    onTap: () => Navigator.of(context).push(
-                      MaterialPageRoute(builder: (_) => const ShopScreen()),
-                    ),
+                    onTap: () => _pushSlide(context, const ShopScreen()),
                   ),
                   _SettingsItem(
                     label: 'Factures',
-                    onTap: () => Navigator.of(context).push(
-                      MaterialPageRoute(builder: (_) => const InvoicesScreen()),
-                    ),
+                    onTap: () => _pushSlide(context, const InvoicesScreen()),
                   ),
                   _SettingsItem(
                     label: 'Changer le mot de passe',
-                    onTap: () => Navigator.of(context).push(
-                      MaterialPageRoute(builder: (_) => const PasswordScreen()),
-                    ),
+                    onTap: () => _pushSlide(context, const PasswordScreen()),
                   ),
                   _SettingsItem(
                     label: 'Utilisateurs bloqués',
-                    onTap: () => Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => const BlockedUsersScreen(),
-                      ),
-                    ),
+                    onTap: () =>
+                        _pushSlide(context, const BlockedUsersScreen()),
                   ),
                   _SettingsItem(
                     label: 'Notifications',
-                    onTap: () => Navigator.of(context).push(
-                      PageRouteBuilder<void>(
-                        transitionDuration: const Duration(milliseconds: 260),
-                        reverseTransitionDuration: const Duration(
-                          milliseconds: 220,
-                        ),
-                        pageBuilder: (context, animation, secondaryAnimation) =>
-                            const NotificationsScreen(),
-                        transitionsBuilder:
-                            (context, animation, secondaryAnimation, child) {
-                              final offset =
-                                  Tween<Offset>(
-                                    begin: const Offset(1, 0),
-                                    end: Offset.zero,
-                                  ).animate(
-                                    CurvedAnimation(
-                                      parent: animation,
-                                      curve: Curves.easeOutCubic,
-                                    ),
-                                  );
-                              return SlideTransition(
-                                position: offset,
-                                child: child,
-                              );
-                            },
-                      ),
-                    ),
+                    onTap: () =>
+                        _pushSlide(context, const NotificationsScreen()),
                   ),
                 ],
               ),
@@ -240,15 +218,11 @@ class SettingsScreen extends StatelessWidget {
                 items: [
                   _SettingsItem(
                     label: 'FAQs',
-                    onTap: () => Navigator.of(context).push(
-                      MaterialPageRoute(builder: (_) => const FaqScreen()),
-                    ),
+                    onTap: () => _pushSlide(context, const FaqScreen()),
                   ),
                   _SettingsItem(
                     label: 'Feedback',
-                    onTap: () => Navigator.of(context).push(
-                      MaterialPageRoute(builder: (_) => const FeedbackScreen()),
-                    ),
+                    onTap: () => _pushSlide(context, const FeedbackScreen()),
                   ),
                 ],
               ),

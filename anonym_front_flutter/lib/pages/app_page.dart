@@ -31,6 +31,14 @@ class _AnonymAppState extends State<AnonymApp> {
       theme: AppTheme.light,
       darkTheme: AppTheme.dark,
       themeMode: ThemeMode.system,
+      builder: (context, child) {
+        return DecoratedBox(
+          decoration: const BoxDecoration(
+            gradient: AppGradients.gB1BCFBTo393566,
+          ),
+          child: child ?? const SizedBox.shrink(),
+        );
+      },
       routerConfig: _router,
     );
   }

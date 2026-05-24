@@ -232,6 +232,17 @@ class AppTheme {
     textTheme: AppTypography.textTheme,
     fontFamily: AppTypography.primaryFontFamily,
     scaffoldBackgroundColor: Colors.transparent,
+    canvasColor: AppColors.c393566,
+    pageTransitionsTheme: const PageTransitionsTheme(
+      builders: {
+        TargetPlatform.android: FadeUpwardsPageTransitionsBuilder(),
+        TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
+        TargetPlatform.macOS: CupertinoPageTransitionsBuilder(),
+        TargetPlatform.linux: FadeUpwardsPageTransitionsBuilder(),
+        TargetPlatform.windows: FadeUpwardsPageTransitionsBuilder(),
+        TargetPlatform.fuchsia: FadeUpwardsPageTransitionsBuilder(),
+      },
+    ),
     appBarTheme: const AppBarTheme(
       backgroundColor: Colors.transparent,
       foregroundColor: AppColors.whiteColor,

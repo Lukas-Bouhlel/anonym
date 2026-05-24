@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 
 import '../models/payment_confirmation_model.dart';
 
@@ -8,9 +9,10 @@ class PaymentRepository {
   final Dio _dio;
 
   Future<String> createCheckout(int articleId) async {
+    final platform = kIsWeb ? 'web' : 'mobile';
     final response = await _dio.post<Map<String, dynamic>>(
       '/api/payment',
-      data: {'article_id': articleId},
+      data: {'article_id': articleId, 'platform': platform},
     );
 
     final payload = response.data ?? <String, dynamic>{};

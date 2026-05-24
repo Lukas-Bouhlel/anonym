@@ -215,8 +215,38 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           ),
                           IconButton(
                             onPressed: () => Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (_) => const SettingsScreen(),
+                              PageRouteBuilder<void>(
+                                transitionDuration: const Duration(
+                                  milliseconds: 260,
+                                ),
+                                reverseTransitionDuration: const Duration(
+                                  milliseconds: 220,
+                                ),
+                                pageBuilder:
+                                    (context, animation, secondaryAnimation) =>
+                                        const SettingsScreen(),
+                                transitionsBuilder:
+                                    (
+                                      context,
+                                      animation,
+                                      secondaryAnimation,
+                                      child,
+                                    ) {
+                                      final offset =
+                                          Tween<Offset>(
+                                            begin: const Offset(1, 0),
+                                            end: Offset.zero,
+                                          ).animate(
+                                            CurvedAnimation(
+                                              parent: animation,
+                                              curve: Curves.easeOutCubic,
+                                            ),
+                                          );
+                                      return SlideTransition(
+                                        position: offset,
+                                        child: child,
+                                      );
+                                    },
                               ),
                             ),
                             icon: const Icon(
@@ -232,8 +262,41 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           Expanded(
                             child: InkWell(
                               onTap: () => Navigator.of(context).push(
-                                MaterialPageRoute(
-                                  builder: (_) => const EditProfileScreen(),
+                                PageRouteBuilder<void>(
+                                  transitionDuration: const Duration(
+                                    milliseconds: 260,
+                                  ),
+                                  reverseTransitionDuration: const Duration(
+                                    milliseconds: 220,
+                                  ),
+                                  pageBuilder:
+                                      (
+                                        context,
+                                        animation,
+                                        secondaryAnimation,
+                                      ) => const EditProfileScreen(),
+                                  transitionsBuilder:
+                                      (
+                                        context,
+                                        animation,
+                                        secondaryAnimation,
+                                        child,
+                                      ) {
+                                        final offset =
+                                            Tween<Offset>(
+                                              begin: const Offset(1, 0),
+                                              end: Offset.zero,
+                                            ).animate(
+                                              CurvedAnimation(
+                                                parent: animation,
+                                                curve: Curves.easeOutCubic,
+                                              ),
+                                            );
+                                        return SlideTransition(
+                                          position: offset,
+                                          child: child,
+                                        );
+                                      },
                                 ),
                               ),
                               borderRadius: BorderRadius.circular(18),

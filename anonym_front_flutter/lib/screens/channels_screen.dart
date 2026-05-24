@@ -99,6 +99,9 @@ class _ChannelsScreenState extends State<ChannelsScreen> {
           final dmPeer = dmPeerBase != null && dmPeerBase.id > 0
               ? (app.userById(dmPeerBase.id) ?? dmPeerBase)
               : dmPeerBase;
+          final dmPeerForFrame = dmPeerBase != null && dmPeerBase.id > 0
+              ? app.userById(dmPeerBase.id)
+              : null;
           final dmPeerName = (dmPeer?.username ?? '').trim();
           final hasDmPeerName = dmPeerName.isNotEmpty;
           return _ChatDetailView(
@@ -109,7 +112,9 @@ class _ChannelsScreenState extends State<ChannelsScreen> {
             isDm: isDm,
             dmPeerName: hasDmPeerName ? dmPeerName : null,
             dmPeerAvatarUrl: dmPeer?.avatar,
-            dmPeerFrameUrl: isDm ? _activeFrameUrlFromUser(app, dmPeer) : null,
+            dmPeerFrameUrl: isDm
+                ? _activeFrameUrlFromUser(app, dmPeerForFrame)
+                : null,
             dmPeerPresenceStatus: isDm && dmPeer != null
                 ? app.presenceStatusForUser(dmPeer.id)
                 : null,
@@ -387,29 +392,26 @@ class _ChannelsScreenState extends State<ChannelsScreen> {
   }
 
   String? _activeFrameUrlFromUser(AppController app, UserModel? user) {
-    if (user == null) return null;
-    String? fallbackContent;
+    if (user == null || user.id <= 0) return null;
     for (final item in user.inventories) {
       if (!item.active) continue;
+      if (item.userId != user.id) continue;
       final fromInventory = item.shop;
       if (fromInventory != null) {
         final content = fromInventory.content.trim();
-        if (content.isNotEmpty) {
-          if (fromInventory.type.trim().toUpperCase() == 'CADRE') {
-            return content;
-          }
-          fallbackContent ??= content;
-        }
+        if (content.isEmpty) continue;
+        final type = fromInventory.type.trim().toUpperCase();
+        if (type == 'CADRE') return content;
       }
       for (final shopItem in app.shopItems) {
         if (shopItem.articleId != item.articleId) continue;
         final content = shopItem.content.trim();
         if (content.isEmpty) continue;
-        if (shopItem.type.trim().toUpperCase() == 'CADRE') return content;
-        fallbackContent ??= content;
+        final type = shopItem.type.trim().toUpperCase();
+        if (type == 'CADRE') return content;
       }
     }
-    return fallbackContent;
+    return null;
   }
 
   Future<void> _deleteMessage(
@@ -516,9 +518,38 @@ class _ChannelsScreenState extends State<ChannelsScreen> {
                         Navigator.of(context).pop();
                         if (!parentContext.mounted) return;
                         await Navigator.of(parentContext).push(
-                          MaterialPageRoute(
-                            builder: (_) =>
-                                GroupSettingsScreen(channel: selected),
+                          PageRouteBuilder<void>(
+                            transitionDuration: const Duration(
+                              milliseconds: 260,
+                            ),
+                            reverseTransitionDuration: const Duration(
+                              milliseconds: 220,
+                            ),
+                            pageBuilder:
+                                (context, animation, secondaryAnimation) =>
+                                    GroupSettingsScreen(channel: selected),
+                            transitionsBuilder:
+                                (
+                                  context,
+                                  animation,
+                                  secondaryAnimation,
+                                  child,
+                                ) {
+                                  final offset =
+                                      Tween<Offset>(
+                                        begin: const Offset(1, 0),
+                                        end: Offset.zero,
+                                      ).animate(
+                                        CurvedAnimation(
+                                          parent: animation,
+                                          curve: Curves.easeOutCubic,
+                                        ),
+                                      );
+                                  return SlideTransition(
+                                    position: offset,
+                                    child: child,
+                                  );
+                                },
                           ),
                         );
                       },

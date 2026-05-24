@@ -40,6 +40,89 @@ const isAllowedOrigin = (origin) => {
     return false;
 };
 
+const getRuntimeEnvVar = (baseName) => {
+    if (env === 'production') {
+        return process.env[`${baseName}_PROD`] || process.env[baseName];
+    }
+    if (env === 'preprod') {
+        return process.env[`${baseName}_PREPROD`] || process.env[baseName];
+    }
+    return process.env[baseName];
+};
+
+const buildResetPasswordLink = (baseUrl, token) => {
+    if (typeof baseUrl !== 'string') return '';
+    const trimmedBaseUrl = baseUrl.trim();
+    if (!trimmedBaseUrl) return '';
+
+    const encodedToken = encodeURIComponent(token);
+
+    if (trimmedBaseUrl.includes('{token}')) {
+        return trimmedBaseUrl.replace('{token}', encodedToken);
+    }
+
+    const withoutTrailingSlash = trimmedBaseUrl.replace(/\/+$/, '');
+    const hasResetPath = /\/reset\/?(\?|$)/i.test(withoutTrailingSlash);
+    const urlWithResetPath = hasResetPath ? withoutTrailingSlash : `${withoutTrailingSlash}/reset/`;
+    const separator = urlWithResetPath.includes('?') ? '&' : '?';
+
+    return `${urlWithResetPath}${separator}token=${encodedToken}`;
+};
+
+const getResetPasswordWebBaseUrl = () => {
+    return getRuntimeEnvVar('RESET_PASSWORD_WEB_URL')
+        || getRuntimeEnvVar('RESET_PASSWORD_URL')
+        || getRuntimeEnvVar('ORIGIN');
+};
+
+const getResetPasswordMobileBaseUrl = () => getRuntimeEnvVar('RESET_PASSWORD_MOBILE_URL');
+
+const getPaymentSuccessWebBaseUrl = () => {
+    return getRuntimeEnvVar('PAYMENT_SUCCESS_WEB_URL')
+        || getRuntimeEnvVar('ORIGIN');
+};
+
+const getPaymentSuccessMobileBaseUrl = () => getRuntimeEnvVar('PAYMENT_SUCCESS_MOBILE_URL');
+
+const getPaymentCancelWebBaseUrl = () => {
+    return getRuntimeEnvVar('PAYMENT_CANCEL_WEB_URL')
+        || getRuntimeEnvVar('ORIGIN');
+};
+
+const getPaymentCancelMobileBaseUrl = () => getRuntimeEnvVar('PAYMENT_CANCEL_MOBILE_URL');
+
+const appendDeepLinkPath = (baseUrl, pathSuffix) => {
+    if (typeof baseUrl !== 'string') return '';
+    const trimmed = baseUrl.trim();
+    if (!trimmed) return '';
+
+    const cleanPath = String(pathSuffix || '').replace(/^\/+/, '');
+
+    if (trimmed.endsWith(':///')) return `${trimmed}${cleanPath}`;
+    if (trimmed.endsWith('://')) return `${trimmed}/${cleanPath}`;
+    if (trimmed.endsWith('/')) return `${trimmed}${cleanPath}`;
+    return `${trimmed}/${cleanPath}`;
+};
+
+const withQuery = (url, query = {}) => {
+    const entries = Object.entries(query).filter(([, value]) => {
+        if (value === null || value === undefined) return false;
+        return String(value).trim().length > 0;
+    });
+    if (!url || entries.length === 0) return url;
+    const search = new URLSearchParams(entries.map(([key, value]) => [key, String(value)])).toString();
+    if (!search) return url;
+    const separator = url.includes('?') ? '&' : '?';
+    return `${url}${separator}${search}`;
+};
+
+const escapeHtml = (value) => String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+
 /**
  * Connexion à la base de données avec Sequelize.
  * @function authenticate
@@ -183,6 +266,138 @@ app.use(cookieParser());
  */
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 app.set('trust proxy', true);
+
+app.get('/open-reset-password', (req, res) => {
+    const token = typeof req.query?.token === 'string' ? req.query.token.trim() : '';
+    if (!token) {
+        return res.status(400).type('text/plain').send('Token de reinitialisation manquant.');
+    }
+
+    const webResetLink = buildResetPasswordLink(getResetPasswordWebBaseUrl(), token);
+    const mobileResetLink = buildResetPasswordLink(getResetPasswordMobileBaseUrl(), token);
+    const openLink = mobileResetLink || webResetLink;
+    const fallbackLink = webResetLink || '/';
+
+    if (!openLink) {
+        return res.status(500).type('text/plain').send("Aucun lien de reinitialisation configure.");
+    }
+
+    const safeOpenLink = escapeHtml(openLink);
+    const safeFallbackLink = escapeHtml(fallbackLink);
+
+    return res.status(200).type('html').send(`<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Ouverture Anonym</title>
+  <meta http-equiv="refresh" content="0;url=${safeOpenLink}">
+  <style>
+    body { font-family: Arial, sans-serif; margin: 0; background: #121212; color: #f4f4f4; }
+    .wrap { max-width: 460px; margin: 10vh auto; padding: 24px; text-align: center; }
+    .btn { display: inline-block; margin-top: 16px; padding: 12px 16px; border-radius: 8px; background: #ffffff; color: #121212; font-weight: 700; text-decoration: none; }
+    .muted { opacity: .8; font-size: 14px; margin-top: 12px; }
+    a.fallback { color: #c4d4ff; word-break: break-all; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>Ouverture de l'application...</h1>
+    <p>Si l'application ne s'ouvre pas automatiquement, utilise le bouton ci-dessous.</p>
+    <a class="btn" href="${safeOpenLink}">Ouvrir Anonym</a>
+    <p class="muted">Lien web de secours :</p>
+    <a class="fallback" href="${safeFallbackLink}">${safeFallbackLink}</a>
+  </div>
+</body>
+</html>`);
+});
+
+app.get('/open-payment-success', (req, res) => {
+    const sessionId = typeof req.query?.session_id === 'string' ? req.query.session_id.trim() : '';
+    const webSuccessLink = withQuery(
+        appendDeepLinkPath(getPaymentSuccessWebBaseUrl(), '/app/success'),
+        { session_id: sessionId }
+    );
+    const mobileSuccessLink = withQuery(
+        appendDeepLinkPath(getPaymentSuccessMobileBaseUrl(), '/app/success'),
+        { session_id: sessionId }
+    );
+    const openLink = mobileSuccessLink || webSuccessLink;
+    const fallbackLink = webSuccessLink || '/';
+
+    if (!openLink) {
+        return res.status(500).type('text/plain').send("Aucun lien de retour paiement configure.");
+    }
+
+    const safeOpenLink = escapeHtml(openLink);
+    const safeFallbackLink = escapeHtml(fallbackLink);
+
+    return res.status(200).type('html').send(`<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Retour vers Anonym</title>
+  <meta http-equiv="refresh" content="0;url=${safeOpenLink}">
+  <style>
+    body { font-family: Arial, sans-serif; margin: 0; background: #121212; color: #f4f4f4; }
+    .wrap { max-width: 460px; margin: 10vh auto; padding: 24px; text-align: center; }
+    .btn { display: inline-block; margin-top: 16px; padding: 12px 16px; border-radius: 8px; background: #ffffff; color: #121212; font-weight: 700; text-decoration: none; }
+    .muted { opacity: .8; font-size: 14px; margin-top: 12px; }
+    a.fallback { color: #c4d4ff; word-break: break-all; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>Paiement reussi</h1>
+    <p>Retour automatique vers l'application...</p>
+    <a class="btn" href="${safeOpenLink}">Ouvrir Anonym</a>
+    <p class="muted">Lien web de secours :</p>
+    <a class="fallback" href="${safeFallbackLink}">${safeFallbackLink}</a>
+  </div>
+</body>
+</html>`);
+});
+
+app.get('/open-payment-cancel', (req, res) => {
+    const webCancelLink = appendDeepLinkPath(getPaymentCancelWebBaseUrl(), '/app');
+    const mobileCancelLink = appendDeepLinkPath(getPaymentCancelMobileBaseUrl(), '/app');
+    const openLink = mobileCancelLink || webCancelLink;
+    const fallbackLink = webCancelLink || '/';
+
+    if (!openLink) {
+        return res.status(500).type('text/plain').send("Aucun lien d'annulation configure.");
+    }
+
+    const safeOpenLink = escapeHtml(openLink);
+    const safeFallbackLink = escapeHtml(fallbackLink);
+
+    return res.status(200).type('html').send(`<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Retour vers Anonym</title>
+  <meta http-equiv="refresh" content="0;url=${safeOpenLink}">
+  <style>
+    body { font-family: Arial, sans-serif; margin: 0; background: #121212; color: #f4f4f4; }
+    .wrap { max-width: 460px; margin: 10vh auto; padding: 24px; text-align: center; }
+    .btn { display: inline-block; margin-top: 16px; padding: 12px 16px; border-radius: 8px; background: #ffffff; color: #121212; font-weight: 700; text-decoration: none; }
+    .muted { opacity: .8; font-size: 14px; margin-top: 12px; }
+    a.fallback { color: #c4d4ff; word-break: break-all; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>Paiement annule</h1>
+    <p>Retour automatique vers l'application...</p>
+    <a class="btn" href="${safeOpenLink}">Ouvrir Anonym</a>
+    <p class="muted">Lien web de secours :</p>
+    <a class="fallback" href="${safeFallbackLink}">${safeFallbackLink}</a>
+  </div>
+</body>
+</html>`);
+});
 /**
  * Routeur principal pour les API.
  * @function router

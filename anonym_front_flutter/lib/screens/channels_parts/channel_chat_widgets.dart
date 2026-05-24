@@ -220,6 +220,7 @@ class _ChatDetailViewState extends State<_ChatDetailView> {
   @override
   Widget build(BuildContext context) {
     _maybeScrollToBottom();
+    final app = context.read<AppController>();
     final headerTitle =
         widget.isDm &&
             widget.dmPeerName != null &&
@@ -230,11 +231,9 @@ class _ChatDetailViewState extends State<_ChatDetailView> {
         ? widget.dmPeerAvatarUrl
         : widget.selected.coverImage;
     final headerDmFrameUrl =
-        widget.isDm &&
-            (widget.dmPeerFrameUrl == null ||
-                widget.dmPeerFrameUrl!.trim().isEmpty)
-        ? _inferDmPeerFrameUrlFromMessages()
-        : widget.dmPeerFrameUrl;
+        widget.isDm && (widget.dmPeerFrameUrl?.trim().isNotEmpty ?? false)
+        ? widget.dmPeerFrameUrl
+        : null;
 
     return SafeArea(
       maintainBottomViewPadding: true,
@@ -451,6 +450,20 @@ class _ChatDetailViewState extends State<_ChatDetailView> {
                           ? AppDateFormat.shortTime(message.createdAt)
                           : '${AppDateFormat.shortDate(message.createdAt)} ${AppDateFormat.shortTime(message.createdAt)}';
 
+                      UserModel? resolvedSenderForFrame;
+                      if (messageSenderId != null && messageSenderId > 0) {
+                        for (final member in app.channelMembers) {
+                          if (member.id == messageSenderId) {
+                            resolvedSenderForFrame = member;
+                            break;
+                          }
+                        }
+                        resolvedSenderForFrame ??= app.userById(
+                          messageSenderId,
+                        );
+                      }
+                      resolvedSenderForFrame ??= message.sender;
+
                       return Column(
                         crossAxisAlignment: own
                             ? CrossAxisAlignment.end
@@ -505,7 +518,7 @@ class _ChatDetailViewState extends State<_ChatDetailView> {
                             senderAvatarUrl: message.sender?.avatar,
                             ownAvatarUrl: widget.currentUserAvatarUrl,
                             senderFrameUrl: _activeFrameUrlFromUser(
-                              message.sender,
+                              resolvedSenderForFrame,
                             ),
                             ownFrameUrl: widget.currentUserFrameUrl,
                             showBlockFooter: isLastInSenderBlock,
@@ -716,33 +729,16 @@ class _ChatDetailViewState extends State<_ChatDetailView> {
   }
 
   String? _activeFrameUrlFromUser(UserModel? user) {
-    if (user == null) return null;
-    String? fallbackContent;
+    if (user == null || user.id <= 0) return null;
     for (final item in user.inventories) {
       if (!item.active) continue;
+      if (item.userId != user.id) continue;
       final shop = item.shop;
       if (shop == null) continue;
       final content = shop.content.trim();
       if (content.isEmpty) continue;
-      if (shop.type.trim().toUpperCase() == 'CADRE') return content;
-      fallbackContent ??= content;
-    }
-    return fallbackContent;
-  }
-
-  String? _inferDmPeerFrameUrlFromMessages() {
-    if (!widget.isDm) return null;
-    for (var i = widget.messages.length - 1; i >= 0; i--) {
-      final message = widget.messages[i];
-      final sender = message.sender;
-      if (sender == null) continue;
-      final isCurrentUserMessage =
-          widget.currentUserId != null && sender.id == widget.currentUserId;
-      if (isCurrentUserMessage) continue;
-      final frame = _activeFrameUrlFromUser(sender);
-      if (frame != null && frame.trim().isNotEmpty) {
-        return frame;
-      }
+      final type = shop.type.trim().toUpperCase();
+      if (type == 'CADRE') return content;
     }
     return null;
   }
@@ -1405,9 +1401,7 @@ class _SharedProfileMessageCard extends StatelessWidget {
             (payload.avatarUrl?.trim().isNotEmpty ?? false)
             ? payload.avatarUrl
             : resolvedUser?.avatar;
-        final resolvedFrameUrl = (payload.frameUrl?.trim().isNotEmpty ?? false)
-            ? payload.frameUrl
-            : _activeFrameUrlFromUser(resolvedUser);
+        final resolvedFrameUrl = _activeFrameUrlFromUser(resolvedUser);
 
         return InkWell(
           borderRadius: BorderRadius.circular(12),
@@ -1465,14 +1459,16 @@ class _SharedProfileMessageCard extends StatelessWidget {
   }
 
   String? _activeFrameUrlFromUser(UserModel? user) {
-    if (user == null) return null;
+    if (user == null || user.id <= 0) return null;
     for (final item in user.inventories) {
       if (!item.active) continue;
+      if (item.userId != user.id) continue;
       final shop = item.shop;
       if (shop == null) continue;
       final content = shop.content.trim();
       if (content.isEmpty) continue;
-      if (shop.type.trim().toUpperCase() == 'CADRE') return content;
+      final type = shop.type.trim().toUpperCase();
+      if (type == 'CADRE') return content;
     }
     return null;
   }
