@@ -53,6 +53,8 @@ class _InvoicesScreenState extends State<InvoicesScreen> {
               final pageItems = invoices.sublist(start, end);
 
               return RefreshIndicator(
+                color: AppColors.whiteColor,
+                backgroundColor: AppColors.primary,
                 onRefresh: () => app.refreshInvoices(),
                 child: ListView(
                   padding: const EdgeInsets.fromLTRB(16, 20, 16, 24),

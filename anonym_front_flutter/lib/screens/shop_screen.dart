@@ -44,6 +44,8 @@ class _ShopScreenState extends State<ShopScreen> {
           child: Consumer<AppProvider>(
             builder: (context, app, _) {
               return RefreshIndicator(
+                color: AppColors.whiteColor,
+                backgroundColor: AppColors.primary,
                 onRefresh: () async {
                   await Future.wait([app.refreshShop(), app.refreshInventory()]);
                 },

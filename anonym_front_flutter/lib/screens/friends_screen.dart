@@ -71,6 +71,8 @@ class _FriendsScreenState extends State<FriendsScreen> {
             .toList(growable: false);
 
         return RefreshIndicator(
+          color: AppColors.whiteColor,
+          backgroundColor: AppColors.primary,
           onRefresh: () async {
             await Future.wait([
               app.refreshFriends(),

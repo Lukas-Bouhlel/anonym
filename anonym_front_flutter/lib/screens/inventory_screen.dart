@@ -76,6 +76,8 @@ class _InventoryScreenState extends State<InventoryScreen> {
               final selectedItem = selected;
 
               return RefreshIndicator(
+                color: AppColors.whiteColor,
+                backgroundColor: AppColors.primary,
                 onRefresh: () async {
                   await Future.wait([
                     app.refreshInventory(),

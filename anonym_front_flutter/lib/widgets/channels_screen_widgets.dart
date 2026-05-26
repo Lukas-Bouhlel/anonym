@@ -223,6 +223,8 @@ class _PublicConversationsScreenState extends State<PublicConversationsScreen>
                   .toList(growable: false);
 
               return RefreshIndicator(
+                color: AppColors.whiteColor,
+                backgroundColor: AppColors.primary,
                 onRefresh: () async {
                   await Future.wait([
                     app.refreshChannels(silent: true),

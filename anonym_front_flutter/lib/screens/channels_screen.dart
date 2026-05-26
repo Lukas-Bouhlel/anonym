@@ -174,6 +174,8 @@ class _ChannelsScreenState extends State<ChannelsScreen> {
             .toList(growable: false);
 
         return RefreshIndicator(
+          color: AppColors.whiteColor,
+          backgroundColor: AppColors.primary,
           onRefresh: () => app.refreshChannels(),
           child: ListView(
             padding: const EdgeInsets.fromLTRB(20, 28, 20, 140),

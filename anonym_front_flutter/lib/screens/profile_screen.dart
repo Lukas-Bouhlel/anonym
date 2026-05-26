@@ -126,6 +126,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
         }
 
         return RefreshIndicator(
+          color: AppColors.whiteColor,
+          backgroundColor: AppColors.primary,
           onRefresh: () async {
             await Future.wait([
               auth.reloadCurrentUser(),
