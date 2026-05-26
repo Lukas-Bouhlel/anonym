@@ -21,8 +21,8 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   static const double _bottomNavVisualHeight = 80;
-  static const double _bottomNavOuterSpacing = 20; // 8 top + 12 bottom
-  static const double _mapControlsGapAboveToolbar = 20;
+  static const double _bottomNavOuterSpacing = 40;
+  static const double _mapControlsGapAboveToolbar = 34;
 
   final GlobalKey<_HomeMapState> _mapKey = GlobalKey<_HomeMapState>();
 
@@ -515,40 +515,21 @@ class _MapboxStyleControlGroup extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: const Color(0xF3FFFFFF),
-      elevation: 6,
-      shadowColor: Colors.black.withValues(alpha: 0.24),
-      borderRadius: BorderRadius.circular(10),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(10),
-        child: SizedBox(
-          width: 42,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _MapboxStyleControlButton(
-                tooltip: 'Ma position',
-                icon: Icons.my_location_rounded,
-                onPressed: onLocatePressed,
-              ),
-              const SizedBox(
-                width: 42,
-                child: Divider(
-                  height: 1,
-                  thickness: 1,
-                  color: Color(0x22000000),
-                ),
-              ),
-              _MapboxStyleControlButton(
-                tooltip: 'Rafraichir',
-                icon: Icons.refresh_rounded,
-                onPressed: onRefreshPressed,
-              ),
-            ],
-          ),
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _MapboxStyleControlButton(
+          tooltip: 'Ma position',
+          icon: Icons.my_location_rounded,
+          onPressed: onLocatePressed,
         ),
-      ),
+        const SizedBox(height: 10),
+        _MapboxStyleControlButton(
+          tooltip: 'Rafraichir',
+          icon: Icons.refresh_rounded,
+          onPressed: onRefreshPressed,
+        ),
+      ],
     );
   }
 }
@@ -568,12 +549,21 @@ class _MapboxStyleControlButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return Tooltip(
       message: tooltip,
-      child: InkWell(
-        onTap: onPressed,
-        child: SizedBox(
-          width: 42,
-          height: 42,
-          child: Icon(icon, size: 20, color: const Color(0xFF292929)),
+      child: Material(
+        color: AppColors.textPrimary.withValues(alpha: 0.80),
+        elevation: 6,
+        shadowColor: Colors.black.withValues(alpha: 0.24),
+        shape: const CircleBorder(),
+        child: InkWell(
+          onTap: onPressed,
+          customBorder: const CircleBorder(),
+          child: SizedBox(
+            width: 42,
+            height: 42,
+            child: Center(
+              child: Icon(icon, size: 20, color: AppColors.whiteColor),
+            ),
+          ),
         ),
       ),
     );
