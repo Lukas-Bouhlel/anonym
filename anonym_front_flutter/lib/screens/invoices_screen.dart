@@ -5,6 +5,7 @@ import '../models/invoice_model.dart';
 import '../providers/app_providers.dart';
 import '../theme.dart';
 import '../utils/app_date_format.dart';
+import '../widgets/dialogs/anonym_confirm_dialog.dart';
 import '../widgets/navigation/anonym_back_button.dart';
 
 
@@ -185,6 +186,18 @@ class _InvoicesScreenState extends State<InvoicesScreen> {
       return;
     }
 
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(result)));
+    await showDialog<void>(
+      context: context,
+      barrierDismissible: true,
+      builder: (dialogContext) => AnonymConfirmDialog(
+        type: AnonymConfirmDialogType.success,
+        title: 'Facture envoyée',
+        description: 'La facture a bien été envoyée par email.',
+        confirmLabel: 'Super',
+        cancelLabel: 'Fermer',
+        onConfirm: () => Navigator.of(dialogContext).pop(),
+        onCancel: () => Navigator.of(dialogContext).pop(),
+      ),
+    );
   }
 }

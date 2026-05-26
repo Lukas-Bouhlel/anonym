@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 
 import '../routes/app_routes.dart';
@@ -21,9 +22,26 @@ class PublicHomeScreen extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const Spacer(),
-              Text(
-                'Bienvenue sur Anonym',
-                style: Theme.of(context).textTheme.displaySmall,
+              RichText(
+                text: TextSpan(
+                  style: Theme.of(context).textTheme.displaySmall,
+                  children: [
+                    const TextSpan(text: 'Bienvenue sur '),
+                    WidgetSpan(
+                      alignment: PlaceholderAlignment.middle,
+                      child: SvgPicture.asset(
+                        'assets/icons/anonym_logo.svg',
+                        width: 26,
+                        height: 26,
+                        colorFilter: const ColorFilter.mode(
+                          AppColors.whiteColor,
+                          BlendMode.srcIn,
+                        ),
+                      ),
+                    ),
+                    const TextSpan(text: 'nonym'),
+                  ],
+                ),
               ),
               const SizedBox(height: 10),
               Text(
