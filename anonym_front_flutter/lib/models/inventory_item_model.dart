@@ -1,5 +1,6 @@
 import 'shop_item_model.dart';
 
+/// Élément d'inventaire possédé par un utilisateur.
 class InventoryItemModel {
   const InventoryItemModel({
     required this.itemId,
@@ -17,6 +18,7 @@ class InventoryItemModel {
   final DateTime? createdAt;
   final ShopItemModel? shop;
 
+  /// Construit un item d'inventaire depuis une réponse JSON.
   factory InventoryItemModel.fromJson(Map<String, dynamic> json) {
     final shopJson = json['Shop'] ?? json['shop'];
 

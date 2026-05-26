@@ -2,13 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
-import '../providers/app_controller.dart';
-import '../providers/auth_controller.dart';
+import '../providers/app_providers.dart';
+import '../providers/auth_providers.dart';
 import '../routes/app_routes.dart';
 import '../theme.dart';
 import '../widgets/app_remote_image.dart';
-import '../widgets/chrome/moji_back_button.dart';
-import '../widgets/modals/moji_confirm_modal.dart';
+import '../widgets/navigation/anonym_back_button.dart';
+import '../widgets/dialogs/anonym_confirm_dialog.dart';
 import 'edit_profile_screen.dart';
 import 'inventory_screen.dart';
 import 'invoices_screen.dart';
@@ -19,6 +19,10 @@ import 'faq_screen.dart';
 import 'feedback_screen.dart';
 import 'notifications_screen.dart';
 
+
+part '../widgets/settings_screen_widgets.dart';
+
+/// Écran de paramètres utilisateur.
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
 
@@ -46,11 +50,11 @@ class SettingsScreen extends StatelessWidget {
     final confirmed = await showDialog<bool>(
       context: context,
       barrierDismissible: true,
-      builder: (dialogContext) => MojiConfirmModal(
-        type: MojiConfirmModalType.warning,
-        title: 'Se deconnecter ?',
-        description: 'Tu vas etre deconnecte de ton compte sur cet appareil.',
-        confirmLabel: 'Se deconnecter',
+      builder: (dialogContext) => AnonymConfirmDialog(
+        type: AnonymConfirmDialogType.warning,
+        title: 'Se déconnecter ?',
+        description: 'Tu vas être déconnecté de ton compte sur cet appareil.',
+        confirmLabel: 'Se déconnecter',
         onConfirm: () => Navigator.of(dialogContext).pop(true),
         onCancel: () => Navigator.of(dialogContext).pop(false),
       ),
@@ -62,11 +66,11 @@ class SettingsScreen extends StatelessWidget {
     final confirmed = await showDialog<bool>(
       context: context,
       barrierDismissible: true,
-      builder: (dialogContext) => MojiConfirmModal(
-        type: MojiConfirmModalType.danger,
+      builder: (dialogContext) => AnonymConfirmDialog(
+        type: AnonymConfirmDialogType.danger,
         title: 'Supprimer le compte ?',
         description:
-            'Cette action est definitive. Ton compte et tes donnees seront supprimes.',
+            'Cette action est définitive. Ton compte et tes données seront supprimés.',
         confirmLabel: 'Supprimer le compte',
         onConfirm: () => Navigator.of(dialogContext).pop(true),
         onCancel: () => Navigator.of(dialogContext).pop(false),
@@ -77,8 +81,8 @@ class SettingsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final app = context.watch<AppController>();
-    final auth = context.watch<AuthController>();
+    final app = context.watch<AppProvider>();
+    final auth = context.watch<AuthProvider>();
     final user = auth.user;
     final t = Theme.of(context).textTheme;
     final activeItem = app.inventoryItems
@@ -108,7 +112,7 @@ class SettingsScreen extends StatelessWidget {
             children: [
               Row(
                 children: [
-                  const MojiBackButton(),
+                  const AnonymBackButton(),
                   const SizedBox(width: 14),
                   Text('Paramètres', style: t.displayLarge),
                 ],
@@ -217,7 +221,7 @@ class SettingsScreen extends StatelessWidget {
               _SectionCard(
                 items: [
                   _SettingsItem(
-                    label: 'FAQs',
+                    label: 'FAQ',
                     onTap: () => _pushSlide(context, const FaqScreen()),
                   ),
                   _SettingsItem(
@@ -231,8 +235,8 @@ class SettingsScreen extends StatelessWidget {
               const SizedBox(height: 12),
               const _SectionCard(
                 items: [
-                  _SettingsItem(label: 'Conditions generales'),
-                  _SettingsItem(label: 'Mentions legales'),
+                  _SettingsItem(label: 'Conditions générales'),
+                  _SettingsItem(label: 'Mentions légales'),
                 ],
               ),
               const SizedBox(height: 20),
@@ -247,7 +251,7 @@ class SettingsScreen extends StatelessWidget {
                         context.go(AppRoutes.auth);
                       },
                 icon: const Icon(Icons.logout),
-                label: const Text('Se deconnecter'),
+                label: const Text('Se déconnecter'),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: AppColors.cFCFAFE,
                   side: BorderSide(
@@ -288,84 +292,4 @@ class SettingsScreen extends StatelessWidget {
       ),
     );
   }
-}
-
-class _CardContainer extends StatelessWidget {
-  const _CardContainer({required this.child});
-
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        gradient: AppGradients.gB1BCFBTo393566,
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: AppColors.cFCFAFE.withValues(alpha: 0.35)),
-      ),
-      child: child,
-    );
-  }
-}
-
-class _SectionCard extends StatelessWidget {
-  const _SectionCard({required this.items});
-
-  final List<_SettingsItem> items;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        gradient: AppGradients.gB1BCFBTo393566,
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: AppColors.cFCFAFE.withValues(alpha: 0.35)),
-      ),
-      child: Column(
-        children: [
-          for (var i = 0; i < items.length; i++) ...[
-            _SettingsRow(item: items[i]),
-            if (i < items.length - 1)
-              Divider(
-                height: 1,
-                color: AppColors.cFCFAFE.withValues(alpha: 0.25),
-              ),
-          ],
-        ],
-      ),
-    );
-  }
-}
-
-class _SettingsRow extends StatelessWidget {
-  const _SettingsRow({required this.item});
-
-  final _SettingsItem item;
-
-  @override
-  Widget build(BuildContext context) {
-    final t = Theme.of(context).textTheme;
-
-    return InkWell(
-      onTap: item.onTap,
-      borderRadius: BorderRadius.circular(18),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
-        child: Row(
-          children: [
-            Expanded(child: Text(item.label, style: t.bodyMedium)),
-            const Icon(Icons.chevron_right, color: AppColors.cDBE7FE),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _SettingsItem {
-  const _SettingsItem({required this.label, this.onTap});
-
-  final String label;
-  final VoidCallback? onTap;
 }

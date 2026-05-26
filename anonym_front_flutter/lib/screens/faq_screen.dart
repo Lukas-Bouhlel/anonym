@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 
 import '../theme.dart';
-import '../widgets/chrome/moji_back_button.dart';
+import '../widgets/navigation/anonym_back_button.dart';
 
+/// Écran FAQ avec questions/réponses repliables.
 class FaqScreen extends StatefulWidget {
   const FaqScreen({super.key});
 
@@ -13,43 +14,43 @@ class FaqScreen extends StatefulWidget {
 class _FaqScreenState extends State<FaqScreen> {
   final List<_FaqItem> _items = const [
     _FaqItem(
-      question: 'Comment signaler un probleme ?',
+      question: 'Comment signaler un problème ?',
       answer:
-          'Pour signaler un probleme, que ce soit sur la plateforme Anonym '
-          'ou avec un autre utilisateur lors d une discussion, ou pour tout '
-          'autre souci lie a la plateforme, utilise le formulaire Feedback.\n\n'
-          'Tout abus de signalement sera sanctionne par l equipe Anonym.',
+          'Pour signaler un problème, que ce soit sur la plateforme Anonym '
+          'ou avec un autre utilisateur lors d\'une discussion, ou pour tout '
+          'autre souci lié à la plateforme, utilise le formulaire Feedback.\n\n'
+          'Tout abus de signalement sera sanctionné par l équipe Anonym.',
     ),
     _FaqItem(
-      question: 'Comment fonctionne le systeme de reputation ?',
+      question: 'Comment fonctionne le système de réputation ?',
       answer:
-          'Le systeme de reputation se base sur le nombre de messages envoyes '
-          'a d autres utilisateurs.\n\n'
-          'Pour obtenir un multiplicateur de reputation, il faut acquerir un '
-          'element de personnalisation depuis la boutique.',
+          'Le système de réputation se base sur le nombre de messages envoyés '
+          'à d\'autres utilisateurs.\n\n'
+          'Pour obtenir un multiplicateur de réputation, il faut acquérir un '
+          'élément de personnalisation depuis la boutique.',
     ),
     _FaqItem(
-      question: 'Je n arrive plus a me connecter, comment faire ?',
+      question: 'Je n\'arrive plus à me connecter, comment faire ?',
       answer:
           'Si tu rencontres des problemes de connexion (aucun message, erreur '
           'silencieuse, etc.), envoie-nous un message via le formulaire Feedback.\n\n'
-          'Tout abus de signalement sera sanctionne par l equipe Anonym.',
+          'Tout abus de signalement sera sanctionné par l\'équipe Anonym.',
     ),
     _FaqItem(
       question: 'Quelles sont les informations recueillies par Anonym ?',
       answer:
-          'Nous pouvons collecter les types de donnees suivants :\n'
-          '- Donnees de connexion : nom d utilisateur, adresse e-mail, mot de passe.\n'
-          '- Donnees de paiement : factures.\n'
-          '- Donnees de navigation : pages visitees, clics, preferences.\n\n'
-          'Pour plus d informations, consulte la politique de confidentialite.',
+          'Nous pouvons collecter les types de données suivants :\n'
+          '- Données de connexion : nom d\'utilisateur, adresse e-mail, mot de passe.\n'
+          '- Données de paiement : factures.\n'
+          '- Données de navigation : pages visitées, clics, préférences.\n\n'
+          'Pour plus d\'informations, consulte la politique de confidentialité.',
     ),
     _FaqItem(
-      question: 'Comment soutenir l equipe Anonym ?',
+      question: 'Comment soutenir l\'équipe Anonym ?',
       answer:
-          'Pour soutenir l equipe Anonym, tu peux envoyer un don qui sera '
-          'reverse a l equipe de developpement.\n\n'
-          'Tu peux aussi soutenir le projet en achetant un element de '
+          'Pour soutenir l\'équipe Anonym, tu peux envoyer un don qui sera '
+          'reversé à l\'équipe de développement.\n\n'
+          'Tu peux aussi soutenir le projet en achetant un élément de '
           'personnalisation pour ton profil.',
     ),
   ];
@@ -71,10 +72,10 @@ class _FaqScreenState extends State<FaqScreen> {
               children: [
                 Row(
                   children: [
-                    const MojiBackButton(),
+                    const AnonymBackButton(),
                     const SizedBox(width: 14),
                     Text(
-                      'FAQs',
+                      'FAQ',
                       style: t.headlineSmall?.copyWith(
                         fontWeight: FontWeight.w700,
                       ),
@@ -83,7 +84,7 @@ class _FaqScreenState extends State<FaqScreen> {
                 ),
                 const SizedBox(height: 16),
                 Text(
-                  'Retrouve ici les reponses aux questions les plus frequentes.',
+                  'Retrouve ici les réponses aux questions les plus fréquentes.',
                   style: t.bodyMedium?.copyWith(
                     color: AppColors.whiteColor.withValues(alpha: 0.75),
                   ),

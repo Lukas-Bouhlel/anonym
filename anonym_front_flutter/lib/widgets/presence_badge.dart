@@ -1,7 +1,23 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 
 import '../utils/presence_utils.dart';
 
+/// Renders a circular presence indicator for a user.
+///
+/// Uses [PresenceUtils.effectiveForViewer] to map hidden/invisible states
+/// depending on whether the viewer is the same user.
+///
+/// {@tool snippet}
+/// PresenceBadge(
+///   presenceStatus: friend.presenceStatus,
+///   isCurrentUser: false,
+///   size: 12,
+/// )
+/// {@end-tool}
+///
+/// Error cases:
+/// - Unknown [presenceStatus] values fallback to an offline-like neutral color.
+/// - Very small [size] values can make the border visually clipped.
 class PresenceBadge extends StatelessWidget {
   const PresenceBadge({
     super.key,

@@ -1,6 +1,7 @@
 import 'inventory_item_model.dart';
 import '../utils/media_url.dart';
 
+/// Représente un utilisateur de l'application.
 class UserModel {
   const UserModel({
     required this.id,
@@ -28,8 +29,10 @@ class UserModel {
   final bool allowNonFriendDms;
   final List<InventoryItemModel> inventories;
 
+  /// Indique si l'utilisateur possède des droits d'administration.
   bool get isAdmin => roles == 'ADMIN' || roles == 'SUPER_ADMIN';
 
+  /// Construit un utilisateur depuis une payload JSON API.
   factory UserModel.fromJson(Map<String, dynamic> json) {
     return UserModel(
       id: _toInt(json['id'] ?? json['user_id'] ?? json['userId']),

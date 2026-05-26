@@ -1,3 +1,4 @@
+/// Représente une facture générée suite à un achat.
 class InvoiceModel {
   const InvoiceModel({
     required this.id,
@@ -19,6 +20,7 @@ class InvoiceModel {
   final int quantity;
   final DateTime? createdAt;
 
+  /// Construit une facture depuis un objet JSON.
   factory InvoiceModel.fromJson(Map<String, dynamic> json) {
     return InvoiceModel(
       id: _toInt(json['id']),

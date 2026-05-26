@@ -1,5 +1,23 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 
+/// Centers a form-like layout with a maximum readable width.
+///
+/// {@tool snippet}
+/// CenteredForm(
+///   child: Column(
+///     mainAxisSize: MainAxisSize.min,
+///     children: const [
+///       Text('Sign in'),
+///       SizedBox(height: 16),
+///       TextField(),
+///     ],
+///   ),
+/// )
+/// {@end-tool}
+///
+/// Error cases:
+/// - If [child] has an unconstrained scrollable, Flutter can throw layout
+///   overflow exceptions. Wrap it with `SingleChildScrollView` if needed.
 class CenteredForm extends StatelessWidget {
   const CenteredForm({super.key, required this.child});
 

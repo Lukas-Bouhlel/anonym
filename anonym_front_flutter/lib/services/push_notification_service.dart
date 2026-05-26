@@ -4,6 +4,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 
+/// Handler appelé par Firebase en tâche de fond lors de la réception d'un push.
 @pragma('vm:entry-point')
 Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   try {
@@ -13,6 +14,7 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   }
 }
 
+/// Service d'abstraction autour de Firebase Cloud Messaging.
 class PushNotificationService {
   PushNotificationService(this._messaging);
 

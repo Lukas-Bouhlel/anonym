@@ -1,8 +1,8 @@
 import 'package:dio/dio.dart';
 
-class ApiErrorParser {
-  const ApiErrorParser._();
-
+/// Utilitaire de normalisation des erreurs API vers un message lisible.
+abstract final class ApiErrorParser {
+  /// Extrait un message pertinent depuis [error] ou retourne [fallback].
   static String parse(Object error, {required String fallback}) {
     if (error is DioException) {
       final data = error.response?.data;

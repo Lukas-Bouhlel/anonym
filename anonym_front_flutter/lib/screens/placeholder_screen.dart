@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../theme.dart';
 
+/// Écran temporaire de placeholder pour sections non finalisées.
 class PlaceholderScreen extends StatelessWidget {
   const PlaceholderScreen({super.key, required this.title, this.description});
 
@@ -28,7 +29,7 @@ class PlaceholderScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  description ?? 'Ecran Flutter pret a etre branche.',
+                  description ?? 'Écran Flutter prêt à être branché.',
                   style: const TextStyle(color: AppColors.cFCFAFE),
                   textAlign: TextAlign.center,
                 ),

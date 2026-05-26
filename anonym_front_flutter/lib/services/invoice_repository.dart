@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 
 import '../models/invoice_model.dart';
 
+/// Repository HTTP pour les factures et l'historique d'achats.
 class InvoiceRepository {
   InvoiceRepository(this._dio);
 

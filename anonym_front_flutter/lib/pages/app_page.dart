@@ -2,10 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
-import '../providers/auth_controller.dart';
+import '../providers/auth_providers.dart';
 import '../routes/app_router.dart';
 import '../theme.dart';
 
+/// Widget racine de l'application (MaterialApp + router).
 class AnonymApp extends StatefulWidget {
   const AnonymApp({super.key});
 
@@ -19,8 +20,8 @@ class _AnonymAppState extends State<AnonymApp> {
   @override
   void initState() {
     super.initState();
-    final authController = context.read<AuthController>();
-    _router = buildRouter(authController);
+    final authProvider = context.read<AuthProvider>();
+    _router = buildRouter(authProvider);
   }
 
   @override

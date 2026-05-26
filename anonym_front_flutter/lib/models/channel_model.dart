@@ -1,6 +1,7 @@
 import '../utils/media_url.dart';
 import 'user_model.dart';
 
+/// Modèle d'une conversation (groupe, canal public, DM, etc.).
 class ChannelModel {
   const ChannelModel({
     required this.channelId,
@@ -30,6 +31,7 @@ class ChannelModel {
   final bool? isJoined;
   final String? listCategory;
 
+  /// Construit un canal depuis un objet JSON backend.
   factory ChannelModel.fromJson(Map<String, dynamic> json) {
     final rawDmPeer = json['dm_peer'] ?? json['dmPeer'];
     return ChannelModel(

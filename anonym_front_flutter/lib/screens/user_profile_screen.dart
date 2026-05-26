@@ -3,23 +3,27 @@ import 'package:provider/provider.dart';
 
 import '../models/channel_model.dart';
 import '../models/user_model.dart';
-import '../providers/app_controller.dart';
-import '../providers/auth_controller.dart';
+import '../providers/app_providers.dart';
+import '../providers/auth_providers.dart';
 import '../theme.dart';
 import '../widgets/app_remote_image.dart';
 import '../widgets/presence_badge.dart';
-import '../widgets/modals/moji_confirm_modal.dart';
+import '../widgets/dialogs/anonym_confirm_dialog.dart';
 import 'feedback_screen.dart';
 import 'profile_screen.dart';
 
+
+part '../widgets/user_profile_screen_widgets.dart';
+
+/// Écran de consultation du profil d un autre utilisateur.
 class UserProfileScreen extends StatelessWidget {
   const UserProfileScreen({super.key, required this.user});
   final UserModel user;
 
   @override
   Widget build(BuildContext context) {
-    final app = context.watch<AppController>();
-    final me = context.watch<AuthController>().user;
+    final app = context.watch<AppProvider>();
+    final me = context.watch<AuthProvider>().user;
     final displayUser = _resolveDisplayUser(app, user);
     final frameUrl = _activeFrameUrlForUser(app, displayUser);
     final moreButtonKey = GlobalKey();
@@ -28,17 +32,17 @@ class UserProfileScreen extends StatelessWidget {
     String formatDate(DateTime dt) {
       const months = [
         'janvier',
-        'février',
+        'fÃ©vrier',
         'mars',
         'avril',
         'mai',
         'juin',
         'juillet',
-        'août',
+        'aoÃ»t',
         'septembre',
         'octobre',
         'novembre',
-        'décembre',
+        'dÃ©cembre',
       ];
       return '${dt.day} ${months[dt.month - 1]} ${dt.year}';
     }
@@ -536,39 +540,39 @@ class UserProfileScreen extends StatelessWidget {
     return status.trim().toUpperCase() == 'ACTIVE';
   }
 
-  bool _isFriend(AppController app, int userId) {
+  bool _isFriend(AppProvider app, int userId) {
     return app.friends.any(
       (friend) =>
           friend.friendId == userId && _isActiveFriendStatus(friend.status),
     );
   }
 
-  bool _hasOutgoingRequest(AppController app, int userId) {
+  bool _hasOutgoingRequest(AppProvider app, int userId) {
     return app.outgoingFriendRequests.any(
       (request) => request.friendId == userId,
     );
   }
 
-  int? _outgoingRequestId(AppController app, int userId) {
+  int? _outgoingRequestId(AppProvider app, int userId) {
     for (final request in app.outgoingFriendRequests) {
       if (request.friendId == userId) return request.id;
     }
     return null;
   }
 
-  bool _hasIncomingRequest(AppController app, int userId) {
+  bool _hasIncomingRequest(AppProvider app, int userId) {
     return app.incomingFriendRequests.any(
       (request) => request.userId == userId,
     );
   }
 
-  bool _isBlocked(AppController app, int userId) {
+  bool _isBlocked(AppProvider app, int userId) {
     return app.blockedUsers.any((blocked) => blocked.id == userId);
   }
 
   Future<void> _showProfileMenu(
     BuildContext context,
-    AppController app,
+    AppProvider app,
     UserModel user,
     Rect anchorRect,
   ) async {
@@ -579,7 +583,7 @@ class UserProfileScreen extends StatelessWidget {
     final friendLabel = isFriend
         ? 'Retirer cet ami'
         : hasOutgoing
-        ? 'Retirer demande d\'ami'
+        ? 'Retirer la demande d\'ami'
         : hasIncoming
         ? 'Accepter la demande d\'ami'
         : 'Ajouter en ami';
@@ -713,7 +717,7 @@ class UserProfileScreen extends StatelessWidget {
   Future<void> _handleProfileMenuAction(
     String selected,
     BuildContext context,
-    AppController app,
+    AppProvider app,
     UserModel user,
   ) async {
     if (selected == 'friend') {
@@ -724,10 +728,10 @@ class UserProfileScreen extends StatelessWidget {
       if (isFriend) {
         final confirmed = await _showConfirmModal(
           context: context,
-          type: MojiConfirmModalType.danger,
+          type: AnonymConfirmDialogType.danger,
           title: 'Supprimer cet ami ?',
           description:
-              'Cette personne sera retiree de ta liste d\'amis. Tu pourras la rajouter plus tard.',
+              'Cette personne sera retirée de ta liste d\'amis. Tu pourras la rajouter plus tard.',
           confirmLabel: 'Supprimer l\'ami',
         );
         if (!confirmed) return;
@@ -743,10 +747,10 @@ class UserProfileScreen extends StatelessWidget {
         }
         final confirmed = await _showConfirmModal(
           context: context,
-          type: MojiConfirmModalType.warning,
+          type: AnonymConfirmDialogType.warning,
           title: 'Retirer la demande d\'ami ?',
           description:
-              'La demande en attente sera annulee et la personne ne la verra plus.',
+              'La demande en attente sera annulée et la personne ne la verra plus.',
           confirmLabel: 'Retirer la demande',
         );
         if (!confirmed) return;
@@ -768,18 +772,18 @@ class UserProfileScreen extends StatelessWidget {
       if (blocked) {
         final confirmed = await _showConfirmModal(
           context: context,
-          type: MojiConfirmModalType.success,
-          title: 'Debloquer cet utilisateur ?',
+          type: AnonymConfirmDialogType.success,
+          title: 'Débloquer cet utilisateur ?',
           description:
               'Il pourra de nouveau te contacter et interagir avec toi.',
-          confirmLabel: 'Debloquer',
+          confirmLabel: 'Débloquer',
         );
         if (!confirmed) return;
         await app.unblockUser(user.id);
       } else {
         final confirmed = await _showConfirmModal(
           context: context,
-          type: MojiConfirmModalType.danger,
+          type: AnonymConfirmDialogType.danger,
           title: 'Bloquer cet utilisateur ?',
           description:
               'Tu ne verras plus ses interactions et il ne pourra plus te contacter.',
@@ -806,7 +810,7 @@ class UserProfileScreen extends StatelessWidget {
 
   Future<bool> _showConfirmModal({
     required BuildContext context,
-    required MojiConfirmModalType type,
+    required AnonymConfirmDialogType type,
     required String title,
     required String description,
     required String confirmLabel,
@@ -814,7 +818,7 @@ class UserProfileScreen extends StatelessWidget {
     final confirmed = await showDialog<bool>(
       context: context,
       barrierDismissible: true,
-      builder: (dialogContext) => MojiConfirmModal(
+      builder: (dialogContext) => AnonymConfirmDialog(
         type: type,
         title: title,
         description: description,
@@ -827,7 +831,7 @@ class UserProfileScreen extends StatelessWidget {
   }
 }
 
-UserModel _resolveDisplayUser(AppController app, UserModel fallback) {
+UserModel _resolveDisplayUser(AppProvider app, UserModel fallback) {
   for (final candidate in app.allUsers) {
     if (candidate.id != fallback.id) continue;
     return fallback.copyWith(
@@ -855,7 +859,7 @@ UserModel _resolveDisplayUser(AppController app, UserModel fallback) {
   return fallback;
 }
 
-String? _activeFrameUrlForUser(AppController app, UserModel user) {
+String? _activeFrameUrlForUser(AppProvider app, UserModel user) {
   String? fallbackContent;
   for (final item in user.inventories) {
     if (!item.active) continue;
@@ -877,111 +881,4 @@ String? _activeFrameUrlForUser(AppController app, UserModel user) {
     }
   }
   return fallbackContent;
-}
-
-class _CommunityConversationTile extends StatelessWidget {
-  const _CommunityConversationTile({
-    required this.channel,
-    required this.onTap,
-  });
-
-  final ChannelModel channel;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 2),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(10),
-        child: Container(
-          padding: const EdgeInsets.fromLTRB(4, 10, 4, 10),
-          decoration: BoxDecoration(
-            border: Border(
-              bottom: BorderSide(
-                color: AppColors.whiteColor.withValues(alpha: 0.12),
-                width: 1,
-              ),
-            ),
-          ),
-          child: Row(
-            children: [
-              Stack(
-                children: [
-                  Container(
-                    width: 48,
-                    height: 48,
-                    decoration: BoxDecoration(
-                      gradient: AppGradients.gB1BCFBTo393566,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: AppColors.whiteColor.withValues(alpha: 0.24),
-                        width: 1.24,
-                      ),
-                    ),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(12),
-                      child: AppRemoteImage(
-                        url: channel.coverImage,
-                        width: 48,
-                        height: 48,
-                        fit: BoxFit.cover,
-                        fallbackIcon: Icons.alternate_email,
-                      ),
-                    ),
-                  ),
-                  Positioned(
-                    right: -1,
-                    top: -1,
-                    child: Container(
-                      width: 12,
-                      height: 12,
-                      decoration: const BoxDecoration(
-                        color: Color(0xFFCCF0C8),
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      channel.name,
-                      style: const TextStyle(
-                        fontFamily: AppTypography.displayFontFamily,
-                        color: AppColors.cFCFAFE,
-                        fontSize: 20,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    Text(
-                      (channel.description ?? '').trim().isNotEmpty
-                          ? channel.description!.trim()
-                          : '',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: AppColors.cFCFAFE,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const Text(
-                '12:55 am',
-                style: TextStyle(color: AppColors.cDBE7FE, fontSize: 12),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
 }

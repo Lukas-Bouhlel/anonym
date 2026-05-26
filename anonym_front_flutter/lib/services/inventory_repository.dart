@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 
 import '../models/inventory_item_model.dart';
 
+/// Repository HTTP pour l'inventaire utilisateur.
 class InventoryRepository {
   InventoryRepository(this._dio);
 

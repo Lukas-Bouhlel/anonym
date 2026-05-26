@@ -1,5 +1,6 @@
 import 'user_model.dart';
 
+/// Modèle représentant un message de conversation.
 class ChannelMessageModel {
   const ChannelMessageModel({
     required this.messageId,
@@ -21,6 +22,10 @@ class ChannelMessageModel {
   final UserModel? sender;
   final String? imageUrl;
 
+  /// Construit un message depuis une réponse JSON backend.
+  ///
+  /// Cette factory accepte plusieurs variantes de clés pour rester robuste
+  /// face aux différences de format entre endpoints.
   factory ChannelMessageModel.fromJson(Map<String, dynamic> json) {
     final senderJson =
         json['User'] ?? json['user'] ?? json['Sender'] ?? json['sender'];

@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 
 import '../models/channel_message_model.dart';
 
+/// Repository HTTP pour les messages privés et pièces jointes.
 class PrivateMessageRepository {
   PrivateMessageRepository(this._dio);
 

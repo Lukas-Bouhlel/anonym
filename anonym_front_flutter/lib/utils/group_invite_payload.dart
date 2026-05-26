@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+/// Payload de partage d'invitation vers un groupe/canal.
 class GroupInvitePayload {
   const GroupInvitePayload({
     required this.channelId,
@@ -22,11 +23,11 @@ class GroupInvitePayload {
   final String? channelCoverImage;
 }
 
-class GroupInvitePayloadCodec {
-  const GroupInvitePayloadCodec._();
-
+/// Encodage/décodage du payload d'invitation dans un message texte.
+abstract final class GroupInvitePayloadCodec {
   static const String _prefix = 'ANONYM_GROUP_INVITE:';
 
+  /// Tente de décoder un contenu texte en [GroupInvitePayload].
   static GroupInvitePayload? tryDecode(String rawContent) {
     final normalized = rawContent.trim();
     if (!normalized.startsWith(_prefix)) return null;

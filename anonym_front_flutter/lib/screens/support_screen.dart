@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../services/admin_repository.dart';
 import '../utils/api_error_parser.dart';
 
+/// Écran de contact support.
 class SupportScreen extends StatefulWidget {
   const SupportScreen({super.key});
 
@@ -42,7 +43,7 @@ class _SupportScreenState extends State<SupportScreen> {
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Rapport envoye avec succes.')),
+        const SnackBar(content: Text('Rapport envoyé avec succès.')),
       );
       _formKey.currentState?.reset();
       _emailController.clear();

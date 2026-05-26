@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 
 import '../models/points_summary_model.dart';
 
+/// Repository HTTP pour les statistiques de points et progression.
 class PointsRepository {
   PointsRepository(this._dio);
 

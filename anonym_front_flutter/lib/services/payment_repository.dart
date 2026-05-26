@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 
 import '../models/payment_confirmation_model.dart';
 
+/// Repository HTTP pour les opérations de paiement.
 class PaymentRepository {
   PaymentRepository(this._dio);
 

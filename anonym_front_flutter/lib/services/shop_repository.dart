@@ -3,6 +3,7 @@ import 'dart:convert';
 
 import '../models/shop_item_model.dart';
 
+/// Repository HTTP pour le catalogue du shop.
 class ShopRepository {
   ShopRepository(this._dio);
 

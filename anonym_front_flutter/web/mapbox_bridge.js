@@ -1,7 +1,7 @@
 (function () {
   const maps = new Map();
   const initialCenter = [2.3522, 48.8566];
-  const logPrefix = "[MOJI_MAP][web]";
+  const logPrefix = "[ANONYM_MAP][web]";
 
   function log(message, data) {
     if (data === undefined) {
@@ -55,7 +55,7 @@
 
     if (!window.mapboxgl) {
       container.innerHTML =
-        '<div class="moji-map-loading">Mapbox GL ne s\'est pas charge.</div>';
+        '<div class="anonym-map-loading">Mapbox GL ne s\'est pas charge.</div>';
       return false;
     }
 
@@ -284,7 +284,7 @@
     return true;
   }
 
-  window.mojiMapCreate = createMap;
-  window.mojiMapUpdate = updateMap;
-  window.mojiMapDispose = disposeMap;
+  window.anonymMapCreate = createMap;
+  window.anonymMapUpdate = updateMap;
+  window.anonymMapDispose = disposeMap;
 })();

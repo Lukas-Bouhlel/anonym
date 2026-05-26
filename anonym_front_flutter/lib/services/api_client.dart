@@ -8,6 +8,10 @@ import 'package:path_provider/path_provider.dart';
 
 import '../utils/app_config.dart';
 
+/// Client HTTP central basé sur Dio.
+///
+/// Gère les cookies, le refresh de session, les en-têtes CSRF et les
+/// politiques de retry liées à l'authentification.
 class ApiClient {
   ApiClient({CookieJar? cookieJar})
     : _cookieJar = cookieJar ?? CookieJar(),
@@ -271,6 +275,7 @@ class ApiClient {
   }
 }
 
+/// Représente le résultat interne d'une tentative de refresh de session.
 class _RefreshOutcome {
   const _RefreshOutcome._({
     required this.refreshed,

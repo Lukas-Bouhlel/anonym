@@ -1,5 +1,6 @@
 import '../utils/media_url.dart';
 
+/// Article du shop disponible à l'achat.
 class ShopItemModel {
   const ShopItemModel({
     required this.articleId,
@@ -15,6 +16,7 @@ class ShopItemModel {
   final int amount;
   final String content;
 
+  /// Construit un article depuis une réponse JSON.
   factory ShopItemModel.fromJson(Map<String, dynamic> json) {
     return ShopItemModel(
       articleId: _toInt(json['article_id'] ?? json['articleId']),

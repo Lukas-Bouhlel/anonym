@@ -3,6 +3,10 @@ import 'package:socket_io_client/socket_io_client.dart' as io;
 import '../models/channel_message_model.dart';
 import '../utils/app_config.dart';
 
+/// Service de communication temps réel (Socket.IO).
+///
+/// Encapsule la connexion, les événements entrants/sortants et les helpers
+/// de souscription utilisés par le provider applicatif.
 class SocketService {
   static const _eventLocationSnapshotCandidates = <String>[
     'location:snapshot',

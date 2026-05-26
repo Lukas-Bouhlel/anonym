@@ -4,6 +4,7 @@ import 'package:dio/dio.dart';
 
 import '../models/user_model.dart';
 
+/// Repository HTTP pour les endpoints d'administration.
 class AdminRepository {
   AdminRepository(this._dio);
 

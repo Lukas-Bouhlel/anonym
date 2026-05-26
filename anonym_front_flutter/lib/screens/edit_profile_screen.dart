@@ -7,12 +7,16 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 
-import '../providers/app_controller.dart';
-import '../providers/auth_controller.dart';
+import '../providers/app_providers.dart';
+import '../providers/auth_providers.dart';
 import '../theme.dart';
 import '../widgets/app_remote_image.dart';
-import '../widgets/chrome/moji_back_button.dart';
+import '../widgets/navigation/anonym_back_button.dart';
 
+
+part '../widgets/edit_profile_screen_widgets.dart';
+
+/// Écran de modification du profil utilisateur.
 class EditProfileScreen extends StatefulWidget {
   const EditProfileScreen({super.key});
 
@@ -44,7 +48,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (_didInit) return;
-    final user = context.read<AuthController>().user;
+    final user = context.read<AuthProvider>().user;
     _initialUsername = user?.username ?? '';
     _initialEmail = user?.email ?? '';
     _initialBio = user?.bio;
@@ -229,7 +233,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Impossible de recuperer la photo: $e')),
+        SnackBar(content: Text('Impossible de recupérer la photo: $e')),
       );
     }
   }
@@ -273,7 +277,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     final email = rawEmail;
     final String? bio = rawBio.isEmpty ? null : rawBio;
 
-    final app = context.read<AppController>();
+    final app = context.read<AppProvider>();
     setState(() => _isSaving = true);
     await app.updateProfile(
       username: username,
@@ -297,13 +301,13 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
     ScaffoldMessenger.of(
       context,
-    ).showSnackBar(const SnackBar(content: Text('Profil modifie')));
+    ).showSnackBar(const SnackBar(content: Text('Profil modifié')));
     Navigator.of(context).pop();
   }
 
   @override
   Widget build(BuildContext context) {
-    final user = context.watch<AuthController>().user;
+    final user = context.watch<AuthProvider>().user;
     final textTheme = Theme.of(context).textTheme;
 
     return Container(
@@ -320,7 +324,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 const SizedBox(height: 20),
                 Row(
                   children: [
-                    const MojiBackButton(),
+                    const AnonymBackButton(),
                     const SizedBox(width: 20),
                     Text(
                       'Modifier le profil',
@@ -407,158 +411,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             ),
           ),
         ),
-      ),
-    );
-  }
-}
-
-class _InlineField extends StatelessWidget {
-  const _InlineField({
-    required this.label,
-    required this.controller,
-    required this.hintText,
-    this.maxLines = 1,
-    this.keyboardType,
-  });
-
-  final String label;
-  final TextEditingController controller;
-  final String hintText;
-  final int maxLines;
-  final TextInputType? keyboardType;
-
-  @override
-  Widget build(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(24, 16, 24, 16),
-      decoration: BoxDecoration(
-        gradient: AppGradients.gB1BCFBTo393566,
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(
-          color: AppColors.cFCFAFE.withValues(alpha: 0.35),
-          width: 1.1,
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            label,
-            style: textTheme.titleSmall?.copyWith(
-              color: AppColors.whiteColor,
-              fontFamily: AppTypography.displayFontFamily,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Theme(
-            data: Theme.of(context).copyWith(
-              inputDecorationTheme: const InputDecorationTheme(
-                border: InputBorder.none,
-                enabledBorder: InputBorder.none,
-                focusedBorder: InputBorder.none,
-                disabledBorder: InputBorder.none,
-                errorBorder: InputBorder.none,
-                focusedErrorBorder: InputBorder.none,
-                filled: false,
-                isCollapsed: true,
-                contentPadding: EdgeInsets.zero,
-              ),
-            ),
-            child: TextField(
-              controller: controller,
-              maxLines: maxLines,
-              keyboardType: keyboardType,
-              style: textTheme.bodyLarge?.copyWith(
-                color: AppColors.whiteColor,
-                fontWeight: FontWeight.w500,
-              ),
-              cursorColor: AppColors.whiteColor,
-              decoration: InputDecoration.collapsed(
-                hintText: hintText,
-                hintStyle: textTheme.bodyLarge?.copyWith(
-                  color: AppColors.whiteColor.withValues(alpha: 0.35),
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _ToggleField extends StatelessWidget {
-  const _ToggleField({
-    required this.label,
-    required this.value,
-    required this.onChanged,
-    this.helper,
-  });
-
-  final String label;
-  final bool value;
-  final ValueChanged<bool> onChanged;
-  final String? helper;
-
-  @override
-  Widget build(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(18, 10, 10, 10),
-      decoration: BoxDecoration(
-        gradient: AppGradients.gB1BCFBTo393566,
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(
-          color: AppColors.cFCFAFE.withValues(alpha: 0.35),
-          width: 1.1,
-        ),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  label,
-                  style: textTheme.titleSmall?.copyWith(
-                    color: AppColors.whiteColor,
-                    fontFamily: AppTypography.displayFontFamily,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                if (helper != null && helper!.trim().isNotEmpty) ...[
-                  const SizedBox(height: 4),
-                  Text(
-                    helper!,
-                    style: textTheme.bodySmall?.copyWith(
-                      color: AppColors.cDBE7FE,
-                    ),
-                  ),
-                ],
-              ],
-            ),
-          ),
-          Switch(
-            value: value,
-            onChanged: onChanged,
-            activeThumbColor: AppColors.c393566,
-            activeTrackColor: AppColors.cCFFFDD,
-            inactiveThumbColor: AppColors.cFCFAFE,
-            inactiveTrackColor: AppColors.cFCFAFE.withValues(alpha: 0.25),
-            trackOutlineColor: WidgetStateProperty.resolveWith((states) {
-              return AppColors.cFCFAFE.withValues(alpha: 0.25);
-            }),
-            trackOutlineWidth: WidgetStateProperty.resolveWith((states) {
-              return 1.0;
-            }),
-          ),
-        ],
       ),
     );
   }

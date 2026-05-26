@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../theme.dart';
 
+/// Écran de chargement affiché pendant le bootstrap applicatif.
 class SplashScreen extends StatelessWidget {
   const SplashScreen({super.key});
 

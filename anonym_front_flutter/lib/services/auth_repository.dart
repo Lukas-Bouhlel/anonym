@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import '../models/user_model.dart';
 import 'api_client.dart';
 
+/// Repository HTTP pour les flux d'authentification.
 class AuthRepository {
   AuthRepository(this._dio, this._apiClient);
 
@@ -44,7 +45,7 @@ class AuthRepository {
       data: {'username': username, 'email': email, 'password': password},
     );
 
-    // Le backend ne crÃƒÂ©e pas toujours de session ÃƒÂ  l'inscription,
+    // Le backend ne crée pas toujours de session à l'inscription,
     // on enchaine donc un login pour garantir la persistance.
     return login(identifier: email, password: password);
   }

@@ -1,9 +1,25 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
 import '../theme.dart';
 import '../utils/media_url.dart';
 
+/// Displays a remote image with built-in fallback behavior.
+///
+/// Handles raster/SVG rendering and normalizes incoming URLs with [MediaUrl].
+/// {@tool snippet}
+/// AppRemoteImage(
+///   url: user.avatar,
+///   width: 48,
+///   height: 48,
+///   borderRadius: BorderRadius.circular(12),
+/// )
+/// {@end-tool}
+///
+/// Error cases:
+/// - If [url] is null/invalid, the widget shows a placeholder with
+///   [fallbackIcon].
+/// - If network loading fails, the widget tries an SVG network fallback.
 class AppRemoteImage extends StatelessWidget {
   const AppRemoteImage({
     super.key,

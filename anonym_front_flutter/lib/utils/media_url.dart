@@ -1,8 +1,7 @@
 import 'app_config.dart';
 
-class MediaUrl {
-  const MediaUrl._();
-
+/// Normalise les URLs média renvoyées par l'API pour l'affichage client.
+abstract final class MediaUrl {
   static const _localHosts = {
     'localhost',
     '127.0.0.1',
@@ -11,12 +10,14 @@ class MediaUrl {
     '[::1]',
   };
 
+  /// Retourne `null` pour les valeurs vides, sinon une URL normalisée.
   static String? nullable(String? raw) {
     final value = raw?.trim();
     if (value == null || value.isEmpty) return null;
     return normalize(value);
   }
 
+  /// Convertit une URL relative/locale en URL exploitable côté client.
   static String normalize(String raw) {
     final value = raw.trim();
     if (value.isEmpty) return value;

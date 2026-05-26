@@ -5,6 +5,7 @@ import '../models/channel_message_model.dart';
 import '../models/channel_model.dart';
 import '../models/user_model.dart';
 
+/// Repository HTTP pour la gestion des canaux et groupes.
 class ChannelRepository {
   ChannelRepository(this._dio);
 

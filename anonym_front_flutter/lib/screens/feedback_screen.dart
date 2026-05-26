@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../providers/auth_controller.dart';
+import '../providers/auth_providers.dart';
 import '../services/admin_repository.dart';
 import '../theme.dart';
 import '../utils/api_error_parser.dart';
-import '../widgets/chrome/moji_back_button.dart';
-import '../widgets/modals/moji_confirm_modal.dart';
+import '../widgets/navigation/anonym_back_button.dart';
+import '../widgets/dialogs/anonym_confirm_dialog.dart';
 
+/// Écran d envoi de feedback utilisateur.
 class FeedbackScreen extends StatefulWidget {
   const FeedbackScreen({super.key, this.confirmBeforeSubmit = false});
 
@@ -35,7 +36,7 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
 
   Future<void> _onSubmit() async {
     if (!_isValid || _submitting) return;
-    final authController = context.read<AuthController>();
+    final authProvider = context.read<AuthProvider>();
     final adminRepository = context.read<AdminRepository>();
     final messenger = ScaffoldMessenger.of(context);
 
@@ -44,7 +45,7 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
       if (!mounted) return;
       if (!confirmed) return;
     }
-    final userEmail = authController.user?.email.trim() ?? '';
+    final userEmail = authProvider.user?.email.trim() ?? '';
     if (userEmail.isEmpty) {
       messenger.showSnackBar(
         const SnackBar(content: Text('Email utilisateur introuvable')),
@@ -71,7 +72,7 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
           content: Text(
             ApiErrorParser.parse(
               error,
-              fallback: 'Impossible d envoyer le feedback pour le moment',
+              fallback: 'Impossible d\'envoyer le feedback pour le moment',
             ),
           ),
         ),
@@ -85,11 +86,11 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       barrierDismissible: true,
-      builder: (dialogContext) => MojiConfirmModal(
-        type: MojiConfirmModalType.warning,
+      builder: (dialogContext) => AnonymConfirmDialog(
+        type: AnonymConfirmDialogType.warning,
         title: 'Envoyer ce signalement ?',
         description:
-            'Ton signalement va etre transmis a l equipe pour verification.',
+            'Ton signalement va être transmis à l\'équipe pour vérification.',
         confirmLabel: 'Envoyer',
         onConfirm: () => Navigator.of(dialogContext).pop(true),
         onCancel: () => Navigator.of(dialogContext).pop(false),
@@ -102,11 +103,11 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
     await showDialog<void>(
       context: context,
       barrierDismissible: true,
-      builder: (dialogContext) => MojiConfirmModal(
-        type: MojiConfirmModalType.success,
-        title: 'Feedback envoye',
+      builder: (dialogContext) => AnonymConfirmDialog(
+        type: AnonymConfirmDialogType.success,
+        title: 'Feedback envoyé',
         description:
-            'Merci pour ton retour. L equipe va le traiter rapidement.',
+            'Merci pour ton retour. L\'équipe va le traiter rapidement.',
         confirmLabel: 'Super',
         cancelLabel: 'Fermer',
         onConfirm: () => Navigator.of(dialogContext).pop(),
@@ -139,7 +140,7 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
                   const SizedBox(height: 20),
                   Row(
                     children: [
-                      const MojiBackButton(),
+                      const AnonymBackButton(),
                       const SizedBox(width: 20),
                       Text(
                         'Feedback',
@@ -151,7 +152,7 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    'Partagez vos retours pour nous aider a ameliorer l application',
+                    'Partagez vos retours pour nous aider à améliorer l\'application',
                     style: t.bodyMedium?.copyWith(
                       color: AppColors.whiteColor.withValues(alpha: 0.65),
                     ),

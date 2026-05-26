@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+/// Payload minimal de partage de profil utilisateur.
 class ProfileSharePayload {
   const ProfileSharePayload({
     required this.userId,
@@ -14,11 +15,11 @@ class ProfileSharePayload {
   final String? frameUrl;
 }
 
-class ProfileSharePayloadCodec {
-  const ProfileSharePayloadCodec._();
-
+/// Encodage/décodage d'un [ProfileSharePayload] dans un message texte.
+abstract final class ProfileSharePayloadCodec {
   static const String _prefix = 'ANONYM_PROFILE_SHARE:';
 
+  /// Encode un payload en chaîne sérialisée partageable.
   static String encode(ProfileSharePayload payload) {
     final safeUsername = payload.username.trim();
     final safeAvatarUrl = payload.avatarUrl?.trim();
@@ -34,6 +35,7 @@ class ProfileSharePayloadCodec {
     return '$_prefix$body';
   }
 
+  /// Tente de décoder une chaîne en payload de partage de profil.
   static ProfileSharePayload? tryDecode(String rawContent) {
     final normalized = rawContent.trim();
     if (!normalized.startsWith(_prefix)) return null;

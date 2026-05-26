@@ -5,6 +5,7 @@ import 'package:dio/dio.dart';
 
 import '../models/user_model.dart';
 
+/// Repository HTTP pour les opérations liées au compte utilisateur.
 class AccountRepository {
   AccountRepository(this._dio);
 

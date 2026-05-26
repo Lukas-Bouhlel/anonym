@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 
+/// Regroupe la palette de couleurs de l'application.
+///
+/// Cette classe centralise les couleurs brand et les alias sémantiques
+/// réutilisés dans les widgets et thèmes.
 class AppColors {
   const AppColors._();
 
@@ -86,6 +90,7 @@ class AppGradients {
   );
 }
 
+/// Définit la typographie globale utilisée dans l'application.
 class AppTypography {
   AppTypography._();
 
@@ -93,7 +98,7 @@ class AppTypography {
   static const String displayFontFamily = 'ClashDisplay';
   static const String accentFontFamily = 'EricaOne';
 
-  // Same scale as MojiMobile
+  // Same scale as AnonymMobile
   static const TextTheme textTheme = TextTheme(
     displayLarge: TextStyle(
       fontFamily: displayFontFamily,
@@ -211,6 +216,10 @@ class AppTypography {
   );
 }
 
+/// Expose les thèmes Material (clair/sombre) de l'application.
+///
+/// Le thème sombre repose actuellement sur le thème clair avec une
+/// luminosité `dark` pour garder une cohérence visuelle.
 class AppTheme {
   const AppTheme._();
 

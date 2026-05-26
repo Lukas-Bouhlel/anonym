@@ -1,3 +1,4 @@
+/// Constantes de routes utilisées par le routeur de l'application.
 class AppRoutes {
   const AppRoutes._();
 

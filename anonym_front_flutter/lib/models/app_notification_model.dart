@@ -1,5 +1,7 @@
+/// Types de notifications internes affichées dans l'application.
 enum AppNotificationType { newMessage, friendRequest }
 
+/// Représente une notification applicative (message, demande d'ami, etc.).
 class AppNotificationModel {
   const AppNotificationModel({
     required this.id,
@@ -23,6 +25,7 @@ class AppNotificationModel {
   final int? relatedChannelId;
   final bool isRead;
 
+  /// Retourne une copie immuable avec les champs modifiés.
   AppNotificationModel copyWith({bool? isRead}) {
     return AppNotificationModel(
       id: id,

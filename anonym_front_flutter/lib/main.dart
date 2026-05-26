@@ -4,8 +4,8 @@ import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
 
 import 'pages/app_page.dart';
-import 'providers/app_controller.dart';
-import 'providers/auth_controller.dart';
+import 'providers/app_providers.dart';
+import 'providers/auth_providers.dart';
 import 'services/account_repository.dart';
 import 'services/admin_repository.dart';
 import 'services/api_client.dart';
@@ -21,6 +21,10 @@ import 'services/push_notification_service.dart';
 import 'services/shop_repository.dart';
 import 'services/socket_service.dart';
 
+/// Point d'entrée principal de l'application Flutter.
+///
+/// Initialise les services partagés (API, repositories, socket, push),
+/// configure l'arbre de providers et démarre l'UI via [AnonymApp].
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await PushNotificationService.initializeFirebase();
@@ -63,10 +67,10 @@ Future<void> main() async {
         Provider.value(value: invoiceRepository),
         Provider.value(value: socketService),
         Provider.value(value: pushNotificationService),
-        ChangeNotifierProvider(create: (_) => AuthController(authRepository)),
-        ChangeNotifierProxyProvider<AuthController, AppController>(
-          create: (context) => AppController(
-            authController: context.read<AuthController>(),
+        ChangeNotifierProvider(create: (_) => AuthProvider(authRepository)),
+        ChangeNotifierProxyProvider<AuthProvider, AppProvider>(
+          create: (context) => AppProvider(
+            authProvider: context.read<AuthProvider>(),
             accountRepository: accountRepository,
             apiClient: apiClient,
             friendsRepository: friendsRepository,
@@ -79,10 +83,10 @@ Future<void> main() async {
             socketService: socketService,
             pushNotificationService: pushNotificationService,
           ),
-          update: (context, authController, existingController) {
+          update: (context, authProvider, existingController) {
             return existingController ??
-                AppController(
-                  authController: authController,
+                AppProvider(
+                  authProvider: authProvider,
                   accountRepository: accountRepository,
                   apiClient: apiClient,
                   friendsRepository: friendsRepository,

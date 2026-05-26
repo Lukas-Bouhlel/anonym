@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../routes/app_routes.dart';
 import '../theme.dart';
 
+/// Écran d accueil public avant authentification.
 class PublicHomeScreen extends StatelessWidget {
   const PublicHomeScreen({super.key});
 
@@ -26,7 +27,7 @@ class PublicHomeScreen extends StatelessWidget {
               ),
               const SizedBox(height: 10),
               Text(
-                '',
+                'Rejoignez notre communauté et découvrez des opportunités uniques.',
                 style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                   color: AppColors.whiteColor.withValues(alpha: 0.7),
                 ),

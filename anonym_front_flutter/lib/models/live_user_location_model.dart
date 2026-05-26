@@ -1,3 +1,4 @@
+/// Position temps réel d'un utilisateur sur la carte.
 class LiveUserLocationModel {
   const LiveUserLocationModel({
     required this.userId,
@@ -17,6 +18,7 @@ class LiveUserLocationModel {
   final double longitude;
   final DateTime? updatedAt;
 
+  /// Retourne une copie immuable avec les champs fournis.
   LiveUserLocationModel copyWith({
     int? userId,
     String? username,
@@ -37,6 +39,7 @@ class LiveUserLocationModel {
     );
   }
 
+  /// Construit une position live depuis différentes variantes de payload.
   factory LiveUserLocationModel.fromJson(Map<String, dynamic> json) {
     final rawUser = json['user'];
     final nestedUser = rawUser is Map

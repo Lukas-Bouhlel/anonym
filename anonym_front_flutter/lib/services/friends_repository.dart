@@ -3,6 +3,7 @@ import 'package:dio/dio.dart';
 import '../models/friend_model.dart';
 import '../models/user_model.dart';
 
+/// Repository HTTP pour le graphe social (amis, demandes, blocages).
 class FriendsRepository {
   FriendsRepository(this._dio);
 

@@ -3,11 +3,12 @@ import 'package:provider/provider.dart';
 
 import '../models/app_notification_model.dart';
 import '../models/user_model.dart';
-import '../providers/app_controller.dart';
+import '../providers/app_providers.dart';
 import '../screens/user_profile_screen.dart';
 import '../theme.dart';
-import '../widgets/chrome/moji_back_button.dart';
+import '../widgets/navigation/anonym_back_button.dart';
 
+/// Écran de consultation des notifications applicatives.
 class NotificationsScreen extends StatefulWidget {
   const NotificationsScreen({super.key});
 
@@ -21,14 +22,14 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      context.read<AppController>().markAllNotificationsAsRead();
+      context.read<AppProvider>().markAllNotificationsAsRead();
     });
   }
 
   @override
   Widget build(BuildContext context) {
     final t = Theme.of(context).textTheme;
-    final notifications = context.watch<AppController>().notifications;
+    final notifications = context.watch<AppProvider>().notifications;
     final grouped = _groupNotificationsByDay(notifications);
 
     return Scaffold(
@@ -41,7 +42,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
             children: [
               Row(
                 children: [
-                  const MojiBackButton(),
+                  const AnonymBackButton(),
                   const SizedBox(width: 14),
                   Text('Notifications', style: t.displayLarge),
                 ],
@@ -117,7 +118,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   }
 
   Future<void> _onNotificationTap(AppNotificationModel item) async {
-    final app = context.read<AppController>();
+    final app = context.read<AppProvider>();
     if (item.type == AppNotificationType.newMessage &&
         item.relatedChannelId != null) {
       final opened = await app.openChannelById(item.relatedChannelId!);
@@ -175,7 +176,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     Navigator.of(context).maybePop();
   }
 
-  UserModel? _findUserFromIncomingRequests(AppController app, int userId) {
+  UserModel? _findUserFromIncomingRequests(AppProvider app, int userId) {
     for (final request in app.incomingFriendRequests) {
       final details = request.friendDetails;
       if (details != null && details.id == userId) return details;

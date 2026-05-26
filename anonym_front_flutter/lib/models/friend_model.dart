@@ -1,5 +1,6 @@
 import 'user_model.dart';
 
+/// Modèle représentant une relation d'amitié (active, pending, etc.).
 class FriendModel {
   const FriendModel({
     required this.id,
@@ -15,6 +16,7 @@ class FriendModel {
   final String status;
   final UserModel? friendDetails;
 
+  /// Construit une relation d'amitié depuis une payload JSON.
   factory FriendModel.fromJson(Map<String, dynamic> json) {
     final detailsJson =
         json['FriendDetails'] ??

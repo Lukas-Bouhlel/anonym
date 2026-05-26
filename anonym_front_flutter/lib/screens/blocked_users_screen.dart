@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../providers/app_controller.dart';
+import '../providers/app_providers.dart';
 import '../theme.dart';
 import '../widgets/app_remote_image.dart';
-import '../widgets/chrome/moji_back_button.dart';
-import '../widgets/modals/moji_confirm_modal.dart';
+import '../widgets/navigation/anonym_back_button.dart';
+import '../widgets/dialogs/anonym_confirm_dialog.dart';
 import '../widgets/presence_badge.dart';
 
+/// Écran de gestion des utilisateurs bloqués.
 class BlockedUsersScreen extends StatefulWidget {
   const BlockedUsersScreen({super.key});
 
@@ -20,7 +21,7 @@ class _BlockedUsersScreenState extends State<BlockedUsersScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<AppController>().refreshBlockedUsers(silent: true);
+      context.read<AppProvider>().refreshBlockedUsers(silent: true);
     });
   }
 
@@ -32,7 +33,7 @@ class _BlockedUsersScreenState extends State<BlockedUsersScreen> {
       body: Container(
         decoration: const BoxDecoration(gradient: AppGradients.gB1BCFBTo393566),
         child: SafeArea(
-          child: Consumer<AppController>(
+          child: Consumer<AppProvider>(
             builder: (context, app, _) {
               final blocked = app.blockedUsers;
               return ListView(
@@ -40,7 +41,7 @@ class _BlockedUsersScreenState extends State<BlockedUsersScreen> {
                 children: [
                   Row(
                     children: [
-                      const MojiBackButton(),
+                      const AnonymBackButton(),
                       const SizedBox(width: 14),
                       Text(
                         'Utilisateurs bloqués',
@@ -65,7 +66,7 @@ class _BlockedUsersScreenState extends State<BlockedUsersScreen> {
                         ),
                       ),
                       child: const Text(
-                        'Aucun utilisateur bloque.',
+                        'Aucun utilisateur bloqué.',
                         style: TextStyle(
                           color: AppColors.cDBE7FE,
                           fontSize: 15,
@@ -98,17 +99,17 @@ class _BlockedUsersScreenState extends State<BlockedUsersScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       barrierDismissible: true,
-      builder: (dialogContext) => MojiConfirmModal(
-        type: MojiConfirmModalType.warning,
-        title: 'Debloquer cet utilisateur ?',
+      builder: (dialogContext) => AnonymConfirmDialog(
+        type: AnonymConfirmDialogType.warning,
+        title: 'Débloquer cet utilisateur ?',
         description: 'Il pourra de nouveau te contacter et interagir avec toi.',
-        confirmLabel: 'Debloquer',
+        confirmLabel: 'Débloquer',
         onConfirm: () => Navigator.of(dialogContext).pop(true),
         onCancel: () => Navigator.of(dialogContext).pop(false),
       ),
     );
     if (confirmed != true || !mounted) return;
-    await context.read<AppController>().unblockUser(userId);
+    await context.read<AppProvider>().unblockUser(userId);
   }
 }
 
