@@ -1,4 +1,14 @@
-const { PrivateMessage, User, Inventory, Shop, Channel, UserChannel, Friend } = require('../models');
+const {
+    PrivateMessage,
+    User,
+    Inventory,
+    Shop,
+    Channel,
+    UserChannel,
+    Friend,
+    UserPointDaily,
+    sequelize
+} = require('../models');
 const { Op } = require('sequelize');
 const { deleteUploadFiles } = require('./fileCleanup');
 const { sendPushToUsers } = require('./pushNotifications');
@@ -249,6 +259,115 @@ const hasBlockedRelationship = async (userAId, userBId) => {
     return Boolean(blockedFriendship);
 };
 
+const updateChannelReputationScore = async (channelId) => {
+    const channel = await Channel.findByPk(channelId);
+    if (!channel) return null;
+
+    if (channel.channel_type !== 'GROUP' || channel.visibility !== 'PUBLIC') {
+        if (channel.reputation_score !== 0) {
+            await channel.update({ reputation_score: 0 });
+        }
+        return 0;
+    }
+
+    const [messageCount, participantCount] = await Promise.all([
+        PrivateMessage.count({ where: { channel_id: channelId } }),
+        UserChannel.count({ where: { channel_id: channelId } })
+    ]);
+
+    const reputationScore = (messageCount * 1) + (participantCount * 2);
+    if (channel.reputation_score !== reputationScore) {
+        await channel.update({ reputation_score: reputationScore });
+    }
+    return reputationScore;
+};
+
+const createMessageWithPoints = async ({
+    senderId,
+    channelId,
+    content,
+    imageUrl
+}) => {
+    let awardedPoints = 1;
+    let appliedMultiplier = 1;
+    let updatedTotalPoints = 0;
+
+    const message = await sequelize.transaction(async (transaction) => {
+        const activeItems = await Inventory.findAll({
+            where: { user_id: senderId, active: true },
+            include: [{
+                model: Shop,
+                attributes: ['points_multiplier']
+            }],
+            transaction
+        });
+
+        if (activeItems.length > 0) {
+            appliedMultiplier = activeItems.reduce((accumulator, inventoryItem) => {
+                const multiplier = Number(inventoryItem?.Shop?.points_multiplier || 1);
+                if (!Number.isFinite(multiplier) || multiplier < 1) {
+                    return accumulator;
+                }
+
+                return accumulator * multiplier;
+            }, 1);
+        }
+
+        awardedPoints = Math.max(1, Math.round(1 * appliedMultiplier));
+
+        const createdMessage = await PrivateMessage.create({
+            sender_id: senderId,
+            content,
+            image_url: imageUrl,
+            channel_id: channelId,
+            status: 'unread',
+            createdAt: new Date()
+        }, { transaction });
+
+        const user = await User.findByPk(senderId, {
+            transaction,
+            lock: transaction.LOCK.UPDATE
+        });
+        if (!user) {
+            throw new Error('Expediteur introuvable.');
+        }
+        const nextTotalPoints = (user.total_points || 0) + awardedPoints;
+        updatedTotalPoints = nextTotalPoints;
+        user.total_points = nextTotalPoints;
+        await user.save({ transaction });
+
+        const currentDate = new Date().toISOString().slice(0, 10);
+        const [dailyStat] = await UserPointDaily.findOrCreate({
+            where: {
+                user_id: senderId,
+                stat_date: currentDate
+            },
+            defaults: {
+                user_id: senderId,
+                stat_date: currentDate,
+                messages_count: 0,
+                points_earned: 0
+            },
+            transaction
+        });
+
+        dailyStat.messages_count += 1;
+        dailyStat.points_earned += awardedPoints;
+        await dailyStat.save({ transaction });
+
+        return createdMessage;
+    });
+
+    return {
+        message,
+        points: {
+            awarded: awardedPoints,
+            multiplier: Number(appliedMultiplier.toFixed(2)),
+            total: updatedTotalPoints
+        }
+    };
+};
+
 const getUnreadMessageCount = async (channelId, userId) => {
     return await PrivateMessage.count({
         where: {
@@ -339,6 +458,15 @@ const initializeSocket = (io) => {
         socket.on('privateMessage', async ({ content, channelId, imageUrl }) => {
             try {
                 const senderId = Number(connectedUserId);
+                const normalizedContent = typeof content === 'string' ? content.trim() : '';
+                const normalizedImageUrl = typeof imageUrl === 'string' && imageUrl.trim().length > 0
+                    ? imageUrl.trim()
+                    : null;
+                if (!normalizedContent && !normalizedImageUrl) {
+                    socket.emit('messageError', { message: 'Le contenu ou une image est requis.' });
+                    return;
+                }
+
                 const channel = await Channel.findByPk(channelId);
                 if (!channel) {
                     socket.emit('messageError', { message: 'Chat introuvable.' });
@@ -401,14 +529,13 @@ const initializeSocket = (io) => {
                     }
                 }
 
-                const message = await PrivateMessage.create({
-                    sender_id: senderId,
-                    content,
-                    image_url: imageUrl,
-                    channel_id: channelId,
-                    status: 'unread',
-                    createdAt: new Date()
+                const { message } = await createMessageWithPoints({
+                    senderId,
+                    channelId,
+                    content: normalizedContent || null,
+                    imageUrl: normalizedImageUrl
                 });
+                await updateChannelReputationScore(channelId);
 
                 const sender = await User.findByPk(senderId, {
                     attributes: ['id', 'username', 'avatar', 'presence_status'],

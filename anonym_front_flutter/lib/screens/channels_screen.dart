@@ -359,6 +359,7 @@ class _ChannelsScreenState extends State<ChannelsScreen> {
                     await _openJoinPublicDirectoryScreen(parentContext, app);
                   },
                 ),
+                const SizedBox(height: 30),
               ],
             ),
           ),

@@ -498,73 +498,38 @@ class _FriendsScreenState extends State<FriendsScreen> {
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
+      useSafeArea: true,
       builder: (sheetContext) {
-        return Padding(
-          padding: const EdgeInsets.fromLTRB(8, 0, 8, 0),
-          child: Container(
-            padding: const EdgeInsets.fromLTRB(0, 10, 0, 16),
-            decoration: BoxDecoration(
-              gradient: AppGradients.gB1BCFBTo393566,
-              borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(28),
+        return _FriendSheetShell(
+          title: 'Actions amis',
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                'Choisis une action pour gerer tes relations rapidement.',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: AppColors.cFCFAFE, fontSize: 13),
               ),
-              border: Border.all(
-                color: AppColors.whiteColor.withValues(alpha: 0.2),
-                width: 1,
+              const SizedBox(height: 14),
+              _FriendActionRow(
+                icon: Icons.groups_rounded,
+                label: 'Voir mes amis',
+                onTap: () {
+                  Navigator.of(sheetContext).pop();
+                  setState(() => _mode = _FriendScreenMode.list);
+                },
               ),
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  width: 74,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: AppColors.whiteColor.withValues(alpha: 0.55),
-                    borderRadius: BorderRadius.circular(99),
-                  ),
-                ),
-                const SizedBox(height: 18),
-                Text(
-                  'Actions amis',
-                  style: TextStyle(
-                    color: AppColors.whiteColor,
-                    fontFamily: AppTypography.displayFontFamily,
-                    fontSize: 22,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Divider(
-                  height: 1,
-                  color: AppColors.whiteColor.withValues(alpha: 0.2),
-                ),
-                const SizedBox(height: 16),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 14),
-                  child: Column(
-                    children: [
-                      _ModalActionTile(
-                        title: 'Voir mes amis',
-                        onTap: () {
-                          Navigator.of(sheetContext).pop();
-                          setState(() => _mode = _FriendScreenMode.list);
-                        },
-                      ),
-                      const SizedBox(height: 5),
-                      _ModalActionTile(
-                        title: 'Ajouter un ami',
-                        onTap: () {
-                          Navigator.of(sheetContext).pop();
-                          setState(() => _mode = _FriendScreenMode.add);
-                          unawaited(app.refreshUsers(silent: true));
-                        },
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
+              const SizedBox(height: 8),
+              _FriendActionRow(
+                icon: Icons.person_add_alt_1_rounded,
+                label: 'Ajouter un ami',
+                onTap: () {
+                  Navigator.of(sheetContext).pop();
+                  setState(() => _mode = _FriendScreenMode.add);
+                  unawaited(app.refreshUsers(silent: true));
+                },
+              ),
+            ],
           ),
         );
       },
@@ -985,45 +950,99 @@ class _AddFriendInfoCard extends StatelessWidget {
   }
 }
 
-class _ModalActionTile extends StatelessWidget {
-  const _ModalActionTile({required this.title, required this.onTap});
+class _FriendSheetShell extends StatelessWidget {
+  const _FriendSheetShell({required this.title, required this.child});
 
   final String title;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final mediaQuery = MediaQuery.of(context);
+    return Padding(
+      padding: EdgeInsets.only(bottom: mediaQuery.viewInsets.bottom),
+      child: Container(
+        padding: EdgeInsets.fromLTRB(
+          16,
+          10,
+          16,
+          16 + mediaQuery.padding.bottom,
+        ),
+        decoration: BoxDecoration(
+          gradient: AppGradients.gB1BCFBTo393566,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          border: Border.all(color: AppColors.cFCFAFE.withValues(alpha: 0.28)),
+        ),
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 44,
+                height: 4,
+                margin: const EdgeInsets.only(bottom: 10),
+                decoration: BoxDecoration(
+                  color: AppColors.cFCFAFE.withValues(alpha: 0.45),
+                  borderRadius: BorderRadius.circular(99),
+                ),
+              ),
+              Text(
+                title,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontFamily: AppTypography.displayFontFamily,
+                  color: AppColors.cFCFAFE,
+                  fontSize: 22,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 12),
+              child,
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _FriendActionRow extends StatelessWidget {
+  const _FriendActionRow({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String label;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(18),
+      borderRadius: BorderRadius.circular(12),
       child: Ink(
-        height: 68,
-        padding: const EdgeInsets.symmetric(horizontal: 18),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 11),
         decoration: BoxDecoration(
-          color: AppColors.whiteColor.withValues(alpha: 0.03),
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(
-            color: AppColors.whiteColor.withValues(alpha: 0.2),
-            width: 1,
-          ),
+          color: AppColors.cFCFAFE.withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: AppColors.cFCFAFE.withValues(alpha: 0.18)),
         ),
         child: Row(
           children: [
+            Icon(icon, color: AppColors.cFCFAFE, size: 20),
+            const SizedBox(width: 10),
             Expanded(
               child: Text(
-                title,
-                style: TextStyle(
-                  color: AppColors.whiteColor,
-                  fontSize: 31 / 1.6,
-                  fontWeight: FontWeight.w500,
+                label,
+                style: const TextStyle(
+                  color: AppColors.cFCFAFE,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
             ),
-            Icon(
-              Icons.chevron_right_rounded,
-              color: AppColors.whiteColor,
-              size: 28,
-            ),
+            const Icon(Icons.chevron_right, color: AppColors.cDBE7FE),
           ],
         ),
       ),
