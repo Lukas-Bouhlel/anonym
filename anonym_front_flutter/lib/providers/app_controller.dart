@@ -154,8 +154,14 @@ class AppController extends ChangeNotifier with WidgetsBindingObserver {
   List<InventoryItemModel> get inventoryItems => _inventoryItems;
   List<InvoiceModel> get invoices => _invoices;
   List<UserModel> get allUsers => _allUsers;
-  List<LiveUserLocationModel> get liveUserLocations =>
-      _liveLocationsByUserId.values.toList(growable: false);
+  List<LiveUserLocationModel> get liveUserLocations {
+    final allowedIds = _visibleLocationUserIds;
+    if (allowedIds.isEmpty) return const [];
+    return _liveLocationsByUserId.values
+        .where((location) => allowedIds.contains(location.userId))
+        .toList(growable: false);
+  }
+
   int get realtimeStatsVersion => _realtimeStatsVersion;
 
   UserModel? userById(int userId) {
@@ -265,6 +271,8 @@ class AppController extends ChangeNotifier with WidgetsBindingObserver {
         refreshInventory(silent: true),
         refreshInvoices(silent: true),
       ]);
+      _pruneHiddenLiveLocations();
+      _socketService.requestLiveLocationsSnapshot();
     } catch (e) {
       _errorMessage = ApiErrorParser.parse(
         e,
@@ -1939,6 +1947,11 @@ class AppController extends ChangeNotifier with WidgetsBindingObserver {
       refreshBlockedUsers(silent: true),
       refreshUsers(silent: true),
     ]);
+    final removedHiddenLocations = _pruneHiddenLiveLocations();
+    _socketService.requestLiveLocationsSnapshot();
+    if (removedHiddenLocations) {
+      notifyListeners();
+    }
   }
 
   void _onMessageErrorFromSocket(String message) {
@@ -2003,6 +2016,7 @@ class AppController extends ChangeNotifier with WidgetsBindingObserver {
         Map<String, dynamic>.from(entry),
       );
       if (!_isLocationPayloadValid(model)) continue;
+      if (!_shouldDisplayLocationForUser(model.userId)) continue;
       next[model.userId] = model;
     }
     if (meId != null && _liveLocationsByUserId.containsKey(meId)) {
@@ -2017,6 +2031,7 @@ class AppController extends ChangeNotifier with WidgetsBindingObserver {
   void _onLocationUpdateFromSocket(Map<String, dynamic> payload) {
     final model = LiveUserLocationModel.fromJson(payload);
     if (!_isLocationPayloadValid(model)) return;
+    if (!_shouldDisplayLocationForUser(model.userId)) return;
     _liveLocationsByUserId[model.userId] = model;
     notifyListeners();
   }
@@ -2239,6 +2254,38 @@ class AppController extends ChangeNotifier with WidgetsBindingObserver {
     if (value.userId <= 0) return false;
     if (value.latitude < -90 || value.latitude > 90) return false;
     if (value.longitude < -180 || value.longitude > 180) return false;
+    return true;
+  }
+
+  Set<int> get _visibleLocationUserIds {
+    final visible = <int>{};
+    final meId = _authController.user?.id;
+    if (meId != null && meId > 0) {
+      visible.add(meId);
+    }
+    for (final friend in _friends) {
+      if (!_isActiveFriendStatus(friend.status)) continue;
+      if (friend.friendId <= 0) continue;
+      visible.add(friend.friendId);
+    }
+    return visible;
+  }
+
+  bool _shouldDisplayLocationForUser(int userId) {
+    if (userId <= 0) return false;
+    return _visibleLocationUserIds.contains(userId);
+  }
+
+  bool _pruneHiddenLiveLocations() {
+    if (_liveLocationsByUserId.isEmpty) return false;
+    final visibleIds = _visibleLocationUserIds;
+    final removedIds = _liveLocationsByUserId.keys
+        .where((userId) => !visibleIds.contains(userId))
+        .toList(growable: false);
+    if (removedIds.isEmpty) return false;
+    for (final userId in removedIds) {
+      _liveLocationsByUserId.remove(userId);
+    }
     return true;
   }
 

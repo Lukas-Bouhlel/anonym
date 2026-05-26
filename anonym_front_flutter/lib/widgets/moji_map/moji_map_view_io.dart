@@ -9,7 +9,7 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_map/flutter_map.dart' as fm;
-import 'package:flutter_svg/flutter_svg.dart';
+import 'package:flutter_svg/flutter_svg.dart' as svg;
 import 'package:latlong2/latlong.dart' as ll;
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart' as mb;
 import 'package:webview_windows/webview_windows.dart' as wv;
@@ -263,8 +263,8 @@ class _NativeMapboxMapState extends State<_NativeMapboxMap> {
               ),
               image: built.iconBytes,
               iconAnchor: mb.IconAnchor.BOTTOM,
-              iconSize: 1.0,
-              textField: built.label,
+              iconSize: 1.50,
+              textField: built.label ?? '',
               textAnchor: mb.TextAnchor.TOP,
               textJustify: mb.TextJustify.CENTER,
               textOffset: [0, 1.05],
@@ -292,20 +292,35 @@ class _NativeMapboxMapState extends State<_NativeMapboxMap> {
     MojiMapMarkerData marker,
   ) async {
     if (marker.members.isEmpty) return null;
+    final selfUserId = widget.selfUserId;
+    final includesSelf =
+        selfUserId != null &&
+        marker.members.any((member) => member.userId == selfUserId);
 
     if (marker.members.length == 1) {
       final member = marker.members.first;
-      final cacheKey = 'single:${member.userId}:${member.avatarUrl ?? ''}';
+      final isSelfMarker = includesSelf;
+      final cacheKey = [
+        'single',
+        member.userId,
+        member.avatarUrl ?? '',
+        isSelfMarker ? 'self' : 'other',
+        marker.label,
+      ].join(':');
       final bytes = await _getOrCreateMarkerBytes(
         cacheKey: cacheKey,
-        builder: () => _drawSingleAvatarMarker(member),
+        builder: () => _drawSingleAvatarMarker(
+          member,
+          isSelfMarker: isSelfMarker,
+          labelText: marker.label,
+        ),
       );
 
       return _BuiltNativeMarker(
         latitude: marker.latitude,
         longitude: marker.longitude,
         iconBytes: bytes,
-        label: marker.label,
+        label: null,
         memberCount: marker.members.length,
       );
     }
@@ -314,17 +329,19 @@ class _NativeMapboxMapState extends State<_NativeMapboxMap> {
     final avatarsKey = displayMembers
         .map((member) => '${member.userId}:${member.avatarUrl ?? ''}')
         .join('|');
-    final cacheKey = 'cluster:${marker.members.length}:$avatarsKey';
+    final cacheKey =
+        'cluster:${marker.members.length}:$avatarsKey:${marker.label}';
     final bytes = await _getOrCreateMarkerBytes(
       cacheKey: cacheKey,
-      builder: () => _drawClusterAvatarMarker(displayMembers),
+      builder: () =>
+          _drawClusterAvatarMarker(displayMembers, labelText: marker.label),
     );
 
     return _BuiltNativeMarker(
       latitude: marker.latitude,
       longitude: marker.longitude,
       iconBytes: bytes,
-      label: marker.label,
+      label: null,
       memberCount: marker.members.length,
     );
   }
@@ -333,18 +350,33 @@ class _NativeMapboxMapState extends State<_NativeMapboxMap> {
     MojiMapMarkerData marker,
   ) async {
     if (marker.members.isEmpty) return null;
+    final selfUserId = widget.selfUserId;
+    final isSelfMarker =
+        marker.members.length == 1 &&
+        selfUserId != null &&
+        marker.members.first.userId == selfUserId;
     final member = marker.members.first;
-    final cacheKey = 'fallback:${member.userId}:${member.initials}';
+    final cacheKey = [
+      'fallback',
+      member.userId,
+      member.initials,
+      isSelfMarker ? 'self' : 'other',
+      marker.label,
+    ].join(':');
     final bytes = await _getOrCreateMarkerBytes(
       cacheKey: cacheKey,
-      builder: () => _drawFallbackDiscMarker(member),
+      builder: () => _drawFallbackDiscMarker(
+        member,
+        isSelfMarker: isSelfMarker,
+        labelText: marker.label,
+      ),
     );
 
     return _BuiltNativeMarker(
       latitude: marker.latitude,
       longitude: marker.longitude,
       iconBytes: bytes,
-      label: marker.label,
+      label: null,
       memberCount: marker.members.length,
     );
   }
@@ -360,10 +392,36 @@ class _NativeMapboxMapState extends State<_NativeMapboxMap> {
     return created;
   }
 
-  Future<Uint8List> _drawSingleAvatarMarker(MojiMapMarkerMember member) async {
-    const canvasSize = ui.Size(78, 78);
-    const avatarRadius = 28.0;
-    final avatarCenter = Offset(canvasSize.width / 2, canvasSize.height / 2);
+  Future<Uint8List> _drawSingleAvatarMarker(
+    MojiMapMarkerMember member, {
+    required bool isSelfMarker,
+    required String labelText,
+  }) async {
+    final showLabel = labelText.trim().isNotEmpty;
+    final labelPainter = showLabel ? _buildMarkerLabelPainter(labelText) : null;
+    final labelVerticalPadding = showLabel ? 5.0 : 0.0;
+    final labelHorizontalPadding = showLabel ? 14.0 : 0.0;
+    final labelHeight = labelPainter == null
+        ? 0.0
+        : labelPainter.height + (labelVerticalPadding * 2);
+    final labelWidth = labelPainter == null
+        ? 0.0
+        : labelPainter.width + (labelHorizontalPadding * 2);
+
+    final avatarRadius = isSelfMarker ? 46.0 : 41.0;
+    final avatarDiameter = avatarRadius * 2;
+    final markerWidth = showLabel
+        ? max(avatarDiameter + 24, labelWidth + 18)
+        : avatarDiameter + 28;
+    final markerHeight = showLabel
+        ? labelHeight + avatarDiameter + 34
+        : avatarDiameter + 28;
+
+    final canvasSize = ui.Size(markerWidth, markerHeight);
+    final avatarCenter = Offset(
+      canvasSize.width / 2,
+      avatarRadius + (showLabel ? 12 : 14),
+    );
     final avatarImage = await _resolveAvatarImage(member.avatarUrl);
 
     final recorder = ui.PictureRecorder();
@@ -371,9 +429,9 @@ class _NativeMapboxMapState extends State<_NativeMapboxMap> {
 
     final shadowPaint = Paint()
       ..color = const Color(0x55292929)
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 7);
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8);
     canvas.drawCircle(
-      avatarCenter + const Offset(0, 3),
+      avatarCenter + const Offset(0, 4),
       avatarRadius,
       shadowPaint,
     );
@@ -389,9 +447,25 @@ class _NativeMapboxMapState extends State<_NativeMapboxMap> {
 
     final outlinePaint = Paint()
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 3
+      ..strokeWidth = 2.6
       ..color = Colors.white;
     canvas.drawCircle(avatarCenter, avatarRadius, outlinePaint);
+
+    if (showLabel && labelPainter != null) {
+      final labelRect = Rect.fromCenter(
+        center: Offset(
+          canvasSize.width / 2,
+          avatarCenter.dy + avatarRadius + 8 + (labelHeight / 2),
+        ),
+        width: labelWidth,
+        height: labelHeight,
+      );
+      _drawMarkerLabelPill(
+        canvas: canvas,
+        rect: labelRect,
+        painter: labelPainter,
+      );
+    }
 
     final picture = recorder.endRecording();
     final image = await picture.toImage(
@@ -405,18 +479,40 @@ class _NativeMapboxMapState extends State<_NativeMapboxMap> {
   }
 
   Future<Uint8List> _drawClusterAvatarMarker(
-    List<MojiMapMarkerMember> members,
-  ) async {
-    const avatarRadius = 24.0;
-    const overlap = 18.0;
-    final width = (avatarRadius * 2) + (members.length - 1) * overlap + 14;
-    final height = (avatarRadius * 2) + 14;
+    List<MojiMapMarkerMember> members, {
+    required String labelText,
+  }) async {
+    final showLabel = labelText.trim().isNotEmpty;
+    final labelPainter = showLabel ? _buildMarkerLabelPainter(labelText) : null;
+    final labelVerticalPadding = showLabel ? 5.0 : 0.0;
+    final labelHorizontalPadding = showLabel ? 14.0 : 0.0;
+    final labelHeight = labelPainter == null
+        ? 0.0
+        : labelPainter.height + (labelVerticalPadding * 2);
+    final labelWidth = labelPainter == null
+        ? 0.0
+        : labelPainter.width + (labelHorizontalPadding * 2);
+
+    const avatarRadius = 36.0;
+    const overlap = 28.0;
+    const avatarsPadding = 9.0;
+    final avatarsWidth =
+        (avatarRadius * 2) +
+        (members.length - 1) * overlap +
+        (avatarsPadding * 2);
+    final avatarsHeight = (avatarRadius * 2) + (avatarsPadding * 2);
+    final width = showLabel ? max(avatarsWidth, labelWidth + 18) : avatarsWidth;
+    final height = showLabel ? avatarsHeight + labelHeight + 18 : avatarsHeight;
     final canvasSize = ui.Size(width, height);
 
     final recorder = ui.PictureRecorder();
     final canvas = Canvas(recorder);
-    final startX = avatarRadius + 7;
-    final centerY = avatarRadius + 7;
+    final avatarsContentWidth =
+        (avatarRadius * 2) + (members.length - 1) * overlap;
+    final startX =
+        ((canvasSize.width - avatarsContentWidth) / 2) + avatarRadius;
+    const avatarsTop = 0.0;
+    final centerY = avatarsTop + avatarRadius + avatarsPadding;
 
     for (var i = 0; i < members.length; i++) {
       final member = members[i];
@@ -425,8 +521,8 @@ class _NativeMapboxMapState extends State<_NativeMapboxMap> {
 
       final shadowPaint = Paint()
         ..color = const Color(0x55292929)
-        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6);
-      canvas.drawCircle(center + const Offset(0, 2), avatarRadius, shadowPaint);
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 7);
+      canvas.drawCircle(center + const Offset(0, 3), avatarRadius, shadowPaint);
 
       _drawAvatarCircle(
         canvas: canvas,
@@ -444,6 +540,22 @@ class _NativeMapboxMapState extends State<_NativeMapboxMap> {
       canvas.drawCircle(center, avatarRadius, outlinePaint);
     }
 
+    if (showLabel && labelPainter != null) {
+      final labelRect = Rect.fromCenter(
+        center: Offset(
+          canvasSize.width / 2,
+          avatarsHeight + 8 + (labelHeight / 2),
+        ),
+        width: labelWidth,
+        height: labelHeight,
+      );
+      _drawMarkerLabelPill(
+        canvas: canvas,
+        rect: labelRect,
+        painter: labelPainter,
+      );
+    }
+
     final picture = recorder.endRecording();
     final image = await picture.toImage(
       canvasSize.width.toInt(),
@@ -455,33 +567,71 @@ class _NativeMapboxMapState extends State<_NativeMapboxMap> {
     return byteData!.buffer.asUint8List();
   }
 
-  Future<Uint8List> _drawFallbackDiscMarker(MojiMapMarkerMember member) async {
-    const canvasSize = ui.Size(72, 72);
-    const radius = 25.0;
-    final center = Offset(canvasSize.width / 2, canvasSize.height / 2);
+  Future<Uint8List> _drawFallbackDiscMarker(
+    MojiMapMarkerMember member, {
+    required bool isSelfMarker,
+    required String labelText,
+  }) async {
+    final showLabel = labelText.trim().isNotEmpty;
+    final labelPainter = showLabel ? _buildMarkerLabelPainter(labelText) : null;
+    final labelVerticalPadding = showLabel ? 5.0 : 0.0;
+    final labelHorizontalPadding = showLabel ? 14.0 : 0.0;
+    final labelHeight = labelPainter == null
+        ? 0.0
+        : labelPainter.height + (labelVerticalPadding * 2);
+    final labelWidth = labelPainter == null
+        ? 0.0
+        : labelPainter.width + (labelHorizontalPadding * 2);
+
+    final radius = isSelfMarker ? 43.0 : 39.0;
+    final diameter = radius * 2;
+    final markerWidth = showLabel
+        ? max(diameter + 24, labelWidth + 18)
+        : diameter + 28;
+    final markerHeight = showLabel
+        ? labelHeight + diameter + 34
+        : diameter + 28;
+    final canvasSize = ui.Size(markerWidth, markerHeight);
+    final center = Offset(canvasSize.width / 2, radius + (showLabel ? 12 : 14));
 
     final recorder = ui.PictureRecorder();
     final canvas = Canvas(recorder);
 
     final shadowPaint = Paint()
       ..color = const Color(0x55292929)
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6);
-    canvas.drawCircle(center + const Offset(0, 2), radius, shadowPaint);
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 7);
+    canvas.drawCircle(center + const Offset(0, 3), radius, shadowPaint);
 
     canvas.drawCircle(center, radius, Paint()..color = member.fallbackColor);
     _drawCenteredText(
       canvas: canvas,
       text: member.initials,
       center: center,
-      fontSize: 18,
+      fontSize: isSelfMarker ? 30 : 27,
       color: Colors.white,
     );
 
     final outlinePaint = Paint()
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 3
+      ..strokeWidth = 2.6
       ..color = Colors.white;
     canvas.drawCircle(center, radius, outlinePaint);
+
+    if (showLabel && labelPainter != null) {
+      final labelRect = Rect.fromCenter(
+        center: Offset(
+          canvasSize.width / 2,
+          center.dy + radius + 8 + (labelHeight / 2),
+        ),
+        width: labelWidth,
+        height: labelHeight,
+      );
+      _drawMarkerLabelPill(
+        canvas: canvas,
+        rect: labelRect,
+        painter: labelPainter,
+      );
+    }
 
     final picture = recorder.endRecording();
     final image = await picture.toImage(
@@ -555,6 +705,44 @@ class _NativeMapboxMapState extends State<_NativeMapboxMap> {
     );
   }
 
+  TextPainter _buildMarkerLabelPainter(String text) {
+    final normalized = text.trim().isEmpty ? 'Moi' : text.trim();
+    return TextPainter(
+      text: TextSpan(
+        text: normalized,
+        style: const TextStyle(
+          color: AppColors.whiteColor,
+          fontSize: 25.0,
+          fontWeight: FontWeight.w700,
+          letterSpacing: 0,
+        ),
+      ),
+      textDirection: TextDirection.ltr,
+      maxLines: 1,
+      ellipsis: '...',
+    )..layout(maxWidth: 156);
+  }
+
+  void _drawMarkerLabelPill({
+    required Canvas canvas,
+    required Rect rect,
+    required TextPainter painter,
+  }) {
+    const radius = Radius.circular(8);
+    final labelRRect = RRect.fromRectAndRadius(rect, radius);
+    canvas.drawRRect(
+      labelRRect,
+      Paint()..color = AppColors.textPrimary.withValues(alpha: 0.80),
+    );
+    painter.paint(
+      canvas,
+      Offset(
+        rect.left + ((rect.width - painter.width) / 2),
+        rect.top + ((rect.height - painter.height) / 2),
+      ),
+    );
+  }
+
   Future<ui.Image?> _resolveAvatarImage(String? avatarUrl) async {
     final normalized = avatarUrl?.trim();
     if (normalized == null || normalized.isEmpty) return null;
@@ -610,7 +798,10 @@ class _NativeMapboxMapState extends State<_NativeMapboxMap> {
   }
 
   Future<ui.Image?> _decodeSvgImage(Uint8List bytes) async {
-    final pictureInfo = await vg.loadPicture(SvgBytesLoader(bytes), null);
+    final pictureInfo = await svg.vg.loadPicture(
+      svg.SvgBytesLoader(bytes),
+      null,
+    );
     try {
       return pictureInfo.picture.toImage(128, 128);
     } finally {
@@ -631,7 +822,7 @@ class _BuiltNativeMarker {
   final double latitude;
   final double longitude;
   final Uint8List iconBytes;
-  final String label;
+  final String? label;
   final int memberCount;
 }
 
@@ -835,8 +1026,8 @@ class _LeafletMapFallbackState extends State<_LeafletMapFallback> {
               fm.Marker(
                 key: ValueKey(marker.key),
                 point: ll.LatLng(marker.latitude, marker.longitude),
-                width: 190,
-                height: 100,
+                width: 300,
+                height: 180,
                 alignment: Alignment.center,
                 rotate: true,
                 child: _LeafletMarker(marker: marker),
@@ -866,8 +1057,8 @@ class _LeafletMarker extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final displayMembers = marker.members.take(4).toList(growable: false);
-    final avatarSize = marker.members.length == 1 ? 58.0 : 48.0;
-    final overlap = marker.members.length == 1 ? 0.0 : 18.0;
+    final avatarSize = marker.members.length == 1 ? 92.0 : 76.0;
+    final overlap = marker.members.length == 1 ? 0.0 : 29.0;
     final stackWidth = avatarSize + (displayMembers.length - 1) * overlap;
 
     return IgnorePointer(
@@ -876,7 +1067,7 @@ class _LeafletMarker extends StatelessWidget {
         children: [
           SizedBox(
             width: max(stackWidth, avatarSize),
-            height: avatarSize + 8,
+            height: avatarSize + 10,
             child: Stack(
               clipBehavior: Clip.none,
               children: [
@@ -891,8 +1082,8 @@ class _LeafletMarker extends StatelessWidget {
                   ),
                 if (marker.members.length > displayMembers.length)
                   Positioned(
-                    right: -8,
-                    top: -6,
+                    right: -10,
+                    top: -8,
                     child: _ClusterCountBadge(
                       count: marker.members.length - displayMembers.length,
                     ),
@@ -904,21 +1095,21 @@ class _LeafletMarker extends StatelessWidget {
           DecoratedBox(
             decoration: BoxDecoration(
               color: AppColors.c292929.withValues(alpha: 0.66),
-              borderRadius: BorderRadius.circular(999),
+              borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: AppColors.cFCFAFE.withValues(alpha: 0.28),
+                color: AppColors.whiteColor.withValues(alpha: 0.28),
               ),
             ),
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
               child: Text(
                 marker.label,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 textAlign: TextAlign.center,
                 style: const TextStyle(
-                  color: AppColors.cFCFAFE,
-                  fontSize: 12.5,
+                  color: AppColors.whiteColor,
+                  fontSize: 25.0,
                   fontWeight: FontWeight.w700,
                   letterSpacing: 0,
                 ),
@@ -955,16 +1146,16 @@ class _FlutterAvatarDisc extends StatelessWidget {
         height: size,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          border: Border.all(color: AppColors.cFCFAFE, width: 3),
+          border: Border.all(color: AppColors.cFCFAFE, width: 2.2),
         ),
         child: ClipOval(
           child: member.avatarUrl == null
-              ? _AvatarFallback(member: member)
+              ? _AvatarFallback(member: member, size: size)
               : Image.network(
                   member.avatarUrl!,
                   fit: BoxFit.cover,
                   errorBuilder: (context, error, stackTrace) {
-                    return _AvatarFallback(member: member);
+                    return _AvatarFallback(member: member, size: size);
                   },
                 ),
         ),
@@ -974,9 +1165,10 @@ class _FlutterAvatarDisc extends StatelessWidget {
 }
 
 class _AvatarFallback extends StatelessWidget {
-  const _AvatarFallback({required this.member});
+  const _AvatarFallback({required this.member, required this.size});
 
   final MojiMapMarkerMember member;
+  final double size;
 
   @override
   Widget build(BuildContext context) {
@@ -985,9 +1177,9 @@ class _AvatarFallback extends StatelessWidget {
       child: Center(
         child: Text(
           member.initials,
-          style: const TextStyle(
+          style: TextStyle(
             color: AppColors.cFCFAFE,
-            fontSize: 22,
+            fontSize: max(18, size * 0.34),
             fontWeight: FontWeight.w800,
             letterSpacing: 0,
           ),
@@ -1011,14 +1203,14 @@ class _ClusterCountBadge extends StatelessWidget {
         border: Border.all(color: AppColors.cFCFAFE, width: 2),
       ),
       child: SizedBox(
-        width: 24,
-        height: 24,
+        width: 30,
+        height: 30,
         child: Center(
           child: Text(
             '+$count',
             style: const TextStyle(
               color: AppColors.cFCFAFE,
-              fontSize: 10,
+              fontSize: 11.5,
               fontWeight: FontWeight.w800,
               letterSpacing: 0,
             ),
@@ -1112,7 +1304,7 @@ String _windowsMapHtml(String accessToken) {
 
     .moji-map-avatar {
       align-items: center;
-      border: 3px solid #FCFAFE;
+      border: 2.2px solid #FCFAFE;
       border-radius: 999px;
       box-shadow: 0 5px 12px rgba(41, 41, 41, 0.36);
       color: #FCFAFE;
@@ -1154,14 +1346,14 @@ String _windowsMapHtml(String accessToken) {
     .moji-map-label {
       background: rgba(41, 41, 41, 0.66);
       border: 1px solid rgba(252, 250, 254, 0.28);
-      border-radius: 999px;
+      border-radius: 12px;
       color: #FCFAFE;
       font: 700 12.5px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       letter-spacing: 0;
       margin-top: 2px;
       max-width: 170px;
       overflow: hidden;
-      padding: 4px 9px;
+      padding: 4px 12px;
       text-align: center;
       text-overflow: ellipsis;
       white-space: nowrap;
@@ -1386,10 +1578,10 @@ String _windowsMapHtml(String accessToken) {
       label.style.pointerEvents = "none";
       label.style.background = "rgba(41, 41, 41, 0.66)";
       label.style.border = "1px solid rgba(252, 250, 254, 0.28)";
-      label.style.borderRadius = "999px";
+      label.style.borderRadius = "12px";
       label.style.color = "#FCFAFE";
       label.style.font = "700 12px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
-      label.style.padding = "4px 9px";
+      label.style.padding = "4px 12px";
       label.style.whiteSpace = "nowrap";
       return label;
     }

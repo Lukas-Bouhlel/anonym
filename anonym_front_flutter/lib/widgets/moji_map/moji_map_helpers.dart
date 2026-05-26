@@ -133,7 +133,7 @@ String _buildClusterLabel(
   int? selfUserId,
 ) {
   final names = members
-      .map((member) => member.userId == selfUserId ? 'moi' : member.username)
+      .map((member) => member.userId == selfUserId ? 'Moi' : member.username)
       .toList(growable: false);
 
   if (names.length == 1) return names.first;

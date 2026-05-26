@@ -4,6 +4,7 @@ const { deleteUploadFiles } = require('./fileCleanup');
 const { sendPushToUsers } = require('./pushNotifications');
 let hasAllowNonFriendDmsColumnCache = null;
 const activePresenceConnections = new Map();
+const liveLocationsByUserId = new Map();
 
 const incrementPresenceConnections = (userId) => {
     const key = String(userId);
@@ -20,6 +21,204 @@ const decrementPresenceConnections = (userId) => {
     }
     activePresenceConnections.set(key, current - 1);
     return current - 1;
+};
+
+const toInt = (value) => {
+    if (typeof value === 'number' && Number.isFinite(value)) {
+        return Math.trunc(value);
+    }
+    if (typeof value === 'string') {
+        const parsed = parseInt(value, 10);
+        return Number.isFinite(parsed) ? parsed : 0;
+    }
+    return 0;
+};
+
+const toFiniteNumber = (value) => {
+    if (typeof value === 'number') {
+        return Number.isFinite(value) ? value : NaN;
+    }
+    if (typeof value === 'string' && value.trim().length > 0) {
+        const parsed = Number.parseFloat(value);
+        return Number.isFinite(parsed) ? parsed : NaN;
+    }
+    return NaN;
+};
+
+const normalizeAvatar = (value) => {
+    if (typeof value !== 'string') return null;
+    const trimmed = value.trim();
+    return trimmed.length > 0 ? trimmed : null;
+};
+
+const normalizeUsername = (value) => {
+    if (typeof value !== 'string') return '';
+    return value.trim();
+};
+
+const normalizeLocationPayload = (rawPayload, fallback = {}) => {
+    const source = rawPayload && typeof rawPayload === 'object'
+        ? rawPayload
+        : {};
+    const fallbackSource = fallback && typeof fallback === 'object'
+        ? fallback
+        : {};
+
+    const userId = toInt(source.userId ?? source.user_id ?? source.id ?? fallbackSource.userId);
+    if (userId <= 0) return null;
+
+    const latitude = toFiniteNumber(
+        source.lat ?? source.latitude ?? source.y ?? source.position?.lat
+    );
+    const longitude = toFiniteNumber(
+        source.lng ?? source.lon ?? source.longitude ?? source.x ?? source.position?.lng ?? source.position?.lon
+    );
+
+    if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+        return null;
+    }
+    if (latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180) {
+        return null;
+    }
+
+    const username = normalizeUsername(
+        source.username ?? source.pseudo ?? fallbackSource.username
+    ) || 'Utilisateur';
+    const avatar = normalizeAvatar(source.avatar ?? fallbackSource.avatar);
+
+    const updatedAtRaw = source.updatedAt ?? source.updated_at ?? source.timestamp;
+    const parsedUpdatedAt = (() => {
+        if (typeof updatedAtRaw === 'string' && updatedAtRaw.trim().length > 0) {
+            const parsed = new Date(updatedAtRaw);
+            return Number.isNaN(parsed.getTime()) ? null : parsed.toISOString();
+        }
+        if (typeof updatedAtRaw === 'number' && Number.isFinite(updatedAtRaw)) {
+            const parsed = new Date(updatedAtRaw);
+            return Number.isNaN(parsed.getTime()) ? null : parsed.toISOString();
+        }
+        return null;
+    })();
+
+    const accuracyRaw = toFiniteNumber(source.accuracy);
+
+    return {
+        userId,
+        username,
+        avatar,
+        lat: latitude,
+        lng: longitude,
+        accuracy: Number.isFinite(accuracyRaw) ? accuracyRaw : null,
+        updatedAt: parsedUpdatedAt || new Date().toISOString()
+    };
+};
+
+const getActiveFriendIds = async (userId) => {
+    const normalizedUserId = toInt(userId);
+    if (normalizedUserId <= 0) return [];
+
+    const rows = await Friend.findAll({
+        where: {
+            status: 'ACTIVE',
+            [Op.or]: [
+                { user_id: normalizedUserId },
+                { friend_id: normalizedUserId }
+            ]
+        },
+        attributes: ['user_id', 'friend_id'],
+        raw: true
+    });
+
+    const ids = new Set();
+    for (const row of rows) {
+        const left = toInt(row.user_id);
+        const right = toInt(row.friend_id);
+        if (left === normalizedUserId && right > 0) {
+            ids.add(right);
+            continue;
+        }
+        if (right === normalizedUserId && left > 0) {
+            ids.add(left);
+        }
+    }
+
+    return [...ids];
+};
+
+const getLocationAudienceIds = async (userId, { includeSelf = true } = {}) => {
+    const normalizedUserId = toInt(userId);
+    if (normalizedUserId <= 0) return [];
+
+    const audience = new Set();
+    if (includeSelf) audience.add(normalizedUserId);
+
+    const friendIds = await getActiveFriendIds(normalizedUserId);
+    for (const friendId of friendIds) {
+        if (friendId > 0) audience.add(friendId);
+    }
+
+    return [...audience];
+};
+
+const buildLocationSnapshotForViewer = async (viewerUserId) => {
+    const allowedIds = await getLocationAudienceIds(viewerUserId, {
+        includeSelf: true
+    });
+
+    const snapshot = [];
+    for (const allowedUserId of allowedIds) {
+        const location = liveLocationsByUserId.get(allowedUserId);
+        if (!location) continue;
+        snapshot.push(location);
+    }
+    return snapshot;
+};
+
+const emitLocationSnapshotToUser = async (socket, viewerUserId) => {
+    const normalizedViewerId = toInt(viewerUserId);
+    if (!socket || normalizedViewerId <= 0) return;
+
+    try {
+        const snapshot = await buildLocationSnapshotForViewer(normalizedViewerId);
+        socket.emit('location:snapshot', snapshot);
+    } catch (error) {
+        console.error('[SOCKET][location] snapshot failed:', error.message);
+    }
+};
+
+const emitLocationUpdateToAudience = async (io, sourceUserId) => {
+    const normalizedSourceId = toInt(sourceUserId);
+    if (normalizedSourceId <= 0) return;
+    const payload = liveLocationsByUserId.get(normalizedSourceId);
+    if (!payload) return;
+
+    try {
+        const audienceIds = await getLocationAudienceIds(normalizedSourceId, {
+            includeSelf: true
+        });
+        for (const targetUserId of audienceIds) {
+            io.to(`user:${targetUserId}`).emit('location:update', payload);
+        }
+    } catch (error) {
+        console.error('[SOCKET][location] update emit failed:', error.message);
+    }
+};
+
+const emitLocationRemoveToAudience = async (io, sourceUserId) => {
+    const normalizedSourceId = toInt(sourceUserId);
+    if (normalizedSourceId <= 0) return;
+
+    try {
+        const audienceIds = await getLocationAudienceIds(normalizedSourceId, {
+            includeSelf: true
+        });
+        for (const targetUserId of audienceIds) {
+            io.to(`user:${targetUserId}`).emit('location:remove', {
+                userId: normalizedSourceId
+            });
+        }
+    } catch (error) {
+        console.error('[SOCKET][location] remove emit failed:', error.message);
+    }
 };
 
 const hasAllowNonFriendDmsColumn = async () => {
@@ -98,6 +297,35 @@ const initializeSocket = (io) => {
                 console.error('Error setting online presence:', error.message);
             });
         }
+
+        socket.on('location:sync', async () => {
+            if (!connectedUserId) return;
+            await emitLocationSnapshotToUser(socket, connectedUserId);
+        });
+
+        socket.on('location:update', async (payload) => {
+            if (!connectedUserId) return;
+            const normalized = normalizeLocationPayload({
+                ...(payload && typeof payload === 'object' ? payload : {}),
+                userId: connectedUserId
+            }, {
+                userId: connectedUserId
+            });
+            if (!normalized) return;
+
+            liveLocationsByUserId.set(normalized.userId, normalized);
+            await emitLocationUpdateToAudience(io, normalized.userId);
+        });
+
+        socket.on('location:stop', async () => {
+            if (!connectedUserId) return;
+            const normalizedUserId = toInt(connectedUserId);
+            if (normalizedUserId <= 0) return;
+
+            const hadLocation = liveLocationsByUserId.delete(normalizedUserId);
+            if (!hadLocation) return;
+            await emitLocationRemoveToAudience(io, normalizedUserId);
+        });
 
         socket.on('joinChannel', async (data) => {
             const { channelId } = data;
@@ -269,10 +497,16 @@ const initializeSocket = (io) => {
             }
         });
 
-        socket.on('disconnect', () => {
+        socket.on('disconnect', async () => {
             if (connectedUserId) {
                 const remainingConnections = decrementPresenceConnections(connectedUserId);
                 if (remainingConnections === 0) {
+                    const normalizedUserId = toInt(connectedUserId);
+                    const hadLocation = liveLocationsByUserId.delete(normalizedUserId);
+                    if (hadLocation) {
+                        await emitLocationRemoveToAudience(io, normalizedUserId);
+                    }
+
                     User.findByPk(connectedUserId, { attributes: ['id', 'presence_status'] })
                         .then(async (user) => {
                             if (!user) return;

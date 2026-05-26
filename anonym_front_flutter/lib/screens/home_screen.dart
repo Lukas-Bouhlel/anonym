@@ -416,7 +416,7 @@ class _HomeMapState extends State<_HomeMap> {
 
     final effectiveUserId = selfUserId ?? -1;
     final effectiveUsername = selfUsername.trim().isEmpty
-        ? 'moi'
+        ? 'Moi'
         : selfUsername.trim();
 
     final localModel = LiveUserLocationModel(
