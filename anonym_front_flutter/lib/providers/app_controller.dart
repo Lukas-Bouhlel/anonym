@@ -172,6 +172,10 @@ class AppController extends ChangeNotifier with WidgetsBindingObserver {
     return null;
   }
 
+  String? activeFrameUrlForUser(int userId) {
+    return _resolveSharedProfileFrameUrl(userId);
+  }
+
   String presenceStatusForUser(int userId, {bool isCurrentUser = false}) {
     return PresenceUtils.effectiveForViewer(
       _presenceByUserId[userId],

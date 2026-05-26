@@ -17,6 +17,8 @@ import 'package:webview_windows/webview_windows.dart' as wv;
 import '../../models/live_user_location_model.dart';
 import '../../theme.dart';
 import '../../utils/app_config.dart';
+import '../../utils/media_url.dart';
+import '../app_remote_image.dart';
 import 'moji_map_data.dart';
 import 'moji_map_helpers.dart';
 
@@ -304,6 +306,7 @@ class _NativeMapboxMapState extends State<_NativeMapboxMap> {
         'single',
         member.userId,
         member.avatarUrl ?? '',
+        member.frameUrl ?? '',
         isSelfMarker ? 'self' : 'other',
         marker.label,
       ].join(':');
@@ -327,7 +330,10 @@ class _NativeMapboxMapState extends State<_NativeMapboxMap> {
 
     final displayMembers = marker.members.take(4).toList(growable: false);
     final avatarsKey = displayMembers
-        .map((member) => '${member.userId}:${member.avatarUrl ?? ''}')
+        .map(
+          (member) =>
+              '${member.userId}:${member.avatarUrl ?? ''}:${member.frameUrl ?? ''}',
+        )
         .join('|');
     final cacheKey =
         'cluster:${marker.members.length}:$avatarsKey:${marker.label}';
@@ -360,6 +366,7 @@ class _NativeMapboxMapState extends State<_NativeMapboxMap> {
       'fallback',
       member.userId,
       member.initials,
+      member.frameUrl ?? '',
       isSelfMarker ? 'self' : 'other',
       marker.label,
     ].join(':');
@@ -423,6 +430,7 @@ class _NativeMapboxMapState extends State<_NativeMapboxMap> {
       avatarRadius + (showLabel ? 12 : 14),
     );
     final avatarImage = await _resolveAvatarImage(member.avatarUrl);
+    final frameImage = await _resolveAvatarImage(member.frameUrl);
 
     final recorder = ui.PictureRecorder();
     final canvas = Canvas(recorder);
@@ -450,6 +458,12 @@ class _NativeMapboxMapState extends State<_NativeMapboxMap> {
       ..strokeWidth = 2.6
       ..color = Colors.white;
     canvas.drawCircle(avatarCenter, avatarRadius, outlinePaint);
+    _drawAvatarFrame(
+      canvas: canvas,
+      center: avatarCenter,
+      radius: avatarRadius,
+      frame: frameImage,
+    );
 
     if (showLabel && labelPainter != null) {
       final labelRect = Rect.fromCenter(
@@ -518,6 +532,7 @@ class _NativeMapboxMapState extends State<_NativeMapboxMap> {
       final member = members[i];
       final center = Offset(startX + i * overlap, centerY);
       final avatarImage = await _resolveAvatarImage(member.avatarUrl);
+      final frameImage = await _resolveAvatarImage(member.frameUrl);
 
       final shadowPaint = Paint()
         ..color = const Color(0x55292929)
@@ -538,6 +553,12 @@ class _NativeMapboxMapState extends State<_NativeMapboxMap> {
         ..strokeWidth = 2.6
         ..color = Colors.white;
       canvas.drawCircle(center, avatarRadius, outlinePaint);
+      _drawAvatarFrame(
+        canvas: canvas,
+        center: center,
+        radius: avatarRadius,
+        frame: frameImage,
+      );
     }
 
     if (showLabel && labelPainter != null) {
@@ -593,6 +614,7 @@ class _NativeMapboxMapState extends State<_NativeMapboxMap> {
         : diameter + 28;
     final canvasSize = ui.Size(markerWidth, markerHeight);
     final center = Offset(canvasSize.width / 2, radius + (showLabel ? 12 : 14));
+    final frameImage = await _resolveAvatarImage(member.frameUrl);
 
     final recorder = ui.PictureRecorder();
     final canvas = Canvas(recorder);
@@ -616,6 +638,12 @@ class _NativeMapboxMapState extends State<_NativeMapboxMap> {
       ..strokeWidth = 2.6
       ..color = Colors.white;
     canvas.drawCircle(center, radius, outlinePaint);
+    _drawAvatarFrame(
+      canvas: canvas,
+      center: center,
+      radius: radius,
+      frame: frameImage,
+    );
 
     if (showLabel && labelPainter != null) {
       final labelRect = Rect.fromCenter(
@@ -658,13 +686,12 @@ class _NativeMapboxMapState extends State<_NativeMapboxMap> {
     canvas.save();
     canvas.clipPath(circlePath);
     if (avatar != null) {
-      final src = Rect.fromLTWH(
-        0,
-        0,
-        avatar.width.toDouble(),
-        avatar.height.toDouble(),
+      _drawFittedImage(
+        canvas: canvas,
+        image: avatar,
+        destination: circleRect,
+        fit: BoxFit.cover,
       );
-      canvas.drawImageRect(avatar, src, circleRect, Paint());
     } else {
       canvas.drawCircle(center, radius, Paint()..color = fallbackColor);
       _drawCenteredText(
@@ -676,6 +703,39 @@ class _NativeMapboxMapState extends State<_NativeMapboxMap> {
       );
     }
     canvas.restore();
+  }
+
+  void _drawAvatarFrame({
+    required Canvas canvas,
+    required Offset center,
+    required double radius,
+    required ui.Image? frame,
+  }) {
+    if (frame == null) return;
+    final frameRect = Rect.fromCircle(center: center, radius: radius + 1);
+    _drawFittedImage(
+      canvas: canvas,
+      image: frame,
+      destination: frameRect,
+      fit: BoxFit.contain,
+    );
+  }
+
+  void _drawFittedImage({
+    required Canvas canvas,
+    required ui.Image image,
+    required Rect destination,
+    required BoxFit fit,
+  }) {
+    final imageSize = Size(image.width.toDouble(), image.height.toDouble());
+    if (imageSize.width <= 0 || imageSize.height <= 0) return;
+    final fitted = applyBoxFit(fit, imageSize, destination.size);
+    final src = Alignment.center.inscribe(
+      fitted.source,
+      Offset.zero & imageSize,
+    );
+    final dst = Alignment.center.inscribe(fitted.destination, destination);
+    canvas.drawImageRect(image, src, dst, Paint());
   }
 
   void _drawCenteredText({
@@ -786,8 +846,7 @@ class _NativeMapboxMapState extends State<_NativeMapboxMap> {
   }
 
   bool _looksLikeSvg(String avatarUrl, Uint8List bytes) {
-    final lower = avatarUrl.toLowerCase();
-    if (lower.endsWith('.svg') || lower.contains('.svg?')) return true;
+    if (_isLikelySvgUrl(avatarUrl)) return true;
 
     final headerLength = min(bytes.length, 256);
     final header = utf8.decode(
@@ -797,16 +856,67 @@ class _NativeMapboxMapState extends State<_NativeMapboxMap> {
     return header.toLowerCase().contains('<svg');
   }
 
+  bool _isLikelySvgUrl(String? value) {
+    final lower = value?.toLowerCase().trim();
+    if (lower == null || lower.isEmpty) return false;
+    return lower.endsWith('.svg') || lower.contains('.svg?');
+  }
+
   Future<ui.Image?> _decodeSvgImage(Uint8List bytes) async {
     final pictureInfo = await svg.vg.loadPicture(
       svg.SvgBytesLoader(bytes),
       null,
     );
     try {
-      return pictureInfo.picture.toImage(128, 128);
+      const targetPixels = 192;
+      const targetSize = Size(192.0, 192.0);
+      final picture = pictureInfo.picture;
+      final sourceRect = _svgSourceRect(pictureInfo: pictureInfo);
+      final recorder = ui.PictureRecorder();
+      final canvas = Canvas(recorder, Offset.zero & targetSize);
+
+      final fitted = applyBoxFit(BoxFit.contain, sourceRect.size, targetSize);
+      final destinationRect = Alignment.center.inscribe(
+        fitted.destination,
+        Offset.zero & targetSize,
+      );
+      final scaleX = destinationRect.width / sourceRect.width;
+      final scaleY = destinationRect.height / sourceRect.height;
+
+      canvas.save();
+      canvas.translate(
+        destinationRect.left - (sourceRect.left * scaleX),
+        destinationRect.top - (sourceRect.top * scaleY),
+      );
+      canvas.scale(scaleX, scaleY);
+      canvas.drawPicture(picture);
+      canvas.restore();
+
+      final rasterizedPicture = recorder.endRecording();
+      try {
+        return await rasterizedPicture.toImage(targetPixels, targetPixels);
+      } finally {
+        rasterizedPicture.dispose();
+      }
+    } catch (_) {
+      try {
+        return await pictureInfo.picture.toImage(192, 192);
+      } catch (_) {
+        return null;
+      }
     } finally {
       pictureInfo.picture.dispose();
     }
+  }
+
+  Rect _svgSourceRect({required svg.PictureInfo pictureInfo}) {
+    final width = pictureInfo.size.width;
+    final height = pictureInfo.size.height;
+    if (width.isFinite && height.isFinite && width > 0 && height > 0) {
+      return Rect.fromLTWH(0, 0, width, height);
+    }
+
+    return const Rect.fromLTWH(0, 0, 192, 192);
   }
 }
 
@@ -1130,6 +1240,9 @@ class _FlutterAvatarDisc extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final avatarUrl = MediaUrl.nullable(member.avatarUrl);
+    final frameUrl = MediaUrl.nullable(member.frameUrl);
+
     return DecoratedBox(
       decoration: BoxDecoration(
         shape: BoxShape.circle,
@@ -1148,16 +1261,35 @@ class _FlutterAvatarDisc extends StatelessWidget {
           shape: BoxShape.circle,
           border: Border.all(color: AppColors.cFCFAFE, width: 2.2),
         ),
-        child: ClipOval(
-          child: member.avatarUrl == null
-              ? _AvatarFallback(member: member, size: size)
-              : Image.network(
-                  member.avatarUrl!,
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) {
-                    return _AvatarFallback(member: member, size: size);
-                  },
+        child: Stack(
+          clipBehavior: Clip.none,
+          children: [
+            Positioned.fill(
+              child: ClipOval(
+                child: avatarUrl == null
+                    ? _AvatarFallback(member: member, size: size)
+                    : AppRemoteImage(
+                        url: avatarUrl,
+                        fit: BoxFit.cover,
+                        fallbackIcon: Icons.alternate_email,
+                      ),
+              ),
+            ),
+            if (frameUrl != null)
+              Positioned(
+                left: -1,
+                top: -1,
+                right: -1,
+                bottom: -1,
+                child: IgnorePointer(
+                  child: AppRemoteImage(
+                    url: frameUrl,
+                    fit: BoxFit.contain,
+                    fallbackIcon: Icons.image_not_supported,
+                  ),
                 ),
+              ),
+          ],
         ),
       ),
     );

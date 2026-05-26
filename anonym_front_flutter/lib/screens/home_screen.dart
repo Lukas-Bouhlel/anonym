@@ -162,10 +162,8 @@ class _HomeMapState extends State<_HomeMap> {
 
   @override
   Widget build(BuildContext context) {
-    final liveLocations = context
-        .select<AppController, List<LiveUserLocationModel>>(
-          (app) => app.liveUserLocations,
-        );
+    final app = context.watch<AppController>();
+    final liveLocations = app.liveUserLocations;
     final selfUserId = context.select<AuthController, int?>(
       (auth) => auth.user?.id,
     );
@@ -175,16 +173,27 @@ class _HomeMapState extends State<_HomeMap> {
     final selfAvatar = context.select<AuthController, String?>(
       (auth) => auth.user?.avatar,
     );
+    final selfFrameUrl = selfUserId == null
+        ? null
+        : app.activeFrameUrlForUser(selfUserId);
 
-    final locations = _mergeLocalMarkerFallback(
+    final locationsWithLocalFallback = _mergeLocalMarkerFallback(
       locations: liveLocations,
       selfUserId: selfUserId,
       selfUsername: selfUsername,
       selfAvatar: selfAvatar,
+      selfFrameUrl: selfFrameUrl,
+    );
+    final hydratedLocations = _hydrateLocationsWithProfileDecorations(
+      app: app,
+      locations: locationsWithLocalFallback,
+      selfUserId: selfUserId,
+      selfAvatar: selfAvatar,
+      selfFrameUrl: selfFrameUrl,
     );
 
     return MojiMapView(
-      locations: locations,
+      locations: hydratedLocations,
       selfUserId: selfUserId,
       cameraTarget: _cameraTarget,
     );
@@ -410,6 +419,7 @@ class _HomeMapState extends State<_HomeMap> {
     required int? selfUserId,
     required String selfUsername,
     required String? selfAvatar,
+    required String? selfFrameUrl,
   }) {
     final local = _lastKnownLocalPosition;
     if (local == null) return locations;
@@ -423,6 +433,7 @@ class _HomeMapState extends State<_HomeMap> {
       userId: effectiveUserId,
       username: effectiveUsername,
       avatar: selfAvatar,
+      frameUrl: selfFrameUrl,
       latitude: local.latitude,
       longitude: local.longitude,
       updatedAt: DateTime.now().toUtc(),
@@ -449,6 +460,7 @@ class _HomeMapState extends State<_HomeMap> {
       longitude: local.longitude,
       username: current.username.isEmpty ? selfUsername : current.username,
       avatar: current.avatar ?? selfAvatar,
+      frameUrl: current.frameUrl ?? selfFrameUrl,
       updatedAt: DateTime.now().toUtc(),
     );
 
@@ -458,6 +470,35 @@ class _HomeMapState extends State<_HomeMap> {
     final next = [...locations];
     next[index] = updated;
     return next;
+  }
+
+  List<LiveUserLocationModel> _hydrateLocationsWithProfileDecorations({
+    required AppController app,
+    required List<LiveUserLocationModel> locations,
+    required int? selfUserId,
+    required String? selfAvatar,
+    required String? selfFrameUrl,
+  }) {
+    var mutated = false;
+    final next = <LiveUserLocationModel>[];
+
+    for (final item in locations) {
+      final isSelf = selfUserId != null && item.userId == selfUserId;
+      final resolvedAvatar = item.avatar ?? (isSelf ? selfAvatar : null);
+      final resolvedFrame =
+          item.frameUrl ??
+          (isSelf ? selfFrameUrl : app.activeFrameUrlForUser(item.userId));
+
+      if (resolvedAvatar == item.avatar && resolvedFrame == item.frameUrl) {
+        next.add(item);
+        continue;
+      }
+
+      mutated = true;
+      next.add(item.copyWith(avatar: resolvedAvatar, frameUrl: resolvedFrame));
+    }
+
+    return mutated ? next : locations;
   }
 
   String _fmt(double value) => value.toStringAsFixed(6);

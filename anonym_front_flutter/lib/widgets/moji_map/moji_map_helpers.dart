@@ -12,6 +12,7 @@ class MojiMapMarkerMember {
     required this.initials,
     required this.fallbackColor,
     this.avatarUrl,
+    this.frameUrl,
   });
 
   final int userId;
@@ -19,6 +20,7 @@ class MojiMapMarkerMember {
   final String initials;
   final Color fallbackColor;
   final String? avatarUrl;
+  final String? frameUrl;
 
   Map<String, Object?> toJson() {
     return {
@@ -27,6 +29,7 @@ class MojiMapMarkerMember {
       'initials': initials,
       'fallbackColor': _cssColor(fallbackColor),
       'avatarUrl': avatarUrl,
+      'frameUrl': frameUrl,
     };
   }
 }
@@ -88,6 +91,7 @@ MojiMapMarkerData _markerForCluster(_LocationCluster cluster, int? selfUserId) {
         initials: _initialsFor(member.username),
         fallbackColor: mojiMapColorForUser(member.userId),
         avatarUrl: MediaUrl.nullable(member.avatar),
+        frameUrl: MediaUrl.nullable(member.frameUrl),
       ),
   ];
 
@@ -104,6 +108,8 @@ MojiMapMarkerData _markerForCluster(_LocationCluster cluster, int? selfUserId) {
       ..write(item.username)
       ..write(':')
       ..write(MediaUrl.nullable(item.avatar) ?? '')
+      ..write(':')
+      ..write(MediaUrl.nullable(item.frameUrl) ?? '')
       ..write('|');
   }
 
@@ -143,7 +149,7 @@ String _buildClusterLabel(
 }
 
 List<_LocationCluster> _buildClusters(List<LiveUserLocationModel> locations) {
-  const mergeDistanceMeters = 40.0;
+  const mergeDistanceMeters = 150.0;
   final clusters = <_LocationCluster>[];
 
   for (final location in locations) {
