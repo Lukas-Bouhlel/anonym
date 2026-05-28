@@ -22,14 +22,18 @@ class PublicHomeScreen extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const Spacer(),
-              RichText(
-                text: TextSpan(
-                  style: Theme.of(context).textTheme.displaySmall,
-                  children: [
-                    const TextSpan(text: 'Bienvenue sur '),
-                    WidgetSpan(
-                      alignment: PlaceholderAlignment.middle,
-                      child: SvgPicture.asset(
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Bienvenue sur',
+                    style: Theme.of(context).textTheme.displaySmall,
+                  ),
+                  const SizedBox(height: 6),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      SvgPicture.asset(
                         'assets/icons/anonym_logo.svg',
                         width: 26,
                         height: 26,
@@ -38,10 +42,13 @@ class PublicHomeScreen extends StatelessWidget {
                           BlendMode.srcIn,
                         ),
                       ),
-                    ),
-                    const TextSpan(text: 'nonym'),
-                  ],
-                ),
+                      Text(
+                        'nonym',
+                        style: Theme.of(context).textTheme.displaySmall,
+                      ),
+                    ],
+                  ),
+                ],
               ),
               const SizedBox(height: 10),
               Text(

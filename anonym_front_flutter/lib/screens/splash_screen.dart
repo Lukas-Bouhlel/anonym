@@ -35,9 +35,6 @@ class _SplashScreenState extends State<SplashScreen>
     final scale = Tween<double>(begin: 0.9, end: 1.08).animate(
       CurvedAnimation(parent: _controller, curve: Curves.easeInOutCubic),
     );
-    final glow = Tween<double>(begin: 0.18, end: 0.46).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
-    );
     final drift = Tween<double>(begin: -5, end: 5).animate(
       CurvedAnimation(parent: _controller, curve: Curves.easeInOutSine),
     );
@@ -52,41 +49,17 @@ class _SplashScreenState extends State<SplashScreen>
             builder: (context, _) {
               return Transform.translate(
                 offset: Offset(0, drift.value),
-                child: Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    Container(
-                      width: 138,
-                      height: 138,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: AppColors.whiteColor.withValues(
-                          alpha: glow.value * 0.5,
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: AppColors.whiteColor.withValues(
-                              alpha: glow.value,
-                            ),
-                            blurRadius: 38,
-                            spreadRadius: 8,
-                          ),
-                        ],
-                      ),
+                child: Transform.scale(
+                  scale: scale.value,
+                  child: SvgPicture.asset(
+                    'assets/icons/anonym_logo.svg',
+                    width: 86,
+                    height: 86,
+                    colorFilter: const ColorFilter.mode(
+                      AppColors.whiteColor,
+                      BlendMode.srcIn,
                     ),
-                    Transform.scale(
-                      scale: scale.value,
-                      child: SvgPicture.asset(
-                        'assets/icons/anonym_logo.svg',
-                        width: 86,
-                        height: 86,
-                        colorFilter: const ColorFilter.mode(
-                          AppColors.whiteColor,
-                          BlendMode.srcIn,
-                        ),
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
               );
             },
