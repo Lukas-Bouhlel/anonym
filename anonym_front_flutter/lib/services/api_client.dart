@@ -203,12 +203,19 @@ class ApiClient {
       ).replace(path: '/api/auth/refresh');
       Future<void> performRefreshRequest() async {
         final csrfToken = await _readCsrfToken(uri);
+        final refreshToken = await _readCookieValue(uri, 'refreshToken');
         final headers = <String, dynamic>{};
+        final body = <String, dynamic>{};
         if (csrfToken != null && csrfToken.isNotEmpty) {
           headers['X-CSRF-Token'] = csrfToken;
+          body['csrfToken'] = csrfToken;
+        }
+        if (refreshToken != null && refreshToken.isNotEmpty) {
+          body['refreshToken'] = refreshToken;
         }
         await _refreshDio.post<void>(
           '/api/auth/refresh',
+          data: body.isEmpty ? null : body,
           options: Options(
             headers: headers,
             extra: const {'withCredentials': true, 'skipAuthRefresh': true},
@@ -250,12 +257,15 @@ class ApiClient {
   }
 
   Future<String?> _readCsrfToken(Uri uri) async {
+    return _readCookieValue(uri, 'csrfToken');
+  }
+
+  Future<String?> _readCookieValue(Uri uri, String name) async {
     final cookies = await _cookieJar.loadForRequest(uri);
     for (final cookie in cookies) {
-      if (cookie.name == 'csrfToken') {
-        final value = cookie.value.trim();
-        if (value.isNotEmpty) return value;
-      }
+      if (cookie.name != name) continue;
+      final value = cookie.value.trim();
+      if (value.isNotEmpty) return value;
     }
     return null;
   }

@@ -32,17 +32,17 @@ class UserProfileScreen extends StatelessWidget {
     String formatDate(DateTime dt) {
       const months = [
         'janvier',
-        'fÃ©vrier',
+        'février',
         'mars',
         'avril',
         'mai',
         'juin',
         'juillet',
-        'aoÃ»t',
+        'août',
         'septembre',
         'octobre',
         'novembre',
-        'dÃ©cembre',
+        'décembre',
       ];
       return '${dt.day} ${months[dt.month - 1]} ${dt.year}';
     }

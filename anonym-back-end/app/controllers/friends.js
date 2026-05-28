@@ -255,7 +255,7 @@ exports.read = async (req, res) => {
         });
 
         if (!friend) {
-            return res.status(404).json({ message: 'Ami non trouvÃ©.' });
+            return res.status(404).json({ message: 'Ami non trouvé.' });
         }
 
         res.status(200).json(addLevelToFriendRecord(friend, req.auth.userId));
@@ -289,22 +289,22 @@ exports.addFriend = async (req, res) => {
 
         if (existingFriend) {
             if (existingFriend.status === FRIEND_STATUS.ACTIVE) {
-                return res.status(400).json({ message: 'Cet utilisateur est dÃ©jÃ  votre ami' });
+                return res.status(400).json({ message: 'Cet utilisateur est déjà votre ami' });
             }
             if (existingFriend.status === FRIEND_STATUS.PENDING) {
-                return res.status(400).json({ message: "Demande d'ami dÃ©jÃ  envoyÃ©e, en attente d'acceptation." });
+                return res.status(400).json({ message: "Demande d'ami déjà envoyée, en attente d'acceptation." });
             }
-            return res.status(400).json({ message: 'Cet utilisateur est bloquÃ©. DÃ©bloquez-le avant de renvoyer une demande.' });
+            return res.status(400).json({ message: 'Cet utilisateur est bloqué. Débloquez-le avant de renvoyer une demande.' });
         }
 
         if (reverseFriendship) {
             if (reverseFriendship.status === FRIEND_STATUS.ACTIVE) {
-                return res.status(400).json({ message: 'Cet utilisateur est dÃ©jÃ  votre ami' });
+                return res.status(400).json({ message: 'Cet utilisateur est déjà votre ami' });
             }
             if (reverseFriendship.status === FRIEND_STATUS.PENDING) {
-                return res.status(400).json({ message: "Cet utilisateur vous a dÃ©jÃ  envoyÃ© une demande. Acceptez-la." });
+                return res.status(400).json({ message: "Cet utilisateur vous a déjà envoyé une demande. Acceptez-la." });
             }
-            return res.status(400).json({ message: 'Cet utilisateur vous a bloquÃ© ou la relation est bloquÃ©e.' });
+            return res.status(400).json({ message: 'Cet utilisateur vous a bloqué ou la relation est bloquée.' });
         }
 
         const newFriend = await Friend.create({

@@ -71,7 +71,7 @@ class _ChatDetailViewState extends State<_ChatDetailView> {
   int? _lastChannelId;
   int? _lastMessageId;
 
-  // Image sÃ©lectionnÃ©e en attente d'envoi
+  // Image sélectionnée en attente d'envoi
   String? _pendingImagePath;
   Uint8List? _pendingImageBytes;
   String? _pendingImageFileName;
