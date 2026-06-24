@@ -2,6 +2,7 @@ import 'package:socket_io_client/socket_io_client.dart' as io;
 
 import '../models/channel_message_model.dart';
 import '../utils/app_config.dart';
+import '../utils/app_logger.dart';
 
 /// Service de communication temps réel (Socket.IO).
 ///
@@ -31,15 +32,15 @@ class SocketService {
   bool get isConnected => _socket?.connected ?? false;
 
   void _log(String message) {
-    // ignore: avoid_print
-    print('[SOCKET-FLUTTER] $message');
+    AppLogger.debug(message, scope: 'SOCKET-FLUTTER');
   }
 
   void connect({
-    String? authToken,
     Map<String, dynamic>? authHeaders,
     void Function(dynamic error)? onConnectError,
     void Function(ChannelMessageModel message)? onNewMessage,
+    void Function(ChannelMessageModel message)? onMessageUpdated,
+    void Function(Map<String, dynamic> payload)? onMessageDeleted,
     void Function(Map<String, dynamic> payload)? onFriendRequestReceived,
     void Function(Map<String, dynamic> payload)? onFriendRequestSent,
     void Function(Map<String, dynamic> payload)? onFriendRequestResponded,
@@ -59,7 +60,7 @@ class SocketService {
     void Function(Map<String, dynamic> payload)? onPresenceUpdated,
   }) {
     _log(
-      'connect() existing=${_socket != null} authToken=${authToken != null && authToken.trim().isNotEmpty} headers=${authHeaders?.keys.join(",") ?? "none"}',
+      'connect() existing=${_socket != null} hasAuthCookies=${authHeaders != null && authHeaders.isNotEmpty}',
     );
     if (_socket != null) {
       _log('connect() replacing existing socket to refresh auth context');
@@ -72,15 +73,7 @@ class SocketService {
           .setTransports(['websocket', 'polling'])
           .enableForceNew()
           .disableMultiplex()
-          .setAuth(<String, dynamic>{
-            if (authToken != null && authToken.trim().isNotEmpty)
-              'token': authToken.trim(),
-          })
-          .setExtraHeaders(<String, dynamic>{
-            ...?authHeaders,
-            if (authToken != null && authToken.trim().isNotEmpty)
-              'Authorization': 'Bearer ${authToken.trim()}',
-          })
+          .setExtraHeaders(<String, dynamic>{...?authHeaders})
           .disableAutoConnect()
           .enableReconnection()
           .build(),
@@ -95,6 +88,19 @@ class SocketService {
         }
       });
     }
+    if (onMessageUpdated != null) {
+      _socket!.on('messageUpdated', (data) {
+        if (data is Map) {
+          onMessageUpdated(
+            ChannelMessageModel.fromJson(Map<String, dynamic>.from(data)),
+          );
+        }
+      });
+    }
+    _registerSocialEventListener(
+      eventName: 'messageDeleted',
+      onEvent: onMessageDeleted,
+    );
     _registerFriendRequestListener(onFriendRequestReceived);
     _registerSocialEventListener(
       eventName: 'friendRequestSent',

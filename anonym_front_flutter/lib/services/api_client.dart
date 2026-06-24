@@ -7,6 +7,7 @@ import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
 
 import '../utils/app_config.dart';
+import 'network_security.dart';
 
 /// Client HTTP central basé sur Dio.
 ///
@@ -24,6 +25,7 @@ class ApiClient {
           extra: const {'withCredentials': true},
         ),
       ) {
+    applyNetworkSecurity(dio);
     dio.interceptors.add(CookieManager(_cookieJar));
     dio.interceptors.add(_buildAuthInterceptor());
     _refreshDio = Dio(
@@ -34,7 +36,9 @@ class ApiClient {
         headers: const {'Content-Type': 'application/json'},
         extra: const {'withCredentials': true},
       ),
-    )..interceptors.add(CookieManager(_cookieJar));
+    );
+    applyNetworkSecurity(_refreshDio);
+    _refreshDio.interceptors.add(CookieManager(_cookieJar));
   }
 
   static Future<ApiClient> create({CookieJar? cookieJar}) async {
@@ -43,6 +47,14 @@ class ApiClient {
     }
 
     if (kIsWeb) {
+      return ApiClient(cookieJar: CookieJar());
+    }
+
+    final shouldPersistCookies =
+        defaultTargetPlatform == TargetPlatform.android ||
+        defaultTargetPlatform == TargetPlatform.iOS;
+    if (!shouldPersistCookies) {
+      // Desktop/local dev: keep session in-memory only to reduce local exposure.
       return ApiClient(cookieJar: CookieJar());
     }
 
@@ -79,18 +91,23 @@ class ApiClient {
   String? get _authToken => null;
 
   Future<void> clearSessionData() async {
-    await _cookieJar.deleteAll();
+    try {
+      await _cookieJar.deleteAll();
+    } catch (_) {
+      // Best-effort cleanup: local cookie storage may already be gone.
+    }
   }
 
   Future<Map<String, dynamic>> buildSocketAuthHeaders() async {
     final uri = Uri.parse(AppConfig.apiBaseUrl);
     final cookies = await _cookieJar.loadForRequest(uri);
-    if (cookies.isEmpty) return const <String, dynamic>{};
-    final cookieHeader = cookies
-        .map((cookie) => '${cookie.name}=${cookie.value}')
-        .join('; ');
-    if (cookieHeader.trim().isEmpty) return const <String, dynamic>{};
-    return <String, dynamic>{'Cookie': cookieHeader};
+    for (final cookie in cookies) {
+      if (cookie.name != 'token') continue;
+      final value = cookie.value.trim();
+      if (value.isEmpty) continue;
+      return <String, dynamic>{'Cookie': 'token=$value'};
+    }
+    return const <String, dynamic>{};
   }
 
   Future<String?> buildSocketAuthToken() async {

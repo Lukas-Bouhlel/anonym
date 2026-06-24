@@ -3,6 +3,7 @@ const router = express();
 const accountCtrl = require("../controllers/account.js");
 const normalizeEmailMiddleware = require('../middlewares/normalizeEmail');
 const authMiddleware = require("../middlewares/auth.js");
+const authorizeAdminMiddleware = require("../middlewares/authorizeAdmin.js");
 const generateAvatar = require('../middlewares/generateAvatar');
 const multer = require('../middlewares/mutler.js');
 
@@ -11,7 +12,8 @@ const multer = require('../middlewares/mutler.js');
  * @description Ce module gère les routes relatives aux comptes utilisateurs, y compris la lecture, la mise à jour, et la suppression de comptes.
  */
 router.get("/", authMiddleware, accountCtrl.readAccount);
-router.get('/users', authMiddleware, accountCtrl.readAll);
+router.get('/discoverable-users', authMiddleware, accountCtrl.readDiscoverable);
+router.get('/users', authMiddleware, authorizeAdminMiddleware, accountCtrl.readAll);
 router.put("/update", authMiddleware, normalizeEmailMiddleware, multer, generateAvatar, accountCtrl.update);
 router.patch('/presence', authMiddleware, accountCtrl.updatePresence);
 router.post('/push-token', authMiddleware, accountCtrl.upsertPushToken);

@@ -1,17 +1,20 @@
 const request = require('supertest');
 const app = require('../../../../app');
 const { User, sequelize } = require('../../../models');
+const { cleanupAuthData, createUser, login, strongPassword } = require('../../testUtils');
 
 describe('Authentication Routes', () => {
-    let user;
+    const user = {
+        username: 'testuser',
+        email: 'testuser@example.com',
+        password: strongPassword,
+    };
+    let createdUser;
 
     beforeAll(async () => {
-        user = {
-            username: 'testuser',
-            email: 'testuser@example.com',
-            password: 'Password123!',
-        };
-        await request(app).post('/api/auth/signup').send(user);
+        await cleanupAuthData();
+        await User.destroy({ where: {} });
+        createdUser = await createUser(user);
     });
 
     afterEach(() => {
@@ -21,52 +24,46 @@ describe('Authentication Routes', () => {
     });
 
     afterAll(async () => {
+        await cleanupAuthData();
         await User.destroy({ where: {} });
-        if(sequelize) {
-            await sequelize.close(); 
+        if (sequelize) {
+            await sequelize.close();
         }
     });
 
-    it('User should sign up successfully (unique email)', async () => {
-        // Vérifier qu'on ne peut pas créer un utilisateur avec un email déjà utilisé
+    it('POST /api/auth/signup should expose the deprecated registration route', async () => {
         const response = await request(app)
             .post('/api/auth/signup')
             .send({
                 username: 'newuser',
-                email: 'testuser@example.com', // Email déjà utilisé
-                password: 'Password123!',
+                email: 'newuser@example.com',
+                password: strongPassword,
             });
 
-        expect(response.status).toBe(500); // Conflit
-        expect(response.body).toHaveProperty('message', 'L\'adresse email est déjà utilisé');
+        expect(response.status).toBe(410);
+        expect(response.body).toHaveProperty(
+            'message',
+            "Cette route n'est plus disponible. Utilisez /auth/register/request-code puis /auth/register/confirm."
+        );
     });
 
     it('User should log in successfully', async () => {
-        const response = await request(app)
-            .post('/api/auth/login')
-            .send({
-                identifier: user.email,
-                password: user.password,
-            });
+        const { response } = await login(app, user.email, user.password);
+
         expect(response.status).toBe(200);
         expect(response.body).toHaveProperty('token');
         expect(response.body).toHaveProperty('user');
+        expect(response.body.user.id).toBe(createdUser.id);
     });
 
     it('User should logout successfully', async () => {
-        const loginResponse = await request(app)
-            .post('/api/auth/login')
-            .send({
-                identifier: user.email,
-                password: user.password,
-            });
-
-        expect(loginResponse.status).toBe(200);
-        const token = loginResponse.body.token;
+        const auth = await login(app, user.email, user.password);
+        expect(auth.response.status).toBe(200);
 
         const response = await request(app)
             .post('/api/auth/logout')
-            .set('Cookie', `token=${token}`);
+            .set('Cookie', auth.cookieHeader)
+            .set('x-csrf-token', auth.csrfToken);
 
         expect(response.status).toBe(200);
         expect(response.body).toHaveProperty('message', 'Successfully logged out');
@@ -82,6 +79,7 @@ describe('Authentication Routes', () => {
             .send({
                 email: user.email,
             });
+
         expect(response.status).toBe(200);
         expect(response.body).toHaveProperty('message', 'Email envoyé pour la réinitialisation de votre mot de passe');
     });

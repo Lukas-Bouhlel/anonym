@@ -118,8 +118,8 @@ void main() {
       await tester.pumpWidget(const MaterialApp(home: FaqScreen()));
       await tester.pumpAndSettle();
 
-      expect(find.text('Comment signaler un probleme ?'), findsOneWidget);
-      await tester.tap(find.text('Comment signaler un probleme ?'));
+      expect(find.text('Comment signaler un problème ?'), findsOneWidget);
+      await tester.tap(find.text('Comment signaler un problème ?'));
       await tester.pumpAndSettle();
       expect(find.byType(FaqScreen), findsOneWidget);
     });

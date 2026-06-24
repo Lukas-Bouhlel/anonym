@@ -6,6 +6,7 @@ import 'package:dio/dio.dart';
 import '../models/user_model.dart';
 import '../services/auth_repository.dart';
 import '../utils/api_error_parser.dart';
+import '../utils/app_logger.dart';
 
 /// Provider dédié à l'authentification et à la session utilisateur.
 class AuthProvider extends ChangeNotifier {
@@ -35,54 +36,42 @@ class AuthProvider extends ChangeNotifier {
   Future<void> bootstrap() async {
     final bootstrapVersion = _authMutationVersion;
     _isBootstrapping = true;
-    if (kDebugMode) {
-      debugPrint(
-        '[AUTH][bootstrap:start] v=$bootstrapVersion currentV=$_authMutationVersion',
-      );
-    }
+    AppLogger.debug(
+      '[AUTH][bootstrap:start] v=$bootstrapVersion currentV=$_authMutationVersion',
+    );
     notifyListeners();
 
     try {
       await _repository.hydrateSession();
       final me = await _repository.me();
       if (bootstrapVersion != _authMutationVersion) {
-        if (kDebugMode) {
-          debugPrint(
-            '[AUTH][bootstrap:ignored-success] v=$bootstrapVersion currentV=$_authMutationVersion',
-          );
-        }
+        AppLogger.debug(
+          '[AUTH][bootstrap:ignored-success] v=$bootstrapVersion currentV=$_authMutationVersion',
+        );
         return;
       }
       _user = me;
       _errorMessage = null;
-      if (kDebugMode) {
-        debugPrint('[AUTH][bootstrap:success] user=${_user?.id}');
-      }
+      AppLogger.debug('[AUTH][bootstrap:success] user=${_user?.id}');
     } catch (error) {
       if (bootstrapVersion != _authMutationVersion) {
-        if (kDebugMode) {
-          debugPrint(
-            '[AUTH][bootstrap:ignored-error] v=$bootstrapVersion currentV=$_authMutationVersion',
-          );
-        }
+        AppLogger.debug(
+          '[AUTH][bootstrap:ignored-error] v=$bootstrapVersion currentV=$_authMutationVersion',
+        );
         return;
       }
       _user = null;
       if (_isUnauthorized(error)) {
         await _repository.clearLocalSession();
       }
-      if (kDebugMode) {
-        debugPrint(
-          '[AUTH][bootstrap:error] unauthorized=${_isUnauthorized(error)}',
-        );
-      }
+      AppLogger.debug(
+        '[AUTH][bootstrap:error] unauthorized=${_isUnauthorized(error)}',
+      );
     } finally {
       _isBootstrapping = false;
-      if (kDebugMode) {
-        debugPrint(
-          '[AUTH][bootstrap:end] v=$bootstrapVersion currentV=$_authMutationVersion loggedIn=$isLoggedIn',
-        );
-      }
+      AppLogger.debug(
+        '[AUTH][bootstrap:end] v=$bootstrapVersion currentV=$_authMutationVersion loggedIn=$isLoggedIn',
+      );
       notifyListeners();
     }
   }
@@ -94,30 +83,24 @@ class AuthProvider extends ChangeNotifier {
     _setBusy(true);
     _authMutationVersion++;
     _errorMessage = null;
-    if (kDebugMode) {
-      debugPrint('[AUTH][login:start] v=$_authMutationVersion id=$identifier');
-    }
+    AppLogger.debug(
+      '[AUTH][login:start] v=$_authMutationVersion identifierProvided=${identifier.trim().isNotEmpty}',
+    );
 
     try {
       _user = await _repository.login(
         identifier: identifier,
         password: password,
       );
-      if (kDebugMode) {
-        debugPrint('[AUTH][login:success] user=${_user?.id}');
-      }
+      AppLogger.debug('[AUTH][login:success] user=${_user?.id}');
       return true;
     } catch (e) {
       _errorMessage = ApiErrorParser.parse(e, fallback: 'Connexion impossible');
-      if (kDebugMode) {
-        debugPrint('[AUTH][login:error] $_errorMessage');
-      }
+      AppLogger.debug('[AUTH][login:error] $_errorMessage');
       return false;
     } finally {
       _setBusy(false);
-      if (kDebugMode) {
-        debugPrint('[AUTH][login:end] loggedIn=$isLoggedIn');
-      }
+      AppLogger.debug('[AUTH][login:end] loggedIn=$isLoggedIn');
     }
   }
 
@@ -198,10 +181,7 @@ class AuthProvider extends ChangeNotifier {
     _authMutationVersion++;
     _errorMessage = null;
     try {
-      _user = await _repository.confirmRegister(
-        email: email,
-        code: code,
-      );
+      _user = await _repository.confirmRegister(email: email, code: code);
       return true;
     } catch (e) {
       _errorMessage = ApiErrorParser.parse(

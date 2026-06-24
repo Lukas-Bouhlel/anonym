@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 
 import '../models/user_model.dart';
+import '../utils/app_logger.dart';
 import 'api_client.dart';
 
 /// Repository HTTP pour les flux d'authentification.
@@ -11,7 +12,22 @@ class AuthRepository {
   final Dio _dio;
   final ApiClient _apiClient;
 
-  Future<void> hydrateSession() async {}
+  Future<void> hydrateSession() async {
+    final cookieHeaders = await _apiClient.buildSocketAuthHeaders();
+    final hasLocalSessionCookie =
+        cookieHeaders['Cookie'] is String &&
+        (cookieHeaders['Cookie'] as String).trim().isNotEmpty;
+
+    if (!hasLocalSessionCookie) {
+      AppLogger.debug(
+        '[AUTH][hydrateSession] skip refresh (no local session cookie)',
+      );
+      return;
+    }
+
+    final refreshed = await _apiClient.refreshSession();
+    AppLogger.debug('[AUTH][hydrateSession] refresh attempted=$refreshed');
+  }
 
   void setSessionExpiredHandler(VoidCallback handler) {
     _apiClient.setSessionExpiredHandler(handler);
@@ -63,10 +79,18 @@ class AuthRepository {
       throw ArgumentError.value(email, 'email', 'E-mail est obligatoire');
     }
     if (normalizedUsername.isEmpty) {
-      throw ArgumentError.value(username, 'username', 'Le pseudo est obligatoire');
+      throw ArgumentError.value(
+        username,
+        'username',
+        'Le pseudo est obligatoire',
+      );
     }
     if (normalizedPassword.isEmpty) {
-      throw ArgumentError.value(password, 'password', 'Le mot de passe est obligatoire');
+      throw ArgumentError.value(
+        password,
+        'password',
+        'Le mot de passe est obligatoire',
+      );
     }
 
     final requestBody = <String, dynamic>{
@@ -74,11 +98,10 @@ class AuthRepository {
       'username': normalizedUsername,
       'password': normalizedPassword,
     };
-    if (kDebugMode) {
-      debugPrint(
-        '[API][POST] /api/auth/register/request-code body={email: $normalizedEmail, username: $normalizedUsername, password: ***}',
-      );
-    }
+    AppLogger.debug(
+      '[API][POST] /api/auth/register/request-code '
+      'hasEmail=${normalizedEmail.isNotEmpty} hasUsername=${normalizedUsername.isNotEmpty} hasPassword=${normalizedPassword.isNotEmpty}',
+    );
     final response = await _dio.post<Map<String, dynamic>>(
       '/api/auth/register/request-code',
       data: requestBody,
@@ -90,13 +113,10 @@ class AuthRepository {
     required String email,
     required String code,
   }) async {
-    final requestBody = {
-      'email': email,
-      'code': code,
-    };
-    if (kDebugMode) {
-      debugPrint('[API][POST] /api/auth/register/confirm body=$requestBody');
-    }
+    final requestBody = {'email': email, 'code': code};
+    AppLogger.debug(
+      '[API][POST] /api/auth/register/confirm hasEmail=${email.trim().isNotEmpty} hasCode=${code.trim().isNotEmpty}',
+    );
 
     final response = await _dio.post<Map<String, dynamic>>(
       '/api/auth/register/confirm',

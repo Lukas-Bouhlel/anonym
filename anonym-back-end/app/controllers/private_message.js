@@ -4,6 +4,10 @@ const { deleteUploadFileIfExists } = require('../utils/fileCleanup');
 const { sendPushToUsers } = require('../utils/pushNotifications');
 let hasAllowNonFriendDmsColumnCache = null;
 
+const resolveIo = (req) => {
+    return req?.app?.locals?.io || req?.app?.get?.('io') || null;
+};
+
 const updateChannelReputationScore = async (channelId) => {
     const channel = await Channel.findByPk(channelId);
     if (!channel) return null;
@@ -252,23 +256,29 @@ exports.sendMessageWithImage = async (req, res) => {
             raw: true
         });
 
-        const io = req.app.locals.io;
+        const io = resolveIo(req);
         if (io) {
             const messagePayload = {
                 id: message.message_id,
                 content: message.content,
                 imageUrl: message.image_url,
                 channelId: Number(channelId),
+                senderId: userId,
+                status: message.status,
                 sender,
                 createdAt: message.createdAt
             };
 
-            if (channel.channel_type === 'PRIVATE_DM') {
-                for (const member of channelMembers) {
-                    io.to(`user:${member.user_id}`).emit('newMessage', messagePayload);
-                }
-            } else {
-                io.to(channelId.toString()).emit('newMessage', messagePayload);
+            const emittedRooms = new Set();
+            const emitToRoom = (room) => {
+                if (!room || emittedRooms.has(room)) return;
+                emittedRooms.add(room);
+                io.to(room).emit('newMessage', messagePayload);
+            };
+
+            emitToRoom(channelId.toString());
+            for (const member of channelMembers) {
+                emitToRoom(`user:${member.user_id}`);
             }
 
             // Mettre à jour le compte des messages non lus
@@ -300,6 +310,9 @@ exports.sendMessageWithImage = async (req, res) => {
             id: message.message_id,
             content: message.content,
             imageUrl: message.image_url,
+            channelId: Number(channelId),
+            senderId: userId,
+            status: message.status,
             sender,
             createdAt: message.createdAt,
             points: {
@@ -364,6 +377,37 @@ exports.update = async (req, res) => {
         message.content = content;
         await message.save();
 
+        const sender = await User.findByPk(req.auth.userId, {
+            attributes: ['id', 'username', 'avatar']
+        });
+        const payload = {
+            id: message.message_id,
+            content: message.content,
+            imageUrl: message.image_url,
+            channelId: Number(message.channel_id),
+            senderId: req.auth.userId,
+            status: message.status,
+            sender,
+            createdAt: message.createdAt,
+            updatedAt: message.updatedAt
+        };
+        const channel = await Channel.findByPk(message.channel_id);
+        const io = resolveIo(req);
+        if (io) {
+            if (channel?.channel_type === 'PRIVATE_DM') {
+                const channelMembers = await UserChannel.findAll({
+                    where: { channel_id: message.channel_id },
+                    attributes: ['user_id'],
+                    raw: true
+                });
+                for (const member of channelMembers) {
+                    io.to(`user:${member.user_id}`).emit('messageUpdated', payload);
+                }
+            } else {
+                io.to(message.channel_id.toString()).emit('messageUpdated', payload);
+            }
+        }
+
         res.status(200).json(message);
     } catch (error) {
         res.status(500).json({ message: error.message || 'Une erreur est survenue lors de la mise à jour du message.' });
@@ -395,6 +439,29 @@ exports.delete = async (req, res) => {
         const channelId = message.channel_id;
         await message.destroy();
         await updateChannelReputationScore(channelId);
+
+        const channel = await Channel.findByPk(channelId);
+        const payload = {
+            messageId: Number(message_id),
+            message_id: Number(message_id),
+            channelId: Number(channelId),
+            channel_id: Number(channelId)
+        };
+        const io = resolveIo(req);
+        if (io) {
+            if (channel?.channel_type === 'PRIVATE_DM') {
+                const channelMembers = await UserChannel.findAll({
+                    where: { channel_id: channelId },
+                    attributes: ['user_id'],
+                    raw: true
+                });
+                for (const member of channelMembers) {
+                    io.to(`user:${member.user_id}`).emit('messageDeleted', payload);
+                }
+            } else {
+                io.to(channelId.toString()).emit('messageDeleted', payload);
+            }
+        }
 
         res.status(200).json({ message: "Message deleted successfully." });
     } catch (error) {

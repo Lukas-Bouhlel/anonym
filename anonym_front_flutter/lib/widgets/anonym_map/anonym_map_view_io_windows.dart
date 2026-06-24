@@ -118,7 +118,7 @@ class _WindowsMapboxGlMapState extends State<_WindowsMapboxGlMap> {
       'camera': widget.cameraTarget?.toJson(),
     };
     final first = markers.isEmpty ? null : markers.first;
-    debugPrint(
+    AppLogger.debug(
       '[ANONYM_MAP][windows][send] markers=${markers.length} '
       'first=${first == null ? '-' : '${first.latitude.toStringAsFixed(6)},${first.longitude.toStringAsFixed(6)}'} '
       'camera=${widget.cameraTarget == null ? '-' : '${widget.cameraTarget!.latitude.toStringAsFixed(6)},${widget.cameraTarget!.longitude.toStringAsFixed(6)}'}',

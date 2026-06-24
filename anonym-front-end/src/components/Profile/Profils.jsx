@@ -100,9 +100,6 @@ const Profils = ({user, setTypeProfils, setUser}) => {
             <div className="profils-infos">
                 <div className="profils-infos-first">
                     <div className="profile-content-infos-img">
-                        {user.Inventories?.[0]?.Shop?.content && (
-                            <img className="avatar-profile decoration-profile" src={`${user.Inventories[0].Shop.content}`} alt="hugenerd" width="80" height="80"/>
-                        )}
                         <img src={`${user.avatar}`} alt="hugenerd" width="80" height="80" className="rounded-circle avatar-profile" />
                     </div>
                     <button onClick={() => setTypeProfils('Account')} className="profils-infos-button">Modifier profil d&apos;utilisateur</button>
@@ -190,13 +187,6 @@ Profils.propTypes = {
         avatar: PropTypes.string,
         username: PropTypes.string,
         email: PropTypes.string,
-        Inventories: PropTypes.arrayOf(
-            PropTypes.shape({
-                Shop: PropTypes.shape({
-                    content: PropTypes.string
-                })
-            })
-        )
     }).isRequired,
     setTypeProfils: PropTypes.func.isRequired,
     setUser: PropTypes.func.isRequired

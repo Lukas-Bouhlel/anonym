@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     id("kotlin-android")
@@ -9,9 +11,21 @@ plugins {
 val isDebugBuildTask = gradle.startParameter.taskNames.any {
     it.contains("Debug", ignoreCase = true)
 }
+val isReleaseBuildTask = gradle.startParameter.taskNames.any {
+    it.contains("Release", ignoreCase = true)
+}
+val keystorePropertiesFile = if (rootProject.file("key.properties").exists()) {
+    rootProject.file("key.properties")
+} else {
+    rootProject.file("../key.properties")
+}
+val keystoreProperties = Properties()
+if (keystorePropertiesFile.exists()) {
+    keystorePropertiesFile.inputStream().use { keystoreProperties.load(it) }
+}
 
 android {
-    namespace = "com.example.anonym_front_flutter"
+    namespace = "com.anonym.front_flutter"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -25,10 +39,7 @@ android {
     }
 
     defaultConfig {
-        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId = "com.example.anonym_front_flutter"
-        // You can update the following values to match your application needs.
-        // For more information, see: https://flutter.dev/to/review-gradle-config.
+        applicationId = "com.anonym.front_flutter"
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
@@ -38,11 +49,44 @@ android {
         }
     }
 
+    signingConfigs {
+        create("release") {
+            val storeFilePath = keystoreProperties.getProperty("storeFile")
+            val storePasswordValue = keystoreProperties.getProperty("storePassword")
+            val keyAliasValue = keystoreProperties.getProperty("keyAlias")
+            val keyPasswordValue = keystoreProperties.getProperty("keyPassword")
+
+            if (!storeFilePath.isNullOrBlank() &&
+                !storePasswordValue.isNullOrBlank() &&
+                !keyAliasValue.isNullOrBlank() &&
+                !keyPasswordValue.isNullOrBlank()
+            ) {
+                storeFile = file(storeFilePath)
+                storePassword = storePasswordValue
+                keyAlias = keyAliasValue
+                keyPassword = keyPasswordValue
+            }
+        }
+    }
+
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.getByName("debug")
+            val hasValidReleaseKeystore =
+                !keystoreProperties.getProperty("storeFile").isNullOrBlank() &&
+                !keystoreProperties.getProperty("storePassword").isNullOrBlank() &&
+                !keystoreProperties.getProperty("keyAlias").isNullOrBlank() &&
+                !keystoreProperties.getProperty("keyPassword").isNullOrBlank()
+
+            if (hasValidReleaseKeystore) {
+                signingConfig = signingConfigs.getByName("release")
+            } else if (isReleaseBuildTask) {
+                // Only error if explicitly building release APK/bundle
+                throw GradleException(
+                    "Release signing is not configured. " +
+                        "Create android/key.properties and set storeFile, " +
+                        "storePassword, keyAlias and keyPassword.",
+                )
+            }
         }
     }
 
@@ -57,6 +101,18 @@ android {
             }
         }
     }
+}
+
+if (isReleaseBuildTask &&
+    (!keystoreProperties.getProperty("storeFile").isNullOrBlank() &&
+        !keystoreProperties.getProperty("storePassword").isNullOrBlank() &&
+        !keystoreProperties.getProperty("keyAlias").isNullOrBlank() &&
+        !keystoreProperties.getProperty("keyPassword").isNullOrBlank()).not()
+) {
+    throw GradleException(
+        "Release task requested without configured release keystore. " +
+            "See android/key.properties.",
+    )
 }
 
 flutter {

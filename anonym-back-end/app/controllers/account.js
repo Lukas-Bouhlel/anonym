@@ -101,6 +101,38 @@ exports.readAccount = async (req, res) => {
     }
 };
 
+exports.readDiscoverable = async (req, res) => {
+    try {
+        const hasAllowNonFriendDms = await hasAllowNonFriendDmsColumn();
+        const attributes = [
+            'id',
+            'username',
+            'avatar',
+            'bio',
+            'presence_status',
+            'total_points',
+            'createdAt'
+        ];
+
+        if (hasAllowNonFriendDms) {
+            attributes.push('allow_non_friend_dms');
+        }
+
+        const users = await User.findAll({
+            attributes,
+            include: activeInventoryInclude
+        });
+
+        const viewerId = req.auth.userId;
+        const serializedUsers = users.map((user) => serializeUserForViewer(user, viewerId));
+        res.status(200).json(serializedUsers);
+    } catch (error) {
+        res.status(500).json({
+            message: error.message || 'Une erreur est survenue lors de la recuperation des utilisateurs.'
+        });
+    }
+};
+
 /**
  * Récupère les informations d'un utilisateur par son ID.
  *

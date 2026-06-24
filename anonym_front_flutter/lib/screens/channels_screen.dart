@@ -10,6 +10,9 @@ import '../models/channel_model.dart';
 import '../models/user_model.dart';
 import '../providers/app_providers.dart';
 import '../providers/auth_providers.dart';
+import '../providers/channels_provider.dart';
+import '../providers/commerce_provider.dart';
+import '../providers/presence_provider.dart';
 import 'group_settings_screen.dart';
 import 'user_profile_screen.dart';
 import '../theme.dart';
@@ -25,8 +28,6 @@ import '../widgets/presence_badge.dart';
 import 'dart:io';
 import 'package:flutter/foundation.dart' show kIsWeb, Uint8List;
 import 'package:image_picker/image_picker.dart';
-
-
 
 part '../widgets/channels/channel_sheet_widgets.dart';
 part '../widgets/channels/channel_list_widgets.dart';
@@ -60,227 +61,235 @@ class _ChannelsScreenState extends State<ChannelsScreen> {
   @override
   Widget build(BuildContext context) {
     final currentUser = context.watch<AuthProvider>().user;
+    final channelsProvider = context.read<ChannelsProvider>();
+    final presence = context.read<PresenceProvider>();
+    final commerce = context.read<CommerceProvider>();
+    final selectedChannel = context.select<ChannelsProvider, ChannelModel?>(
+      (provider) => provider.selectedChannel,
+    );
+    final channelMembers = context.select<ChannelsProvider, List<UserModel>>(
+      (provider) => provider.channelMembers,
+    );
+    final channelMessages = context
+        .select<ChannelsProvider, List<ChannelMessageModel>>(
+          (provider) => provider.messages,
+        );
+    final joinedChannels = context.select<ChannelsProvider, List<ChannelModel>>(
+      (provider) => provider.channels,
+    );
+    final isLoadingMessages = context.select<ChannelsProvider, bool>(
+      (provider) => provider.isLoadingMessages,
+    );
+    final socketError = context.select<ChannelsProvider, String?>(
+      (provider) => provider.messageError,
+    );
     final t = Theme.of(context).textTheme;
 
-    return Consumer<AppProvider>(
-      builder: (context, app, _) {
-        final socketError = app.messageError;
-        if (socketError == null) {
-          _lastShownMessageError = null;
-        }
-        if (socketError != null &&
-            socketError.isNotEmpty &&
-            socketError != _lastShownMessageError) {
-          _lastShownMessageError = socketError;
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (!mounted) return;
-            ScaffoldMessenger.of(
-              context,
-            ).showSnackBar(SnackBar(content: Text(socketError)));
-            context.read<AppProvider>().clearMessageError();
-          });
-        }
+    if (socketError == null) {
+      _lastShownMessageError = null;
+    }
+    if (socketError != null &&
+        socketError.isNotEmpty &&
+        socketError != _lastShownMessageError) {
+      _lastShownMessageError = socketError;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(socketError)));
+        channelsProvider.clearMessageError();
+      });
+    }
 
-        if (app.selectedChannel != null) {
-          final selected = app.selectedChannel!;
-          final isGroup = selected.channelType.trim().toUpperCase() == 'GROUP';
-          final isDm =
-              selected.channelType.trim().toUpperCase() == 'PRIVATE_DM';
-          final dmPeerFromMembers = isDm
-              ? app.channelMembers.firstWhere(
-                  (member) => member.id != currentUser?.id,
-                  orElse: () => const UserModel(id: 0, username: '', email: ''),
-                )
-              : null;
-          final hasMemberPeer = (dmPeerFromMembers?.username ?? '')
-              .trim()
-              .isNotEmpty;
-          final dmPeerBase = hasMemberPeer
-              ? dmPeerFromMembers
-              : selected.dmPeer;
-          if (isDm && dmPeerBase != null && dmPeerBase.id > 0) {
-            _hydrateDmPeerDetailsIfNeeded(app, dmPeerBase.id);
-          }
-          final dmPeer = dmPeerBase != null && dmPeerBase.id > 0
-              ? (app.userById(dmPeerBase.id) ?? dmPeerBase)
-              : dmPeerBase;
-          final dmPeerForFrame = dmPeerBase != null && dmPeerBase.id > 0
-              ? (app.userById(dmPeerBase.id) ?? dmPeerBase)
-              : null;
-          final dmPeerName = (dmPeer?.username ?? '').trim();
-          final hasDmPeerName = dmPeerName.isNotEmpty;
-          return _ChatDetailView(
-            currentUserId: currentUser?.id,
-            currentUserName: currentUser?.username,
-            currentUserAvatarUrl: currentUser?.avatar,
-            currentUserFrameUrl: _activeFrameUrlFromUser(app, currentUser),
-            isDm: isDm,
-            dmPeerName: hasDmPeerName ? dmPeerName : null,
-            dmPeerAvatarUrl: dmPeer?.avatar,
-            dmPeerFrameUrl: isDm
-                ? _activeFrameUrlFromUser(app, dmPeerForFrame)
-                : null,
-            dmPeerPresenceStatus: isDm && dmPeer != null
-                ? app.presenceStatusForUser(dmPeer.id)
-                : null,
-            dmPeerPresenceLabel: isDm && dmPeer != null
-                ? app.presenceLabelForUser(dmPeer.id)
-                : null,
-            onDmHeaderTap: isDm && dmPeer != null && dmPeer.id > 0
-                ? () {
-                    showModalBottomSheet(
-                      context: context,
-                      isScrollControlled: true,
-                      backgroundColor: Colors.transparent,
-                      shape: const RoundedRectangleBorder(
-                        borderRadius: BorderRadius.vertical(
-                          top: Radius.circular(28),
-                        ),
-                      ),
-                      clipBehavior: Clip.antiAlias,
-                      builder: (_) => FractionallySizedBox(
-                        heightFactor: 0.86,
-                        child: UserProfileScreen(user: dmPeer),
-                      ),
-                    );
-                  }
-                : null,
-            messageController: _messageController,
-            editingMessage: _editingMessage,
-            onCancelEdit: _cancelEdit,
-            onBack: app.closeSelectedChannelView,
-            onSendText: () => _sendText(app),
-            onSendImage: (path, bytes, fileName, text) =>
-                _sendImage(app, path, bytes, fileName, text),
-            onInfo: () => _showChannelInfoSheet(context, app),
-            onEdit: (message) => _editMessage(context, app, message),
-            onDelete: (message) =>
-                _deleteMessage(context, app, message.messageId),
-            selected: selected,
-            messages: app.messages,
-            loading: app.isLoadingMessages,
-            showGroupMenu: isGroup,
-          );
-        }
-
-        final channels = app.channels
-            .where((channel) {
-              final dmPeerName = channel.dmPeer?.username ?? '';
-              final source =
-                  '${channel.name} ${channel.description ?? ''} $dmPeerName'
-                      .toLowerCase();
-              return _query.isEmpty || source.contains(_query);
-            })
-            .toList(growable: false);
-
-        return RefreshIndicator(
-          color: AppColors.whiteColor,
-          backgroundColor: AppColors.primary,
-          onRefresh: () => app.refreshChannels(),
-          child: ListView(
-            padding: const EdgeInsets.fromLTRB(20, 28, 20, 140),
-            children: [
-              SafeArea(
-                bottom: false,
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Text('Conversations', style: t.displayLarge),
+    if (selectedChannel != null) {
+      final selected = selectedChannel;
+      final isGroup = selected.channelType.trim().toUpperCase() == 'GROUP';
+      final isDm = selected.channelType.trim().toUpperCase() == 'PRIVATE_DM';
+      final dmPeerFromMembers = isDm
+          ? channelMembers.firstWhere(
+              (member) => member.id != currentUser?.id,
+              orElse: () => const UserModel(id: 0, username: '', email: ''),
+            )
+          : null;
+      final hasMemberPeer = (dmPeerFromMembers?.username ?? '')
+          .trim()
+          .isNotEmpty;
+      final dmPeerBase = hasMemberPeer ? dmPeerFromMembers : selected.dmPeer;
+      if (isDm && dmPeerBase != null && dmPeerBase.id > 0) {
+        _hydrateDmPeerDetailsIfNeeded(channelsProvider, dmPeerBase.id);
+      }
+      final dmPeer = dmPeerBase != null && dmPeerBase.id > 0
+          ? (channelsProvider.userById(dmPeerBase.id) ?? dmPeerBase)
+          : dmPeerBase;
+      final dmPeerForFrame = dmPeerBase != null && dmPeerBase.id > 0
+          ? (channelsProvider.userById(dmPeerBase.id) ?? dmPeerBase)
+          : null;
+      final dmPeerName = (dmPeer?.username ?? '').trim();
+      final hasDmPeerName = dmPeerName.isNotEmpty;
+      return _ChatDetailView(
+        currentUserId: currentUser?.id,
+        currentUserName: currentUser?.username,
+        currentUserAvatarUrl: currentUser?.avatar,
+        currentUserFrameUrl: _activeFrameUrlFromUser(commerce, currentUser),
+        isDm: isDm,
+        dmPeerName: hasDmPeerName ? dmPeerName : null,
+        dmPeerAvatarUrl: dmPeer?.avatar,
+        dmPeerFrameUrl: isDm
+            ? _activeFrameUrlFromUser(commerce, dmPeerForFrame)
+            : null,
+        dmPeerPresenceStatus: isDm && dmPeer != null
+            ? presence.presenceStatusForUser(dmPeer.id)
+            : null,
+        dmPeerPresenceLabel: isDm && dmPeer != null
+            ? presence.presenceLabelForUser(dmPeer.id)
+            : null,
+        onDmHeaderTap: isDm && dmPeer != null && dmPeer.id > 0
+            ? () {
+                showModalBottomSheet(
+                  context: context,
+                  isScrollControlled: true,
+                  backgroundColor: Colors.transparent,
+                  shape: const RoundedRectangleBorder(
+                    borderRadius: BorderRadius.vertical(
+                      top: Radius.circular(28),
                     ),
-                    _HeaderIcon(
-                      icon: Icons.add_rounded,
-                      onTap: () => _showConversationActions(context, app),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 18),
-              Container(
-                height: 48,
-                padding: const EdgeInsets.symmetric(horizontal: 11.45),
-                decoration: BoxDecoration(
-                  gradient: AppGradients.gB1BCFBTo393566,
-                  borderRadius: BorderRadius.circular(15),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(
-                      Icons.search,
-                      color: AppColors.whiteColor,
-                      size: 27,
-                    ),
-                    Expanded(
-                      child: TextField(
-                        controller: _searchController,
-                        onChanged: (value) => setState(() {
-                          _query = value.trim().toLowerCase();
-                        }),
-                        style: const TextStyle(
-                          color: AppColors.whiteColor,
-                          fontFamily: AppTypography.primaryFontFamily,
-                          fontWeight: FontWeight.w500,
-                          fontSize: 13,
-                        ),
-                        cursorColor: AppColors.whiteColor,
-                        decoration: InputDecoration(
-                          hintText: 'Chercher une conversation',
-                          hintStyle: const TextStyle(
-                            color: AppColors.whiteColor,
-                            fontFamily: AppTypography.primaryFontFamily,
-                            fontWeight: FontWeight.w500,
-                            fontSize: 13,
-                          ),
-                          filled: false,
-                          fillColor: Colors.transparent,
-                          border: InputBorder.none,
-                          enabledBorder: InputBorder.none,
-                          focusedBorder: InputBorder.none,
-                          disabledBorder: InputBorder.none,
-                          errorBorder: InputBorder.none,
-                          focusedErrorBorder: InputBorder.none,
-                          isCollapsed: true,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 18),
-              if (channels.isEmpty)
-                const Padding(
-                  padding: EdgeInsets.all(16),
-                  child: Text(
-                    'Aucune conversation.',
-                    style: TextStyle(color: AppColors.cDBE7FE),
                   ),
-                )
-              else
-                ...channels.map(
-                  (channel) => _ConversationTile(
-                    channel: channel,
-                    dmPresenceStatus:
-                        channel.channelType.trim().toUpperCase() ==
-                                'PRIVATE_DM' &&
-                            channel.dmPeer != null
-                        ? app.presenceStatusForUser(channel.dmPeer!.id)
-                        : null,
-                    dmPresenceLabel:
-                        channel.channelType.trim().toUpperCase() ==
-                                'PRIVATE_DM' &&
-                            channel.dmPeer != null
-                        ? app.presenceLabelForUser(channel.dmPeer!.id)
-                        : null,
-                    onTap: () => app.selectChannel(channel),
+                  clipBehavior: Clip.antiAlias,
+                  builder: (_) => FractionallySizedBox(
+                    heightFactor: 0.86,
+                    child: UserProfileScreen(user: dmPeer),
                   ),
+                );
+              }
+            : null,
+        messageController: _messageController,
+        editingMessage: _editingMessage,
+        onCancelEdit: _cancelEdit,
+        onBack: channelsProvider.closeSelectedChannelView,
+        onSendText: () => _sendText(channelsProvider),
+        onSendImage: (path, bytes, fileName, text) =>
+            _sendImage(channelsProvider, path, bytes, fileName, text),
+        onInfo: () => _showChannelInfoSheet(context, channelsProvider),
+        onEdit: (message) => _editMessage(context, channelsProvider, message),
+        onDelete: (message) =>
+            _deleteMessage(context, channelsProvider, message.messageId),
+        selected: selected,
+        messages: channelMessages,
+        loading: isLoadingMessages,
+        showGroupMenu: isGroup,
+      );
+    }
+
+    final filteredChannels = joinedChannels
+        .where((channel) {
+          final dmPeerName = channel.dmPeer?.username ?? '';
+          final source =
+              '${channel.name} ${channel.description ?? ''} $dmPeerName'
+                  .toLowerCase();
+          return _query.isEmpty || source.contains(_query);
+        })
+        .toList(growable: false);
+
+    return RefreshIndicator(
+      color: AppColors.whiteColor,
+      backgroundColor: AppColors.primary,
+      onRefresh: () => channelsProvider.refreshChannels(),
+      child: ListView(
+        padding: const EdgeInsets.fromLTRB(20, 28, 20, 140),
+        children: [
+          SafeArea(
+            bottom: false,
+            child: Row(
+              children: [
+                Expanded(child: Text('Conversations', style: t.displayLarge)),
+                _HeaderIcon(
+                  icon: Icons.add_rounded,
+                  onTap: () =>
+                      _showConversationActions(context, channelsProvider),
+                  semanticsLabel: 'Nouvelle conversation',
                 ),
-            ],
+              ],
+            ),
           ),
-        );
-      },
+          const SizedBox(height: 18),
+          Container(
+            height: 48,
+            padding: const EdgeInsets.symmetric(horizontal: 11.45),
+            decoration: BoxDecoration(
+              gradient: AppGradients.gB1BCFBTo393566,
+              borderRadius: BorderRadius.circular(15),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.search, color: AppColors.whiteColor, size: 27),
+                Expanded(
+                  child: TextField(
+                    controller: _searchController,
+                    onChanged: (value) => setState(() {
+                      _query = value.trim().toLowerCase();
+                    }),
+                    style: const TextStyle(
+                      color: AppColors.whiteColor,
+                      fontFamily: AppTypography.primaryFontFamily,
+                      fontWeight: FontWeight.w500,
+                      fontSize: 13,
+                    ),
+                    cursorColor: AppColors.whiteColor,
+                    decoration: InputDecoration(
+                      hintText: 'Chercher une conversation',
+                      hintStyle: const TextStyle(
+                        color: AppColors.whiteColor,
+                        fontFamily: AppTypography.primaryFontFamily,
+                        fontWeight: FontWeight.w500,
+                        fontSize: 13,
+                      ),
+                      filled: false,
+                      fillColor: Colors.transparent,
+                      border: InputBorder.none,
+                      enabledBorder: InputBorder.none,
+                      focusedBorder: InputBorder.none,
+                      disabledBorder: InputBorder.none,
+                      errorBorder: InputBorder.none,
+                      focusedErrorBorder: InputBorder.none,
+                      isCollapsed: true,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 18),
+          if (filteredChannels.isEmpty)
+            const Padding(
+              padding: EdgeInsets.all(16),
+              child: Text(
+                'Aucune conversation.',
+                style: TextStyle(color: AppColors.cDBE7FE),
+              ),
+            )
+          else
+            ...filteredChannels.map(
+              (channel) => _ConversationTile(
+                channel: channel,
+                dmPresenceStatus:
+                    channel.channelType.trim().toUpperCase() == 'PRIVATE_DM' &&
+                        channel.dmPeer != null
+                    ? presence.presenceStatusForUser(channel.dmPeer!.id)
+                    : null,
+                dmPresenceLabel:
+                    channel.channelType.trim().toUpperCase() == 'PRIVATE_DM' &&
+                        channel.dmPeer != null
+                    ? presence.presenceLabelForUser(channel.dmPeer!.id)
+                    : null,
+                onTap: () => channelsProvider.selectChannel(channel),
+              ),
+            ),
+        ],
+      ),
     );
   }
 
-  void _hydrateDmPeerDetailsIfNeeded(AppProvider app, int userId) {
+  void _hydrateDmPeerDetailsIfNeeded(ChannelsProvider app, int userId) {
     if (userId <= 0) return;
     if (_hydratedDmPeerIds.contains(userId)) return;
     _hydratedDmPeerIds.add(userId);
@@ -290,7 +299,7 @@ class _ChannelsScreenState extends State<ChannelsScreen> {
     });
   }
 
-  void _sendText(AppProvider app) {
+  void _sendText(ChannelsProvider app) {
     final text = _messageController.text.trim();
     if (text.isEmpty) return;
     app.clearMessageError();
@@ -304,7 +313,7 @@ class _ChannelsScreenState extends State<ChannelsScreen> {
   }
 
   Future<void> _sendImage(
-    AppProvider app,
+    ChannelsProvider app,
     String? filePath,
     Uint8List? bytes,
     String? fileName,
@@ -328,7 +337,7 @@ class _ChannelsScreenState extends State<ChannelsScreen> {
 
   Future<void> _showConversationActions(
     BuildContext context,
-    AppProvider app,
+    ChannelsProvider app,
   ) async {
     final parentContext = context;
     await showModalBottomSheet<void>(
@@ -377,7 +386,7 @@ class _ChannelsScreenState extends State<ChannelsScreen> {
 
   Future<void> _openJoinPublicDirectoryScreen(
     BuildContext context,
-    AppProvider app,
+    ChannelsProvider app,
   ) async {
     await Navigator.of(context).push(
       PageRouteBuilder<void>(
@@ -399,7 +408,7 @@ class _ChannelsScreenState extends State<ChannelsScreen> {
     );
   }
 
-  String? _activeFrameUrlFromUser(AppProvider app, UserModel? user) {
+  String? _activeFrameUrlFromUser(CommerceProvider commerce, UserModel? user) {
     if (user == null || user.id <= 0) return null;
     for (final item in user.inventories) {
       if (!item.active) continue;
@@ -411,7 +420,7 @@ class _ChannelsScreenState extends State<ChannelsScreen> {
         final type = fromInventory.type.trim().toUpperCase();
         if (type == 'CADRE') return content;
       }
-      for (final shopItem in app.shopItems) {
+      for (final shopItem in commerce.shopItems) {
         if (shopItem.articleId != item.articleId) continue;
         final content = shopItem.content.trim();
         if (content.isEmpty) continue;
@@ -424,7 +433,7 @@ class _ChannelsScreenState extends State<ChannelsScreen> {
 
   Future<void> _deleteMessage(
     BuildContext context,
-    AppProvider app,
+    ChannelsProvider app,
     int messageId,
   ) async {
     await app.deleteMessage(messageId);
@@ -438,7 +447,7 @@ class _ChannelsScreenState extends State<ChannelsScreen> {
 
   Future<void> _editMessage(
     BuildContext context,
-    AppProvider app,
+    ChannelsProvider app,
     ChannelMessageModel message,
   ) async {
     setState(() {
@@ -452,7 +461,7 @@ class _ChannelsScreenState extends State<ChannelsScreen> {
 
   Future<void> _showChannelInfoSheet(
     BuildContext context,
-    AppProvider app,
+    ChannelsProvider app,
   ) async {
     final parentContext = context;
     final selected = app.selectedChannel;
@@ -699,7 +708,7 @@ class _ChannelsScreenState extends State<ChannelsScreen> {
 
   Future<void> _showMembersSheet(
     BuildContext context,
-    AppProvider app,
+    ChannelsProvider app,
     ChannelModel channel,
   ) async {
     final selectedChannelId = app.selectedChannel?.channelId;
@@ -715,9 +724,10 @@ class _ChannelsScreenState extends State<ChannelsScreen> {
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
       builder: (context) {
-        return Consumer<AppProvider>(
-          builder: (context, sheetApp, _) {
-            final members = sheetApp.channelMembers;
+        final sheetChannels = context.read<ChannelsProvider>();
+        return Selector<ChannelsProvider, List<UserModel>>(
+          selector: (_, provider) => provider.channelMembers,
+          builder: (context, members, _) {
             final bottomSafe = MediaQuery.of(context).padding.bottom;
             return Container(
               margin: const EdgeInsets.fromLTRB(12, 0, 12, 0),
@@ -811,18 +821,22 @@ class _ChannelsScreenState extends State<ChannelsScreen> {
                                           member,
                                         );
                                     if (!shouldRemove) return;
-                                    await sheetApp
+                                    await sheetChannels
                                         .removeMemberFromSelectedChannel(
                                           member.id,
                                         );
                                     if (!context.mounted) return;
-                                    if (sheetApp.errorMessage != null &&
-                                        sheetApp.errorMessage!.isNotEmpty) {
+                                    if (sheetChannels.errorMessage != null &&
+                                        sheetChannels
+                                            .errorMessage!
+                                            .isNotEmpty) {
                                       ScaffoldMessenger.of(
                                         context,
                                       ).showSnackBar(
                                         SnackBar(
-                                          content: Text(sheetApp.errorMessage!),
+                                          content: Text(
+                                            sheetChannels.errorMessage!,
+                                          ),
                                         ),
                                       );
                                     }
@@ -888,11 +902,12 @@ class _ChannelsScreenState extends State<ChannelsScreen> {
 
   Future<void> _showInviteSheet(
     BuildContext context,
-    AppProvider app,
+    ChannelsProvider app,
     ChannelModel channel,
   ) async {
     await app.selectChannel(channel);
     if (!context.mounted) return;
+    final commerce = context.read<CommerceProvider>();
 
     var query = '';
     final invitedUserIds = <int>{};
@@ -1016,7 +1031,7 @@ class _ChannelsScreenState extends State<ChannelsScreen> {
                                 final resolvedUser =
                                     app.userById(user.id) ?? user;
                                 final frameUrl = _activeFrameUrlFromUser(
-                                  app,
+                                  commerce,
                                   resolvedUser,
                                 );
                                 final invited = invitedUserIds.contains(

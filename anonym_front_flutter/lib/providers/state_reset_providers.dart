@@ -21,6 +21,7 @@ extension AppProviderStateResetX on AppProvider {
     _allUsers = const [];
     _liveLocationsByUserId.clear();
     _presenceByUserId.clear();
+    _markPresenceStateChanged();
     _publicGroupsByUserFuture.clear();
     _userDetailsHydrationById.clear();
     _socialRefreshDebounce?.cancel();
@@ -29,9 +30,7 @@ extension AppProviderStateResetX on AppProvider {
     _realtimeChannelsRefreshDebounce = null;
     _realtimeProfileStatsRefreshDebounce?.cancel();
     _realtimeProfileStatsRefreshDebounce = null;
-    _stopSessionKeepAlive();
-    _isRecoveringSocketSession = false;
-    _lastSocketRecoveryAt = null;
+    _realtimeCoordinator.reset();
     _isRefreshingSocialState = false;
     _hasQueuedSocialRefresh = false;
     _isRefreshingRealtimeChannels = false;
@@ -57,4 +56,3 @@ extension AppProviderStateResetX on AppProvider {
     _notifyStateChanged();
   }
 }
-

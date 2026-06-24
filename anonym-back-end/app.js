@@ -1,8 +1,9 @@
 const express = require('express');
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
-const rateLimit = require('express-rate-limit'); 
-const slowDown = require('express-slow-down'); 
+const rateLimit = require('express-rate-limit');
+const slowDown = require('express-slow-down');
+const multer = require('multer');
 const app = express();
 const helmet = require('helmet');
 const router = require("./app/routes/index.js");
@@ -10,6 +11,12 @@ const db = require("./app/models/index.js");
 const path = require('path');
 const createMailer = require('./app/utils/mailer.js');
 const { ensureCsrfCookie } = require('./app/middlewares/csrf');
+const {
+    healthHandler,
+    httpLogger,
+    metricsHandler,
+    metricsMiddleware
+} = require('./app/utils/observability');
 const env = process.env.NODE_ENV || 'development';
 
 const configuredOrigin =
@@ -129,16 +136,18 @@ const escapeHtml = (value) => String(value)
  * @memberof sequelize
  * @returns {Promise} - Résolution de la promesse si la connexion à la base de données est réussie.
  */
-db.sequelize
-    .authenticate()
-    .then(() => console.log("Database connected..."))
-    .catch((err) => console.log(err));
+if (env !== 'test') {
+    db.sequelize
+        .authenticate()
+        .then(() => console.log("Database connected..."))
+        .catch((err) => console.log(err));
+}
 
 const mailerConfig = {
     service: 'gmail',
     auth: {
         user: process.env.MAIL_USER,
-        pass: process.env.MAIL_PASS, 
+        pass: process.env.MAIL_PASS,
     },
 };
 
@@ -161,6 +170,8 @@ app.use((req, res, next) => {
 });
 
 app.use(express.json());
+app.use(httpLogger);
+app.use(metricsMiddleware);
 
 /**
  * Limite le nombre de requêtes par IP sur une fenêtre de temps.
@@ -174,7 +185,7 @@ app.use(express.json());
 const limiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
     max: Number(process.env.RATE_LIMIT_WRITE_MAX || 1200),
-    validate: {trustProxy: false},
+    validate: { trustProxy: false },
     standardHeaders: true,
     legacyHeaders: false,
     skip: (req) => ['GET', 'HEAD', 'OPTIONS'].includes((req.method || '').toUpperCase()),
@@ -199,7 +210,7 @@ const speedLimiter = slowDown({
     delayAfter: Number(process.env.RATE_LIMIT_WRITE_DELAY_AFTER || 250),
     delayMs: () => Number(process.env.RATE_LIMIT_WRITE_DELAY_MS || 150),
     skip: (req) => ['GET', 'HEAD', 'OPTIONS'].includes((req.method || '').toUpperCase()),
-    validate: {trustProxy: false}
+    validate: { trustProxy: false }
 });
 
 app.use(speedLimiter);
@@ -266,6 +277,11 @@ app.use(cookieParser());
  */
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 app.set('trust proxy', true);
+
+app.get('/health', healthHandler);
+app.get('/status', healthHandler);
+app.get('/api/health', healthHandler);
+app.get('/metrics', metricsHandler);
 
 app.get('/open-reset-password', (req, res) => {
     const token = typeof req.query?.token === 'string' ? req.query.token.trim() : '';
@@ -406,5 +422,16 @@ app.get('/open-payment-cancel', (req, res) => {
  */
 app.use('/api', ensureCsrfCookie, router);
 
-module.exports = app;
+app.use((error, req, res, next) => {
+    if (error instanceof multer.MulterError) {
+        const message = error.code === 'LIMIT_FILE_SIZE'
+            ? 'Image trop volumineuse.'
+            : 'Fichier image invalide.';
 
+        return res.status(400).json({ message });
+    }
+
+    return next(error);
+});
+
+module.exports = app;

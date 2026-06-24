@@ -3,7 +3,9 @@ import 'package:provider/provider.dart';
 
 import '../models/app_notification_model.dart';
 import '../models/user_model.dart';
-import '../providers/app_providers.dart';
+import '../providers/channels_provider.dart';
+import '../providers/notifications_provider.dart';
+import '../providers/social_provider.dart';
 import '../screens/user_profile_screen.dart';
 import '../theme.dart';
 import '../widgets/navigation/anonym_back_button.dart';
@@ -22,14 +24,17 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      context.read<AppProvider>().markAllNotificationsAsRead();
+      context.read<NotificationsProvider>().markAllNotificationsAsRead();
     });
   }
 
   @override
   Widget build(BuildContext context) {
     final t = Theme.of(context).textTheme;
-    final notifications = context.watch<AppProvider>().notifications;
+    final notifications = context
+        .select<NotificationsProvider, List<AppNotificationModel>>(
+          (provider) => provider.notifications,
+        );
     final grouped = _groupNotificationsByDay(notifications);
 
     return Scaffold(
@@ -118,33 +123,35 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   }
 
   Future<void> _onNotificationTap(AppNotificationModel item) async {
-    final app = context.read<AppProvider>();
+    final channels = context.read<ChannelsProvider>();
+    final social = context.read<SocialProvider>();
     if (item.type == AppNotificationType.newMessage &&
         item.relatedChannelId != null) {
-      final opened = await app.openChannelById(item.relatedChannelId!);
+      final opened = await channels.openChannelById(item.relatedChannelId!);
       if (!mounted) return;
       if (opened) {
         Navigator.of(context).maybePop();
-      } else if (app.errorMessage != null && app.errorMessage!.isNotEmpty) {
+      } else if (channels.errorMessage != null &&
+          channels.errorMessage!.isNotEmpty) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text(app.errorMessage!)));
+        ).showSnackBar(SnackBar(content: Text(channels.errorMessage!)));
       }
       return;
     }
     if (item.type == AppNotificationType.friendRequest &&
         item.relatedUserId != null) {
       UserModel? user;
-      for (final candidate in app.allUsers) {
+      for (final candidate in social.allUsers) {
         if (candidate.id == item.relatedUserId) {
           user = candidate;
           break;
         }
       }
-      user ??= _findUserFromIncomingRequests(app, item.relatedUserId!);
+      user ??= _findUserFromIncomingRequests(social, item.relatedUserId!);
       if (user == null) {
-        await app.refreshUsers(silent: true);
-        for (final candidate in app.allUsers) {
+        await social.refreshUsers(silent: true);
+        for (final candidate in social.allUsers) {
           if (candidate.id == item.relatedUserId) {
             user = candidate;
             break;
@@ -176,8 +183,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     Navigator.of(context).maybePop();
   }
 
-  UserModel? _findUserFromIncomingRequests(AppProvider app, int userId) {
-    for (final request in app.incomingFriendRequests) {
+  UserModel? _findUserFromIncomingRequests(SocialProvider social, int userId) {
+    for (final request in social.incomingFriendRequests) {
       final details = request.friendDetails;
       if (details != null && details.id == userId) return details;
     }

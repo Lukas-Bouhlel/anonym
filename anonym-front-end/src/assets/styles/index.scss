@@ -7,24 +7,17 @@
 
 // pages
 @use './home/home' as *;
+@use './sidebar/sidebar' as *;
 @use './discover/discover' as *;
 @use './support/support' as *;
-@use './reputation/reputation' as *;
 @use './privacy-policy/privacy-policy' as *;
 @use './terms-conditions/terms-conditions' as *;
 @use './legal-notices/legal-notices' as *;
-@use './sidebar/sidebar' as *;
-@use './app/app' as *;
-@use './friends/friends' as *;
 @use './profile/profile' as *;
 @use './profile/profils' as *;
 @use './profile/account' as *;
 @use './paiement/invoice' as *;
-@use './paiement/inventory' as *;
-@use './paiement/shop' as *;
-@use './paiement/success' as *;
 @use './access/access' as *;
 @use './access/reset' as *;
 @use './base/popup' as *;
 @use './admin/admin' as *;
-@use './messages/channelform' as *;

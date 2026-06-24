@@ -28,18 +28,59 @@ import '../services/push_notification_service.dart';
 import '../services/shop_repository.dart';
 import '../services/socket_service.dart';
 import '../utils/api_error_parser.dart';
+import '../utils/app_logger.dart';
 import '../utils/profile_share_payload.dart';
 import '../utils/presence_utils.dart';
+import 'app_domain_signals.dart';
 import 'auth_providers.dart';
-
+import 'realtime_coordinator.dart';
+import 'stores/app_channels_store.dart';
+import 'stores/app_commerce_store.dart';
+import 'stores/app_presence_store.dart';
+import 'stores/app_runtime_store.dart';
+import 'stores/app_social_store.dart';
 
 part 'refresh_providers.dart';
 part 'social_providers.dart';
 part 'channels_providers.dart';
 part 'account_providers.dart';
 part 'realtime_providers.dart';
+part 'realtime_event_handler.dart';
 part 'lifecycle_push_providers.dart';
 part 'state_reset_providers.dart';
+part 'read_only_queries_providers.dart';
+part 'domain_services_providers.dart';
+part 'refresh_domain_services_providers.dart';
+part 'crosscutting_services_providers.dart';
+part 'presence_services_providers.dart';
+
+class AppProviderDependencies {
+  const AppProviderDependencies({
+    required this.accountRepository,
+    required this.apiClient,
+    required this.friendsRepository,
+    required this.channelRepository,
+    required this.privateMessageRepository,
+    required this.shopRepository,
+    required this.inventoryRepository,
+    required this.paymentRepository,
+    required this.invoiceRepository,
+    required this.socketService,
+    required this.pushNotificationService,
+  });
+
+  final AccountRepository accountRepository;
+  final ApiClient apiClient;
+  final FriendsRepository friendsRepository;
+  final ChannelRepository channelRepository;
+  final PrivateMessageRepository privateMessageRepository;
+  final ShopRepository shopRepository;
+  final InventoryRepository inventoryRepository;
+  final PaymentRepository paymentRepository;
+  final InvoiceRepository invoiceRepository;
+  final SocketService socketService;
+  final PushNotificationService pushNotificationService;
+}
 
 /// Provider global de l'application.
 ///
@@ -48,29 +89,29 @@ part 'state_reset_providers.dart';
 class AppProvider extends ChangeNotifier with WidgetsBindingObserver {
   AppProvider({
     required AuthProvider authProvider,
-    required AccountRepository accountRepository,
-    required ApiClient apiClient,
-    required FriendsRepository friendsRepository,
-    required ChannelRepository channelRepository,
-    required PrivateMessageRepository privateMessageRepository,
-    required ShopRepository shopRepository,
-    required InventoryRepository inventoryRepository,
-    required PaymentRepository paymentRepository,
-    required InvoiceRepository invoiceRepository,
-    required SocketService socketService,
-    required PushNotificationService pushNotificationService,
+    required AppProviderDependencies dependencies,
   }) : _authProvider = authProvider,
-       _accountRepository = accountRepository,
-       _apiClient = apiClient,
-       _friendsRepository = friendsRepository,
-       _channelRepository = channelRepository,
-       _privateMessageRepository = privateMessageRepository,
-       _shopRepository = shopRepository,
-       _inventoryRepository = inventoryRepository,
-       _paymentRepository = paymentRepository,
-       _invoiceRepository = invoiceRepository,
-       _socketService = socketService,
-       _pushNotificationService = pushNotificationService {
+       _accountRepository = dependencies.accountRepository,
+       _apiClient = dependencies.apiClient,
+       _friendsRepository = dependencies.friendsRepository,
+       _channelRepository = dependencies.channelRepository,
+       _privateMessageRepository = dependencies.privateMessageRepository,
+       _shopRepository = dependencies.shopRepository,
+       _inventoryRepository = dependencies.inventoryRepository,
+       _paymentRepository = dependencies.paymentRepository,
+       _invoiceRepository = dependencies.invoiceRepository,
+       _socketService = dependencies.socketService,
+       _pushNotificationService = dependencies.pushNotificationService {
+    _realtimeCoordinator = RealtimeCoordinator(
+      apiClient: _apiClient,
+      socketService: _socketService,
+      isLoggedIn: () => _authProvider.isLoggedIn,
+      isAppInForeground: () => _isAppInForeground,
+      connectSocketWithLatestAuth: _connectSocketWithLatestAuth,
+      scheduleSocialStateRefresh: () => _scheduleSocialStateRefresh(),
+      log: _rtLog,
+    );
+    _realtimeEvents = AppProviderRealtimeEventHandler(this);
     WidgetsBinding.instance.addObserver(this);
     _authListener = _handleAuthChange;
     _authProvider.addListener(_authListener);
@@ -95,35 +136,14 @@ class AppProvider extends ChangeNotifier with WidgetsBindingObserver {
   String? _lastRegisteredPushToken;
 
   late final VoidCallback _authListener;
+  final AppDomainSignals _domainSignals = AppDomainSignals();
 
   int? _activeUserId;
-  bool _isBootstrapping = false;
-  bool _isLoadingMessages = false;
-  bool _isSubmitting = false;
-  String? _errorMessage;
-  String? _messageError;
-
-  List<FriendModel> _friends = const [];
-  List<FriendModel> _incomingFriendRequests = const [];
-  List<FriendModel> _outgoingFriendRequests = const [];
-  List<UserModel> _blockedUsers = const [];
-  List<ChannelModel> _channels = const [];
-  List<ChannelModel> _publicChannels = const [];
-  ChannelModel? _selectedChannel;
-  List<UserModel> _channelMembers = const [];
-  List<ChannelMessageModel> _messages = const [];
-  List<AppNotificationModel> _notifications = const [];
-  Set<String> _readNotificationIds = <String>{};
-  List<ShopItemModel> _shopItems = const [];
-  List<InventoryItemModel> _inventoryItems = const [];
-  List<InvoiceModel> _invoices = const [];
-  List<UserModel> _allUsers = const [];
-  final Map<int, LiveUserLocationModel> _liveLocationsByUserId = {};
-  final Map<int, String> _presenceByUserId = {};
-  final Map<int, Future<List<ChannelModel>>> _publicGroupsByUserFuture = {};
-  final Map<int, Future<UserModel?>> _userDetailsHydrationById = {};
-  String? _manualPresenceOverride;
-  bool _isAppInForeground = true;
+  final _runtimeState = AppRuntimeStore();
+  final _socialState = AppSocialStore();
+  final _channelsState = AppChannelsStore();
+  final _commerceState = AppCommerceStore();
+  final _presenceState = AppPresenceStore();
   Timer? _socialRefreshDebounce;
   bool _isRefreshingSocialState = false;
   bool _hasQueuedSocialRefresh = false;
@@ -133,20 +153,218 @@ class AppProvider extends ChangeNotifier with WidgetsBindingObserver {
   bool _hasQueuedRealtimeChannelsRefresh = false;
   bool _isRefreshingRealtimeProfileStats = false;
   bool _hasQueuedRealtimeProfileStatsRefresh = false;
-  int _realtimeStatsVersion = 0;
-  String _lastPublicChannelsFilter = 'all';
-  Timer? _sessionKeepAliveTimer;
-  bool _isRecoveringSocketSession = false;
-  DateTime? _lastSocketRecoveryAt;
+  late final RealtimeCoordinator _realtimeCoordinator;
+  late final AppProviderRealtimeEventHandler _realtimeEvents;
+  late final _SocialDomainService _socialDomainService = _SocialDomainService(
+    this,
+  );
+  late final _ChannelsDomainService _channelsDomainService =
+      _ChannelsDomainService(this);
+  late final _AccountDomainService _accountDomainService =
+      _AccountDomainService(this);
+  late final _SocialRefreshDomainService _socialRefreshDomainService =
+      _SocialRefreshDomainService(this);
+  late final _ChannelsRefreshDomainService _channelsRefreshDomainService =
+      _ChannelsRefreshDomainService(this);
+  late final _CommerceRefreshDomainService _commerceRefreshDomainService =
+      _CommerceRefreshDomainService(this);
+  late final _AppProviderParsingService _parsingService =
+      _AppProviderParsingService();
+  late final _AppProviderMutationService _mutationService =
+      _AppProviderMutationService(this);
+  late final _AppProviderNotificationService _notificationService =
+      _AppProviderNotificationService(this, _parsingService);
+  late final _AppProviderPresenceService _presenceService =
+      _AppProviderPresenceService(this);
+
+  List<FriendModel> get _friends => _socialState.friends;
+  set _friends(List<FriendModel> value) {
+    _socialState.friends = value;
+    _domainSignals.bumpSocial();
+    _domainSignals.bumpPresence();
+  }
+
+  List<FriendModel> get _incomingFriendRequests =>
+      _socialState.incomingFriendRequests;
+  set _incomingFriendRequests(List<FriendModel> value) {
+    _socialState.incomingFriendRequests = value;
+    _domainSignals.bumpSocial();
+    _domainSignals.bumpPresence();
+  }
+
+  List<FriendModel> get _outgoingFriendRequests =>
+      _socialState.outgoingFriendRequests;
+  set _outgoingFriendRequests(List<FriendModel> value) {
+    _socialState.outgoingFriendRequests = value;
+    _domainSignals.bumpSocial();
+    _domainSignals.bumpPresence();
+  }
+
+  List<UserModel> get _blockedUsers => _socialState.blockedUsers;
+  set _blockedUsers(List<UserModel> value) {
+    _socialState.blockedUsers = value;
+    _domainSignals.bumpSocial();
+    _domainSignals.bumpPresence();
+  }
+
+  List<UserModel> get _allUsers => _socialState.allUsers;
+  set _allUsers(List<UserModel> value) {
+    _socialState.allUsers = value;
+    _domainSignals.bumpSocial();
+    _domainSignals.bumpPresence();
+  }
+
+  List<AppNotificationModel> get _notifications => _socialState.notifications;
+  set _notifications(List<AppNotificationModel> value) {
+    _socialState.notifications = value;
+    _domainSignals.bumpNotifications();
+  }
+
+  Set<String> get _readNotificationIds => _socialState.readNotificationIds;
+  set _readNotificationIds(Set<String> value) {
+    _socialState.readNotificationIds = value;
+    _domainSignals.bumpNotifications();
+  }
+
+  Map<int, Future<List<ChannelModel>>> get _publicGroupsByUserFuture =>
+      _socialState.publicGroupsByUserFuture;
+  Map<int, Future<UserModel?>> get _userDetailsHydrationById =>
+      _socialState.userDetailsHydrationById;
+
+  Map<int, LiveUserLocationModel> get _liveLocationsByUserId =>
+      _presenceState.liveLocationsByUserId;
+  Map<int, String> get _presenceByUserId => _presenceState.presenceByUserId;
+
+  String? get _manualPresenceOverride => _runtimeState.manualPresenceOverride;
+  set _manualPresenceOverride(String? value) {
+    _runtimeState.manualPresenceOverride = value;
+  }
+
+  bool get _isAppInForeground => _runtimeState.isAppInForeground;
+  set _isAppInForeground(bool value) {
+    _runtimeState.isAppInForeground = value;
+  }
+
+  List<ChannelModel> get _channels => _channelsState.channels;
+  set _channels(List<ChannelModel> value) {
+    _channelsState.channels = value;
+    _domainSignals.bumpChannels();
+  }
+
+  List<ChannelModel> get _publicChannels => _channelsState.publicChannels;
+  set _publicChannels(List<ChannelModel> value) {
+    _channelsState.publicChannels = value;
+    _domainSignals.bumpChannels();
+  }
+
+  ChannelModel? get _selectedChannel => _channelsState.selectedChannel;
+  set _selectedChannel(ChannelModel? value) {
+    _channelsState.selectedChannel = value;
+    _domainSignals.bumpChannels();
+  }
+
+  List<UserModel> get _channelMembers => _channelsState.channelMembers;
+  set _channelMembers(List<UserModel> value) {
+    _channelsState.channelMembers = value;
+    _domainSignals.bumpChannels();
+  }
+
+  List<ChannelMessageModel> get _messages => _channelsState.messages;
+  set _messages(List<ChannelMessageModel> value) {
+    _channelsState.messages = value;
+    _domainSignals.bumpChannels();
+  }
+
+  String get _lastPublicChannelsFilter =>
+      _channelsState.lastPublicChannelsFilter;
+  set _lastPublicChannelsFilter(String value) {
+    _channelsState.lastPublicChannelsFilter = value;
+    _domainSignals.bumpChannels();
+  }
+
+  List<ShopItemModel> get _shopItems => _commerceState.shopItems;
+  set _shopItems(List<ShopItemModel> value) {
+    _commerceState.shopItems = value;
+    _domainSignals.bumpCommerce();
+  }
+
+  List<InventoryItemModel> get _inventoryItems => _commerceState.inventoryItems;
+  set _inventoryItems(List<InventoryItemModel> value) {
+    _commerceState.inventoryItems = value;
+    _domainSignals.bumpCommerce();
+  }
+
+  List<InvoiceModel> get _invoices => _commerceState.invoices;
+  set _invoices(List<InvoiceModel> value) {
+    _commerceState.invoices = value;
+    _domainSignals.bumpCommerce();
+  }
+
+  bool get _isBootstrapping => _runtimeState.isBootstrapping;
+  set _isBootstrapping(bool value) {
+    if (_runtimeState.isBootstrapping == value) return;
+    _runtimeState.isBootstrapping = value;
+    _domainSignals.bumpOrchestrator();
+  }
+
+  bool get _isLoadingMessages => _runtimeState.isLoadingMessages;
+  set _isLoadingMessages(bool value) {
+    if (_runtimeState.isLoadingMessages == value) return;
+    _runtimeState.isLoadingMessages = value;
+    _domainSignals.bumpChannels();
+  }
+
+  bool get _isSubmitting => _runtimeState.isSubmitting;
+  set _isSubmitting(bool value) {
+    if (_runtimeState.isSubmitting == value) return;
+    _runtimeState.isSubmitting = value;
+    _domainSignals.bumpOrchestrator();
+    _domainSignals.bumpSocial();
+    _domainSignals.bumpCommerce();
+  }
+
+  String? get _errorMessage => _runtimeState.errorMessage;
+  set _errorMessage(String? value) {
+    if (_runtimeState.errorMessage == value) return;
+    _runtimeState.errorMessage = value;
+    _domainSignals.bumpOrchestrator();
+    _domainSignals.bumpSocial();
+    _domainSignals.bumpChannels();
+    _domainSignals.bumpCommerce();
+  }
+
+  String? get _messageError => _runtimeState.messageError;
+  set _messageError(String? value) {
+    if (_runtimeState.messageError == value) return;
+    _runtimeState.messageError = value;
+    _domainSignals.bumpChannels();
+  }
+
+  int get _realtimeStatsVersion => _runtimeState.realtimeStatsVersion;
+  set _realtimeStatsVersion(int value) {
+    if (_runtimeState.realtimeStatsVersion == value) return;
+    _runtimeState.realtimeStatsVersion = value;
+    _domainSignals.bumpPresence();
+  }
 
   void _rtLog(String message) {
-    // ignore: avoid_print
-    print('[FRIENDS-RT-FLUTTER] $message');
+    AppLogger.debug(message, scope: 'FRIENDS-RT');
   }
 
   void _notifyStateChanged() {
     notifyListeners();
   }
+
+  void _markPresenceStateChanged() {
+    _domainSignals.bumpPresence();
+  }
+
+  Listenable get orchestratorListenable => _domainSignals.orchestrator;
+  Listenable get socialListenable => _domainSignals.social;
+  Listenable get channelsListenable => _domainSignals.channels;
+  Listenable get commerceListenable => _domainSignals.commerce;
+  Listenable get presenceListenable => _domainSignals.presence;
+  Listenable get notificationsListenable => _domainSignals.notifications;
 
   bool get isBootstrapping => _isBootstrapping;
   bool get isLoadingMessages => _isLoadingMessages;
@@ -181,98 +399,6 @@ class AppProvider extends ChangeNotifier with WidgetsBindingObserver {
 
   int get realtimeStatsVersion => _realtimeStatsVersion;
 
-  UserModel? userById(int userId) {
-    if (userId <= 0) return null;
-    for (final user in _allUsers) {
-      if (user.id == userId) return user;
-    }
-    return null;
-  }
-
-  String? activeFrameUrlForUser(int userId) {
-    return _resolveSharedProfileFrameUrl(userId);
-  }
-
-  String presenceStatusForUser(int userId, {bool isCurrentUser = false}) {
-    return PresenceUtils.effectiveForViewer(
-      _presenceByUserId[userId],
-      isCurrentUser: isCurrentUser,
-    );
-  }
-
-  String presenceLabelForUser(int userId, {bool isCurrentUser = false}) {
-    return PresenceUtils.label(
-      _presenceByUserId[userId],
-      isCurrentUser: isCurrentUser,
-    );
-  }
-
-  bool isFriendRequestPending({int? userId, String? username}) {
-    if (userId != null &&
-        _outgoingFriendRequests.any((request) => request.friendId == userId)) {
-      return true;
-    }
-    final normalized = username?.trim().toLowerCase();
-    if (normalized == null || normalized.isEmpty) return false;
-    return _outgoingFriendRequests.any((request) {
-      final requestName = request.friendDetails?.username.trim().toLowerCase();
-      return requestName == normalized;
-    });
-  }
-
-  List<UserModel> get discoverableUsers {
-    final me = _authProvider.user?.id;
-    final friendIds = _friends
-        .where((friend) => _isActiveFriendStatus(friend.status))
-        .map((friend) => friend.friendId)
-        .toSet();
-    final outgoingIds = _outgoingFriendRequests
-        .map((request) => request.friendId)
-        .toSet();
-    final incomingIds = _incomingFriendRequests
-        .map((request) => request.userId)
-        .toSet();
-    final blockedIds = _blockedUsers.map((user) => user.id).toSet();
-
-    return _allUsers
-        .where((user) {
-          if (user.id == me) return false;
-          if (friendIds.contains(user.id)) return false;
-          if (outgoingIds.contains(user.id)) return false;
-          if (incomingIds.contains(user.id)) return false;
-          if (blockedIds.contains(user.id)) return false;
-          return true;
-        })
-        .toList(growable: false);
-  }
-
-  List<FriendModel> get availableFriendsForSelectedChannel {
-    final selected = _selectedChannel;
-    if (selected == null) return const [];
-    final memberIds = _channelMembers.map((member) => member.id).toSet();
-    return _friends
-        .where(
-          (friend) =>
-              friend.status.trim().toUpperCase() == 'ACTIVE' &&
-              !memberIds.contains(friend.friendId) &&
-              friend.friendDetails != null,
-        )
-        .toList(growable: false);
-  }
-
-  bool isArticleOwned(int articleId) {
-    return _inventoryItems.any((item) => item.articleId == articleId);
-  }
-
-  InventoryItemModel? inventoryByArticleId(int articleId) {
-    try {
-      return _inventoryItems.firstWhere((item) => item.articleId == articleId);
-    } catch (_) {
-      return null;
-    }
-  }
-
-
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     _isAppInForeground = state == AppLifecycleState.resumed;
@@ -293,6 +419,7 @@ class AppProvider extends ChangeNotifier with WidgetsBindingObserver {
     _pushTokenRefreshSubscription?.cancel();
     _pushOpenedAppSubscription?.cancel();
     _pushForegroundMessageSubscription?.cancel();
+    _domainSignals.dispose();
     super.dispose();
   }
 }

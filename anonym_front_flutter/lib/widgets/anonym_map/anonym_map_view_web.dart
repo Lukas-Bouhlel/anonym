@@ -11,6 +11,7 @@ import 'package:flutter/material.dart';
 import '../../models/live_user_location_model.dart';
 import '../../theme.dart';
 import '../../utils/app_config.dart';
+import '../../utils/app_logger.dart';
 import 'anonym_map_data.dart';
 import 'anonym_map_helpers.dart';
 
@@ -84,6 +85,22 @@ class _AnonymMapViewState extends State<AnonymMapView> {
 
   @override
   Widget build(BuildContext context) {
+    if (!AppConfig.hasMapboxAccessToken) {
+      return const ColoredBox(
+        color: AppColors.c393566,
+        child: Center(
+          child: Text(
+            'Token Mapbox manquant.\nAjoutez --dart-define=MAPBOX_ACCESS_TOKEN=...',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: AppColors.cFCFAFE,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+      );
+    }
+
     return Stack(
       fit: StackFit.expand,
       children: [
@@ -97,10 +114,11 @@ class _AnonymMapViewState extends State<AnonymMapView> {
 
   void _createOrUpdateMap() {
     if (!mounted) return;
+    if (!AppConfig.hasMapboxAccessToken) return;
     final payloadMap = _payload();
     final markerList = payloadMap['markers'] as List<Object?>? ?? const [];
     final first = markerList.isEmpty ? null : markerList.first;
-    debugPrint(
+    AppLogger.debug(
       '[ANONYM_MAP][web][send] markers=${markerList.length} '
       'first=${first is Map ? '${first['latitude']},${first['longitude']}' : '-'} '
       'camera=${payloadMap['camera'] ?? '-'}',
@@ -138,7 +156,7 @@ class _AnonymMapViewState extends State<AnonymMapView> {
       if (result is bool) return result;
       return true;
     } catch (error) {
-      debugPrint('Mapbox bridge error: $error');
+      AppLogger.debug('Mapbox bridge error: $error');
       return false;
     }
   }

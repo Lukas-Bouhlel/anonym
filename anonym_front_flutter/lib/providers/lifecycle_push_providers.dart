@@ -1,6 +1,6 @@
 part of 'app_providers.dart';
 
-/// Gestion du cycle de vie app, présence utilisateur et push notifications.
+/// Gestion du cycle de vie app, presence utilisateur et push notifications.
 extension AppProviderLifecyclePushX on AppProvider {
   Future<void> _applyLifecyclePresence(AppLifecycleState state) async {
     if (_manualPresenceOverride == PresenceUtils.dnd ||
@@ -34,6 +34,7 @@ extension AppProviderLifecyclePushX on AppProvider {
     try {
       await _accountRepository.updatePresenceStatus(normalized);
       _presenceByUserId[me.id] = normalized;
+      _markPresenceStateChanged();
       _authProvider.setUser(me.copyWith(presenceStatus: normalized));
     } catch (_) {
       // Keep lifecycle transitions best-effort without surfacing noisy errors.
@@ -104,275 +105,77 @@ extension AppProviderLifecyclePushX on AppProvider {
   }
 
   void _handleForegroundPushMessage(dynamic message) {
-    if (message is! RemoteMessage) return;
-    if (_shouldStoreInAppNotifications) {
-      _appendPushNotification(message);
-    }
+    _notificationService.handleForegroundPushMessage(message);
   }
 
   void _handlePushMessageOpen(dynamic message) {
-    if (message is! RemoteMessage) return;
-    _appendPushNotification(message, forceStore: true);
-    final channelId = _toInt(
-      message.data['channelId'] ??
-          message.data['channel_id'] ??
-          message.data['conversation_id'],
-    );
-    if (channelId > 0) {
-      openChannelById(channelId);
-    }
-  }
-
-  void _appendPushNotification(
-    RemoteMessage message, {
-    bool forceStore = false,
-  }) {
-    if (!forceStore && !_shouldStoreInAppNotifications) return;
-    final data = message.data;
-    final eventType = (data['event'] ?? data['type'] ?? '').toString().trim();
-    if (eventType == 'newMessage') {
-      final senderId = _toInt(data['senderId'] ?? data['sender_id']);
-      final meId = _authProvider.user?.id;
-      if (meId != null && senderId == meId) return;
-      final senderName =
-          (data['senderUsername'] ?? data['sender_username'] ?? '')
-              .toString()
-              .trim();
-      final channelId = _toInt(data['channelId'] ?? data['channel_id']);
-      final now = DateTime.now();
-      _prependNotification(
-        AppNotificationModel(
-          id: 'push-msg-${data['id'] ?? now.microsecondsSinceEpoch}',
-          type: AppNotificationType.newMessage,
-          title: senderName.isEmpty
-              ? 'Vous avez reçu un nouveau message'
-              : 'Vous avez reçu un nouveau message de $senderName',
-          subtitle: _formatNotificationTime(now),
-          createdAt: now,
-          relatedUserId: senderId > 0 ? senderId : null,
-          relatedChannelId: channelId > 0 ? channelId : null,
-        ),
-      );
-      _scheduleRealtimeMessageDerivedRefreshes();
-      return;
-    }
-    if (eventType == 'friendRequestReceived') {
-      final senderId = _toInt(data['senderId'] ?? data['sender_id']);
-      final senderName =
-          (data['senderUsername'] ?? data['sender_username'] ?? '')
-              .toString()
-              .trim();
-      final now = DateTime.now();
-      _prependNotification(
-        AppNotificationModel(
-          id: 'push-fr-${data['requestId'] ?? now.microsecondsSinceEpoch}',
-          type: AppNotificationType.friendRequest,
-          title: senderName.isEmpty
-              ? "Vous avez reçu une demande d'ami"
-              : "Vous avez reçu une demande d'ami de $senderName",
-          subtitle: _formatNotificationTime(now),
-          createdAt: now,
-          relatedUserId: senderId > 0 ? senderId : null,
-        ),
-      );
-    }
+    _notificationService.handlePushMessageOpen(message);
   }
 
   bool _isLocationPayloadValid(LiveUserLocationModel value) {
-    if (value.userId <= 0) return false;
-    if (value.latitude < -90 || value.latitude > 90) return false;
-    if (value.longitude < -180 || value.longitude > 180) return false;
-    return true;
+    return _presenceService.isLocationPayloadValid(value);
   }
 
   Set<int> get _visibleLocationUserIds {
-    final visible = <int>{};
-    final meId = _authProvider.user?.id;
-    if (meId != null && meId > 0) {
-      visible.add(meId);
-    }
-    for (final friend in _friends) {
-      if (!_isActiveFriendStatus(friend.status)) continue;
-      if (friend.friendId <= 0) continue;
-      visible.add(friend.friendId);
-    }
-    return visible;
+    return _presenceService.visibleLocationUserIds();
   }
 
   bool _shouldDisplayLocationForUser(int userId) {
-    if (userId <= 0) return false;
-    return _visibleLocationUserIds.contains(userId);
+    return _presenceService.shouldDisplayLocationForUser(userId);
   }
 
   bool _pruneHiddenLiveLocations() {
-    if (_liveLocationsByUserId.isEmpty) return false;
-    final visibleIds = _visibleLocationUserIds;
-    final removedIds = _liveLocationsByUserId.keys
-        .where((userId) => !visibleIds.contains(userId))
-        .toList(growable: false);
-    if (removedIds.isEmpty) return false;
-    for (final userId in removedIds) {
-      _liveLocationsByUserId.remove(userId);
-    }
-    return true;
+    return _presenceService.pruneHiddenLiveLocations();
   }
 
   double _distanceInMeters(double lat1, double lon1, double lat2, double lon2) {
-    const earthRadiusMeters = 6371000.0;
-    final dLat = _toRadians(lat2 - lat1);
-    final dLon = _toRadians(lon2 - lon1);
-    final a =
-        (sin(dLat / 2) * sin(dLat / 2)) +
-        cos(_toRadians(lat1)) *
-            cos(_toRadians(lat2)) *
-            (sin(dLon / 2) * sin(dLon / 2));
-    final c = 2 * atan2(sqrt(a), sqrt(1 - a));
-    return earthRadiusMeters * c;
+    return _presenceService.distanceInMeters(lat1, lon1, lat2, lon2);
   }
 
-  double _toRadians(double deg) => deg * 0.017453292519943295;
-
   void _pushNewMessageNotification(ChannelMessageModel message) {
-    final meId = _authProvider.user?.id;
-    final senderId = message.senderId ?? message.sender?.id;
-    if (meId != null && senderId == meId) return;
-
-    final selectedId = _selectedChannel?.channelId;
-    if (selectedId != null && selectedId == message.channelId) {
-      // User is already in this conversation: no toast/notification needed.
-      return;
-    }
-
-    final senderName = message.sender?.username.trim();
-    final safeSenderName = (senderName == null || senderName.isEmpty)
-        ? 'Utilisateur'
-        : senderName;
-    final createdAt = message.createdAt ?? DateTime.now();
-
-    _prependNotification(
-      AppNotificationModel(
-        id: 'msg-${message.messageId}-${createdAt.microsecondsSinceEpoch}',
-        type: AppNotificationType.newMessage,
-        title: 'Vous avez reçu un nouveau message de $safeSenderName',
-        subtitle: _formatNotificationTime(createdAt),
-        createdAt: createdAt,
-        avatarUrl: message.sender?.avatar ?? message.imageUrl,
-        relatedUserId: senderId,
-        relatedChannelId: message.channelId > 0 ? message.channelId : null,
-      ),
-    );
+    _notificationService.pushNewMessageNotification(message);
   }
 
   void _prependNotification(AppNotificationModel value) {
-    final incoming = value.copyWith(
-      isRead: _readNotificationIds.contains(value.id),
-    );
-    final deduped = _notifications.where((item) => item.id != incoming.id);
-    final next = <AppNotificationModel>[incoming, ...deduped];
-    _notifications = next.take(100).toList(growable: false);
-    _notifyStateChanged();
+    _notificationService.prependNotification(value);
   }
 
-  bool get _shouldStoreInAppNotifications => !_isAppInForeground;
+  bool get _shouldStoreInAppNotifications =>
+      _notificationService.shouldStoreInAppNotifications;
 
   Future<void> _loadReadNotificationIds() async {
-    final meId = _authProvider.user?.id;
-    if (meId == null || meId <= 0) {
-      _readNotificationIds = <String>{};
-      return;
-    }
-    final prefs = await SharedPreferences.getInstance();
-    final stored =
-        prefs.getStringList(_readNotificationsStorageKey(meId)) ??
-        const <String>[];
-    _readNotificationIds = stored.toSet();
+    await _notificationService.loadReadNotificationIds();
   }
 
   Future<void> _persistReadNotificationIds() async {
-    final meId = _authProvider.user?.id;
-    if (meId == null || meId <= 0) return;
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setStringList(
-      _readNotificationsStorageKey(meId),
-      _readNotificationIds.toList(growable: false),
-    );
+    await _notificationService.persistReadNotificationIds();
   }
 
-  String _readNotificationsStorageKey(int userId) =>
-      'notifications_read_ids_v1_user_$userId';
-
   String _formatNotificationTime(DateTime value) {
-    final local = value.toLocal();
-    final hour = local.hour.toString().padLeft(2, '0');
-    final minute = local.minute.toString().padLeft(2, '0');
-    return "Aujourd'hui à $hour:$minute";
+    return _parsingService.formatNotificationTime(value);
   }
 
   DateTime _parseDate(dynamic raw) {
-    if (raw is DateTime) return raw;
-    if (raw is String) {
-      final parsed = DateTime.tryParse(raw);
-      if (parsed != null) return parsed;
-    }
-    return DateTime.now();
+    return _parsingService.parseDate(raw);
   }
 
   int _toInt(dynamic raw) {
-    if (raw is int) return raw;
-    if (raw is num) return raw.toInt();
-    if (raw is String) return int.tryParse(raw) ?? 0;
-    return 0;
+    return _parsingService.toInt(raw);
   }
 
   bool _isActiveFriendStatus(String status) {
-    final normalized = status.trim().toUpperCase();
-    return normalized == 'ACTIVE';
+    return _presenceService.isActiveFriendStatus(status);
   }
 
   bool _isBlockedFriendStatus(String status) {
-    final normalized = status.trim().toUpperCase();
-    return normalized == 'BLOCKED' || normalized == 'BLOQUED';
-  }
-
-  String _normalizePublicChannelFilter(String filter) {
-    final normalized = filter.trim().toLowerCase();
-    switch (normalized) {
-      case 'joined':
-      case 'discover':
-      case 'all':
-        return normalized;
-      default:
-        return 'all';
-    }
-  }
-
-  List<ChannelModel> _buildDiscoverTopChannels(List<ChannelModel> channels) {
-    final discoverGroups = channels
-        .where((channel) {
-          final type = channel.channelType.trim().toUpperCase();
-          final visibility = channel.visibility.trim().toUpperCase();
-          return type == 'GROUP' && visibility == 'PUBLIC';
-        })
-        .toList(growable: false);
-
-    discoverGroups.sort(
-      (a, b) => (b.reputationScore ?? 0).compareTo(a.reputationScore ?? 0),
-    );
-    return discoverGroups.take(10).toList(growable: false);
-  }
-
-  List<ChannelModel> _excludePrivateDmChannels(List<ChannelModel> channels) {
-    return channels
-        .where(
-          (channel) => channel.channelType.trim().toUpperCase() != 'PRIVATE_DM',
-        )
-        .toList(growable: false);
+    return _presenceService.isBlockedFriendStatus(status);
   }
 
   Future<void> _refreshCurrentUser() async {
     final me = await _accountRepository.readAccount();
     if (me.id > 0) {
       _presenceByUserId[me.id] = PresenceUtils.normalize(me.presenceStatus);
+      _markPresenceStateChanged();
     }
     _authProvider.setUser(me);
   }
@@ -392,6 +195,7 @@ extension AppProviderLifecyclePushX on AppProvider {
     _presenceByUserId[incoming.id] = PresenceUtils.normalize(
       incoming.presenceStatus,
     );
+    _markPresenceStateChanged();
     _notifyStateChanged();
   }
 
@@ -400,19 +204,10 @@ extension AppProviderLifecyclePushX on AppProvider {
     required String fallbackMessage,
     bool silent = false,
   }) async {
-    if (!silent) {
-      _isSubmitting = true;
-      _errorMessage = null;
-      _notifyStateChanged();
-    }
-    try {
-      await callback();
-    } catch (e) {
-      _errorMessage = ApiErrorParser.parse(e, fallback: fallbackMessage);
-    } finally {
-      if (!silent) _isSubmitting = false;
-      _notifyStateChanged();
-    }
+    await _mutationService.run(
+      callback,
+      fallbackMessage: fallbackMessage,
+      silent: silent,
+    );
   }
-
 }

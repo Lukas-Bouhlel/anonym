@@ -6,8 +6,14 @@ import 'package:anonym_front_flutter/models/invoice_model.dart';
 import 'package:anonym_front_flutter/models/payment_confirmation_model.dart';
 import 'package:anonym_front_flutter/models/shop_item_model.dart';
 import 'package:anonym_front_flutter/models/user_model.dart';
+import 'package:anonym_front_flutter/providers/app_orchestrator_provider.dart';
 import 'package:anonym_front_flutter/providers/app_providers.dart';
 import 'package:anonym_front_flutter/providers/auth_providers.dart';
+import 'package:anonym_front_flutter/providers/channels_provider.dart';
+import 'package:anonym_front_flutter/providers/commerce_provider.dart';
+import 'package:anonym_front_flutter/providers/notifications_provider.dart';
+import 'package:anonym_front_flutter/providers/presence_provider.dart';
+import 'package:anonym_front_flutter/providers/social_provider.dart';
 import 'package:anonym_front_flutter/services/account_repository.dart';
 import 'package:anonym_front_flutter/services/api_client.dart';
 import 'package:anonym_front_flutter/services/auth_repository.dart';
@@ -294,17 +300,19 @@ class ScreenTestHarness {
     final authProvider = AuthProvider(authRepository);
     final appProvider = AppProvider(
       authProvider: authProvider,
-      accountRepository: accountRepository,
-      apiClient: apiClient,
-      friendsRepository: friendsRepository,
-      channelRepository: channelRepository,
-      privateMessageRepository: privateMessageRepository,
-      shopRepository: shopRepository,
-      inventoryRepository: inventoryRepository,
-      paymentRepository: paymentRepository,
-      invoiceRepository: invoiceRepository,
-      socketService: socketService,
-      pushNotificationService: pushNotificationService,
+      dependencies: AppProviderDependencies(
+        accountRepository: accountRepository,
+        apiClient: apiClient,
+        friendsRepository: friendsRepository,
+        channelRepository: channelRepository,
+        privateMessageRepository: privateMessageRepository,
+        shopRepository: shopRepository,
+        inventoryRepository: inventoryRepository,
+        paymentRepository: paymentRepository,
+        invoiceRepository: invoiceRepository,
+        socketService: socketService,
+        pushNotificationService: pushNotificationService,
+      ),
     );
 
     return ScreenTestHarness._(
@@ -321,6 +329,24 @@ class ScreenTestHarness {
       providers: [
         ChangeNotifierProvider<AuthProvider>.value(value: authProvider),
         ChangeNotifierProvider<AppProvider>.value(value: appProvider),
+        ChangeNotifierProvider<SocialProvider>(
+          create: (_) => SocialProvider(appProvider),
+        ),
+        ChangeNotifierProvider<ChannelsProvider>(
+          create: (_) => ChannelsProvider(appProvider),
+        ),
+        ChangeNotifierProvider<PresenceProvider>(
+          create: (_) => PresenceProvider(appProvider),
+        ),
+        ChangeNotifierProvider<NotificationsProvider>(
+          create: (_) => NotificationsProvider(appProvider),
+        ),
+        ChangeNotifierProvider<CommerceProvider>(
+          create: (_) => CommerceProvider(appProvider),
+        ),
+        ChangeNotifierProvider<AppOrchestratorProvider>(
+          create: (_) => AppOrchestratorProvider(appProvider),
+        ),
       ],
       child: MaterialApp(home: withScaffold ? Scaffold(body: child) : child),
     );
@@ -335,5 +361,3 @@ class ScreenTestHarness {
     authProvider.dispose();
   }
 }
-
-

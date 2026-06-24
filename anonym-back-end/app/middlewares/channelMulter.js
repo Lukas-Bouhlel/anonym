@@ -1,14 +1,10 @@
 const multer = require('multer');
 const fs = require('fs');
-
-const MIME_TYPES = {
-    'image/jpg': 'jpg',
-    'image/jpeg': 'jpg',
-    'image/gif': 'gif',
-    'image/png': 'png',
-    'image/webp': 'webp',
-    'image/svg+xml': 'svg'
-};
+const {
+    createImageFileName,
+    imageFileFilter,
+    imageUploadLimits
+} = require('../utils/uploadSecurity');
 
 const createDirectory = (dir) => {
     if (!fs.existsSync(dir)) {
@@ -23,13 +19,15 @@ const storage = multer.diskStorage({
         callback(null, folder);
     },
     filename: (req, file, callback) => {
-        const name = file.originalname.split(' ').join('_').split('.')[0];
-        const extension = MIME_TYPES[file.mimetype] || 'jpg';
-        callback(null, `${name}_${Date.now()}.${extension}`);
+        callback(null, createImageFileName(file));
     }
 });
 
-const upload = multer({ storage }).fields([
+const upload = multer({
+    storage,
+    fileFilter: imageFileFilter,
+    limits: imageUploadLimits
+}).fields([
     { name: 'cover_image', maxCount: 1 },
     { name: 'image', maxCount: 1 }
 ]);

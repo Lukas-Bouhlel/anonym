@@ -5,7 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   group('ApiClient', () {
-    test('buildSocketAuthHeaders builds cookie header from stored cookies', () async {
+    test('buildSocketAuthHeaders only exposes token cookie', () async {
       final jar = CookieJar();
       final uri = Uri.parse(AppConfig.apiBaseUrl);
       await jar.saveFromResponse(uri, <Cookie>[
@@ -17,36 +17,62 @@ void main() {
       final headers = await client.buildSocketAuthHeaders();
 
       expect(headers, isNotEmpty);
-      expect(headers['Cookie'], contains('token=abc123'));
-      expect(headers['Cookie'], contains('csrfToken=csrf-value'));
+      expect(headers['Cookie'], 'token=abc123');
     });
 
-    test('buildSocketAuthToken reads token cookie and returns null when missing', () async {
-      final uri = Uri.parse(AppConfig.apiBaseUrl);
+    test(
+      'buildSocketAuthHeaders returns empty when token cookie is missing',
+      () async {
+        final jar = CookieJar();
+        final uri = Uri.parse(AppConfig.apiBaseUrl);
+        await jar.saveFromResponse(uri, <Cookie>[
+          Cookie('csrfToken', 'csrf-value'),
+          Cookie('refreshToken', 'refresh-value'),
+        ]);
 
-      final jarWithToken = CookieJar();
-      await jarWithToken.saveFromResponse(uri, <Cookie>[Cookie('token', 'tok')]);
-      final clientWithToken = ApiClient(cookieJar: jarWithToken);
-      expect(await clientWithToken.buildSocketAuthToken(), 'tok');
+        final client = ApiClient(cookieJar: jar);
+        final headers = await client.buildSocketAuthHeaders();
 
-      final jarWithoutToken = CookieJar();
-      await jarWithoutToken.saveFromResponse(uri, <Cookie>[Cookie('csrfToken', 'x')]);
-      final clientWithoutToken = ApiClient(cookieJar: jarWithoutToken);
-      expect(await clientWithoutToken.buildSocketAuthToken(), isNull);
-    });
+        expect(headers, isEmpty);
+      },
+    );
 
-    test('clearSessionData removes stored cookies used by socket auth helpers', () async {
-      final jar = CookieJar();
-      final uri = Uri.parse(AppConfig.apiBaseUrl);
-      await jar.saveFromResponse(uri, <Cookie>[Cookie('token', 'abc')]);
+    test(
+      'buildSocketAuthToken reads token cookie and returns null when missing',
+      () async {
+        final uri = Uri.parse(AppConfig.apiBaseUrl);
 
-      final client = ApiClient(cookieJar: jar);
-      expect(await client.buildSocketAuthHeaders(), isNotEmpty);
+        final jarWithToken = CookieJar();
+        await jarWithToken.saveFromResponse(uri, <Cookie>[
+          Cookie('token', 'tok'),
+        ]);
+        final clientWithToken = ApiClient(cookieJar: jarWithToken);
+        expect(await clientWithToken.buildSocketAuthToken(), 'tok');
 
-      await client.clearSessionData();
+        final jarWithoutToken = CookieJar();
+        await jarWithoutToken.saveFromResponse(uri, <Cookie>[
+          Cookie('csrfToken', 'x'),
+        ]);
+        final clientWithoutToken = ApiClient(cookieJar: jarWithoutToken);
+        expect(await clientWithoutToken.buildSocketAuthToken(), isNull);
+      },
+    );
 
-      expect(await client.buildSocketAuthHeaders(), isEmpty);
-      expect(await client.buildSocketAuthToken(), isNull);
-    });
+    test(
+      'clearSessionData removes stored cookies used by socket auth helpers',
+      () async {
+        final jar = CookieJar();
+        final uri = Uri.parse(AppConfig.apiBaseUrl);
+        await jar.saveFromResponse(uri, <Cookie>[Cookie('token', 'abc')]);
+
+        final client = ApiClient(cookieJar: jar);
+        expect(await client.buildSocketAuthHeaders(), isNotEmpty);
+
+        await client.clearSessionData();
+
+        expect(await client.buildSocketAuthHeaders(), isEmpty);
+        expect(await client.buildSocketAuthToken(), isNull);
+      },
+    );
   });
 }

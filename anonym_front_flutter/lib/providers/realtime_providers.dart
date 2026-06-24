@@ -15,7 +15,6 @@ extension AppProviderRealtimeX on AppProvider {
       _rtLog(
         'auth switch oldUser=$_activeUserId newUser=$currentUserId -> reset realtime state',
       );
-      // Do not reuse old realtime state/socket when the authenticated user changes.
       _resetState();
     }
     if (_activeUserId == currentUserId) return;
@@ -35,15 +34,15 @@ extension AppProviderRealtimeX on AppProvider {
 
   Future<void> _connectSocketWithLatestAuth() async {
     final socketAuthHeaders = await _apiClient.buildSocketAuthHeaders();
-    final socketAuthToken = await _apiClient.buildSocketAuthToken();
     _rtLog(
-      'boot socket user=${_authProvider.user?.id} hasToken=${socketAuthToken != null && socketAuthToken.trim().isNotEmpty}',
+      'boot socket user=${_authProvider.user?.id} hasAuthCookies=${socketAuthHeaders.isNotEmpty}',
     );
     _socketService.connect(
-      authToken: socketAuthToken ?? _apiClient.authToken,
       authHeaders: socketAuthHeaders,
       onConnectError: _onSocketConnectError,
       onNewMessage: _onNewMessageFromSocket,
+      onMessageUpdated: _onMessageUpdatedFromSocket,
+      onMessageDeleted: _onMessageDeletedFromSocket,
       onFriendRequestReceived: _onFriendRequestReceivedFromSocket,
       onFriendRequestSent: _onFriendRequestSentFromSocket,
       onFriendRequestResponded: _onFriendRequestRespondedFromSocket,
@@ -65,237 +64,124 @@ extension AppProviderRealtimeX on AppProvider {
     _socketService.requestLiveLocationsSnapshot();
   }
 
-  void _startSessionKeepAlive() {
-    _sessionKeepAliveTimer?.cancel();
-    _sessionKeepAliveTimer = Timer.periodic(const Duration(minutes: 8), (_) {
-      unawaited(_performSessionKeepAliveTick());
-    });
-  }
+  void _startSessionKeepAlive() => _realtimeCoordinator.startSessionKeepAlive();
 
-  void _stopSessionKeepAlive() {
-    _sessionKeepAliveTimer?.cancel();
-    _sessionKeepAliveTimer = null;
-  }
+  void _stopSessionKeepAlive() => _realtimeCoordinator.stopSessionKeepAlive();
 
-  Future<void> _performSessionKeepAliveTick() async {
-    if (!_authProvider.isLoggedIn) return;
-    if (!_isAppInForeground) return;
-    try {
-      final refreshed = await _apiClient.refreshSession();
-      _rtLog('session keepalive refreshed=$refreshed');
-      if (!refreshed) return;
-      if (_socketService.isConnected) return;
-      await _recoverSocketSession(reason: 'keepalive_socket_disconnected');
-    } catch (_) {
-      // Best-effort keepalive; retry next tick.
-    }
-  }
+  void _onSocketConnectError(dynamic error) =>
+      _realtimeCoordinator.onSocketConnectError(error);
 
-  void _onSocketConnectError(dynamic error) {
-    final message = error?.toString() ?? '';
-    _rtLog('socket connect_error callback=$message');
-    if (!_isSocketAuthError(message)) return;
-    unawaited(_recoverSocketSession(reason: 'socket_auth_error'));
-  }
+  Future<void> _recoverSocketSession({required String reason}) =>
+      _realtimeCoordinator.recoverSocketSession(reason: reason);
 
-  bool _isSocketAuthError(String message) {
-    final normalized = message.toLowerCase();
-    return normalized.contains('auth') ||
-        normalized.contains('jwt') ||
-        normalized.contains('expired') ||
-        normalized.contains('token');
-  }
+  void _onNewMessageFromSocket(ChannelMessageModel message) =>
+      _realtimeEvents.onNewMessageFromSocket(message);
 
-  Future<void> _recoverSocketSession({required String reason}) async {
-    if (_isRecoveringSocketSession) return;
-    final now = DateTime.now();
-    final last = _lastSocketRecoveryAt;
-    if (last != null && now.difference(last) < const Duration(seconds: 10)) {
-      return;
-    }
+  void _onMessageUpdatedFromSocket(ChannelMessageModel message) =>
+      _realtimeEvents.onMessageUpdatedFromSocket(message);
 
-    _isRecoveringSocketSession = true;
-    _lastSocketRecoveryAt = now;
-    _rtLog('socket recover start reason=$reason');
-    try {
-      final refreshed = await _apiClient.refreshSession();
-      _rtLog('socket recover refreshSession=$refreshed');
-      if (!refreshed) return;
+  void _onMessageDeletedFromSocket(Map<String, dynamic> payload) =>
+      _realtimeEvents.onMessageDeletedFromSocket(payload);
 
-      _socketService.disconnect();
-      await _connectSocketWithLatestAuth();
-      _scheduleSocialStateRefresh();
-    } catch (error) {
-      _rtLog('socket recover failed error=$error');
-    } finally {
-      _isRecoveringSocketSession = false;
-    }
-  }
+  void _onFriendRequestReceivedFromSocket(Map<String, dynamic> payload) =>
+      _realtimeEvents.onFriendRequestReceivedFromSocket(payload);
 
-  void _onNewMessageFromSocket(ChannelMessageModel message) {
-    if (_shouldStoreInAppNotifications) {
-      _pushNewMessageNotification(message);
-    }
-    _scheduleRealtimeMessageDerivedRefreshes();
-    final incomingChannelId = message.channelId;
-    if (_selectedChannel == null) {
-      unawaited(refreshChannels(silent: true));
-      return;
-    }
-    if (incomingChannelId <= 0 ||
-        incomingChannelId != _selectedChannel!.channelId) {
-      unawaited(refreshChannels(silent: true));
-      return;
-    }
-    final enriched = ChannelMessageModel(
-      messageId: message.messageId,
-      content: message.content,
-      channelId: incomingChannelId,
-      senderId: message.senderId,
-      status: message.status,
-      createdAt: message.createdAt,
-      sender: message.sender,
-      imageUrl: message.imageUrl,
+  void _onFriendRequestRespondedFromSocket(Map<String, dynamic> payload) =>
+      _realtimeEvents.onFriendRequestRespondedFromSocket(payload);
+
+  void _onFriendRequestSentFromSocket(Map<String, dynamic> payload) =>
+      _realtimeEvents.onFriendRequestSentFromSocket(payload);
+
+  void _onFriendRequestCancelledFromSocket(Map<String, dynamic> payload) =>
+      _realtimeEvents.onFriendRequestCancelledFromSocket(payload);
+
+  void _onFriendshipBlockedFromSocket(Map<String, dynamic> payload) =>
+      _realtimeEvents.onFriendshipBlockedFromSocket(payload);
+
+  void _onFriendshipUnblockedFromSocket(Map<String, dynamic> payload) =>
+      _realtimeEvents.onFriendshipUnblockedFromSocket(payload);
+
+  void _onFriendshipDeletedFromSocket(Map<String, dynamic> payload) =>
+      _realtimeEvents.onFriendshipDeletedFromSocket(payload);
+
+  void _onFriendsStateUpdatedFromSocket(Map<String, dynamic> payload) =>
+      _realtimeEvents.onFriendsStateUpdatedFromSocket(payload);
+
+  void _onChannelInvitedFromSocket(Map<String, dynamic> payload) =>
+      _realtimeEvents.onChannelInvitedFromSocket(payload);
+
+  void _onChannelMemberRemovedFromSocket(Map<String, dynamic> payload) =>
+      _realtimeEvents.onChannelMemberRemovedFromSocket(payload);
+
+  void _onChannelUpdatedFromSocket(Map<String, dynamic> payload) =>
+      _realtimeEvents.onChannelUpdatedFromSocket(payload);
+
+  void _onMessageErrorFromSocket(String message) =>
+      _realtimeEvents.onMessageErrorFromSocket(message);
+
+  void _onLocationSnapshotFromSocket(List<dynamic> payload) =>
+      _realtimeEvents.onLocationSnapshotFromSocket(payload);
+
+  void _onLocationUpdateFromSocket(Map<String, dynamic> payload) =>
+      _realtimeEvents.onLocationUpdateFromSocket(payload);
+
+  void _onLocationRemoveFromSocket(int userId) =>
+      _realtimeEvents.onLocationRemoveFromSocket(userId);
+
+  void _onPresenceUpdatedFromSocket(Map<String, dynamic> payload) =>
+      _realtimeEvents.onPresenceUpdatedFromSocket(payload);
+
+  void _scheduleRealtimeMessageDerivedRefreshes() =>
+      _realtimeEvents.scheduleRealtimeMessageDerivedRefreshes();
+
+  void _scheduleSocialStateRefresh({Duration delay = Duration.zero}) =>
+      _realtimeEvents.scheduleSocialStateRefresh(delay: delay);
+
+  void publishMyLiveLocation({
+    required double latitude,
+    required double longitude,
+    double? accuracy,
+  }) {
+    final me = _authProvider.user;
+    if (me == null) return;
+    final previous = _liveLocationsByUserId[me.id];
+    final hasMovedEnough =
+        previous == null ||
+        _distanceInMeters(
+              previous.latitude,
+              previous.longitude,
+              latitude,
+              longitude,
+            ) >=
+            3;
+    if (!hasMovedEnough) return;
+    _liveLocationsByUserId[me.id] = LiveUserLocationModel(
+      userId: me.id,
+      username: me.username,
+      avatar: me.avatar,
+      latitude: latitude,
+      longitude: longitude,
+      updatedAt: DateTime.now().toUtc(),
     );
-    _messages = [..._messages, enriched];
+    _markPresenceStateChanged();
+    _socketService.publishLiveLocation(
+      userId: me.id,
+      username: me.username,
+      avatar: me.avatar,
+      latitude: latitude,
+      longitude: longitude,
+      accuracy: accuracy,
+    );
     _notifyStateChanged();
-    unawaited(refreshChannels(silent: true));
   }
 
-  void _onFriendRequestReceivedFromSocket(Map<String, dynamic> payload) {
-    _rtLog('onFriendRequestReceived payload=$payload');
-    final senderRaw = payload['sender'];
-    final sender = senderRaw is Map<String, dynamic>
-        ? senderRaw
-        : senderRaw is Map
-        ? Map<String, dynamic>.from(senderRaw)
-        : const <String, dynamic>{};
-
-    final senderId = _toInt(
-      sender['id'] ?? sender['userId'] ?? sender['user_id'],
-    );
-    final meId = _authProvider.user?.id;
-    if (meId != null && senderId == meId) return;
-
-    final username = (sender['username'] ?? 'Utilisateur').toString().trim();
-    final createdAt = _parseDate(
-      payload['createdAt'] ?? payload['created_at'] ?? payload['date'],
-    );
-    final requestId = _toInt(payload['requestId'] ?? payload['request_id']);
-
-    if (_shouldStoreInAppNotifications) {
-      _prependNotification(
-        AppNotificationModel(
-          id: 'fr-$requestId-${createdAt.microsecondsSinceEpoch}',
-          type: AppNotificationType.friendRequest,
-          title: "Vous avez reçu une demande d'ami de $username",
-          subtitle: _formatNotificationTime(createdAt),
-          createdAt: createdAt,
-          avatarUrl: sender['avatar']?.toString(),
-          relatedUserId: senderId > 0 ? senderId : null,
-        ),
-      );
-    }
-    _upsertIncomingRequestFromSocket(
-      payload: payload,
-      sender: sender,
-      senderId: senderId,
-      meId: meId,
-    );
-    _scheduleSocialStateRefresh(delay: const Duration(milliseconds: 180));
-  }
-
-  void _onFriendRequestRespondedFromSocket(Map<String, dynamic> payload) {
-    _rtLog('onFriendRequestResponded payload=$payload');
-    _scheduleSocialStateRefresh();
-  }
-
-  void _onFriendRequestSentFromSocket(Map<String, dynamic> payload) {
-    _rtLog('onFriendRequestSent payload=$payload');
-    _scheduleSocialStateRefresh();
-  }
-
-  void _onFriendRequestCancelledFromSocket(Map<String, dynamic> payload) {
-    _rtLog('onFriendRequestCancelled payload=$payload');
-    _scheduleSocialStateRefresh();
-  }
-
-  void _onFriendshipBlockedFromSocket(Map<String, dynamic> payload) {
-    _rtLog('onFriendshipBlocked payload=$payload');
-    _scheduleSocialStateRefresh();
-    unawaited(refreshChannels(silent: true));
-  }
-
-  void _onFriendshipUnblockedFromSocket(Map<String, dynamic> payload) {
-    _rtLog('onFriendshipUnblocked payload=$payload');
-    _scheduleSocialStateRefresh();
-  }
-
-  void _onFriendshipDeletedFromSocket(Map<String, dynamic> payload) {
-    _rtLog('onFriendshipDeleted payload=$payload');
-    _scheduleSocialStateRefresh();
-    unawaited(refreshChannels(silent: true));
-  }
-
-  void _onFriendsStateUpdatedFromSocket(Map<String, dynamic> payload) {
-    _rtLog('onFriendsStateUpdated payload=$payload');
-    _scheduleSocialStateRefresh();
-    unawaited(refreshChannels(silent: true));
-  }
-
-  void _onChannelInvitedFromSocket(Map<String, dynamic> payload) {
-    _scheduleRealtimeChannelsRefresh();
-    if (!_shouldStoreInAppNotifications) return;
-    final now = DateTime.now();
-    final channelName = (payload['channelName'] ?? payload['name'] ?? 'groupe')
-        .toString()
-        .trim();
-    final channelId = _toInt(payload['channelId'] ?? payload['channel_id']);
-    _prependNotification(
-      AppNotificationModel(
-        id: 'channel-invite-${channelId > 0 ? channelId : now.microsecondsSinceEpoch}',
-        type: AppNotificationType.newMessage,
-        title: 'Invitation reçue',
-        subtitle: channelName.isEmpty ? 'Nouveau groupe' : channelName,
-        createdAt: now,
-        relatedChannelId: channelId > 0 ? channelId : null,
-      ),
-    );
-  }
-
-  void _onChannelMemberRemovedFromSocket(Map<String, dynamic> payload) {
-    final channelId = _toInt(payload['channelId'] ?? payload['channel_id']);
-    final removedUserId = _toInt(
-      payload['removedUserId'] ?? payload['removed_user_id'],
-    );
-    final currentUserId = _authProvider.user?.id;
-
-    _scheduleRealtimeChannelsRefresh();
-
-    final selected = _selectedChannel;
-    if (selected == null || selected.channelId != channelId) return;
-
-    if (currentUserId != null && removedUserId == currentUserId) {
-      _selectedChannel = null;
-      _messages = const [];
-      _channelMembers = const [];
-      _notifyStateChanged();
-      return;
-    }
-
-    unawaited(() async {
-      try {
-        _channelMembers = await _channelRepository.readChannelUsers(channelId);
-        _notifyStateChanged();
-      } catch (_) {
-        // Keep real-time refresh best-effort for this event.
-      }
-    }());
-  }
-
-  void _onChannelUpdatedFromSocket(Map<String, dynamic> payload) {
-    _rtLog('onChannelUpdated payload=$payload');
-    _scheduleRealtimeChannelsRefresh();
+  void stopMyLiveLocationSharing() {
+    final me = _authProvider.user;
+    if (me == null) return;
+    _liveLocationsByUserId.remove(me.id);
+    _markPresenceStateChanged();
+    _socketService.stopLiveLocationSharing(userId: me.id);
+    _notifyStateChanged();
   }
 
   void _onUserProfileUpdatedFromSocket(Map<String, dynamic> payload) {
@@ -358,7 +244,6 @@ extension AppProviderRealtimeX on AppProvider {
     _outgoingFriendRequests = _outgoingFriendRequests
         .map(updateFriendModelWithDetails)
         .toList(growable: false);
-
     _blockedUsers = _blockedUsers
         .map((user) {
           if (user.id != userId) return user;
@@ -399,6 +284,18 @@ extension AppProviderRealtimeX on AppProvider {
         })
         .toList(growable: false);
 
+    final liveLocation = _liveLocationsByUserId[userId];
+    if (liveLocation != null) {
+      _liveLocationsByUserId[userId] = liveLocation.copyWith(
+        username: usernameRaw?.trim().isNotEmpty == true
+            ? usernameRaw!.trim()
+            : liveLocation.username,
+        avatar: avatarRaw ?? liveLocation.avatar,
+      );
+      _markPresenceStateChanged();
+      didChange = true;
+    }
+
     _messages = _messages
         .map((message) {
           final sender = message.sender;
@@ -418,281 +315,12 @@ extension AppProviderRealtimeX on AppProvider {
         .toList(growable: false);
 
     _presenceByUserId[userId] = normalizedPresence;
-
+    _markPresenceStateChanged();
     final me = _authProvider.user;
     if (me != null && me.id == userId) {
       _authProvider.setUser(withUpdatedProfile(me));
       didChange = true;
     }
-
-    if (didChange) {
-      _notifyStateChanged();
-    }
+    if (didChange) _notifyStateChanged();
   }
-
-  void _upsertIncomingRequestFromSocket({
-    required Map<String, dynamic> payload,
-    required Map<String, dynamic> sender,
-    required int senderId,
-    required int? meId,
-  }) {
-    if (senderId <= 0 || meId == null || meId <= 0) return;
-
-    final requestId = _toInt(payload['requestId'] ?? payload['request_id']);
-    if (requestId <= 0) return;
-
-    final senderUser = UserModel.fromJson(<String, dynamic>{
-      'id': senderId,
-      'username': sender['username'] ?? 'Utilisateur',
-      'email': sender['email'] ?? '',
-      'avatar': sender['avatar'],
-      'bio': sender['bio'],
-      'presence_status': sender['presence_status'] ?? sender['presenceStatus'],
-    });
-
-    final incoming = FriendModel(
-      id: requestId,
-      userId: senderId,
-      friendId: meId,
-      status: 'PENDING',
-      friendDetails: senderUser,
-    );
-
-    final existingIndex = _incomingFriendRequests.indexWhere(
-      (request) =>
-          request.id == requestId ||
-          (request.userId == senderId &&
-              request.status.trim().toUpperCase() == 'PENDING'),
-    );
-
-    if (existingIndex >= 0) {
-      final updated = [..._incomingFriendRequests];
-      updated[existingIndex] = incoming;
-      _incomingFriendRequests = updated;
-    } else {
-      _incomingFriendRequests = [incoming, ..._incomingFriendRequests];
-    }
-
-    _presenceByUserId[senderId] = PresenceUtils.normalize(
-      senderUser.presenceStatus,
-    );
-    _notifyStateChanged();
-  }
-
-  void _scheduleRealtimeMessageDerivedRefreshes() {
-    _scheduleRealtimeChannelsRefresh();
-    _scheduleRealtimeProfileStatsRefresh();
-  }
-
-  void _scheduleRealtimeChannelsRefresh({
-    Duration delay = const Duration(milliseconds: 260),
-  }) {
-    _realtimeChannelsRefreshDebounce?.cancel();
-    _realtimeChannelsRefreshDebounce = Timer(delay, () {
-      unawaited(_runRealtimeChannelsRefresh());
-    });
-  }
-
-  Future<void> _runRealtimeChannelsRefresh() async {
-    if (_isRefreshingRealtimeChannels) {
-      _hasQueuedRealtimeChannelsRefresh = true;
-      return;
-    }
-    _isRefreshingRealtimeChannels = true;
-    try {
-      await Future.wait([
-        refreshChannels(silent: true),
-        refreshPublicChannels(filter: _lastPublicChannelsFilter, silent: true),
-      ]);
-    } catch (_) {
-      // Keep realtime refresh best-effort.
-    } finally {
-      _isRefreshingRealtimeChannels = false;
-      if (_hasQueuedRealtimeChannelsRefresh) {
-        _hasQueuedRealtimeChannelsRefresh = false;
-        unawaited(_runRealtimeChannelsRefresh());
-      }
-    }
-  }
-
-  void _scheduleRealtimeProfileStatsRefresh({
-    Duration delay = const Duration(milliseconds: 700),
-  }) {
-    _realtimeProfileStatsRefreshDebounce?.cancel();
-    _realtimeProfileStatsRefreshDebounce = Timer(delay, () {
-      unawaited(_runRealtimeProfileStatsRefresh());
-    });
-  }
-
-  Future<void> _runRealtimeProfileStatsRefresh() async {
-    if (_isRefreshingRealtimeProfileStats) {
-      _hasQueuedRealtimeProfileStatsRefresh = true;
-      return;
-    }
-    _isRefreshingRealtimeProfileStats = true;
-    try {
-      await _refreshCurrentUser();
-      _realtimeStatsVersion++;
-      _notifyStateChanged();
-    } catch (_) {
-      // Keep realtime refresh best-effort.
-    } finally {
-      _isRefreshingRealtimeProfileStats = false;
-      if (_hasQueuedRealtimeProfileStatsRefresh) {
-        _hasQueuedRealtimeProfileStatsRefresh = false;
-        unawaited(_runRealtimeProfileStatsRefresh());
-      }
-    }
-  }
-
-  void _scheduleSocialStateRefresh({Duration delay = Duration.zero}) {
-    _socialRefreshDebounce?.cancel();
-    _socialRefreshDebounce = Timer(delay, () {
-      unawaited(_runSocialStateRefresh());
-    });
-  }
-
-  Future<void> _runSocialStateRefresh() async {
-    if (_isRefreshingSocialState) {
-      _hasQueuedSocialRefresh = true;
-      return;
-    }
-    _isRefreshingSocialState = true;
-    try {
-      await _refreshSocialStateFromSocket();
-    } finally {
-      _isRefreshingSocialState = false;
-      if (_hasQueuedSocialRefresh) {
-        _hasQueuedSocialRefresh = false;
-        unawaited(_runSocialStateRefresh());
-      }
-    }
-  }
-
-  Future<void> _refreshSocialStateFromSocket() async {
-    await Future.wait([
-      refreshFriends(silent: true),
-      refreshFriendRequests(silent: true),
-      refreshBlockedUsers(silent: true),
-      refreshUsers(silent: true),
-    ]);
-    final removedHiddenLocations = _pruneHiddenLiveLocations();
-    _socketService.requestLiveLocationsSnapshot();
-    if (removedHiddenLocations) {
-      _notifyStateChanged();
-    }
-  }
-
-  void _onMessageErrorFromSocket(String message) {
-    final normalized = message.trim();
-    _messageError = normalized.isEmpty
-        ? 'DM impossible: vous devez être ami actif ou activer les DM non-amis.'
-        : normalized;
-    _notifyStateChanged();
-  }
-
-  void publishMyLiveLocation({
-    required double latitude,
-    required double longitude,
-    double? accuracy,
-  }) {
-    final me = _authProvider.user;
-    if (me == null) return;
-    final previous = _liveLocationsByUserId[me.id];
-    final hasMovedEnough =
-        previous == null ||
-        _distanceInMeters(
-              previous.latitude,
-              previous.longitude,
-              latitude,
-              longitude,
-            ) >=
-            3;
-    if (!hasMovedEnough) return;
-    _liveLocationsByUserId[me.id] = LiveUserLocationModel(
-      userId: me.id,
-      username: me.username,
-      avatar: me.avatar,
-      latitude: latitude,
-      longitude: longitude,
-      updatedAt: DateTime.now().toUtc(),
-    );
-    _socketService.publishLiveLocation(
-      userId: me.id,
-      username: me.username,
-      avatar: me.avatar,
-      latitude: latitude,
-      longitude: longitude,
-      accuracy: accuracy,
-    );
-    _notifyStateChanged();
-  }
-
-  void stopMyLiveLocationSharing() {
-    final me = _authProvider.user;
-    if (me == null) return;
-    _liveLocationsByUserId.remove(me.id);
-    _socketService.stopLiveLocationSharing(userId: me.id);
-    _notifyStateChanged();
-  }
-
-  void _onLocationSnapshotFromSocket(List<dynamic> payload) {
-    final meId = _authProvider.user?.id;
-    final next = <int, LiveUserLocationModel>{};
-    for (final entry in payload) {
-      if (entry is! Map) continue;
-      final model = LiveUserLocationModel.fromJson(
-        Map<String, dynamic>.from(entry),
-      );
-      if (!_isLocationPayloadValid(model)) continue;
-      if (!_shouldDisplayLocationForUser(model.userId)) continue;
-      next[model.userId] = model;
-    }
-    if (meId != null && _liveLocationsByUserId.containsKey(meId)) {
-      next[meId] = _liveLocationsByUserId[meId]!;
-    }
-    _liveLocationsByUserId
-      ..clear()
-      ..addAll(next);
-    _notifyStateChanged();
-  }
-
-  void _onLocationUpdateFromSocket(Map<String, dynamic> payload) {
-    final model = LiveUserLocationModel.fromJson(payload);
-    if (!_isLocationPayloadValid(model)) return;
-    if (!_shouldDisplayLocationForUser(model.userId)) return;
-    _liveLocationsByUserId[model.userId] = model;
-    _notifyStateChanged();
-  }
-
-  void _onLocationRemoveFromSocket(int userId) {
-    if (!_liveLocationsByUserId.containsKey(userId)) return;
-    _liveLocationsByUserId.remove(userId);
-    _notifyStateChanged();
-  }
-
-  void _onPresenceUpdatedFromSocket(Map<String, dynamic> payload) {
-    final rawUserId = payload['userId'] ?? payload['user_id'] ?? payload['id'];
-    final rawStatus = payload['presence_status'] ?? payload['presenceStatus'];
-    int userId = 0;
-    if (rawUserId is int) {
-      userId = rawUserId;
-    } else if (rawUserId is num) {
-      userId = rawUserId.toInt();
-    } else if (rawUserId is String) {
-      userId = int.tryParse(rawUserId) ?? 0;
-    }
-    if (userId <= 0) return;
-
-    final normalized = PresenceUtils.normalize(rawStatus?.toString());
-    _presenceByUserId[userId] = normalized;
-
-    final me = _authProvider.user;
-    if (me != null && me.id == userId) {
-      _authProvider.setUser(me.copyWith(presenceStatus: normalized));
-      return;
-    }
-    _notifyStateChanged();
-  }
-
 }

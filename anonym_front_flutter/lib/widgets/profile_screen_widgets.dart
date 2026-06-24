@@ -1,4 +1,4 @@
-﻿part of '../screens/profile_screen.dart';
+part of '../screens/profile_screen.dart';
 
 class _LevelTimelineBar extends StatefulWidget {
   const _LevelTimelineBar({required this.level});
@@ -165,7 +165,7 @@ class _LevelTimelineBarState extends State<_LevelTimelineBar> {
 /// Secondary screen used to share a profile with friends.
 ///
 /// This widget is declared as a `part` of `profile_screen.dart` and relies on
-/// `AppProvider` and `AuthProvider` from the parent context.
+/// `SocialProvider` and `AuthProvider` from the parent context.
 ///
 /// {@tool snippet}
 /// Navigator.of(context).push(
@@ -200,14 +200,14 @@ class ShareProfileScreen extends StatefulWidget {
 }
 
 class _ShareProfileScreenState extends State<ShareProfileScreen> {
-  String? _activeFrameUrlForUser(AppProvider app, int userId) {
+  String? _activeFrameUrlForUser(SocialProvider social, int userId) {
     if (userId <= 0) return null;
     UserModel? source;
     final authUser = context.read<AuthProvider>().user;
     if (authUser != null && authUser.id == userId) {
       source = authUser;
     } else {
-      for (final candidate in app.allUsers) {
+      for (final candidate in social.allUsers) {
         if (candidate.id == userId) {
           source = candidate;
           break;
@@ -227,7 +227,7 @@ class _ShareProfileScreenState extends State<ShareProfileScreen> {
   }
 
   Future<void> _openShareToFriendsSheet(BuildContext context) async {
-    final app = context.read<AppProvider>();
+    final social = context.read<SocialProvider>();
     final messenger = ScaffoldMessenger.of(context);
     final profileUserId = widget.userId;
     final profileUsername = widget.username.trim();
@@ -239,7 +239,7 @@ class _ShareProfileScreenState extends State<ShareProfileScreen> {
       return;
     }
 
-    final friends = _buildFriendTargets(app);
+    final friends = _buildFriendTargets(social);
     if (friends.isEmpty) {
       messenger.showSnackBar(
         const SnackBar(content: Text('Aucun ami disponible pour le partage.')),
@@ -534,7 +534,7 @@ class _ShareProfileScreenState extends State<ShareProfileScreen> {
                                       ? null
                                       : () async {
                                           setModalState(() => sending = true);
-                                          final sentCount = await app
+                                          final sentCount = await social
                                               .shareProfileToUsers(
                                                 profileUserId: profileUserId,
                                                 profileUsername:
@@ -545,17 +545,17 @@ class _ShareProfileScreenState extends State<ShareProfileScreen> {
                                                     widget.avatarUrl,
                                                 profileFrameUrl:
                                                     _activeFrameUrlForUser(
-                                                      app,
+                                                      social,
                                                       profileUserId,
                                                     ),
                                               );
                                           if (!sheetContext.mounted) return;
                                           setModalState(() => sending = false);
-                                          if (app.errorMessage != null) {
+                                          if (social.errorMessage != null) {
                                             messenger.showSnackBar(
                                               SnackBar(
                                                 content: Text(
-                                                  app.errorMessage!,
+                                                  social.errorMessage!,
                                                 ),
                                               ),
                                             );
@@ -607,15 +607,15 @@ class _ShareProfileScreenState extends State<ShareProfileScreen> {
     );
   }
 
-  List<_ShareFriendTarget> _buildFriendTargets(AppProvider app) {
+  List<_ShareFriendTarget> _buildFriendTargets(SocialProvider social) {
     final dedup = <int, _ShareFriendTarget>{};
-    for (final friend in app.friends) {
+    for (final friend in social.friends) {
       if (friend.status.trim().toUpperCase() != 'ACTIVE') continue;
       final friendId = friend.friendId;
       if (friendId <= 0) continue;
       final fromDetails = friend.friendDetails;
       UserModel? fallbackFromUsers;
-      for (final user in app.allUsers) {
+      for (final user in social.allUsers) {
         if (user.id == friendId) {
           fallbackFromUsers = user;
           break;
@@ -625,7 +625,7 @@ class _ShareProfileScreenState extends State<ShareProfileScreen> {
           (fromDetails?.username ?? fallbackFromUsers?.username ?? '').trim();
       if (username.isEmpty) continue;
       final avatarUrl = fromDetails?.avatar ?? fallbackFromUsers?.avatar;
-      final frameUrl = _activeFrameUrlForUser(app, friendId);
+      final frameUrl = _activeFrameUrlForUser(social, friendId);
       dedup[friendId] = _ShareFriendTarget(
         userId: friendId,
         username: username,

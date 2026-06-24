@@ -2,8 +2,11 @@
   const maps = new Map();
   const initialCenter = [2.3522, 48.8566];
   const logPrefix = "[ANONYM_MAP][web]";
+  const debugLogsEnabled =
+    typeof window !== "undefined" && window.__ANONYM_MAP_DEBUG__ === true;
 
   function log(message, data) {
+    if (!debugLogsEnabled) return;
     if (data === undefined) {
       console.log(logPrefix, message);
       return;
@@ -46,6 +49,12 @@
         // Older Mapbox GL builds may ignore newer Standard config keys.
       }
     }
+  }
+
+  function lockStandardNightMode(map) {
+    applyStandardConfig(map);
+    window.setTimeout(() => applyStandardConfig(map), 250);
+    window.setTimeout(() => applyStandardConfig(map), 1000);
   }
 
   function createMap(elementId, payloadJson) {
@@ -96,9 +105,10 @@
     };
     maps.set(elementId, state);
 
-    map.on("style.load", () => applyStandardConfig(map));
+    map.on("style.load", () => lockStandardNightMode(map));
     map.on("load", () => {
       state.ready = true;
+      lockStandardNightMode(map);
       updateMap(elementId, state.pendingPayload || {});
     });
     return true;

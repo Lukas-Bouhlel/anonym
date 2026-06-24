@@ -34,13 +34,13 @@ void main() {
 
     test('readAllUsers maps only json entries', () async {
       when(
-        () => dio.get<List<dynamic>>('/api/account/users'),
+        () => dio.get<List<dynamic>>('/api/account/discoverable-users'),
       ).thenAnswer(
         (_) async => dioResponse<List<dynamic>>([
           {'id': 1, 'username': 'a', 'email': 'a@test.dev'},
           'skip',
           {'id': 2, 'username': 'b', 'email': 'b@test.dev'},
-        ], path: '/api/account/users'),
+        ], path: '/api/account/discoverable-users'),
       );
 
       final users = await repository.readAllUsers();

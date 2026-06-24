@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:flutter/foundation.dart';
 
 import '../pages/navigation_pages.dart';
+import '../utils/app_logger.dart';
 import 'app_routes.dart';
 import '../providers/auth_providers.dart';
 
@@ -11,6 +11,17 @@ import '../providers/auth_providers.dart';
 /// Le routeur applique les redirections d'authentification et expose
 /// les routes publiques/privées à partir des constantes [AppRoutes].
 GoRouter buildRouter(AuthProvider authProvider) {
+  String safeUriForLogs(Uri uri) {
+    final hasToken = uri.queryParameters.containsKey('token');
+    final keys = uri.queryParameters.keys
+        .where((key) => key != 'token')
+        .toList();
+    final queryDescriptor = keys.isEmpty
+        ? (hasToken ? '?token=<redacted>' : '')
+        : '?keys=${keys.join(",")}${hasToken ? ',token=<redacted>' : ''}';
+    return '${uri.path}$queryDescriptor';
+  }
+
   CustomTransitionPage<void> buildSlidePage({
     required GoRouterState state,
     required Widget child,
@@ -34,20 +45,16 @@ GoRouter buildRouter(AuthProvider authProvider) {
     initialLocation: AppRoutes.root,
     refreshListenable: authProvider,
     redirect: (context, state) {
-      if (kDebugMode) {
-        debugPrint(
-          '[ROUTER][redirect:start] uri=${state.uri} matched=${state.matchedLocation} '
-          'loggedIn=${authProvider.isLoggedIn} boot=${authProvider.isBootstrapping}',
-        );
-      }
+      AppLogger.debug(
+        '[ROUTER][redirect:start] uri=${safeUriForLogs(state.uri)} matched=${state.matchedLocation} '
+        'loggedIn=${authProvider.isLoggedIn} boot=${authProvider.isBootstrapping}',
+      );
 
       if (state.uri.path == '${AppRoutes.resetPassword}/') {
         final query = state.uri.hasQuery ? '?${state.uri.query}' : '';
-        if (kDebugMode) {
-          debugPrint(
-            '[ROUTER][redirect] normalize trailing slash -> ${AppRoutes.resetPassword}$query',
-          );
-        }
+        AppLogger.debug(
+          '[ROUTER][redirect] normalize trailing slash -> ${AppRoutes.resetPassword}$query',
+        );
         return '${AppRoutes.resetPassword}$query';
       }
 
@@ -63,56 +70,46 @@ GoRouter buildRouter(AuthProvider authProvider) {
           location == AppRoutes.register;
 
       if (authProvider.isBootstrapping) {
-        if (kDebugMode) {
-          debugPrint(
-            '[ROUTER][redirect] bootstrapping -> ${location == AppRoutes.loading ? 'stay' : AppRoutes.loading}',
-          );
-        }
+        AppLogger.debug(
+          '[ROUTER][redirect] bootstrapping -> ${location == AppRoutes.loading ? 'stay' : AppRoutes.loading}',
+        );
         return location == AppRoutes.loading ? null : AppRoutes.loading;
       }
 
       if (!authProvider.isLoggedIn && isPrivate) {
-        if (kDebugMode) {
-          debugPrint('[ROUTER][redirect] unauth private -> ${AppRoutes.auth}');
-        }
+        AppLogger.debug(
+          '[ROUTER][redirect] unauth private -> ${AppRoutes.auth}',
+        );
         return AppRoutes.auth;
       }
 
       if (authProvider.isLoggedIn && isAuthFlow) {
-        if (kDebugMode) {
-          debugPrint(
-            '[ROUTER][redirect] auth on auth-flow -> ${AppRoutes.app}',
-          );
-        }
+        AppLogger.debug(
+          '[ROUTER][redirect] auth on auth-flow -> ${AppRoutes.app}',
+        );
         return AppRoutes.app;
       }
 
       if (authProvider.isLoggedIn && location == AppRoutes.root) {
-        if (kDebugMode) {
-          debugPrint('[ROUTER][redirect] auth on root -> ${AppRoutes.app}');
-        }
+        AppLogger.debug('[ROUTER][redirect] auth on root -> ${AppRoutes.app}');
         return AppRoutes.app;
       }
 
       if (!authProvider.isLoggedIn && location == AppRoutes.root) {
-        if (kDebugMode) {
-          debugPrint('[ROUTER][redirect] unauth on root -> ${AppRoutes.auth}');
-        }
+        AppLogger.debug(
+          '[ROUTER][redirect] unauth on root -> ${AppRoutes.auth}',
+        );
         return AppRoutes.auth;
       }
 
       if (location == AppRoutes.loading) {
-        if (kDebugMode) {
-          debugPrint(
-            '[ROUTER][redirect] leave loading -> ${authProvider.isLoggedIn ? AppRoutes.app : AppRoutes.home}',
-          );
-        }
+        AppLogger.debug(
+          '[ROUTER][redirect] leave loading -> ${authProvider.isLoggedIn ? AppRoutes.app : AppRoutes.home}',
+        );
         return authProvider.isLoggedIn ? AppRoutes.app : AppRoutes.auth;
       }
 
-      if (kDebugMode) {
-        debugPrint('[ROUTER][redirect] allow (null)');
-      }
+      AppLogger.debug('[ROUTER][redirect] allow (null)');
       return null;
     },
     routes: [
@@ -136,8 +133,7 @@ GoRouter buildRouter(AuthProvider authProvider) {
       ),
       GoRoute(
         path: AppRoutes.reputation,
-        builder: (context, state) =>
-            const PlaceholderPage(title: 'Reputation'),
+        builder: (context, state) => const PlaceholderPage(title: 'Reputation'),
       ),
       GoRoute(
         path: AppRoutes.support,

@@ -10,7 +10,6 @@ import '../theme.dart';
 import '../validators/password_validators.dart';
 import '../widgets/dialogs/anonym_confirm_dialog.dart';
 
-
 part '../widgets/register_screen_widgets.dart';
 
 /// Écran d inscription et validation de compte.

@@ -937,39 +937,50 @@ class _MessageStatusCheck extends StatelessWidget {
 }
 
 class _HeaderIcon extends StatelessWidget {
-  const _HeaderIcon({required this.icon, required this.onTap});
+  const _HeaderIcon({
+    required this.icon,
+    required this.onTap,
+    required this.semanticsLabel,
+  });
 
   final IconData icon;
   final VoidCallback onTap;
+  final String semanticsLabel;
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(14),
-      child: ClipRRect(
+    return Semantics(
+      button: true,
+      label: semanticsLabel,
+      child: InkWell(
+        onTap: onTap,
         borderRadius: BorderRadius.circular(14),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
-          child: Ink(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              color: AppColors.whiteColor.withValues(alpha: 0.08),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: AppColors.whiteColor.withValues(alpha: 0.12),
-                width: 1,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: AppColors.c121212.withValues(alpha: 0.25),
-                  blurRadius: 20,
-                  offset: const Offset(0, 4),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(14),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
+            child: Ink(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                color: AppColors.whiteColor.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: AppColors.whiteColor.withValues(alpha: 0.12),
+                  width: 1,
                 ),
-              ],
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.c121212.withValues(alpha: 0.25),
+                    blurRadius: 20,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: ExcludeSemantics(
+                child: Icon(icon, color: AppColors.cFCFAFE),
+              ),
             ),
-            child: Icon(icon, color: AppColors.cFCFAFE),
           ),
         ),
       ),
@@ -978,46 +989,57 @@ class _HeaderIcon extends StatelessWidget {
 }
 
 class _GradientSquareIcon extends StatelessWidget {
-  const _GradientSquareIcon({required this.onTap, this.icon, this.svgAsset})
-    : assert(icon != null || svgAsset != null);
+  const _GradientSquareIcon({
+    required this.onTap,
+    required this.semanticsLabel,
+    this.icon,
+    this.svgAsset,
+  }) : assert(icon != null || svgAsset != null);
 
   final IconData? icon;
   final String? svgAsset;
   final VoidCallback onTap;
+  final String semanticsLabel;
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(20),
-      child: Container(
-        width: 42.38,
-        height: 42.38,
-        decoration: BoxDecoration(
-          gradient: svgAsset == null
-              ? LinearGradient(
-                  begin: Alignment.centerLeft,
-                  end: Alignment.centerRight,
-                  colors: [
-                    AppColors.cB1BCFB.withValues(alpha: 0.20),
-                    AppColors.c393566.withValues(alpha: 0.20),
-                  ],
-                )
-              : AppGradients.gB1BCFBTo393566,
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Center(
-          child: svgAsset == null
-              ? Icon(icon, color: AppColors.cFCFAFE, size: 21.18)
-              : SvgPicture.asset(
-                  svgAsset!,
-                  width: 21.18,
-                  height: 21.18,
-                  colorFilter: const ColorFilter.mode(
-                    AppColors.cFCFAFE,
-                    BlendMode.srcIn,
-                  ),
-                ),
+    return Semantics(
+      button: true,
+      label: semanticsLabel,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(20),
+        child: Container(
+          width: 42.38,
+          height: 42.38,
+          decoration: BoxDecoration(
+            gradient: svgAsset == null
+                ? LinearGradient(
+                    begin: Alignment.centerLeft,
+                    end: Alignment.centerRight,
+                    colors: [
+                      AppColors.cB1BCFB.withValues(alpha: 0.20),
+                      AppColors.c393566.withValues(alpha: 0.20),
+                    ],
+                  )
+                : AppGradients.gB1BCFBTo393566,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Center(
+            child: ExcludeSemantics(
+              child: svgAsset == null
+                  ? Icon(icon, color: AppColors.cFCFAFE, size: 21.18)
+                  : SvgPicture.asset(
+                      svgAsset!,
+                      width: 21.18,
+                      height: 21.18,
+                      colorFilter: const ColorFilter.mode(
+                        AppColors.cFCFAFE,
+                        BlendMode.srcIn,
+                      ),
+                    ),
+            ),
+          ),
         ),
       ),
     );

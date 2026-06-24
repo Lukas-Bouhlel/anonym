@@ -47,7 +47,7 @@ void main() {
       expect(find.text('BobBlocked'), findsNothing);
     });
 
-    testWidgets('bascule vers le filtre Recues et affiche les demandes', (
+    testWidgets('bascule vers le filtre Reçues et affiche les demandes', (
       WidgetTester tester,
     ) async {
       final harness = await ScreenTestHarness.create(
@@ -72,10 +72,10 @@ void main() {
 
       expect(find.text('IncomingNeo'), findsNothing);
 
-      await tester.tap(find.text('Recues').first);
+      await tester.tap(find.text('Reçues').first);
       await tester.pumpAndSettle();
 
-      expect(find.text('Demandes recues'), findsOneWidget);
+      expect(find.text('Demandes reçues'), findsOneWidget);
       expect(find.text('IncomingNeo'), findsOneWidget);
     });
   });

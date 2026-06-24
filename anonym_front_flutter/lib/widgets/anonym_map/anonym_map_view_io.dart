@@ -17,6 +17,7 @@ import 'package:webview_windows/webview_windows.dart' as wv;
 import '../../models/live_user_location_model.dart';
 import '../../theme.dart';
 import '../../utils/app_config.dart';
+import '../../utils/app_logger.dart';
 import '../../utils/media_url.dart';
 import '../app_remote_image.dart';
 import 'anonym_map_data.dart';
@@ -58,6 +59,13 @@ class AnonymMapView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (!AppConfig.hasMapboxAccessToken) {
+      return const _MapUnavailableMessage(
+        message: 'Token Mapbox manquant.',
+        detail: 'Ajoutez --dart-define=MAPBOX_ACCESS_TOKEN=...',
+      );
+    }
+
     if (Platform.isAndroid || Platform.isIOS) {
       return _NativeMapboxMap(
         locations: locations,

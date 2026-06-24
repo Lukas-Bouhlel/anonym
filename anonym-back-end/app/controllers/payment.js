@@ -2,6 +2,7 @@ const { Invoice, Shop, Inventory } = require('../models');
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const fs = require('fs');
 const path = require('path');
+const { sendServerError } = require('../utils/security');
 const env = process.env.NODE_ENV || 'development';
 
 const isProduction = env === 'production';
@@ -133,8 +134,10 @@ exports.create = async (req, res) => {
 
         res.status(200).json({ url: session.url });
     } catch (error) {
-        res.status(500).json({
-            message: error.message || 'An error occurred during the payment process.'
+        return sendServerError(res, error, 'An error occurred during the payment process.', {
+            scope: 'payment.create',
+            userId: req.auth?.userId,
+            articleId: req.body?.article_id
         });
     }
 };
@@ -218,6 +221,9 @@ exports.success = async (req, res) => {
 
         return res.status(400).json({ message: 'Payment not completed.' });
     } catch (error) {
-        res.status(500).json({ message: 'Error confirming payment', error: error.message });
+        return sendServerError(res, error, 'Error confirming payment', {
+            scope: 'payment.success',
+            sessionId: req.query?.session_id
+        });
     }
 };

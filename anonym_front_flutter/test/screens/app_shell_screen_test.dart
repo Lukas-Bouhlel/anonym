@@ -47,8 +47,8 @@ void main() {
       await tester.tap(find.byIcon(Icons.add).first);
       await tester.pumpAndSettle();
 
-      expect(find.text('Creer ton groupe'), findsOneWidget);
-      expect(find.text('Creer un groupe'), findsOneWidget);
+      expect(find.text('Créer ton groupe'), findsOneWidget);
+      expect(find.text('Créer un groupe'), findsOneWidget);
       expect(find.text('Rejoindre un groupe'), findsOneWidget);
     });
   });

@@ -48,7 +48,8 @@ const getPresenceForViewer = (user, viewerId) => {
 const addLevelToUser = (user, viewerId) => {
     if (!user) return user;
     const totalPoints = user.total_points || 0;
-    const { total_points, ...userWithoutTotalPoints } = user;
+    const userWithoutTotalPoints = { ...user };
+    delete userWithoutTotalPoints.total_points;
     return {
         ...userWithoutTotalPoints,
         presence_status: getPresenceForViewer(user, viewerId),

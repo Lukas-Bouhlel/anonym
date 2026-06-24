@@ -6,6 +6,7 @@ const path = require('path')
 const crypto = require('crypto');
 const { Op } = require('sequelize');
 const CryptoJS = require('crypto-js');
+const { secureLog, sendServerError } = require('../utils/security');
 const env = process.env.NODE_ENV || 'development';
 
 const REGISTER_CODE_TTL_MINUTES = 10;
@@ -20,6 +21,7 @@ const ACCESS_TOKEN_TTL = process.env.JWT_ACCESS_TTL || '15m';
 const REFRESH_TOKEN_TTL_DAYS = Number(process.env.JWT_REFRESH_TTL_DAYS || 7);
 const REFRESH_TOKEN_COOKIE_NAME = process.env.JWT_REFRESH_COOKIE_NAME || 'refreshToken';
 const ACCESS_TOKEN_COOKIE_NAME = process.env.JWT_ACCESS_COOKIE_NAME || 'token';
+const ADMIN_ROLES = ['ADMIN', 'SUPER_ADMIN'];
 
 const normalizeEmail = (email) => {
     if (typeof email !== 'string') return '';
@@ -149,6 +151,44 @@ const issueAuthResponse = async (req, res, user) => {
     return res.status(200).json({ token, user });
 };
 
+const authenticateUser = async (req, res, options = {}) => {
+    const { allowedRoles, forbiddenMessage } = options;
+    const { identifier, password } = req.body;
+
+    if (!identifier) {
+        return res.status(400).json({ message: "Votre identifiant est requis." });
+    }
+
+    if (!password) {
+        return res.status(400).json({ message: "Votre mot de passe est requis." });
+    }
+
+    const user = await User.findOne({
+        where: {
+            [Op.or]: [
+                { email: identifier },
+                { username: identifier }
+            ]
+        }
+    });
+
+    if (!user) {
+        return res.status(404).json({ message: "Votre identifiant ou votre mot de passe est incorrect" });
+    }
+
+    const passwordMatch = await bcrypt.compare(password, user.password);
+
+    if (!passwordMatch) {
+        return res.status(401).json({ message: "Votre identifiant ou votre mot de passe est incorrect" });
+    }
+
+    if (Array.isArray(allowedRoles) && !allowedRoles.includes(user.roles)) {
+        return res.status(403).json({ message: forbiddenMessage || "Acces interdit." });
+    }
+
+    return issueAuthResponse(req, res, user);
+};
+
 const getRuntimeEnvVar = (baseName) => {
     if (env === 'production') {
         return process.env[`${baseName}_PROD`] || process.env[baseName];
@@ -257,45 +297,22 @@ exports.signup = async (req, res) => {
  */
 exports.login = async (req, res) => {
     try {
-        const { identifier, password } = req.body;
-
-        // Vérifiez que le champ 'identifier' et le mot de passe sont fournis
-        if (!identifier) {
-            return res.status(400).json({ message: "Votre identifiant est requis." });
-        }
-
-        if (!password) {
-            return res.status(400).json({ message: "Votre mot de passe est requis." });
-        }
-
-        // Chercher l'utilisateur par email ou nom d'utilisateur
-        const user = await User.findOne({
-            where: {
-                [Op.or]: [
-                    { email: identifier },
-                    { username: identifier }
-                ]
-            }
-        });
-
-        if (!user) {
-            return res.status(404).json({ message: "Votre identifiant ou votre mot de passe est incorrect" });
-        }
-
-        // Comparer le mot de passe
-        const passwordMatch = await bcrypt.compare(password, user.password);
-
-        if (!passwordMatch) {
-            return res.status(401).json({ message: "Votre identifiant ou votre mot de passe est incorrect" });
-        }
-
-        return await issueAuthResponse(req, res, user);
+        return await authenticateUser(req, res);
     } catch (error) {
-        res.status(500).json({
-            message: error.message || 'An error occurred during login'
-        });
+        return sendServerError(res, error, 'An error occurred during login', { scope: 'auth.login' });
     }
 }
+
+exports.loginAdmin = async (req, res) => {
+    try {
+        return await authenticateUser(req, res, {
+            allowedRoles: ADMIN_ROLES,
+            forbiddenMessage: "Acces interdit, vous devez etre administrateur."
+        });
+    } catch (error) {
+        return sendServerError(res, error, 'An error occurred during admin login', { scope: 'auth.adminLogin' });
+    }
+};
 
 exports.requestRegisterCode = async (req, res) => {
     try {
@@ -363,7 +380,7 @@ exports.requestRegisterCode = async (req, res) => {
         ]);
 
         if (emailWindowCount >= REGISTER_SEND_WINDOW_MAX || ipWindowCount >= REGISTER_SEND_WINDOW_MAX) {
-            console.warn(`[register_code] Rate limit hit email=${email} ip=${ip}`);
+            secureLog('warn', '[register_code] Rate limit hit', { email, ip });
             return res.status(429).json({ message: 'Trop de tentatives. Reessayez plus tard.' });
         }
 
@@ -431,7 +448,7 @@ exports.requestRegisterCode = async (req, res) => {
             code_resent: true
         });
     } catch (error) {
-        return res.status(500).json({ message: error.message || 'Erreur lors de la demande de code.' });
+        return sendServerError(res, error, 'Erreur lors de la demande de code.', { scope: 'auth.requestRegisterCode' });
     }
 };
 
@@ -468,7 +485,7 @@ exports.confirmRegisterCode = async (req, res) => {
             const updates = { verify_attempts: nextAttempts };
             if (nextAttempts >= REGISTER_VERIFY_MAX_ATTEMPTS) {
                 updates.blocked_until = new Date(now.getTime() + REGISTER_VERIFY_BLOCK_MINUTES * 60 * 1000);
-                console.warn(`[register_code] Verification blocked email=${email}`);
+                secureLog('warn', '[register_code] Verification blocked', { email });
             }
             await otpEntry.update(updates);
             return res.status(400).json({ message: 'Code invalide ou expire.' });
@@ -530,7 +547,9 @@ exports.confirmRegisterCode = async (req, res) => {
             const messages = error.errors.map(err => err.message);
             return res.status(400).json({ message: messages });
         }
-        return res.status(500).json({ message: error.message || 'Erreur lors de la confirmation de l inscription.' });
+        return sendServerError(res, error, 'Erreur lors de la confirmation de l inscription.', {
+            scope: 'auth.confirmRegisterCode'
+        });
     }
 };
 
@@ -584,7 +603,7 @@ exports.refreshToken = async (req, res) => {
         return res.status(200).json({ token: newAccessToken, user });
     } catch (error) {
         clearAuthCookies(res);
-        return res.status(500).json({ message: error.message || 'Unable to refresh token' });
+        return sendServerError(res, error, 'Unable to refresh token', { scope: 'auth.refreshToken' });
     }
 };
 
@@ -602,7 +621,7 @@ exports.logout = async (req, res) => {
         clearAuthCookies(res);
         res.status(200).json({ message: "Successfully logged out" });
     } catch (error) {
-        res.status(500).json({ message: error.message || 'Logout failed' });
+        return sendServerError(res, error, 'Logout failed', { scope: 'auth.logout' });
     }
 };
 
@@ -677,7 +696,9 @@ exports.requestPasswordReset = async (req, res) => {
 
         res.status(200).json({ message: 'Email envoyé pour la réinitialisation de votre mot de passe' });
     } catch (error) {
-        return res.status(500).json({ message: error.message || 'Impossible d’initier la réinitialisation du mot de passe' });
+        return sendServerError(res, error, 'Impossible d’initier la réinitialisation du mot de passe', {
+            scope: 'auth.requestPasswordReset'
+        });
     }
 };
 
@@ -767,7 +788,7 @@ exports.resetPassword = async (req, res) => {
 
         res.status(200).json({ message: 'Le mot de passe a été réinitialisé avec succès' });
     } catch (error) {
-        res.status(500).json({ message: error.message || 'Impossible de réinitialiser le mot de passe' });
+        return sendServerError(res, error, 'Impossible de réinitialiser le mot de passe', { scope: 'auth.resetPassword' });
     }
 };
 

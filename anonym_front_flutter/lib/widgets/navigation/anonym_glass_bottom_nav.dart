@@ -1,4 +1,4 @@
-﻿import 'dart:ui';
+import 'dart:ui';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -84,6 +84,7 @@ class AnonymGlassBottomNav extends StatelessWidget {
                       _NavItem(
                         icon: _buildHomeIcon(currentIndex == 0),
                         label: 'Home',
+                        semanticsLabel: 'Accueil',
                         isActive: currentIndex == 0,
                         onTap: () => onTap(0),
                       ),
@@ -96,6 +97,7 @@ class AnonymGlassBottomNav extends StatelessWidget {
                           ),
                         ),
                         label: 'Chat',
+                        semanticsLabel: 'Messages',
                         isActive: currentIndex == 1,
                         onTap: () => onTap(1),
                       ),
@@ -109,6 +111,7 @@ class AnonymGlassBottomNav extends StatelessWidget {
                           ),
                         ),
                         label: 'Search',
+                        semanticsLabel: 'Recherche',
                         isActive: currentIndex == 2,
                         onTap: () => onTap(2),
                       ),
@@ -121,6 +124,7 @@ class AnonymGlassBottomNav extends StatelessWidget {
                           ),
                         ),
                         label: 'Profile',
+                        semanticsLabel: 'Profil',
                         isActive: currentIndex == 3,
                         onTap: () => onTap(3),
                       ),
@@ -156,40 +160,50 @@ class _NavItem extends StatelessWidget {
   const _NavItem({
     required this.icon,
     required this.label,
+    required this.semanticsLabel,
     required this.isActive,
     required this.onTap,
   });
 
   final Widget icon;
   final String label;
+  final String semanticsLabel;
   final bool isActive;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      behavior: HitTestBehavior.opaque,
-      child: SizedBox(
-        width: 50,
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            SizedBox(width: 24, height: 24, child: icon),
-            const SizedBox(height: 3),
-            Text(
-              label,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontFamily: AppTypography.primaryFontFamily,
-                fontWeight: isActive ? FontWeight.w700 : FontWeight.w400,
-                fontSize: 20 / 1.8,
-                color: AppColors.whiteColor.withValues(
-                  alpha: isActive ? 1 : 0.5,
+    return Semantics(
+      button: true,
+      selected: isActive,
+      label: semanticsLabel,
+      hint: isActive ? 'Onglet actif' : 'Ouvre l onglet $semanticsLabel',
+      child: GestureDetector(
+        onTap: onTap,
+        behavior: HitTestBehavior.opaque,
+        child: SizedBox(
+          width: 50,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              ExcludeSemantics(
+                child: SizedBox(width: 24, height: 24, child: icon),
+              ),
+              const SizedBox(height: 3),
+              Text(
+                label,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontFamily: AppTypography.primaryFontFamily,
+                  fontWeight: isActive ? FontWeight.w700 : FontWeight.w400,
+                  fontSize: 20 / 1.8,
+                  color: AppColors.whiteColor.withValues(
+                    alpha: isActive ? 1 : 0.5,
+                  ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -203,21 +217,29 @@ class _CenterButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 52,
-        height: 52,
-        decoration: BoxDecoration(
-          color: AppColors.whiteColor.withValues(alpha: 0.03),
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(
-            color: AppColors.whiteColor.withValues(alpha: 0.22),
-            width: 1.15,
-            strokeAlign: BorderSide.strokeAlignInside,
+    return Semantics(
+      button: true,
+      enabled: onTap != null,
+      label: 'Creer',
+      hint: 'Ouvre les actions rapides',
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          width: 52,
+          height: 52,
+          decoration: BoxDecoration(
+            color: AppColors.whiteColor.withValues(alpha: 0.03),
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(
+              color: AppColors.whiteColor.withValues(alpha: 0.22),
+              width: 1.15,
+              strokeAlign: BorderSide.strokeAlignInside,
+            ),
+          ),
+          child: const ExcludeSemantics(
+            child: Icon(Icons.add, size: 28, color: AppColors.whiteColor),
           ),
         ),
-        child: const Icon(Icons.add, size: 28, color: AppColors.whiteColor),
       ),
     );
   }

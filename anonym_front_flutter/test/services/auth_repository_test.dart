@@ -26,6 +26,29 @@ void main() {
       verify(() => apiClient.setSessionExpiredHandler(any())).called(1);
     });
 
+    test('hydrateSession skips refresh when no session cookie is available', () async {
+      when(
+        () => apiClient.buildSocketAuthHeaders(),
+      ).thenAnswer((_) async => const <String, dynamic>{});
+
+      await repository.hydrateSession();
+
+      verify(() => apiClient.buildSocketAuthHeaders()).called(1);
+      verifyNever(() => apiClient.refreshSession());
+    });
+
+    test('hydrateSession refreshes when a session cookie is available', () async {
+      when(() => apiClient.buildSocketAuthHeaders()).thenAnswer(
+        (_) async => const <String, dynamic>{'Cookie': 'sid=test-cookie'},
+      );
+      when(() => apiClient.refreshSession()).thenAnswer((_) async => true);
+
+      await repository.hydrateSession();
+
+      verify(() => apiClient.buildSocketAuthHeaders()).called(1);
+      verify(() => apiClient.refreshSession()).called(1);
+    });
+
     test('login parses payload.user when present', () async {
       when(
         () => dio.post<Map<String, dynamic>>(

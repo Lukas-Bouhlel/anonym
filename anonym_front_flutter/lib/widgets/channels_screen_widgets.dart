@@ -1,4 +1,4 @@
-﻿part of '../screens/channels_screen.dart';
+part of '../screens/channels_screen.dart';
 
 /// Secondary screen dedicated to public channels discovery/join flow.
 ///
@@ -14,8 +14,8 @@
 /// {@end-tool}
 ///
 /// Error cases:
-/// - If `AppProvider` is missing in context, reads like
-///   `context.read<AppProvider>()` throw at runtime.
+/// - If `ChannelsProvider` is missing in context, reads like
+///   `context.read<ChannelsProvider>()` throw at runtime.
 class PublicConversationsScreen extends StatefulWidget {
   const PublicConversationsScreen({super.key});
 
@@ -44,7 +44,7 @@ class _PublicConversationsScreenState extends State<PublicConversationsScreen>
     WidgetsBinding.instance.addObserver(this);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      final app = context.read<AppProvider>();
+      final app = context.read<ChannelsProvider>();
       setState(() {
         _countsByFilter[_filter] = app.publicChannels.length;
       });
@@ -73,7 +73,7 @@ class _PublicConversationsScreenState extends State<PublicConversationsScreen>
     });
   }
 
-  Future<void> _refreshCountsForAll(AppProvider app) async {
+  Future<void> _refreshCountsForAll(ChannelsProvider app) async {
     try {
       final responses = await Future.wait([
         app.loadJoinDirectoryChannels(filter: 'all'),
@@ -97,7 +97,7 @@ class _PublicConversationsScreenState extends State<PublicConversationsScreen>
   Future<void> _refreshRealtime() async {
     if (!mounted || _isRealtimeRefreshing || _isSwitchingFilter) return;
     _isRealtimeRefreshing = true;
-    final app = context.read<AppProvider>();
+    final app = context.read<ChannelsProvider>();
     final activeFilter = _filter;
     try {
       await Future.wait([
@@ -114,7 +114,7 @@ class _PublicConversationsScreenState extends State<PublicConversationsScreen>
   }
 
   Future<void> _loadFilter(
-    AppProvider app,
+    ChannelsProvider app,
     String filter, {
     bool showLoader = false,
   }) async {
@@ -139,7 +139,7 @@ class _PublicConversationsScreenState extends State<PublicConversationsScreen>
 
   Future<void> _handleJoinChannelTap(
     BuildContext context,
-    AppProvider app,
+    ChannelsProvider app,
     ChannelModel channel,
     bool joined,
   ) async {
@@ -172,12 +172,18 @@ class _PublicConversationsScreenState extends State<PublicConversationsScreen>
       body: Container(
         decoration: const BoxDecoration(gradient: AppGradients.gB1BCFBTo393566),
         child: SafeArea(
-          child: Consumer<AppProvider>(
-            builder: (context, app, _) {
-              final allPublicChannels = app.publicChannels.toList(
-                growable: false,
-              );
-              final joinedIds = app.channels
+          child: Builder(
+            builder: (context) {
+              final app = context.read<ChannelsProvider>();
+              final allPublicChannels = context
+                  .select<ChannelsProvider, List<ChannelModel>>(
+                    (provider) => provider.publicChannels,
+                  )
+                  .toList(growable: false);
+              final joinedIds = context
+                  .select<ChannelsProvider, List<ChannelModel>>(
+                    (provider) => provider.channels,
+                  )
                   .map((channel) => channel.channelId)
                   .toSet();
               bool resolveJoined(ChannelModel channel) {

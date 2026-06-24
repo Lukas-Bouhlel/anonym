@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 
 import '../theme.dart';
 import '../widgets/navigation/anonym_back_button.dart';
@@ -19,7 +19,7 @@ class _FaqScreenState extends State<FaqScreen> {
           'Pour signaler un problème, que ce soit sur la plateforme Anonym '
           'ou avec un autre utilisateur lors d\'une discussion, ou pour tout '
           'autre souci lié à la plateforme, utilise le formulaire Feedback.\n\n'
-          'Tout abus de signalement sera sanctionné par l équipe Anonym.',
+          'Tout abus de signalement sera sanctionné par l\'équipe Anonym.',
     ),
     _FaqItem(
       question: 'Comment fonctionne le système de réputation ?',
@@ -32,7 +32,7 @@ class _FaqScreenState extends State<FaqScreen> {
     _FaqItem(
       question: 'Je n\'arrive plus à me connecter, comment faire ?',
       answer:
-          'Si tu rencontres des problemes de connexion (aucun message, erreur '
+          'Si tu rencontres des problèmes de connexion (aucun message, erreur '
           'silencieuse, etc.), envoie-nous un message via le formulaire Feedback.\n\n'
           'Tout abus de signalement sera sanctionné par l\'équipe Anonym.',
     ),

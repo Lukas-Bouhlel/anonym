@@ -48,6 +48,10 @@ class _NativeMapboxMapState extends State<_NativeMapboxMap> {
   @override
   void didUpdateWidget(covariant _NativeMapboxMap oldWidget) {
     super.didUpdateWidget(oldWidget);
+    final mapboxMap = _mapboxMap;
+    if (mapboxMap != null) {
+      _lockAnonymMapNightMode(mapboxMap);
+    }
     _scheduleMarkerRender();
     _moveToCameraTargetIfNeeded();
   }
@@ -71,12 +75,18 @@ class _NativeMapboxMapState extends State<_NativeMapboxMap> {
       styleUri: mb.MapboxStyles.STANDARD,
       viewport: _initialViewport,
       onMapCreated: _onMapCreated,
+      onStyleLoadedListener: (_) {
+        final mapboxMap = _mapboxMap;
+        if (mapboxMap != null) {
+          _lockAnonymMapNightMode(mapboxMap);
+        }
+      },
     );
   }
 
   Future<void> _onMapCreated(mb.MapboxMap mapboxMap) async {
     _mapboxMap = mapboxMap;
-    await _applyAnonymMapTheme(mapboxMap);
+    _lockAnonymMapNightMode(mapboxMap);
     mapboxMap.gestures.updateSettings(
       mb.GesturesSettings(
         rotateEnabled: true,
@@ -140,6 +150,18 @@ class _NativeMapboxMapState extends State<_NativeMapboxMap> {
     }
   }
 
+  void _lockAnonymMapNightMode(mb.MapboxMap mapboxMap) {
+    _applyAnonymMapTheme(mapboxMap);
+    Future<void>.delayed(
+      const Duration(milliseconds: 250),
+      () => _applyAnonymMapTheme(mapboxMap),
+    );
+    Future<void>.delayed(
+      const Duration(seconds: 1),
+      () => _applyAnonymMapTheme(mapboxMap),
+    );
+  }
+
   void _moveToCameraTargetIfNeeded() {
     final target = widget.cameraTarget;
     if (target == null || target.revision == _lastCameraRevision) return;
@@ -192,8 +214,12 @@ class _NativeMapboxMapState extends State<_NativeMapboxMap> {
           try {
             built = await _buildNativeMarker(marker);
           } catch (error, stackTrace) {
-            debugPrint('Failed to build native map marker: $error');
-            debugPrintStack(stackTrace: stackTrace);
+            AppLogger.error(
+              'Failed to build native map marker',
+              scope: 'ANONYM_MAP',
+              error: error,
+              stackTrace: stackTrace,
+            );
             built = await _buildFallbackNativeMarker(marker);
           }
           built ??= await _buildFallbackNativeMarker(marker);

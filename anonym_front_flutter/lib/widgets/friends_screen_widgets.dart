@@ -148,7 +148,7 @@ class _ListFilterBar extends StatelessWidget {
         const SizedBox(width: 8),
         Expanded(
           child: _ListFilterChip(
-            label: 'Recues',
+            label: 'Reçues',
             count: incomingCount,
             isActive: selected == _FriendListFilter.incoming,
             onTap: () => onSelected(_FriendListFilter.incoming),
@@ -157,7 +157,7 @@ class _ListFilterBar extends StatelessWidget {
         const SizedBox(width: 8),
         Expanded(
           child: _ListFilterChip(
-            label: 'Envoyees',
+            label: 'Envoyées',
             count: outgoingCount,
             isActive: selected == _FriendListFilter.outgoing,
             onTap: () => onSelected(_FriendListFilter.outgoing),

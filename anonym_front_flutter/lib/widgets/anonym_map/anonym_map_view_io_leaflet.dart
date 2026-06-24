@@ -17,7 +17,7 @@ class _LeafletMapFallback extends StatefulWidget {
 
 class _LeafletMapFallbackState extends State<_LeafletMapFallback> {
   static const _mapboxTileUrl =
-      'https://api.mapbox.com/styles/v1/mapbox/light-v11/tiles/256/'
+      'https://api.mapbox.com/styles/v1/mapbox/dark-v11/tiles/256/'
       '{z}/{x}/{y}{r}?access_token={accessToken}';
 
   final fm.MapController _mapController = fm.MapController();
@@ -470,6 +470,12 @@ String _windowsMapHtml(String accessToken) {
       }
     }
 
+    function lockStandardNightMode() {
+      applyStandardConfig();
+      window.setTimeout(applyStandardConfig, 250);
+      window.setTimeout(applyStandardConfig, 1000);
+    }
+
     function postReady() {
       if (window.chrome && window.chrome.webview) {
         window.chrome.webview.postMessage({ type: "ready" });
@@ -503,9 +509,10 @@ String _windowsMapHtml(String accessToken) {
         config: mapConfig(),
       });
       map.addControl(new mapboxgl.NavigationControl({ visualizePitch: false }), "top-right");
-      map.on("style.load", applyStandardConfig);
+      map.on("style.load", lockStandardNightMode);
       map.on("load", () => {
         ready = true;
+        lockStandardNightMode();
         postReady();
       });
     }

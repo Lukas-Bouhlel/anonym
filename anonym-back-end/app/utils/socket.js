@@ -448,11 +448,12 @@ const initializeSocket = (io) => {
 
         socket.on('joinChannel', async (data) => {
             const { channelId } = data;
+            const roomId = channelId.toString();
             console.log(`[SOCKET] joinChannel userId=${connectedUserId} channelId=${channelId}`);
             await markMessagesAsRead(channelId, connectedUserId);
             const unreadCount = await getUnreadMessageCount(channelId, connectedUserId);
-            io.to(channelId).emit('unreadCount', { count: unreadCount });
-            socket.join(channelId);
+            io.to(roomId).emit('unreadCount', { count: unreadCount });
+            socket.join(roomId);
         });
 
         socket.on('privateMessage', async ({ content, channelId, imageUrl }) => {
@@ -560,6 +561,8 @@ const initializeSocket = (io) => {
                     content: message.content,
                     imageUrl: message.image_url,
                     channelId,
+                    senderId,
+                    status: message.status,
                     sender,
                     createdAt: message.createdAt
                 };
@@ -569,7 +572,7 @@ const initializeSocket = (io) => {
                         io.to(`user:${memberId}`).emit('newMessage', messagePayload);
                     }
                 } else {
-                    io.to(channelId).emit('newMessage', messagePayload);
+                    io.to(channelId.toString()).emit('newMessage', messagePayload);
                 }
 
                 await sendPushToUsers({
@@ -585,7 +588,7 @@ const initializeSocket = (io) => {
                 });
 
                 const unreadCount = await getUnreadMessageCount(channelId, senderId);
-                io.to(channelId).emit('unreadCount', { count: unreadCount });
+                io.to(channelId.toString()).emit('unreadCount', { count: unreadCount });
             } catch (error) {
                 console.error('Error sending private message:', error.message);
             }
@@ -593,7 +596,7 @@ const initializeSocket = (io) => {
 
         socket.on('leaveChannel', async ({ channelId }) => {
             console.log(`[SOCKET] leaveChannel userId=${connectedUserId} channelId=${channelId}`);
-            socket.leave(channelId);
+            socket.leave(channelId.toString());
         });
 
         socket.on('deleteChannel', async (channelId) => {
@@ -618,7 +621,7 @@ const initializeSocket = (io) => {
                 }
 
                 await Channel.destroy({ where: { channel_id: channelId } });
-                io.to(channelId).emit('channelDeleted', channelId);
+                io.to(channelId.toString()).emit('channelDeleted', channelId);
             } catch (error) {
                 console.error('Error deleting channel:', error.message);
             }

@@ -1,4 +1,4 @@
-﻿part of '../../screens/channels_screen.dart';
+part of '../../screens/channels_screen.dart';
 
 class _ChatDetailView extends StatefulWidget {
   const _ChatDetailView({
@@ -343,7 +343,11 @@ class _ChatDetailViewState extends State<_ChatDetailView> {
                   ),
                 ),
                 if (widget.showGroupMenu)
-                  _HeaderIcon(icon: Icons.more_vert, onTap: widget.onInfo),
+                  _HeaderIcon(
+                    icon: Icons.more_vert,
+                    onTap: widget.onInfo,
+                    semanticsLabel: 'Options de la conversation',
+                  ),
               ],
             ),
           ),
@@ -584,21 +588,27 @@ class _ChatDetailViewState extends State<_ChatDetailView> {
                             ),
                             child: Row(
                               children: [
-                                GestureDetector(
-                                  onTap: widget.onCancelEdit,
-                                  child: Container(
-                                    width: 34,
-                                    height: 34,
-                                    decoration: BoxDecoration(
-                                      color: AppColors.cFCFAFE.withValues(
-                                        alpha: 0.10,
+                                Semantics(
+                                  button: true,
+                                  label: 'Annuler la modification du message',
+                                  child: GestureDetector(
+                                    onTap: widget.onCancelEdit,
+                                    child: Container(
+                                      width: 34,
+                                      height: 34,
+                                      decoration: BoxDecoration(
+                                        color: AppColors.cFCFAFE.withValues(
+                                          alpha: 0.10,
+                                        ),
+                                        borderRadius: BorderRadius.circular(12),
                                       ),
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                    child: const Icon(
-                                      Icons.close_rounded,
-                                      color: AppColors.cFCFAFE,
-                                      size: 20,
+                                      child: const ExcludeSemantics(
+                                        child: Icon(
+                                          Icons.close_rounded,
+                                          color: AppColors.cFCFAFE,
+                                          size: 20,
+                                        ),
+                                      ),
                                     ),
                                   ),
                                 ),
@@ -647,47 +657,63 @@ class _ChatDetailViewState extends State<_ChatDetailView> {
                             children: [
                               _GradientSquareIcon(
                                 icon: Icons.add,
+                                semanticsLabel: 'Ajouter une image',
                                 onTap: _isSendingImage ? () {} : _pickImage,
                               ),
                               const SizedBox(width: 5),
                               Expanded(
-                                child: TextField(
-                                  controller: widget.messageController,
-                                  keyboardType: TextInputType.multiline,
-                                  textInputAction: TextInputAction.newline,
-                                  minLines: 1,
-                                  maxLines: 5,
-                                  textAlignVertical: TextAlignVertical.center,
-                                  onSubmitted: (_) => _handleSend(),
-                                  cursorColor: AppColors.whiteColor,
-                                  style: const TextStyle(
-                                    color: AppColors.whiteColor,
-                                    fontSize: 15,
-                                  ),
-                                  decoration: InputDecoration(
-                                    hintText: _hasPendingImage
-                                        ? 'Ajouter un message...'
-                                        : 'Envoyez un message...',
-                                    hintStyle: TextStyle(
-                                      color: AppColors.cFCFAFE.withValues(
-                                        alpha: 0.68,
-                                      ),
+                                child: Semantics(
+                                  textField: true,
+                                  label: 'Message',
+                                  hint: _hasPendingImage
+                                      ? 'Ajoute un texte avec l image'
+                                      : 'Ecris un message',
+                                  child: TextField(
+                                    controller: widget.messageController,
+                                    keyboardType: TextInputType.multiline,
+                                    textInputAction: TextInputAction.newline,
+                                    minLines: 1,
+                                    maxLines: 5,
+                                    textAlignVertical: TextAlignVertical.center,
+                                    onSubmitted: (_) => _handleSend(),
+                                    cursorColor: AppColors.whiteColor,
+                                    style: const TextStyle(
+                                      color: AppColors.whiteColor,
                                       fontSize: 15,
-                                      fontWeight: FontWeight.w100,
                                     ),
-                                    filled: false,
-                                    fillColor: Colors.transparent,
-                                    border: InputBorder.none,
-                                    enabledBorder: InputBorder.none,
-                                    focusedBorder: InputBorder.none,
-                                    disabledBorder: InputBorder.none,
-                                    errorBorder: InputBorder.none,
-                                    focusedErrorBorder: InputBorder.none,
-                                    contentPadding: const EdgeInsets.symmetric(
-                                      horizontal: 8,
-                                      vertical: 10,
+                                    decoration: InputDecoration(
+                                      labelText: 'Message',
+                                      floatingLabelBehavior:
+                                          FloatingLabelBehavior.never,
+                                      labelStyle: const TextStyle(
+                                        fontSize: 0,
+                                        height: 0,
+                                      ),
+                                      hintText: _hasPendingImage
+                                          ? 'Ajouter un message...'
+                                          : 'Envoyez un message...',
+                                      hintStyle: TextStyle(
+                                        color: AppColors.cFCFAFE.withValues(
+                                          alpha: 0.68,
+                                        ),
+                                        fontSize: 15,
+                                        fontWeight: FontWeight.w100,
+                                      ),
+                                      filled: false,
+                                      fillColor: Colors.transparent,
+                                      border: InputBorder.none,
+                                      enabledBorder: InputBorder.none,
+                                      focusedBorder: InputBorder.none,
+                                      disabledBorder: InputBorder.none,
+                                      errorBorder: InputBorder.none,
+                                      focusedErrorBorder: InputBorder.none,
+                                      contentPadding:
+                                          const EdgeInsets.symmetric(
+                                            horizontal: 8,
+                                            vertical: 10,
+                                          ),
+                                      isCollapsed: true,
                                     ),
-                                    isCollapsed: true,
                                   ),
                                 ),
                               ),
@@ -709,6 +735,7 @@ class _ChatDetailViewState extends State<_ChatDetailView> {
                                     )
                                   : _GradientSquareIcon(
                                       svgAsset: 'assets/icons/mouse.svg',
+                                      semanticsLabel: 'Envoyer le message',
                                       onTap: _handleSend,
                                     ),
                             ],

@@ -17,7 +17,9 @@ class AccountRepository {
   }
 
   Future<List<UserModel>> readAllUsers() async {
-    final response = await _dio.get<List<dynamic>>('/api/account/users');
+    final response = await _dio.get<List<dynamic>>(
+      '/api/account/discoverable-users',
+    );
     final payload = response.data ?? const [];
 
     return payload

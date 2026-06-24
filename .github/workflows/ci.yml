@@ -31,6 +31,82 @@ jobs:
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
 
+      - name: Run npm audit on Frontend
+        working-directory: ./anonym-front-end
+        run: npm audit --audit-level=high
+
+      - name: Run npm audit on Backend
+        working-directory: ./anonym-back-end
+        run: npm audit --audit-level=high
+
+      - name: Run Snyk on Flutter for vulnerabilities
+        working-directory: ./anonym_front_flutter
+        run: npx snyk test --file=pubspec.yaml --severity-threshold=high
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+
+  flutter:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+
+    - name: Set up Java
+      uses: actions/setup-java@v4
+      with:
+        distribution: temurin
+        java-version: '17'
+
+    - name: Set up Flutter
+      uses: subosito/flutter-action@v2
+      with:
+        channel: stable
+        cache: true
+
+    - name: Flutter pub get
+      working-directory: ./anonym_front_flutter
+      run: flutter pub get
+
+    - name: Flutter analyze
+      working-directory: ./anonym_front_flutter
+      run: flutter analyze
+
+    - name: Flutter tests
+      working-directory: ./anonym_front_flutter
+      run: flutter test
+
+    - name: Configure Android release signing
+      working-directory: ./anonym_front_flutter
+      env:
+        ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+        ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+        ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+      run: |
+        echo "$ANDROID_KEYSTORE_BASE64" | base64 --decode > android/app/upload-keystore.jks
+        cat > android/key.properties <<EOF
+        storeFile=upload-keystore.jks
+        storePassword=$ANDROID_KEYSTORE_PASSWORD
+        keyAlias=$ANDROID_KEY_ALIAS
+        keyPassword=$ANDROID_KEY_PASSWORD
+        EOF
+
+    - name: Build Android release APK for mobile validation
+      working-directory: ./anonym_front_flutter
+      run: >
+        flutter build apk --release
+        --dart-define=APP_ENV=dev
+        --dart-define=API_BASE_URL=https://ci.invalid
+        --dart-define=MAPBOX_ACCESS_TOKEN=${{ secrets.MAPBOX_ACCESS_TOKEN }}
+
+    - name: Upload Android release APK artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: anonym-flutter-release-apk
+        path: anonym_front_flutter/build/app/outputs/flutter-apk/app-release.apk
+        if-no-files-found: error
+
   build:
     runs-on: ubuntu-latest
 
@@ -143,3 +219,56 @@ jobs:
         MAIL_PASS: ${{ secrets.MAIL_PASS }}
         BACK_END_ORIGIN: ${{ secrets.BACK_END_ORIGIN }}
         ORIGIN: ${{ secrets.ORIGIN }}
+
+  backend-performance:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '22.12.0'
+
+    - name: Install backend dependencies
+      working-directory: ./anonym-back-end
+      run: npm install
+
+    - name: Start backend for performance test
+      working-directory: ./anonym-back-end
+      run: |
+        nohup npm run start:ci > backend-perf.log 2>&1 &
+        for i in {1..30}; do
+          if curl -fsS http://127.0.0.1:5000/health; then
+            exit 0
+          fi
+          sleep 2
+        done
+        cat backend-perf.log
+        exit 1
+      env:
+        NODE_ENV: test
+        PORT: 5000
+        JWT_SECRET: ci_jwt_secret
+        STRIPE_SECRET_KEY: sk_test_ci
+        DB_TEST_USERNAME: root
+        DB_TEST_PASSWORD: password
+        DB_TEST_DATABASE: anonym_test
+        DB_TEST_HOST: 127.0.0.1
+        DB_TEST_DIALECT: mysql
+        ORIGIN: http://localhost:3000
+
+    - name: Run backend API performance test
+      working-directory: ./anonym-back-end
+      run: npm run perf:backend
+
+    - name: Upload backend performance logs
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: backend-performance-logs
+        path: |
+          anonym-back-end/backend-perf.log
+        if-no-files-found: ignore

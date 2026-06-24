@@ -6,7 +6,6 @@ import '../providers/auth_providers.dart';
 import '../routes/app_routes.dart';
 import '../theme.dart';
 
-
 part '../widgets/login_screen_widgets.dart';
 
 /// Écran de connexion utilisateur.
@@ -125,8 +124,12 @@ class _LoginScreenState extends State<LoginScreen>
                                 icon: Icons.lock_rounded,
                                 obscureText: _obscurePassword,
                                 trailing: IconButton(
-                                  padding:
-                                      const EdgeInsets.symmetric(horizontal: 10),
+                                  tooltip: _obscurePassword
+                                      ? 'Afficher le mot de passe'
+                                      : 'Masquer le mot de passe',
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 10,
+                                  ),
                                   constraints: const BoxConstraints(),
                                   onPressed: () => setState(
                                     () => _obscurePassword = !_obscurePassword,
@@ -149,8 +152,9 @@ class _LoginScreenState extends State<LoginScreen>
                                   child: Text(
                                     'Mot de passe oublié ?',
                                     style: TextStyle(
-                                      color: AppColors.whiteColor
-                                          .withValues(alpha: 0.7),
+                                      color: AppColors.whiteColor.withValues(
+                                        alpha: 0.7,
+                                      ),
                                       decoration: TextDecoration.underline,
                                       decorationColor: AppColors.whiteColor
                                           .withValues(alpha: 0.7),
@@ -188,7 +192,9 @@ class _LoginScreenState extends State<LoginScreen>
               right: -60 + t * 15,
               child: _GlowOrb(
                 size: 260,
-                color: const Color(0xFFB1BCFB).withValues(alpha: 0.18 + t * 0.06),
+                color: const Color(
+                  0xFFB1BCFB,
+                ).withValues(alpha: 0.18 + t * 0.06),
               ),
             ),
             Positioned(
@@ -196,7 +202,9 @@ class _LoginScreenState extends State<LoginScreen>
               left: -80,
               child: _GlowOrb(
                 size: 220,
-                color: const Color(0xFF393566).withValues(alpha: 0.35 + t * 0.1),
+                color: const Color(
+                  0xFF393566,
+                ).withValues(alpha: 0.35 + t * 0.1),
               ),
             ),
           ],

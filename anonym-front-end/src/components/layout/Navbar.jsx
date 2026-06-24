@@ -1,10 +1,8 @@
 import { useState, useEffect } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
 import { Link } from 'react-router-dom';
-import { useAuth } from '../../context/AuthContext';
 import { Squash as Hamburger } from 'hamburger-react';
 import '../../assets/styles/navbar/navbar.scss';
-import { useUser } from '../../context/UserContext';
 import logo from '../../assets/images/logos/anonym-logo-white.svg';
 import { usePopup } from '../../context/PopupContext';
 import Popup from '../Utils/Popup';
@@ -22,11 +20,8 @@ import Popup from '../Utils/Popup';
  * )
  */
 const Navbar = () => {
-    const { AnonymIsOpen } = useAuth();//Ouvrir le modal d'accès
-    const { user } = useUser();//Récupérer l'utilisateur connecter à l'aide du context
     const { openPopup, setOpenPopup, textPopup, setTextPopup, state, setState } = usePopup();
     const location = useLocation();
-    const navigate = useNavigate();
     const [isOpenMenu, setIsOpenMenu] = useState();
 
     //Animation sidebar mobile
@@ -48,15 +43,6 @@ const Navbar = () => {
         }
     }, [isOpenMenu]);
 
-    // Gérer le clic du bouton pour ouvrir Anonym ou rediriger vers /app
-    const handleOpenAnonym = () => {
-        if (user) {
-            navigate('/app'); // Redirige vers /app si l'utilisateur est connecté
-        } else {
-            AnonymIsOpen(); // Appel de la fonction AnonymIsOpen du context si non connecté
-        }
-    };
-
     return (
         <>
             {openPopup && (
@@ -68,10 +54,8 @@ const Navbar = () => {
                 </Link>
                 <div id='navbar-items'>
                     <Link to='/discover' className='navbar-items-links'>Découvrir</Link>
-                    {/* <Link to='/reputation' className='navbar-items-links'>Reputation</Link> */}
                     <Link to='/support' className='navbar-items-links'>Support</Link>
                 </div>
-                <button className='navbar-items-links open-anonym' onClick={handleOpenAnonym}>Ouvrir Anonym</button>
             </div>
             <div id='navbar-mobile' className={`${location.pathname.substring(1)}`}>
                 <Hamburger toggled={isOpenMenu} toggle={setIsOpenMenu} direction={'right'} color='#FFF9F4' size={23} />
@@ -84,9 +68,7 @@ const Navbar = () => {
             <div className={`side-menu${isOpenMenu ? ' open' : ''}`}>
                 <nav>
                     <Link to='/discover' onClick={() => setIsOpenMenu(false)} className='side-menu-link'>Découvrir</Link>
-                    {/* <Link to='/reputation' onClick={() => setIsOpenMenu(false)} className='side-menu-link'>Reputation</Link> */}
                     <Link to='/support' onClick={() => setIsOpenMenu(false)} className='side-menu-link'>Support</Link>
-                    <span className='side-menu-link pe-auto' onClick={() => {setIsOpenMenu(false); handleOpenAnonym();}} >Ouvrir Anonym</span>
                 </nav>
             </div>
         </>
