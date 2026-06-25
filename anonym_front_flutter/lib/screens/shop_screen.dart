@@ -368,9 +368,9 @@ class _ShopScreenState extends State<ShopScreen> {
 }
 
 String _formatPrice(int amount) {
-  if (amount >= 100) {
+ if (amount >= 100) {
     final euros = (amount / 100).toStringAsFixed(2).replaceAll('.', ',');
-    return '$euros â‚¬';
+    return '$euros €';
   }
-  return '$amount â‚¬';
+  return '$amount €';
 }
