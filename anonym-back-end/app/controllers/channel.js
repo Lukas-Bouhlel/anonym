@@ -196,7 +196,7 @@ exports.create = async (req, res) => {
             return res.status(400).json({ message: 'Le nom du groupe est requis' });
         }
 
-        if (channelType === 'PRIVATE_DM' && (!Array.isArray(memberIds) || memberIds.length !== 1)) {
+        if (channelType === 'PRIVATE_DM' && memberIds.length !== 1) {
             return res.status(400).json({ message: 'Un message prive doit contenir exactement 2 users.' });
         }
 

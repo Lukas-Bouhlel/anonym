@@ -1,9 +1,10 @@
 (function () {
+  if (typeof window === "undefined") return;
+
   const maps = new Map();
   const initialCenter = [2.3522, 48.8566];
   const logPrefix = "[ANONYM_MAP][web]";
-  const debugLogsEnabled =
-    typeof window !== "undefined" && window.__ANONYM_MAP_DEBUG__ === true;
+  const debugLogsEnabled = window.__ANONYM_MAP_DEBUG__ === true;
 
   function log(message, data) {
     if (!debugLogsEnabled) return;

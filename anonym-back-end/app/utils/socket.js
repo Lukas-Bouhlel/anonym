@@ -397,12 +397,15 @@ const markMessagesAsRead = async (channelId, userId) => {
 
 const initializeSocket = (io) => {
     io.on('connection', (socket) => {
+        if (!socket) return;
+
         const connectedUserId = socket?.userId;
-        console.log(`[SOCKET] connection socketId=${socket.id} userId=${connectedUserId || 'unknown'}`);
+        const socketId = socket.id || 'unknown';
+        console.log(`[SOCKET] connection socketId=${socketId} userId=${connectedUserId || 'unknown'}`);
 
         if (connectedUserId) {
             socket.join(`user:${connectedUserId}`);
-            console.log(`[SOCKET] join user room user:${connectedUserId} socketId=${socket.id}`);
+            console.log(`[SOCKET] join user room user:${connectedUserId} socketId=${socketId}`);
             incrementPresenceConnections(connectedUserId);
             User.update(
                 { presence_status: 'online' },

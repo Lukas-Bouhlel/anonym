@@ -454,8 +454,9 @@ exports.requestRegisterCode = async (req, res) => {
 
 exports.confirmRegisterCode = async (req, res) => {
     try {
-        const email = normalizeEmail(req.body?.email);
-        const { code } = req.body;
+        const requestBody = req.body || {};
+        const email = normalizeEmail(requestBody.email);
+        const { code } = requestBody;
         const now = new Date();
 
         if (!email || !code) {
@@ -673,7 +674,7 @@ exports.requestPasswordReset = async (req, res) => {
         }
         const mobileResetLink = buildResetPasswordLink(getResetPasswordMobileBaseUrl(), token);
         const bridgeResetLink = buildResetPasswordBridgeLink(req, token);
-        const hasMobileResetLink = typeof mobileResetLink === 'string' && mobileResetLink.trim().length > 0;
+        const hasMobileResetLink = mobileResetLink.trim().length > 0;
         // En local/dev, on peut forcer le deep link mobile pour tester l'ouverture de l'app.
         // En dehors de ce mode, on privilégie HTTP(S) car plusieurs clients e-mail bloquent
         // les schemes custom (ex: anonym://).
@@ -721,8 +722,9 @@ exports.requestPasswordReset = async (req, res) => {
  */
 exports.resetPassword = async (req, res) => {
     try {
-        const token = req.query?.token || req.body?.token;
-        const { password, confirmPassword } = req.body;
+        const requestBody = req.body || {};
+        const token = req.query?.token || requestBody.token;
+        const { password, confirmPassword } = requestBody;
 
         if (!token) {
             return res.status(400).json({ message: 'Le token de reinitialisation est requis' });
@@ -741,8 +743,7 @@ exports.resetPassword = async (req, res) => {
         }
 
         // Vérifier que le mot de passe respecte la regex définie dans le modèle
-        const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+=\-[\]{};:,.<>?/\\|`~"'£¤§µ¢₹])[A-Za-z\d!@#$%^&*()_+=\-[\]{};:,.<>?/\\|`~"'£¤§µ¢₹]{12,}$/;
-        if (!passwordRegex.test(password)) {
+        if (!PASSWORD_REGEX.test(password)) {
             return res.status(400).json({ 
                 message: "Mot de passe : 12 caractères min, avec majuscules, minuscules, chiffres et caractères spéciaux"
             });
