@@ -258,6 +258,7 @@
     box-shadow: 0 22px 70px rgb(0 0 0 / 24%);
 }
 
+/* stylelint-disable no-descending-specificity */
 .admin-login-form {
     min-height: 520px;
     color: #333;
@@ -384,6 +385,7 @@
         line-height: 1.7;
     }
 }
+/* stylelint-enable no-descending-specificity */
 
 .admin-login-social-link {
     width: fit-content;
@@ -412,6 +414,7 @@
 }
 
 @media (width <= 992px) {
+    /* stylelint-disable no-descending-specificity */
     .container-access {
         width: 60%;
         max-width: 60%;
@@ -440,6 +443,7 @@
             cursor: pointer;
         }
     }
+    /* stylelint-enable no-descending-specificity */
 }
 
 @media (width <= 600px) {
@@ -468,6 +472,6 @@
 
     .admin-login-presentation {
         padding: 38px 30px;
-        border-radius: 42px 0 0 0;
+        border-radius: 42px 0 0;
     }
 }

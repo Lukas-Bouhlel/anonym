@@ -41,7 +41,9 @@ jobs:
 
       - name: Run Snyk on Flutter for vulnerabilities
         working-directory: ./anonym_front_flutter
-        run: npx snyk test --file=pubspec.yaml --severity-threshold=high
+        run: |
+          npx @cyclonedx/cdxgen -t dart --spec-version 1.6 -o sbom.cdx.json
+          npx snyk sbom test --file=sbom.cdx.json --severity-threshold=high
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
 
