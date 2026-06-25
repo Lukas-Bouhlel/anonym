@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {useApi} from '../../context/ApiContext';
-import { faGlobe, faChartLine, faBars, faInfo } from '@fortawesome/free-solid-svg-icons';
+import { faGlobe, faBars, faInfo, faUserGear } from '@fortawesome/free-solid-svg-icons';
 import logo from '../../assets/images/logos/anonym-logo-white.svg';
 
 /**
@@ -39,7 +39,7 @@ const Sidebar = () => {
                         <FontAwesomeIcon icon={faBars} />
                     </div>
                     {isOpen && 
-                        <Link to='/app' className='logo-anonym'>
+                        <Link to='/admin' className='logo-anonym'>
                             <img src={logo} alt='logo-anonym' />nonym
                         </Link>
                     }
@@ -47,21 +47,21 @@ const Sidebar = () => {
                 <div className="sidebar-content">
                     <ul className="nav flex-column">
                         <li className="nav-item">
-                            <Link  className={`nav-link ${!isOpen && 'togglable'} active-link`}>
+                            <Link to="/admin" className={`nav-link ${!isOpen && 'togglable'} active-link`}>
                                 <FontAwesomeIcon icon={faGlobe} />
                                 {isOpen && <span className="ms-3">Dashboard</span>}
+                            </Link>
+                        </li>
+                        <li className="nav-item">
+                            <Link to="/profile" className={`nav-link ${!isOpen && 'togglable'}`}>
+                                <FontAwesomeIcon icon={faUserGear} />
+                                {isOpen && <span className="ms-3">Paramètres utilisateur</span>}
                             </Link>
                         </li>
                         <li className="nav-item">
                             <Link onClick={handleLinkClick} className={`nav-link ${!isOpen && 'togglable'}`}>
                                 <FontAwesomeIcon icon={faInfo} />
                                 {isOpen && <span className="ms-3">Api</span>}
-                            </Link>
-                        </li>
-                        <li className="nav-item">
-                            <Link  className={`nav-link ${!isOpen && 'togglable'}`}>
-                                <FontAwesomeIcon icon={faChartLine} />
-                                {isOpen && <span className="ms-3">Analyse</span>}
                             </Link>
                         </li>
                     </ul>

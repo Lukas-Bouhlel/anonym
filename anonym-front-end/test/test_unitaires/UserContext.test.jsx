@@ -1,115 +1,131 @@
 import { render, screen, waitFor } from '@testing-library/react';
-import { UserProvider, useUser } from '../../src/context/UserContext'; // Ajustez le chemin selon votre structure de fichiers
-import { ApiProvider } from '../../src/context/ApiContext'; // Assurez-vous d'importer ApiProvider
-import { PopupProvider } from '../../src/context/PopupContext'; // Ajoutez PopupProvider ici
-import axios from 'axios';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import axios from 'axios';
+import { ApiProvider } from '../../src/context/ApiContext';
+import { PopupProvider } from '../../src/context/PopupContext';
+import { UserProvider, useUser } from '../../src/context/UserContext';
 
-jest.mock('axios'); // Mocker axios pour les requêtes API
+jest.mock('axios');
 
-// Composant de test pour vérifier l'utilisation du contexte utilisateur
+const createQueryClient = () => new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: false,
+      gcTime: 0,
+    },
+  },
+});
+
 const TestComponent = () => {
-    const { user, isLoading, error, logout } = useUser();
+  const { user, isLoading, error, login, logout } = useUser();
 
-    return (
+  return (
+    <div>
+      {isLoading && <div data-testid="loading">Chargement...</div>}
+      {error && <div data-testid="error">Erreur de chargement</div>}
+      {user ? (
         <div>
-            {isLoading && <div data-testid="loading">Chargement...</div>}
-            {error && <div data-testid="error">Erreur de chargement</div>}
-            {user ? (
-                <div>
-                    <div data-testid="user-info">Utilisateur: {user.name}</div>
-                    <button onClick={logout}>Déconnexion</button>
-                </div>
-            ) : (
-                <div data-testid="no-user">Pas d&apos;utilisateur connecté</div>
-            )}
+          <div data-testid="user-info">Utilisateur: {user.name}</div>
+          <button onClick={logout}>Deconnexion</button>
         </div>
-    );
+      ) : (
+        <div>
+          <div data-testid="no-user">Pas d&apos;utilisateur connecte</div>
+          <button onClick={() => login({ name: 'Jane Doe' })}>Connexion locale</button>
+        </div>
+      )}
+    </div>
+  );
+};
+
+const renderWithProviders = () => {
+  const queryClient = createQueryClient();
+
+  render(
+    <QueryClientProvider client={queryClient}>
+      <ApiProvider>
+        <PopupProvider>
+          <UserProvider>
+            <TestComponent />
+          </UserProvider>
+        </PopupProvider>
+      </ApiProvider>
+    </QueryClientProvider>
+  );
+
+  return queryClient;
 };
 
 describe('UserContext', () => {
-    const queryClient = new QueryClient(); // Créer une instance de QueryClient
+  afterEach(() => {
+    jest.clearAllMocks();
+  });
 
-    beforeAll(() => {
-        // Simulez l'URL de l'API
-        process.env.VITE_API_URL = 'http://mockapi.com'; // Remplacez par l'URL que vous attendez
+  test('fetches and displays the current user', async () => {
+    axios.get.mockResolvedValueOnce({ data: { name: 'John Doe' } });
+
+    const queryClient = renderWithProviders();
+
+    expect(screen.getByTestId('loading')).toBeInTheDocument();
+
+    await waitFor(() => {
+      expect(screen.getByTestId('user-info')).toHaveTextContent('Utilisateur: John Doe');
     });
 
-    test('devrait récupérer et afficher les informations de l\'utilisateur', async () => {
-        const mockUser = { name: 'John Doe' };
-        axios.get.mockResolvedValueOnce({ data: mockUser }); // Mocker la réponse de l'API
+    queryClient.clear();
+  });
 
-        render(
-            <QueryClientProvider client={queryClient}>
-                <ApiProvider>
-                    <PopupProvider> {/* Ajoutez PopupProvider ici */}
-                        <UserProvider>
-                            <TestComponent />
-                        </UserProvider>
-                    </PopupProvider>
-                </ApiProvider>
-            </QueryClientProvider>
-        );
+  test('exposes the loading error', async () => {
+    axios.get.mockRejectedValueOnce(new Error('Erreur de chargement'));
 
-        // Vérifiez que le texte "Chargement..." est affiché pendant la récupération
-        expect(screen.getByTestId('loading')).toBeInTheDocument();
+    const queryClient = renderWithProviders();
 
-        // Attendez que les données de l'utilisateur soient récupérées
-        await waitFor(() => {
-            expect(screen.getByTestId('user-info')).toHaveTextContent('Utilisateur: John Doe');
-        });
+    await waitFor(() => {
+      expect(screen.getByTestId('error')).toHaveTextContent('Erreur de chargement');
     });
 
-    test('devrait gérer l\'erreur de chargement des informations de l\'utilisateur', async () => {
-        axios.get.mockRejectedValueOnce(new Error('Erreur de chargement'));
-    
-        render(
-            <QueryClientProvider client={queryClient}>
-                <ApiProvider>
-                    <PopupProvider>
-                        <UserProvider>
-                            <TestComponent />
-                        </UserProvider>
-                    </PopupProvider>
-                </ApiProvider>
-            </QueryClientProvider>
-        );
-    
-        // Attendez que l'erreur soit affichée
-        await waitFor(() => {
-            expect(screen.getByTestId('error')).toHaveTextContent('Erreur de chargement');
-        });
+    queryClient.clear();
+  });
+
+  test('logs out the current user', async () => {
+    axios.get.mockResolvedValueOnce({ data: { name: 'John Doe' } });
+    axios.post.mockResolvedValueOnce({});
+
+    const queryClient = renderWithProviders();
+
+    await waitFor(() => {
+      expect(screen.getByTestId('user-info')).toHaveTextContent('Utilisateur: John Doe');
     });
-    
 
-    test('devrait déconnecter l\'utilisateur', async () => {
-        const mockUser = { name: 'John Doe' };
-        axios.get.mockResolvedValueOnce({ data: mockUser }); // Mocker la réponse de l'API
-        axios.post.mockResolvedValueOnce({}); // Mocker la réponse de déconnexion
+    screen.getByText('Deconnexion').click();
 
-        render(
-            <QueryClientProvider client={queryClient}>
-                <ApiProvider>
-                    <PopupProvider> {/* Ajoutez PopupProvider ici */}
-                        <UserProvider>
-                            <TestComponent />
-                        </UserProvider>
-                    </PopupProvider>
-                </ApiProvider>
-            </QueryClientProvider>
-        );
-
-        // Attendez que les données de l'utilisateur soient récupérées
-        await waitFor(() => {
-            expect(screen.getByTestId('user-info')).toHaveTextContent('Utilisateur: John Doe');
-        });
-
-        // Déconnecter l'utilisateur
-        screen.getByText('Déconnexion').click();
-
-        // Vérifiez que le texte "Pas d'utilisateur connecté" est affiché après déconnexion
-        await waitFor(() => {
-            expect(screen.getByTestId('no-user')).toHaveTextContent('Pas d\'utilisateur connecté');
-        });
+    await waitFor(() => {
+      expect(screen.getByTestId('no-user')).toHaveTextContent("Pas d'utilisateur connecte");
     });
+
+    expect(axios.post).toHaveBeenCalledWith(
+      'undefined/api/auth/logout',
+      {},
+      { withCredentials: true }
+    );
+    queryClient.clear();
+  });
+
+  test('logs in a user from local data', async () => {
+    axios.get.mockRejectedValueOnce(new Error('Non connecte'));
+
+    const queryClient = renderWithProviders();
+
+    await waitFor(() => {
+      expect(screen.getByTestId('no-user')).toBeInTheDocument();
+    });
+
+    screen.getByText('Connexion locale').click();
+
+    await waitFor(() => {
+      expect(screen.getByTestId('user-info')).toHaveTextContent('Utilisateur: Jane Doe');
+    });
+
+    queryClient.clear();
+  });
 });

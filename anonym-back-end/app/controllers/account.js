@@ -1,7 +1,58 @@
-const { User, Inventory, Shop } = require('../models');
+const { User, Inventory, Shop, Channel, PrivateMessage, DevicePushToken } = require('../models');
 const bcrypt = require('bcrypt');
 const fs = require('fs');
 const path = require('path');
+const { Op } = require('sequelize');
+const { deleteUploadFileIfExists, deleteUploadFiles } = require('../utils/fileCleanup');
+const { getLevelFromPoints } = require('../utils/points');
+let hasAllowNonFriendDmsColumnCache = null;
+const PRESENCE_STATUSES = ['online', 'idle', 'dnd', 'invisible'];
+
+const hasAllowNonFriendDmsColumn = async () => {
+    if (hasAllowNonFriendDmsColumnCache !== null) {
+        return hasAllowNonFriendDmsColumnCache;
+    }
+
+    try {
+        const usersTable = await User.sequelize.getQueryInterface().describeTable('users');
+        hasAllowNonFriendDmsColumnCache = Boolean(usersTable.allow_non_friend_dms);
+    } catch {
+        hasAllowNonFriendDmsColumnCache = false;
+    }
+
+    return hasAllowNonFriendDmsColumnCache;
+};
+
+const getPresenceForViewer = (user, viewerId) => {
+    const status = user?.presence_status || 'online';
+    if (status === 'invisible' && Number(user?.id) !== Number(viewerId)) {
+        return 'offline';
+    }
+    return status;
+};
+
+const serializeUserForViewer = (user, viewerId) => {
+    const userJson = user.toJSON ? user.toJSON() : user;
+    return {
+        ...userJson,
+        presence_status: getPresenceForViewer(userJson, viewerId),
+        level: getLevelFromPoints(userJson.total_points || 0)
+    };
+};
+
+const activeInventoryInclude = [
+    {
+        model: Inventory,
+        where: { active: true },
+        include: [
+            {
+                model: Shop,
+                attributes: ['title', 'type', 'content', 'amount']
+            }
+        ],
+        required: false
+    }
+];
 
 /**
  * @module UserController
@@ -42,10 +93,42 @@ exports.readAccount = async (req, res) => {
             return res.status(404).json({ message: "User not found" });
         }
 
-        res.status(200).json(user);
+        res.status(200).json(serializeUserForViewer(user, userId));
     } catch (error) {
         res.status(500).json({
             message: error.message || 'Une erreur est survenue lors de la récupération des comptes.'
+        });
+    }
+};
+
+exports.readDiscoverable = async (req, res) => {
+    try {
+        const hasAllowNonFriendDms = await hasAllowNonFriendDmsColumn();
+        const attributes = [
+            'id',
+            'username',
+            'avatar',
+            'bio',
+            'presence_status',
+            'total_points',
+            'createdAt'
+        ];
+
+        if (hasAllowNonFriendDms) {
+            attributes.push('allow_non_friend_dms');
+        }
+
+        const users = await User.findAll({
+            attributes,
+            include: activeInventoryInclude
+        });
+
+        const viewerId = req.auth.userId;
+        const serializedUsers = users.map((user) => serializeUserForViewer(user, viewerId));
+        res.status(200).json(serializedUsers);
+    } catch (error) {
+        res.status(500).json({
+            message: error.message || 'Une erreur est survenue lors de la recuperation des utilisateurs.'
         });
     }
 };
@@ -64,14 +147,15 @@ exports.read = async (req, res) => {
         const userId = req.params.id;
         const user = await User.findOne({
             where: { id: userId },
-            attributes: { exclude: ['password'] } // Exclure le champ 'password'
+            attributes: { exclude: ['password'] }, // Exclure le champ 'password'
+            include: activeInventoryInclude
         });
 
         if (!user) {
             return res.status(404).json({ message: "User not found" });
         }
 
-        res.status(200).json(user);
+        res.status(200).json(serializeUserForViewer(user, req.auth.userId));
     } catch (error) {
         res.status(500).json({
             message: error.message || 'Une erreur est survenue lors de la récupération du compte.'
@@ -91,14 +175,17 @@ exports.read = async (req, res) => {
 exports.readAll = async (req, res) => {
     try {
         const users = await User.findAll({
-            attributes: { exclude: ['password'] } // Exclure le champ 'password'
+            attributes: { exclude: ['password'] }, // Exclure le champ 'password'
+            include: activeInventoryInclude
         });
 
         if (!users) {
             return res.status(404).json({ message: "Users not found" });
         }
 
-        res.status(200).json(users);
+        const viewerId = req.auth.userId;
+        const serializedUsers = users.map((user) => serializeUserForViewer(user, viewerId));
+        res.status(200).json(serializedUsers);
     } catch (error) {
         res.status(500).json({
             message: error.message || 'Une erreur est survenue lors de la récupération des comptes.'
@@ -130,7 +217,7 @@ exports.update = async (req, res) => {
     try {
         const userId = req.auth.userId;// Récupérer l'ID de l'utilisateur depuis les paramètres JWT
         const datas = JSON.parse(req.body.datas);
-        const { username, email, avatar } = datas;
+        const { username, email, avatar, bio, allow_non_friend_dms } = datas;
 
         if (!userId) {
             return res.status(400).json({ message: "User ID is required." });
@@ -147,12 +234,7 @@ exports.update = async (req, res) => {
         // Vérifier si l'avatar doit être supprimé
         if (req.avatarData && avatar === "delete") {
             // Supprimer l'ancien avatar
-            if (user.avatar) {
-                const oldAvatarPath = path.join(__dirname, '../../uploads/profiles/avatars', path.basename(user.avatar));
-                if (fs.existsSync(oldAvatarPath)) {
-                    fs.unlinkSync(oldAvatarPath); // Supprimer l'ancien fichier
-                }
-            }
+            deleteUploadFileIfExists(user.avatar);
 
             // Générer un nouvel avatar par défaut avec couleur modifiée
             if (!req.file && req.avatarData) {
@@ -180,12 +262,7 @@ exports.update = async (req, res) => {
             newAvatarPath = `${req.protocol}://${req.get("host")}/uploads/profiles/avatars/${req.file.filename}`;
 
             // Supprimer l'ancien avatar
-            if (user.avatar) {
-                const oldAvatarPath = path.join(__dirname, '../../uploads/profiles/avatars', path.basename(user.avatar));
-                if (fs.existsSync(oldAvatarPath)) {
-                    fs.unlinkSync(oldAvatarPath); // Supprimer le fichier
-                }
-            }
+            deleteUploadFileIfExists(user.avatar);
         }
 
         // Mise à jour des informations de l'utilisateur
@@ -200,9 +277,26 @@ exports.update = async (req, res) => {
             user.username = username;
         }
         if (email) user.email = email;
+        if (typeof bio === 'string' || bio === null) user.bio = bio;
+        if (typeof allow_non_friend_dms === 'boolean' && await hasAllowNonFriendDmsColumn()) {
+            user.allow_non_friend_dms = allow_non_friend_dms;
+        }
         user.avatar = newAvatarPath;
 
         await user.save();
+
+        const io = req.app?.locals?.io;
+        if (io) {
+            io.emit('userProfileUpdated', {
+                userId: user.id,
+                username: user.username,
+                avatar: user.avatar,
+                bio: user.bio,
+                allow_non_friend_dms: user.allow_non_friend_dms,
+                presence_status: getPresenceForViewer(user, userId),
+                updatedAt: user.updatedAt
+            });
+        }
 
         res.status(200).json(user);
     } catch (error) {
@@ -294,15 +388,32 @@ exports.delete = async (req, res) => {
             return res.status(404).json({ message: "User not found" });
         }
 
-        // Supprimer l'avatar
-        if (user.avatar) {
-            const avatarPath = path.join(__dirname, '../../uploads/profiles/avatars', path.basename(user.avatar));
-            fs.unlink(avatarPath, (err) => {
-                if (err) {
-                    console.error("Error deleting avatar file:", err);
-                }
-            });
+        const createdChannels = await Channel.findAll({
+            where: { created_by: userId },
+            attributes: ['channel_id', 'cover_image'],
+            raw: true
+        });
+        const createdChannelIds = createdChannels.map((channel) => channel.channel_id);
+
+        const messageWhere = [{ sender_id: userId }];
+        if (createdChannelIds.length > 0) {
+            messageWhere.push({ channel_id: { [Op.in]: createdChannelIds } });
         }
+
+        const messagesWithImages = await PrivateMessage.findAll({
+            where: {
+                image_url: { [Op.ne]: null },
+                [Op.or]: messageWhere
+            },
+            attributes: ['image_url'],
+            raw: true
+        });
+
+        deleteUploadFiles([
+            user.avatar,
+            ...createdChannels.map((channel) => channel.cover_image),
+            ...messagesWithImages.map((message) => message.image_url)
+        ]);
 
         res.clearCookie('token', {
             httpOnly: true,
@@ -317,6 +428,115 @@ exports.delete = async (req, res) => {
     } catch (error) {
         res.status(500).json({
             message: error.message || 'Une erreur est survenue lors de la suppression du compte.'
+        });
+    }
+};
+
+exports.updatePresence = async (req, res) => {
+    try {
+        const userId = req.auth.userId;
+        const { presence_status } = req.body;
+
+        if (!PRESENCE_STATUSES.includes(presence_status)) {
+            return res.status(400).json({
+                message: `presence_status must be one of: ${PRESENCE_STATUSES.join(', ')}`
+            });
+        }
+
+        const user = await User.findOne({ where: { id: userId } });
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        user.presence_status = presence_status;
+        await user.save();
+
+        const io = req.app?.locals?.io;
+        if (io) {
+            io.emit('presenceUpdated', {
+                userId: user.id,
+                presence_status: user.presence_status
+            });
+        }
+
+        return res.status(200).json({
+            message: 'Presence updated successfully.',
+            presence_status: user.presence_status
+        });
+    } catch (error) {
+        return res.status(500).json({
+            message: error.message || 'Une erreur est survenue lors de la mise a jour du statut.'
+        });
+    }
+};
+
+exports.upsertPushToken = async (req, res) => {
+    try {
+        const userId = req.auth.userId;
+        const { token, platform } = req.body;
+        const allowedPlatforms = ['android', 'ios', 'web'];
+
+        if (!token || typeof token !== 'string') {
+            return res.status(400).json({ message: 'token is required.' });
+        }
+
+        if (!platform || !allowedPlatforms.includes(platform)) {
+            return res.status(400).json({
+                message: `platform must be one of: ${allowedPlatforms.join(', ')}`
+            });
+        }
+
+        const existingToken = await DevicePushToken.findOne({ where: { token } });
+        if (existingToken) {
+            existingToken.user_id = userId;
+            existingToken.platform = platform;
+            existingToken.is_active = true;
+            await existingToken.save();
+            return res.status(200).json({ message: 'Push token updated.' });
+        }
+
+        await DevicePushToken.create({
+            user_id: userId,
+            token,
+            platform,
+            is_active: true
+        });
+
+        return res.status(201).json({ message: 'Push token created.' });
+    } catch (error) {
+        return res.status(500).json({
+            message: error.message || 'Une erreur est survenue lors de l\'enregistrement du push token.'
+        });
+    }
+};
+
+exports.deletePushToken = async (req, res) => {
+    try {
+        const userId = req.auth.userId;
+        const { token } = req.body;
+
+        if (!token || typeof token !== 'string') {
+            return res.status(400).json({ message: 'token is required.' });
+        }
+
+        const tokenEntry = await DevicePushToken.findOne({
+            where: {
+                user_id: userId,
+                token
+            }
+        });
+
+        if (!tokenEntry) {
+            return res.status(404).json({ message: 'Push token not found.' });
+        }
+
+        tokenEntry.is_active = false;
+        await tokenEntry.save();
+
+        return res.status(204).send();
+    } catch (error) {
+        return res.status(500).json({
+            message: error.message || 'Une erreur est survenue lors de la suppression du push token.'
         });
     }
 };

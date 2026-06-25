@@ -1,15 +1,134 @@
 const express = require('express');
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
-const rateLimit = require('express-rate-limit'); 
-const slowDown = require('express-slow-down'); 
+const rateLimit = require('express-rate-limit');
+const slowDown = require('express-slow-down');
+const multer = require('multer');
 const app = express();
 const helmet = require('helmet');
 const router = require("./app/routes/index.js");
 const db = require("./app/models/index.js");
 const path = require('path');
 const createMailer = require('./app/utils/mailer.js');
+const { ensureCsrfCookie } = require('./app/middlewares/csrf');
+const {
+    healthHandler,
+    httpLogger,
+    metricsHandler,
+    metricsMiddleware
+} = require('./app/utils/observability');
 const env = process.env.NODE_ENV || 'development';
+
+const configuredOrigin =
+    env === 'production'
+        ? process.env.ORIGIN_PROD
+        : env === 'preprod'
+            ? process.env.ORIGIN_PREPROD
+            : process.env.ORIGIN;
+
+const isAllowedDevOrigin = (origin) => {
+    if (!origin) return true;
+    try {
+        const { hostname } = new URL(origin);
+        return hostname === 'localhost' || hostname === '127.0.0.1';
+    } catch {
+        return false;
+    }
+};
+
+const isAllowedOrigin = (origin) => {
+    if (!origin) return true;
+    if (origin === configuredOrigin) return true;
+
+    if (env === 'development') {
+        return isAllowedDevOrigin(origin);
+    }
+
+    return false;
+};
+
+const getRuntimeEnvVar = (baseName) => {
+    if (env === 'production') {
+        return process.env[`${baseName}_PROD`] || process.env[baseName];
+    }
+    if (env === 'preprod') {
+        return process.env[`${baseName}_PREPROD`] || process.env[baseName];
+    }
+    return process.env[baseName];
+};
+
+const buildResetPasswordLink = (baseUrl, token) => {
+    if (typeof baseUrl !== 'string') return '';
+    const trimmedBaseUrl = baseUrl.trim();
+    if (!trimmedBaseUrl) return '';
+
+    const encodedToken = encodeURIComponent(token);
+
+    if (trimmedBaseUrl.includes('{token}')) {
+        return trimmedBaseUrl.replace('{token}', encodedToken);
+    }
+
+    const withoutTrailingSlash = trimmedBaseUrl.replace(/\/+$/, '');
+    const hasResetPath = /\/reset\/?(\?|$)/i.test(withoutTrailingSlash);
+    const urlWithResetPath = hasResetPath ? withoutTrailingSlash : `${withoutTrailingSlash}/reset/`;
+    const separator = urlWithResetPath.includes('?') ? '&' : '?';
+
+    return `${urlWithResetPath}${separator}token=${encodedToken}`;
+};
+
+const getResetPasswordWebBaseUrl = () => {
+    return getRuntimeEnvVar('RESET_PASSWORD_WEB_URL')
+        || getRuntimeEnvVar('RESET_PASSWORD_URL')
+        || getRuntimeEnvVar('ORIGIN');
+};
+
+const getResetPasswordMobileBaseUrl = () => getRuntimeEnvVar('RESET_PASSWORD_MOBILE_URL');
+
+const getPaymentSuccessWebBaseUrl = () => {
+    return getRuntimeEnvVar('PAYMENT_SUCCESS_WEB_URL')
+        || getRuntimeEnvVar('ORIGIN');
+};
+
+const getPaymentSuccessMobileBaseUrl = () => getRuntimeEnvVar('PAYMENT_SUCCESS_MOBILE_URL');
+
+const getPaymentCancelWebBaseUrl = () => {
+    return getRuntimeEnvVar('PAYMENT_CANCEL_WEB_URL')
+        || getRuntimeEnvVar('ORIGIN');
+};
+
+const getPaymentCancelMobileBaseUrl = () => getRuntimeEnvVar('PAYMENT_CANCEL_MOBILE_URL');
+
+const appendDeepLinkPath = (baseUrl, pathSuffix) => {
+    if (typeof baseUrl !== 'string') return '';
+    const trimmed = baseUrl.trim();
+    if (!trimmed) return '';
+
+    const cleanPath = String(pathSuffix || '').replace(/^\/+/, '');
+
+    if (trimmed.endsWith(':///')) return `${trimmed}${cleanPath}`;
+    if (trimmed.endsWith('://')) return `${trimmed}/${cleanPath}`;
+    if (trimmed.endsWith('/')) return `${trimmed}${cleanPath}`;
+    return `${trimmed}/${cleanPath}`;
+};
+
+const withQuery = (url, query = {}) => {
+    const entries = Object.entries(query).filter(([, value]) => {
+        if (value === null || value === undefined) return false;
+        return String(value).trim().length > 0;
+    });
+    if (!url || entries.length === 0) return url;
+    const search = new URLSearchParams(entries.map(([key, value]) => [key, String(value)])).toString();
+    if (!search) return url;
+    const separator = url.includes('?') ? '&' : '?';
+    return `${url}${separator}${search}`;
+};
+
+const escapeHtml = (value) => String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
 
 /**
  * Connexion à la base de données avec Sequelize.
@@ -17,16 +136,18 @@ const env = process.env.NODE_ENV || 'development';
  * @memberof sequelize
  * @returns {Promise} - Résolution de la promesse si la connexion à la base de données est réussie.
  */
-db.sequelize
-    .authenticate()
-    .then(() => console.log("Database connected..."))
-    .catch((err) => console.log(err));
+if (env !== 'test') {
+    db.sequelize
+        .authenticate()
+        .then(() => console.log("Database connected..."))
+        .catch((err) => console.log(err));
+}
 
 const mailerConfig = {
     service: 'gmail',
     auth: {
         user: process.env.MAIL_USER,
-        pass: process.env.MAIL_PASS, 
+        pass: process.env.MAIL_PASS,
     },
 };
 
@@ -49,6 +170,8 @@ app.use((req, res, next) => {
 });
 
 app.use(express.json());
+app.use(httpLogger);
+app.use(metricsMiddleware);
 
 /**
  * Limite le nombre de requêtes par IP sur une fenêtre de temps.
@@ -61,10 +184,13 @@ app.use(express.json());
  */
 const limiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 500, // Limite chaque IP à 500 requêtes par fenêtre
-    validate: {trustProxy: false},
+    max: Number(process.env.RATE_LIMIT_WRITE_MAX || 1200),
+    validate: { trustProxy: false },
+    standardHeaders: true,
+    legacyHeaders: false,
+    skip: (req) => ['GET', 'HEAD', 'OPTIONS'].includes((req.method || '').toUpperCase()),
     message: {
-        message: "Trop de requêtes effectuées depuis cette adresse IP, veuillez réessayer plus tard.",
+        message: "Trop de requetes d'ecriture effectuees depuis cette adresse IP, veuillez reessayer plus tard.",
     },
 });
 
@@ -81,9 +207,10 @@ app.use(limiter);
  */
 const speedLimiter = slowDown({
     windowMs: 15 * 60 * 1000, // Période de 15 minutes
-    delayAfter: 50, // Commence à ralentir les requêtes après 50 requêtes dans la fenêtre
-    delayMs: () => 500, // Délai fixe de 500 ms par requête supplémentaire
-    validate: {trustProxy: false}
+    delayAfter: Number(process.env.RATE_LIMIT_WRITE_DELAY_AFTER || 250),
+    delayMs: () => Number(process.env.RATE_LIMIT_WRITE_DELAY_MS || 150),
+    skip: (req) => ['GET', 'HEAD', 'OPTIONS'].includes((req.method || '').toUpperCase()),
+    validate: { trustProxy: false }
 });
 
 app.use(speedLimiter);
@@ -128,10 +255,16 @@ app.use(helmet({
  * @returns {Function} Middleware pour gérer les requêtes cross-origin.
  */
 app.use(cors({
-    origin: env === 'production' ? process.env.ORIGIN_PROD : env === 'preprod' ? process.env.ORIGIN_PREPROD : process.env.ORIGIN, 
+    origin: (origin, callback) => {
+        if (isAllowedOrigin(origin)) {
+            return callback(null, true);
+        }
+
+        return callback(new Error(`Origin not allowed by CORS: ${origin}`));
+    },
     credentials: true,  // Permet les cookies
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
-    allowedHeaders: ['Content-Type', 'Authorization']
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-CSRF-Token']
 }));
 
 app.use(cookieParser());
@@ -144,12 +277,161 @@ app.use(cookieParser());
  */
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 app.set('trust proxy', true);
+
+app.get('/health', healthHandler);
+app.get('/status', healthHandler);
+app.get('/api/health', healthHandler);
+app.get('/metrics', metricsHandler);
+
+app.get('/open-reset-password', (req, res) => {
+    const token = typeof req.query?.token === 'string' ? req.query.token.trim() : '';
+    if (!token) {
+        return res.status(400).type('text/plain').send('Token de reinitialisation manquant.');
+    }
+
+    const webResetLink = buildResetPasswordLink(getResetPasswordWebBaseUrl(), token);
+    const mobileResetLink = buildResetPasswordLink(getResetPasswordMobileBaseUrl(), token);
+    const openLink = mobileResetLink || webResetLink;
+    const fallbackLink = webResetLink || '/';
+
+    if (!openLink) {
+        return res.status(500).type('text/plain').send("Aucun lien de reinitialisation configure.");
+    }
+
+    const safeOpenLink = escapeHtml(openLink);
+    const safeFallbackLink = escapeHtml(fallbackLink);
+
+    return res.status(200).type('html').send(`<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Ouverture Anonym</title>
+  <meta http-equiv="refresh" content="0;url=${safeOpenLink}">
+  <style>
+    body { font-family: Arial, sans-serif; margin: 0; background: #121212; color: #f4f4f4; }
+    .wrap { max-width: 460px; margin: 10vh auto; padding: 24px; text-align: center; }
+    .btn { display: inline-block; margin-top: 16px; padding: 12px 16px; border-radius: 8px; background: #ffffff; color: #121212; font-weight: 700; text-decoration: none; }
+    .muted { opacity: .8; font-size: 14px; margin-top: 12px; }
+    a.fallback { color: #c4d4ff; word-break: break-all; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>Ouverture de l'application...</h1>
+    <p>Si l'application ne s'ouvre pas automatiquement, utilise le bouton ci-dessous.</p>
+    <a class="btn" href="${safeOpenLink}">Ouvrir Anonym</a>
+    <p class="muted">Lien web de secours :</p>
+    <a class="fallback" href="${safeFallbackLink}">${safeFallbackLink}</a>
+  </div>
+</body>
+</html>`);
+});
+
+app.get('/open-payment-success', (req, res) => {
+    const sessionId = typeof req.query?.session_id === 'string' ? req.query.session_id.trim() : '';
+    const webSuccessLink = withQuery(
+        appendDeepLinkPath(getPaymentSuccessWebBaseUrl(), '/app/success'),
+        { session_id: sessionId }
+    );
+    const mobileSuccessLink = withQuery(
+        appendDeepLinkPath(getPaymentSuccessMobileBaseUrl(), '/app/success'),
+        { session_id: sessionId }
+    );
+    const openLink = mobileSuccessLink || webSuccessLink;
+    const fallbackLink = webSuccessLink || '/';
+
+    if (!openLink) {
+        return res.status(500).type('text/plain').send("Aucun lien de retour paiement configure.");
+    }
+
+    const safeOpenLink = escapeHtml(openLink);
+    const safeFallbackLink = escapeHtml(fallbackLink);
+
+    return res.status(200).type('html').send(`<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Retour vers Anonym</title>
+  <meta http-equiv="refresh" content="0;url=${safeOpenLink}">
+  <style>
+    body { font-family: Arial, sans-serif; margin: 0; background: #121212; color: #f4f4f4; }
+    .wrap { max-width: 460px; margin: 10vh auto; padding: 24px; text-align: center; }
+    .btn { display: inline-block; margin-top: 16px; padding: 12px 16px; border-radius: 8px; background: #ffffff; color: #121212; font-weight: 700; text-decoration: none; }
+    .muted { opacity: .8; font-size: 14px; margin-top: 12px; }
+    a.fallback { color: #c4d4ff; word-break: break-all; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>Paiement reussi</h1>
+    <p>Retour automatique vers l'application...</p>
+    <a class="btn" href="${safeOpenLink}">Ouvrir Anonym</a>
+    <p class="muted">Lien web de secours :</p>
+    <a class="fallback" href="${safeFallbackLink}">${safeFallbackLink}</a>
+  </div>
+</body>
+</html>`);
+});
+
+app.get('/open-payment-cancel', (req, res) => {
+    const webCancelLink = appendDeepLinkPath(getPaymentCancelWebBaseUrl(), '/app');
+    const mobileCancelLink = appendDeepLinkPath(getPaymentCancelMobileBaseUrl(), '/app');
+    const openLink = mobileCancelLink || webCancelLink;
+    const fallbackLink = webCancelLink || '/';
+
+    if (!openLink) {
+        return res.status(500).type('text/plain').send("Aucun lien d'annulation configure.");
+    }
+
+    const safeOpenLink = escapeHtml(openLink);
+    const safeFallbackLink = escapeHtml(fallbackLink);
+
+    return res.status(200).type('html').send(`<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Retour vers Anonym</title>
+  <meta http-equiv="refresh" content="0;url=${safeOpenLink}">
+  <style>
+    body { font-family: Arial, sans-serif; margin: 0; background: #121212; color: #f4f4f4; }
+    .wrap { max-width: 460px; margin: 10vh auto; padding: 24px; text-align: center; }
+    .btn { display: inline-block; margin-top: 16px; padding: 12px 16px; border-radius: 8px; background: #ffffff; color: #121212; font-weight: 700; text-decoration: none; }
+    .muted { opacity: .8; font-size: 14px; margin-top: 12px; }
+    a.fallback { color: #c4d4ff; word-break: break-all; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>Paiement annule</h1>
+    <p>Retour automatique vers l'application...</p>
+    <a class="btn" href="${safeOpenLink}">Ouvrir Anonym</a>
+    <p class="muted">Lien web de secours :</p>
+    <a class="fallback" href="${safeFallbackLink}">${safeFallbackLink}</a>
+  </div>
+</body>
+</html>`);
+});
 /**
  * Routeur principal pour les API.
  * @function router
  * @param {string} route - Route définie pour l'API.
  * @param {Function} handler - Gestionnaire des requêtes pour les routes.
  */
-app.use("/api", router);
+app.use('/api', ensureCsrfCookie, router);
+
+app.use((error, req, res, next) => {
+    if (error instanceof multer.MulterError) {
+        const message = error.code === 'LIMIT_FILE_SIZE'
+            ? 'Image trop volumineuse.'
+            : 'Fichier image invalide.';
+
+        return res.status(400).json({ message });
+    }
+
+    return next(error);
+});
 
 module.exports = app;

@@ -1,0 +1,26 @@
+config:
+  target: "http://127.0.0.1:5000"
+  phases:
+    - duration: 20
+      arrivalRate: 2
+      name: "baseline health and metrics"
+  ensure:
+    maxErrorRate: 1
+    thresholds:
+      - http.response_time.p95: 750
+      - http.response_time.max: 2000
+
+scenarios:
+  - name: "health endpoints"
+    flow:
+      - get:
+          url: "/health"
+      - get:
+          url: "/status"
+      - get:
+          url: "/api/health"
+
+  - name: "prometheus metrics"
+    flow:
+      - get:
+          url: "/metrics"

@@ -20,18 +20,6 @@ jest.mock('../../src/components/Profile/Account', () => {
     return Account;
 });
 
-jest.mock('../../src/components/Profile/Invoices', () => {
-    const Invoices = () => <div>Invoices Component</div>;
-    Invoices.displayName = 'Invoices';
-    return Invoices;
-});
-
-jest.mock('../../src/components/Profile/Inventory', () => {
-    const Inventory = () => <div>Inventory Component</div>;
-    Inventory.displayName = 'Inventory';
-    return Inventory;
-});
-
 jest.mock('axios');
 
 const mockUser = {

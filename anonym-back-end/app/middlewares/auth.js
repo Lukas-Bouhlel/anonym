@@ -21,7 +21,16 @@ const jwt = require('jsonwebtoken');
  */
 module.exports = (req, res, next) => {
     try {
-        const token = req.cookies.token; 
+        const tokenFromCookie = req.cookies?.token;
+        const authHeader = req.headers?.authorization;
+        const tokenFromHeader = authHeader && authHeader.startsWith('Bearer ')
+            ? authHeader.slice(7)
+            : null;
+        const token = tokenFromCookie || tokenFromHeader;
+
+        if (!token) {
+            throw new Error('Missing token');
+        }
 
         const decodedToken = jwt.verify(token, process.env.JWT_SECRET);
         const userId = decodedToken.userId;
@@ -34,6 +43,13 @@ module.exports = (req, res, next) => {
         
         next();
     } catch {
+        const cookieOptions = {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'Strict',
+        };
+        res.clearCookie?.(process.env.JWT_ACCESS_COOKIE_NAME || 'token', cookieOptions);
+        res.clearCookie?.(process.env.JWT_REFRESH_COOKIE_NAME || 'refreshToken', cookieOptions);
         res.status(401).json({
             error: 'Unauthorized request!'
         });

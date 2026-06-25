@@ -2,7 +2,6 @@ import PropTypes from 'prop-types';
 import { useLocation, Navigate } from "react-router-dom";
 import Navbar from "./Navbar";
 import Footer from "./Footer";
-import Access from '../Access/Access';
 import { useUser } from '../../context/UserContext';
 
 /**
@@ -22,10 +21,12 @@ import { useUser } from '../../context/UserContext';
  * )
  */
 const Layout = ({ children }) => {
-  const privateRoutes = ["/app", "/profile", "/app/success", "/admin"];
+  const privateRoutes = ["/profile", "/admin"];
+  const noChromeRoutes = ["/admin-portal-a7f49c2e"];
   const adminRoute = ['/admin'];
   const location = useLocation();
   const isPrivateRoute = privateRoutes.includes(location.pathname);
+  const isNoChromeRoute = noChromeRoutes.includes(location.pathname);
   const isAdminRoute = adminRoute.includes(location.pathname);
   const { user, isLoading } = useUser(); // Récupère l'utilisateur du context
 
@@ -50,8 +51,7 @@ const Layout = ({ children }) => {
   return (
     <>
       {/* Affiche Navbar et Access si ce n'est pas une route privée */}
-      {!isPrivateRoute && <Navbar />}
-      {!isPrivateRoute && <Access />}
+      {!isPrivateRoute && !isNoChromeRoute && <Navbar />}
 
       {/* Le contenu principal */}
       <div id="content">
@@ -59,7 +59,7 @@ const Layout = ({ children }) => {
       </div>
 
       {/* Affiche Footer si ce n'est pas une route privée */}
-      {!isPrivateRoute && <Footer />}
+      {!isPrivateRoute && !isNoChromeRoute && <Footer />}
     </>
   );
 };

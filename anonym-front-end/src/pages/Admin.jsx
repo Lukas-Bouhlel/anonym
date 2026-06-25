@@ -31,7 +31,7 @@ const Admin = () => {
      */
     const fetchUsers = async () => {
         try {
-            const response = await axios.get(`${api_url}/api/account/users`, {
+            const response = await axios.get(`${api_url}/api/admin/users`, {
                 withCredentials: true,
             });
             return response.data;

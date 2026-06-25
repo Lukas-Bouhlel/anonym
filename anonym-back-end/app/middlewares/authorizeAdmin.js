@@ -17,7 +17,7 @@
  * @returns {void}
  */
 const authorizeAdmin = (req, res, next) => {
-    if (req.auth.userRole === 'User') {
+    if (!['ADMIN', 'SUPER_ADMIN'].includes(req.auth?.userRole)) {
         return res.status(403).json({ message: 'Accès interdit, vous devez être Admin.' });
     }
 

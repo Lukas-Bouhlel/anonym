@@ -2,8 +2,6 @@ import { useState, useRef } from "react";
 import { Link, useNavigate  } from "react-router-dom";
 import Profils from "../components/Profile/Profils";
 import Account from "../components/Profile/Account";
-import Inventory from "../components/Profile/Inventory";
-import Invoices from "../components/Profile/Invoices";
 import { useUser } from '../context/UserContext';
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faXmark, faDoorOpen } from "@fortawesome/free-solid-svg-icons";
@@ -11,7 +9,7 @@ import { Modal, Button } from 'rsuite';
 
 /**
  * Composant Profile qui représente la page de profil de l'utilisateur.
- * Il permet à l'utilisateur de gérer ses informations de profil, de facturation, et d'inventaire,
+ * Il permet à l'utilisateur de gérer ses informations de profil,
  * ainsi que de se déconnecter de l'application.
  *
  * @component
@@ -95,20 +93,6 @@ const Profile = () => {
                             </ul>
                             <hr/>
                             <ul className="profile-sidebar nav nav-pills flex-column mb-0 align-items-center align-items-sm-start" id="menu">
-                                <span className="profile-category"><strong>Paramètres de facturation</strong></span>
-                                <li className="nav-item">
-                                    <span onClick={() => {setTypeProfils('Invoices'); setIsSidebarOpen(false);}} className={`link-sidebar ${typeProfils === 'Invoices' ? 'link-sidebar-active' : ''}`}>Facturation</span>
-                                </li>
-                            </ul>
-                            <hr />
-                            <ul className="profile-sidebar nav nav-pills flex-column mb-0 align-items-center align-items-sm-start" id="menu">
-                                <span className="profile-category"><strong>Paramètres de l&apos;appli</strong></span>
-                                <li className="nav-item">
-                                    <span onClick={() => {setTypeProfils('Inventory'); setIsSidebarOpen(false);}} className={`link-sidebar ${typeProfils === 'Inventory' ? 'link-sidebar-active' : ''}`}>Inventaire</span>
-                                </li>
-                            </ul>
-                            <hr />
-                            <ul className="profile-sidebar nav nav-pills flex-column mb-0 align-items-center align-items-sm-start" id="menu">
                                 <li className="nav-item">
                                 <span onClick={() => setDeleteModalOpen(true)}  className="ms-1 d-none d-sm-inline link-sidebar link-side-exit">Déconnexion <FontAwesomeIcon icon={faDoorOpen}/></span>
                                 </li>
@@ -138,13 +122,11 @@ const Profile = () => {
                             <Profils user={user} setTypeProfils={setTypeProfils} setUser={setUser}/>
                         ) : typeProfils === 'Account' ? (
                             <Account user={user} setUser={setUser}/>
-                        ) : typeProfils === 'Invoices' ? (
-                            <Invoices/>
-                        ) : typeProfils === 'Inventory' && (
-                            <Inventory user={user}/>
+                        ) : (
+                            <Profils user={user} setTypeProfils={setTypeProfils} setUser={setUser}/>
                         )}
                         <div className="container-link">
-                            <Link to='/app' className="container-link-esc">
+                            <Link to='/admin' className="container-link-esc">
                             <div>
                                 <span>
                                     <FontAwesomeIcon icon={faXmark}/>
