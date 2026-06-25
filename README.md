@@ -11,6 +11,11 @@ Ce projet propose un système de messagerie privée basé sur IRC ainsi qu'un m�
 3. [Guide CI](#guide-ci)
 4. [Guide pour récupérer les différentes documentations jsDocs et Swagger](#documentations)
 
+## Guide d'utilisation flutter pour générer l'apk en local 
+flutter build apk `
+  --dart-define=MAPBOX_ACCESS_TOKEN=pk.ton_token_mapbox `
+  --dart-define=API_BASE_URL_ANDROID=http://TON_IP:5000
+
 ## Guide d'installation local
 1. Assurez-vous d'avoir [Node.js](https://nodejs.org/), npm, Sequelize, et MySQL avec un serveur. 
 Pour Linux, utilisez Apache; pour macOS, utilisez WAMP ou une alternative; pour Windows, utilisez WAMP ou une autre solution.

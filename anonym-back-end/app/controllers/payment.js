@@ -2,41 +2,94 @@ const { Invoice, Shop, Inventory } = require('../models');
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const fs = require('fs');
 const path = require('path');
+const { sendServerError } = require('../utils/security');
 const env = process.env.NODE_ENV || 'development';
+
+const isProduction = env === 'production';
+
+const getEnvVar = (baseName) => {
+    const prodKey = `${baseName}_PROD`;
+    return isProduction ? process.env[prodKey] || process.env[baseName] : process.env[baseName];
+};
+
+const normalizeBaseUrl = (value) => String(value || '').replace(/\/$/, '');
+const appendPath = (baseUrl, pathSuffix) => `${normalizeBaseUrl(baseUrl)}${pathSuffix}`;
+const isHttpLink = (url) => /^https?:\/\//i.test(String(url || '').trim());
+
+const buildBridgeBaseUrl = (req) => {
+    const protocol = req.protocol || 'http';
+    const host = req.get?.('host');
+    if (!host) return '';
+    return `${protocol}://${host}`;
+};
+
+const getPaymentSuccessBaseUrl = (isMobile) => {
+    const webDefault = isProduction ? process.env.ORIGIN_PROD : process.env.ORIGIN;
+    const webBase = getEnvVar('PAYMENT_SUCCESS_WEB_URL') || webDefault;
+    if (!isMobile) return webBase;
+
+    return getEnvVar('PAYMENT_SUCCESS_MOBILE_URL') || webBase;
+};
+
+const getPaymentCancelBaseUrl = (isMobile) => {
+    const webDefault = isProduction ? process.env.ORIGIN_PROD : process.env.ORIGIN;
+    const webBase = getEnvVar('PAYMENT_CANCEL_WEB_URL') || webDefault;
+    if (!isMobile) return webBase;
+
+    return getEnvVar('PAYMENT_CANCEL_MOBILE_URL') || webBase;
+};
 
 /**
  * @module paymentController
- * @description Ce module gère les paiements via Stripe, y compris la création de sessions de paiement et le traitement des confirmations de paiement.
+ * @description Ce module gere les paiements via Stripe, y compris la creation de sessions de paiement et le traitement des confirmations de paiement.
  */
 
 /**
- * Créer une session de paiement pour un article.
+ * Creer une session de paiement pour un article.
  *
  * @async
  * @function create
- * @param {Object} req - L'objet de requête contenant les détails de l'article à acheter.
- * @param {Object} res - L'objet de réponse.
- * @throws {Object} 400 - Mauvaise requête si l'ID de l'article est manquant ou si l'utilisateur a déjà acheté cet article.
- * @throws {Object} 404 - Non trouvé si l'article n'existe pas.
+ * @param {Object} req - L'objet de requete contenant les details de l'article a acheter.
+ * @param {Object} res - L'objet de reponse.
+ * @throws {Object} 400 - Mauvaise requete si l'ID de l'article est manquant ou si l'utilisateur a deja achete cet article.
+ * @throws {Object} 404 - Non trouve si l'article n'existe pas.
  * @returns {Object} 200 - URL de la session de paiement Stripe.
- * @returns {Object} 500 - Erreur interne du serveur si une erreur se produit lors de la création de la session de paiement.
+ * @returns {Object} 500 - Erreur interne du serveur si une erreur se produit lors de la creation de la session de paiement.
  */
 exports.create = async (req, res) => {
     try {
-        const { article_id } = req.body; // ID du produit acheté
+        const { article_id, platform } = req.body;
         const userId = req.auth.userId;
+        const isMobile = String(platform || '').toLowerCase() === 'mobile';
 
         if (!article_id) {
-            return res.status(400).json({ message: "Article ID is required." });
+            return res.status(400).json({ message: 'Article ID is required.' });
+        }
+
+        const successBaseUrl = getPaymentSuccessBaseUrl(isMobile);
+        const cancelBaseUrl = getPaymentCancelBaseUrl(isMobile);
+        const bridgeBaseUrl = buildBridgeBaseUrl(req);
+        const requiresBridge = isMobile && (!isHttpLink(successBaseUrl) || !isHttpLink(cancelBaseUrl));
+
+        if (!successBaseUrl) {
+            return res.status(500).json({ message: 'Payment success URL is not configured.' });
+        }
+
+        if (!cancelBaseUrl) {
+            return res.status(500).json({ message: 'Payment cancel URL is not configured.' });
+        }
+
+        if (requiresBridge && !bridgeBaseUrl) {
+            return res.status(500).json({ message: 'Payment bridge URL is not configured.' });
         }
 
         // Trouver le produit
         const shopItem = await Shop.findOne({ where: { article_id: article_id } });
         if (!shopItem) {
-            return res.status(404).json({ message: "Item not found." });
+            return res.status(404).json({ message: 'Item not found.' });
         }
 
-        // Vérifier que l'utilisateur n'a pas déjà acheté cet article
+        // Verifier que l'utilisateur n'a pas deja achete cet article
         const existingInvoice = await Invoice.findOne({
             where: {
                 user_id: userId,
@@ -45,10 +98,18 @@ exports.create = async (req, res) => {
         });
 
         if (existingInvoice) {
-            return res.status(400).json({ message: "You have already purchased this item." });
+            return res.status(400).json({ message: 'You have already purchased this item.' });
         }
 
-        // Créer une session de paiement Stripe
+        const successUrl = (isMobile && !isHttpLink(successBaseUrl))
+            ? `${appendPath(bridgeBaseUrl, '/open-payment-success')}?session_id={CHECKOUT_SESSION_ID}`
+            : `${appendPath(successBaseUrl, '/app/success')}?session_id={CHECKOUT_SESSION_ID}`;
+
+        const cancelUrl = (isMobile && !isHttpLink(cancelBaseUrl))
+            ? appendPath(bridgeBaseUrl, '/open-payment-cancel')
+            : appendPath(cancelBaseUrl, '/app');
+
+        // Creer une session de paiement Stripe
         const session = await stripe.checkout.sessions.create({
             payment_method_types: ['card'],
             line_items: [{
@@ -58,60 +119,58 @@ exports.create = async (req, res) => {
                         name: shopItem.title,
                         images: [shopItem.content]
                     },
-                    unit_amount: shopItem.amount * 100, // Montant en centimes
+                    unit_amount: shopItem.amount * 100,
                 },
                 quantity: 1,
             }],
             mode: 'payment',
-            success_url: `${env === 'production' ? process.env.ORIGIN_PROD : process.env.ORIGIN}/app/success?session_id={CHECKOUT_SESSION_ID}`,
-            cancel_url: `${env === 'production' ? process.env.ORIGIN_PROD : process.env.ORIGIN}/app`,
+            success_url: successUrl,
+            cancel_url: cancelUrl,
             metadata: {
-                userId: userId, // Inclure le userId
-                articleId: article_id // Inclure l'article ID
+                userId: userId,
+                articleId: article_id
             },
         });
 
-         // Renvoyer l'URL de la session de paiement
-         res.status(200).json({ url: session.url });
+        res.status(200).json({ url: session.url });
     } catch (error) {
-        res.status(500).json({
-            message: error.message || 'An error occurred during the payment process.'
+        return sendServerError(res, error, 'An error occurred during the payment process.', {
+            scope: 'payment.create',
+            userId: req.auth?.userId,
+            articleId: req.body?.article_id
         });
     }
 };
 
 /**
- * Traiter la confirmation d'un paiement réussi.
+ * Traiter la confirmation d'un paiement reussi.
  *
  * @async
  * @function success
- * @param {Object} req - L'objet de requête contenant l'ID de la session de paiement.
- * @param {Object} res - L'objet de réponse.
- * @throws {Object} 400 - Mauvaise requête si l'ID de session est manquant ou si le paiement n'est pas complet.
- * @throws {Object} 404 - Non trouvé si l'article ou la facture existe déjà.
- * @returns {Object} 200 - Message de succès avec les détails de la facture créée.
+ * @param {Object} req - L'objet de requete contenant l'ID de la session de paiement.
+ * @param {Object} res - L'objet de reponse.
+ * @throws {Object} 400 - Mauvaise requete si l'ID de session est manquant ou si le paiement n'est pas complet.
+ * @throws {Object} 404 - Non trouve si l'article ou la facture existe deja.
+ * @returns {Object} 200 - Message de succes avec les details de la facture creee.
  * @returns {Object} 500 - Erreur interne du serveur si une erreur se produit lors du traitement de la confirmation du paiement.
  */
 exports.success = async (req, res) => {
     try {
-        const session_id = req.query.session_id;  // Récupérer session_id depuis la requête
+        const session_id = req.query.session_id;
 
         if (!session_id) {
             return res.status(400).json({ message: 'Session ID is required.' });
         }
-        // Récupérer la session de paiement via l'ID
+
         const session = await stripe.checkout.sessions.retrieve(session_id);
 
-        // Vérifier si le paiement est bien 'paid'
         if (session.payment_status === 'paid') {
-            const userId = session.metadata.userId; // Récupérer userId des métadonnées
+            const userId = session.metadata.userId;
             const articleId = session.metadata.articleId;
             const userEmail = session.customer_details.email;
 
-            // Récupérer le shopItem pour créer l'invoice
             const shopItem = await Shop.findOne({ where: { article_id: articleId } });
 
-            // Vérifier que l'utilisateur n'a pas déjà acheté cet article
             const existingInvoice = await Invoice.findOne({
                 where: {
                     user_id: userId,
@@ -120,10 +179,9 @@ exports.success = async (req, res) => {
             });
 
             if (existingInvoice) {
-                return res.status(400).json({ message: "You have already purchased this item." });
+                return res.status(400).json({ message: 'You have already purchased this item.' });
             }
 
-            // Créer une nouvelle facture
             const newInvoice = await Invoice.create({
                 user_id: userId,
                 article_id: shopItem.article_id,
@@ -133,41 +191,39 @@ exports.success = async (req, res) => {
                 quantity: 1
             });
 
-            // Ajouter l'article à l'inventaire de l'utilisateur
             await Inventory.create({
                 user_id: userId,
                 article_id: articleId
             });
 
-            // Lire le fichier HTML pour l'e-mail
             const emailTemplatePath = path.join(__dirname, '../../templates/confirm-payment-email.html');
             let htmlContent = fs.readFileSync(emailTemplatePath, 'utf8');
 
-            // Formater la date de création dans le format DD/MM/YYYY
             const formattedDate = new Date(shopItem.createdAt).toLocaleDateString('fr-FR', {
                 day: '2-digit',
                 month: '2-digit',
                 year: 'numeric'
             });
 
-            // Remplacer le nom de l'utilisateur dans le contenu HTML
-            htmlContent = htmlContent.replace('Emblème de feu', `${shopItem.title}`);
-            htmlContent = htmlContent.replace('1€', `${shopItem.amount}€`);
+            htmlContent = htmlContent.replace(/Emblème de feu|Embleme de feu/u, `${shopItem.title}`);
+            htmlContent = htmlContent.replace(/1€|1EUR/u, `${shopItem.amount}€`);
             htmlContent = htmlContent.replace('Le 19/06/1998', `Le ${formattedDate}`);
 
-            // Envoyer l'e-mail de confirmation avec le contenu HTML
             await req.mailer.sendEmail(
-                userEmail,                                // Destinataire
-                'Merci pour votre achat !', // Sujet
-                '',                                       // Contenu texte (vide)
-                htmlContent                                // Contenu HTML
+                userEmail,
+                'Merci pour votre achat !',
+                '',
+                htmlContent
             );
 
             return res.status(200).json({ message: 'Payment successful, invoice created.', invoice: newInvoice });
-        } else {
-            return res.status(400).json({ message: 'Payment not completed.' });
         }
+
+        return res.status(400).json({ message: 'Payment not completed.' });
     } catch (error) {
-        res.status(500).json({ message: 'Error confirming payment', error: error.message });
+        return sendServerError(res, error, 'Error confirming payment', {
+            scope: 'payment.success',
+            sessionId: req.query?.session_id
+        });
     }
 };

@@ -11,6 +11,10 @@ module.exports = (sequelize, DataTypes) => {
                 foreignKey: 'channel_id',
                 onDelete: 'CASCADE', // Ajoutez cette ligne pour activer la suppression en cascade
             });
+            Channel.hasMany(models.ChannelInvite, {
+                foreignKey: 'channel_id',
+                onDelete: 'CASCADE'
+            });
             // Association avec User pour le créateur du canal
             Channel.belongsTo(models.User, { foreignKey: 'created_by', as: 'creator' }); // Nouvelle association pour le créateur
         }
@@ -30,6 +34,20 @@ module.exports = (sequelize, DataTypes) => {
             type: DataTypes.STRING, // Facultatif, une description pour le canal
             allowNull: true
         },
+        cover_image: {
+            type: DataTypes.STRING,
+            allowNull: true
+        },
+        channel_type: {
+            type: DataTypes.ENUM('PRIVATE_DM', 'GROUP'),
+            allowNull: false,
+            defaultValue: 'GROUP'
+        },
+        visibility: {
+            type: DataTypes.ENUM('PUBLIC', 'PRIVATE'),
+            allowNull: false,
+            defaultValue: 'PRIVATE'
+        },
         created_by: {
             type: DataTypes.INTEGER,
             allowNull: false, // Rendre obligatoire
@@ -37,6 +55,11 @@ module.exports = (sequelize, DataTypes) => {
                 model: 'users',
                 key: 'id'
             }
+        },
+        reputation_score: {
+            type: DataTypes.INTEGER,
+            allowNull: false,
+            defaultValue: 0
         }
     }, {
         sequelize,

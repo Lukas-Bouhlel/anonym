@@ -3,8 +3,38 @@ const app = require("./app.js");
 const { createServer } = require("http");
 const { Server } = require("socket.io");
 const initializeSocket = require('./app/utils/socket');
+const socketAuth = require('./app/middlewares/socketAuth');
+const { startRefreshTokenCleanup } = require('./app/utils/refreshTokenCleanup');
 const env = process.env.NODE_ENV || 'development';
 const port = process.env.NODE_ENV === 'preprod' ? process.env.PORT_PREPROD : process.env.PORT;
+
+const configuredOrigin =
+  env === 'production'
+    ? process.env.ORIGIN_PROD
+    : env === 'preprod'
+      ? process.env.ORIGIN_PREPROD
+      : process.env.ORIGIN;
+
+const isAllowedDevOrigin = (origin) => {
+  if (!origin) return true;
+  try {
+    const { hostname } = new URL(origin);
+    return hostname === 'localhost' || hostname === '127.0.0.1';
+  } catch {
+    return false;
+  }
+};
+
+const isAllowedOrigin = (origin) => {
+  if (!origin) return true;
+  if (origin === configuredOrigin) return true;
+
+  if (env === 'development') {
+    return isAllowedDevOrigin(origin);
+  }
+
+  return false;
+};
 
 /**
  * Création du serveur HTTPS
@@ -26,12 +56,19 @@ const httpServer = createServer(app);
  */
 const io = new Server(httpServer, {
   cors: {
-      origin: env === 'production' ? process.env.ORIGIN_PROD : env === 'preprod' ? process.env.ORIGIN_PREPROD : process.env.ORIGIN, 
+      origin: (origin, callback) => {
+        if (isAllowedOrigin(origin)) {
+          return callback(null, true);
+        }
+        return callback(new Error(`Origin not allowed by CORS: ${origin}`), false);
+      },
       credentials: true,
       methods: ['GET', 'POST', 'PUT', 'DELETE'],
-      allowedHeaders: ['Content-Type', 'Authorization']
+      allowedHeaders: ['Content-Type', 'Authorization', 'Cookie']
   }
 });
+
+io.use(socketAuth);
 
 /**
  * Lancement du serveur HTTPS et Socket.IO
@@ -44,9 +81,17 @@ httpServer.listen(port, () => {
 });
 
 /**
+ * Exposition de l'instance io pour les contrôleurs
+ */
+app.locals.io = io;
+app.set('io', io);
+
+/**
  * Initialisation des sockets
  * 
  * @function initializeSocket
  * @param {Server} io - Instance de Socket.IO pour gérer les connexions des sockets.
  */
 initializeSocket(io);
+startRefreshTokenCleanup();
+

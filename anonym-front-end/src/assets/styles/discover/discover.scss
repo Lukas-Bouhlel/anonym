@@ -6,6 +6,7 @@
     justify-content: flex-start;
     flex-direction: column;
     padding-bottom: 30px;
+    min-height: 100vh;
     text-align: center;
 
     &-content {
@@ -45,14 +46,6 @@
                 }
             }
 
-            &-open-anonym {
-                color: $black;
-                background: $white;
-                border-radius: 40px;
-                padding: 12px 20px;
-                border: none;
-                cursor: pointer;
-            }
         }
     }
 
@@ -113,3 +106,9 @@
         margin-bottom: 5%;
     }
 }
+
+.discover {
+    .footer-items-links {
+        color: white !important;
+    }
+} 

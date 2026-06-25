@@ -196,9 +196,6 @@ const Account = ({ user, setUser }) => {
                     <div className="profils-infos">
                         <div className="profils-infos-first">
                             <div className="profile-content-infos-img">
-                                {user.Inventories?.[0]?.Shop?.content && (
-                                    <img className="avatar-profile decoration-profile" src={`${user.Inventories[0].Shop.content}`} alt="hugenerd" width="80" height="80"/>
-                                )}
                                 <img className="rounded-circle avatar-profile image-profile" src={`${previewAvatar || user.avatar}`} alt="hugenerd" width="80" height="80" />
                             </div>
                         </div>
@@ -221,13 +218,6 @@ Account.propTypes = {
         avatar: PropTypes.string,
         username: PropTypes.string.isRequired,
         email: PropTypes.string.isRequired,
-        Inventories: PropTypes.arrayOf(
-            PropTypes.shape({
-                Shop: PropTypes.shape({
-                    content: PropTypes.string
-                })
-            })
-        )
     }).isRequired,
     setUser: PropTypes.func.isRequired,
 };

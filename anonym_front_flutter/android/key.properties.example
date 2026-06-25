@@ -1,0 +1,6 @@
+﻿# Do not commit this file with real secrets.
+# Copy to android/key.properties and fill with your keystore values.
+storeFile=../keystore/anonym-release.jks
+storePassword=CHANGE_ME
+keyAlias=anonym_release
+keyPassword=CHANGE_ME

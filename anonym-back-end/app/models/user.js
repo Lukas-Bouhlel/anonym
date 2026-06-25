@@ -12,6 +12,9 @@ module.exports = (sequelize, DataTypes) => {
     static associate(models) {
       User.hasMany(models.Inventory, { foreignKey: 'user_id' });
       User.belongsToMany(models.Channel, { through: 'UserChannel', foreignKey: 'user_id' });
+      User.hasMany(models.UserPointDaily, { foreignKey: 'user_id' });
+      User.hasMany(models.RefreshToken, { foreignKey: 'user_id', as: 'refreshTokens' });
+      User.hasMany(models.DevicePushToken, { foreignKey: 'user_id', as: 'pushTokens' });
     }
   }
   User.init({
@@ -85,6 +88,26 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.STRING,
       allowNull: true,
     },
+    bio: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+      validate: {
+        len: {
+          args: [0, 500],
+          msg: "La bio ne peut pas dépasser 500 caractères"
+        }
+      }
+    },
+    allow_non_friend_dms: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: true
+    },
+    presence_status: {
+      type: DataTypes.ENUM('online', 'idle', 'dnd', 'invisible'),
+      allowNull: false,
+      defaultValue: 'invisible'
+    },
     roles: {
       type: DataTypes.ENUM('USER', 'ADMIN', 'SUPER_ADMIN'),
       allowNull: false,
@@ -98,6 +121,11 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.DATE,
         allowNull: true,
     },
+    total_points: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      defaultValue: 0
+    }
   }, {
     sequelize,
     modelName: 'User',

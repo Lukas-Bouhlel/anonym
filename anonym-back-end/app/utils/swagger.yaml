@@ -246,7 +246,33 @@ paths:
           description: Requête invalide
         '401':
           description: Non autorisé
-
+  /account/presence:
+    patch:
+      summary: Mettre a jour le statut de presence
+      tags: [Account]
+      security:
+        - bearerAuth: []
+      requestBody:
+        description: Nouveau statut de presence
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                presence_status:
+                  type: string
+                  enum: [online, idle, dnd, invisible]
+                  example: "dnd"
+              required:
+                - presence_status
+      responses:
+        '200':
+          description: Presence mise a jour avec succes
+        '400':
+          description: Requ�te invalide
+        '401':
+          description: Non autoris�
   /account/delete:
     delete:
       summary: Supprimer le compte de l'utilisateur
@@ -640,6 +666,10 @@ paths:
                 article_id:
                   type: integer
                   example: 22
+                platform:
+                  type: string
+                  enum: [web, mobile]
+                  example: mobile
       responses:
         '201':
           description: Paiement créé avec succès
@@ -1703,3 +1733,4 @@ components:
       type: http
       scheme: bearer
       bearerFormat: JWT
+

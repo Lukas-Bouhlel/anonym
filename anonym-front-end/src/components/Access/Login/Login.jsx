@@ -13,10 +13,9 @@ import { useNavigate } from 'react-router-dom';
  *
  * @param {Object} props - Les propriétés du composant.
  * @param {Function} props.setStatusForm - Fonction pour changer le statut du formulaire (connexion ou réinitialisation du mot de passe).
- * @param {Function} props.setStatusAccess - Fonction pour changer le statut d'accès (connexion ou inscription).
  * @returns {JSX.Element} Le rendu du formulaire de connexion.
  */
-const Login = ({setStatusForm, setStatusAccess}) => {
+const Login = ({setStatusForm}) => {
     const { register, handleSubmit, formState: { errors }, } = useForm();
     const [showMessage, setShowMessage] = useState(false);
     const [messageError, setMessageError] = useState('');
@@ -33,7 +32,7 @@ const Login = ({setStatusForm, setStatusAccess}) => {
          * @returns {Promise<Object>} - Les données de l'utilisateur connecté.
          */
         mutationFn: async (data) => {
-            const response = await axios.post(`${api_url}/api/auth/login`, {
+            const response = await axios.post(`${api_url}/api/admin/login`, {
                 identifier: data.email,
                 password: data.password,
             }, { withCredentials: true });
@@ -41,7 +40,7 @@ const Login = ({setStatusForm, setStatusAccess}) => {
         },
         onSuccess: (data) => {
             login(data.user);
-            navigate(`/app`);
+            navigate(`/admin`);
             setShowMessage(false);
             setMessageError('');
         },
@@ -76,7 +75,6 @@ const Login = ({setStatusForm, setStatusAccess}) => {
                         errors.email?.message || errors.password?.message
                     )}
                 </p>
-                <p onClick={() => setStatusAccess(true)}className='mobile-redirect-register-or-login'>S&apos;inscrire</p>
             </form>
         </div>
     )
@@ -84,7 +82,6 @@ const Login = ({setStatusForm, setStatusAccess}) => {
 
 Login.propTypes = {
     setStatusForm: PropTypes.func.isRequired,
-    setStatusAccess: PropTypes.func.isRequired, 
 };
 
 export default Login;

@@ -3,7 +3,6 @@ import PropTypes from 'prop-types';
 import axios from 'axios';
 import { useApi } from '../context/ApiContext';
 import { useQuery } from '@tanstack/react-query';
-import { usePopup } from './PopupContext';
 
 // Créez le context
 const UserContext = createContext();
@@ -24,7 +23,6 @@ export const useUser = () => useContext(UserContext);
  */
 export const UserProvider = ({ children }) => {
     const [user, setUser] = useState(null); // Stocke les informations de l'utilisateur connecté
-    const { setTextPopup, setOpenPopup, setState } = usePopup();
     const { api_url } = useApi();
     /**
      * Fonction pour récupérer les informations de l'utilisateur.
@@ -61,17 +59,6 @@ export const UserProvider = ({ children }) => {
         setUser(userData);
     };
 
-    /**
-     * Fonction pour gérer l'inscription d'un nouvel utilisateur.
-     * @param {Object} userData - Les données de l'utilisateur enregistré.
-     */
-    const registered = (userData) => {
-        setUser(userData);
-        setOpenPopup(true);
-        setState('success');
-        setTextPopup('Votre compte a été créé avec succès. Vous trouverez une confirmation envoyée par e-mail !');
-    };
-
      /**
      * Fonction pour déconnecter l'utilisateur.
      * @returns {Promise<void>}
@@ -82,7 +69,7 @@ export const UserProvider = ({ children }) => {
     };
 
     return (
-        <UserContext.Provider value={{ user, setUser, registered, login, logout, isLoading, isError, error }}>
+        <UserContext.Provider value={{ user, setUser, login, logout, isLoading, isError, error }}>
             {children}
         </UserContext.Provider>
     );

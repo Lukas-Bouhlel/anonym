@@ -1,7 +1,9 @@
-const { User } = require('../models');
+const { User, Channel, PrivateMessage } = require('../models');
 const bcrypt = require('bcrypt');
 const fs = require('fs');
 const path = require('path');
+const { Op } = require('sequelize');
+const { deleteUploadFileIfExists, deleteUploadFiles } = require('../utils/fileCleanup');
 
 /**
  * @module userController
@@ -23,7 +25,7 @@ const path = require('path');
 exports.create = async (req, res) => {
     try {
         const datas = JSON.parse(req.body.datas);
-        const { username, email, password, roles } = datas;
+        const { username, email, password, roles, bio } = datas;
         let newAvatarPath;
 
         // Vérifier que l'utilisateur est soit ADMIN, soit SUPER_ADMIN
@@ -89,7 +91,8 @@ exports.create = async (req, res) => {
             email,
             password: password,
             roles: roles || 'USER', // Par défaut, le rôle est USER
-            avatar: newAvatarPath
+            avatar: newAvatarPath,
+            bio
         });
 
         res.status(201).json(newUser);
@@ -117,7 +120,7 @@ exports.update = async (req, res) => {
     try {
         const userId = req.params.id;
         const datas = JSON.parse(req.body.datas);
-        const { username, email, password, avatar, roles } = datas;
+        const { username, email, password, avatar, roles, bio } = datas;
 
         if (req.auth.userRole === 'USER') {
             return res.status(403).json({ message: "Il faut être admin pour accéder à cette page." });
@@ -139,12 +142,7 @@ exports.update = async (req, res) => {
         // Vérifier si l'avatar doit être supprimé
         if (req.avatarData && avatar === "delete") {
             // Supprimer l'ancien avatar
-            if (user.avatar) {
-                const oldAvatarPath = path.join(__dirname, '../../uploads/profiles/avatars', path.basename(user.avatar));
-                if (fs.existsSync(oldAvatarPath)) {
-                    fs.unlinkSync(oldAvatarPath); // Supprimer l'ancien fichier
-                }
-            }
+            deleteUploadFileIfExists(user.avatar);
 
             // Générer un nouvel avatar par défaut avec couleur modifiée
             if (!req.file && req.avatarData) {
@@ -172,12 +170,7 @@ exports.update = async (req, res) => {
             newAvatarPath = `${req.protocol}://${req.get("host")}/uploads/profiles/avatars/${req.file.filename}`;
 
             // Supprimer l'ancien avatar
-            if (user.avatar) {
-                const oldAvatarPath = path.join(__dirname, '../../uploads/profiles/avatars', path.basename(user.avatar));
-                if (fs.existsSync(oldAvatarPath)) {
-                    fs.unlinkSync(oldAvatarPath); // Supprimer le fichier
-                }
-            }
+            deleteUploadFileIfExists(user.avatar);
         }
 
         // Mise à jour des informations de l'utilisateur
@@ -193,6 +186,7 @@ exports.update = async (req, res) => {
         }
         if (email) user.email = email;
         if (password) user.password = await bcrypt.hash(password, 10);
+        if (typeof bio === 'string' || bio === null) user.bio = bio;
         // Vérifier si l'utilisateur tente de créer un rôle autre que 'USER'
         if (roles && roles !== 'USER') {
             // Vérifier si le rôle de l'utilisateur qui fait la requête est SUPER_ADMIN
@@ -242,15 +236,32 @@ exports.delete = async (req, res) => {
             return res.status(403).json({ message: "Admins can only delete users with role USER." });
         }
 
-        // Supprimer l'avatar
-        if (user.avatar) {
-            const avatarPath = path.join(__dirname, '../../uploads/profiles/avatars', path.basename(user.avatar));
-            fs.unlink(avatarPath, (err) => {
-                if (err) {
-                    console.error("Error deleting avatar file:", err);
-                }
-            });
+        const createdChannels = await Channel.findAll({
+            where: { created_by: userId },
+            attributes: ['channel_id', 'cover_image'],
+            raw: true
+        });
+        const createdChannelIds = createdChannels.map((channel) => channel.channel_id);
+
+        const messageWhere = [{ sender_id: userId }];
+        if (createdChannelIds.length > 0) {
+            messageWhere.push({ channel_id: { [Op.in]: createdChannelIds } });
         }
+
+        const messagesWithImages = await PrivateMessage.findAll({
+            where: {
+                image_url: { [Op.ne]: null },
+                [Op.or]: messageWhere
+            },
+            attributes: ['image_url'],
+            raw: true
+        });
+
+        deleteUploadFiles([
+            user.avatar,
+            ...createdChannels.map((channel) => channel.cover_image),
+            ...messagesWithImages.map((message) => message.image_url)
+        ]);
 
         await user.destroy();
 

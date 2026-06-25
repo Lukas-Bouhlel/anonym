@@ -1,11 +1,249 @@
-const { User } = require('../models');
+const { User, RefreshToken, RegisterVerificationCode, RegisterVerificationEvent } = require('../models');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const fs = require('fs');
 const path = require('path')
+const crypto = require('crypto');
 const { Op } = require('sequelize');
 const CryptoJS = require('crypto-js');
+const { secureLog, sendServerError } = require('../utils/security');
 const env = process.env.NODE_ENV || 'development';
+
+const REGISTER_CODE_TTL_MINUTES = 10;
+const REGISTER_RESEND_COOLDOWN_SECONDS = 60;
+const REGISTER_SEND_WINDOW_MINUTES = 15;
+const REGISTER_SEND_WINDOW_MAX = 5;
+const REGISTER_VERIFY_MAX_ATTEMPTS = 5;
+const REGISTER_VERIFY_BLOCK_MINUTES = 15;
+const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z\d])[^\s]{12,}$/;
+
+const ACCESS_TOKEN_TTL = process.env.JWT_ACCESS_TTL || '15m';
+const REFRESH_TOKEN_TTL_DAYS = Number(process.env.JWT_REFRESH_TTL_DAYS || 7);
+const REFRESH_TOKEN_COOKIE_NAME = process.env.JWT_REFRESH_COOKIE_NAME || 'refreshToken';
+const ACCESS_TOKEN_COOKIE_NAME = process.env.JWT_ACCESS_COOKIE_NAME || 'token';
+const ADMIN_ROLES = ['ADMIN', 'SUPER_ADMIN'];
+
+const normalizeEmail = (email) => {
+    if (typeof email !== 'string') return '';
+    const trimmed = email.trim().toLowerCase();
+    const [localPart, domainPart] = trimmed.split('@');
+    if (!localPart || !domainPart) return trimmed;
+    if (domainPart === 'gmail.com') {
+        return `${localPart.replace(/\./g, '')}@${domainPart}`;
+    }
+    return trimmed;
+};
+
+const normalizeUsername = (username) => {
+    if (typeof username !== 'string') return '';
+    return username.trim().toLowerCase();
+};
+
+const extractUsernameFromBody = (body) => {
+    if (!body || typeof body !== 'object') return '';
+
+    if (typeof body.username === 'string') return body.username;
+    if (typeof body.userName === 'string') return body.userName;
+
+    if (body.datas && typeof body.datas === 'object') {
+        if (typeof body.datas.username === 'string') return body.datas.username;
+        if (typeof body.datas.userName === 'string') return body.datas.userName;
+    }
+
+    if (typeof body.datas === 'string') {
+        try {
+            const parsedDatas = JSON.parse(body.datas);
+            if (typeof parsedDatas?.username === 'string') return parsedDatas.username;
+            if (typeof parsedDatas?.userName === 'string') return parsedDatas.userName;
+        } catch {
+            return '';
+        }
+    }
+
+    return '';
+};
+
+const extractPasswordFromBody = (body) => {
+    if (!body || typeof body !== 'object') return '';
+
+    if (typeof body.password === 'string') return body.password;
+
+    if (body.datas && typeof body.datas === 'object' && typeof body.datas.password === 'string') {
+        return body.datas.password;
+    }
+
+    if (typeof body.datas === 'string') {
+        try {
+            const parsedDatas = JSON.parse(body.datas);
+            if (typeof parsedDatas?.password === 'string') return parsedDatas.password;
+        } catch {
+            return '';
+        }
+    }
+
+    return '';
+};
+
+const hashOtpCode = (otpCode) => CryptoJS.SHA256(otpCode).toString();
+
+const getRequesterIp = (req) => {
+    if (req.ip) return String(req.ip);
+    if (req.headers['x-forwarded-for']) {
+        return String(req.headers['x-forwarded-for']).split(',')[0].trim();
+    }
+    return 'unknown';
+};
+
+const hashRefreshToken = (refreshToken) => crypto.createHash('sha256').update(refreshToken).digest('hex');
+
+const getTokenCookieOptions = (maxAge) => ({
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'Strict',
+    maxAge,
+});
+
+const createAccessToken = (user) => jwt.sign(
+    { userId: user.id, userRole: user.roles },
+    process.env.JWT_SECRET,
+    { expiresIn: ACCESS_TOKEN_TTL }
+);
+
+const createRefreshToken = () => crypto.randomBytes(64).toString('hex');
+
+const setAuthCookies = (res, accessToken, refreshToken) => {
+    const accessJwtDecoded = jwt.decode(accessToken);
+    const accessExpiryMs = accessJwtDecoded?.exp ? (accessJwtDecoded.exp * 1000) - Date.now() : 15 * 60 * 1000;
+    const refreshExpiryMs = REFRESH_TOKEN_TTL_DAYS * 24 * 60 * 60 * 1000;
+
+    res.cookie(ACCESS_TOKEN_COOKIE_NAME, accessToken, getTokenCookieOptions(Math.max(accessExpiryMs, 1000)));
+    res.cookie(REFRESH_TOKEN_COOKIE_NAME, refreshToken, getTokenCookieOptions(refreshExpiryMs));
+};
+
+const clearAuthCookies = (res) => {
+    const cookieOptions = {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'Strict',
+    };
+    res.clearCookie(ACCESS_TOKEN_COOKIE_NAME, cookieOptions);
+    res.clearCookie(REFRESH_TOKEN_COOKIE_NAME, cookieOptions);
+};
+
+const persistRefreshToken = async (userId, refreshToken, req) => {
+    const expiresAt = new Date(Date.now() + REFRESH_TOKEN_TTL_DAYS * 24 * 60 * 60 * 1000);
+    return RefreshToken.create({
+        user_id: userId,
+        token_hash: hashRefreshToken(refreshToken),
+        expires_at: expiresAt,
+        revoked_at: null,
+        created_by_ip: getRequesterIp(req),
+        user_agent: req.get('user-agent') || null,
+        last_used_at: null
+    });
+};
+
+const issueAuthResponse = async (req, res, user) => {
+    const token = createAccessToken(user);
+    const refreshToken = createRefreshToken();
+    await persistRefreshToken(user.id, refreshToken, req);
+    setAuthCookies(res, token, refreshToken);
+    return res.status(200).json({ token, user });
+};
+
+const authenticateUser = async (req, res, options = {}) => {
+    const { allowedRoles, forbiddenMessage } = options;
+    const { identifier, password } = req.body;
+
+    if (!identifier) {
+        return res.status(400).json({ message: "Votre identifiant est requis." });
+    }
+
+    if (!password) {
+        return res.status(400).json({ message: "Votre mot de passe est requis." });
+    }
+
+    const user = await User.findOne({
+        where: {
+            [Op.or]: [
+                { email: identifier },
+                { username: identifier }
+            ]
+        }
+    });
+
+    if (!user) {
+        return res.status(404).json({ message: "Votre identifiant ou votre mot de passe est incorrect" });
+    }
+
+    const passwordMatch = await bcrypt.compare(password, user.password);
+
+    if (!passwordMatch) {
+        return res.status(401).json({ message: "Votre identifiant ou votre mot de passe est incorrect" });
+    }
+
+    if (Array.isArray(allowedRoles) && !allowedRoles.includes(user.roles)) {
+        return res.status(403).json({ message: forbiddenMessage || "Acces interdit." });
+    }
+
+    return issueAuthResponse(req, res, user);
+};
+
+const getRuntimeEnvVar = (baseName) => {
+    if (env === 'production') {
+        return process.env[`${baseName}_PROD`] || process.env[baseName];
+    }
+    if (env === 'preprod') {
+        return process.env[`${baseName}_PREPROD`] || process.env[baseName];
+    }
+    return process.env[baseName];
+};
+
+const buildResetPasswordLink = (baseUrl, token) => {
+    if (typeof baseUrl !== 'string') return '';
+    const trimmedBaseUrl = baseUrl.trim();
+    if (!trimmedBaseUrl) return '';
+
+    const encodedToken = encodeURIComponent(token);
+
+    // Allows templates like "myapp://reset?token={token}" or "https://my.app/reset/{token}"
+    if (trimmedBaseUrl.includes('{token}')) {
+        return trimmedBaseUrl.replace('{token}', encodedToken);
+    }
+
+    const withoutTrailingSlash = trimmedBaseUrl.replace(/\/+$/, '');
+    const hasResetPath = /\/reset\/?(\?|$)/i.test(withoutTrailingSlash);
+    const urlWithResetPath = hasResetPath ? withoutTrailingSlash : `${withoutTrailingSlash}/reset/`;
+    const separator = urlWithResetPath.includes('?') ? '&' : '?';
+
+    return `${urlWithResetPath}${separator}token=${encodedToken}`;
+};
+
+const isHttpLink = (url) => {
+    if (typeof url !== 'string') return false;
+    return /^https?:\/\//i.test(url.trim());
+};
+
+const getResetPasswordWebBaseUrl = () => {
+    return getRuntimeEnvVar('RESET_PASSWORD_WEB_URL')
+        || getRuntimeEnvVar('RESET_PASSWORD_URL')
+        || getRuntimeEnvVar('ORIGIN');
+};
+
+const getResetPasswordMobileBaseUrl = () => getRuntimeEnvVar('RESET_PASSWORD_MOBILE_URL');
+const shouldPreferMobileResetLink = () => {
+    const raw = String(getRuntimeEnvVar('RESET_PASSWORD_PREFER_MOBILE') || '').trim().toLowerCase();
+    if (!raw) return env === 'development';
+    return raw === '1' || raw === 'true' || raw === 'yes';
+};
+const buildResetPasswordBridgeLink = (req, token) => {
+    if (!req || typeof token !== 'string' || !token.trim()) return '';
+    const encodedToken = encodeURIComponent(token);
+    const protocol = req.protocol || 'http';
+    const host = req.get?.('host');
+    if (!host) return '';
+    return `${protocol}://${host}/open-reset-password?token=${encodedToken}`;
+};
 
 /**
  * @module UserController
@@ -35,86 +273,10 @@ const env = process.env.NODE_ENV || 'development';
  * }
  */
 exports.signup = async (req, res) => {
-    try {
-        // Créer l'utilisateur avec l'avatar (soit celui téléchargé, soit la copie du défaut)
-        const user = await User.create({
-            ...req.body
-        });
-
-        const email_user = req.body.email;
-
-        // Après la création réussie de l'utilisateur, générer l'avatar si nécessaire
-        if (!req.file && req.avatarData) {
-            const { circleColor, pathColor, uniqueAvatarName } = req.avatarData;
-
-            // Chemin du fichier avatar par défaut
-            const defaultAvatarPath = path.join(__dirname, '../../uploads/profiles/default/default_avatar.svg');
-            const userAvatarPath = path.resolve(__dirname, '../../uploads/profiles/avatars', uniqueAvatarName);
-
-            // Vérifier si le fichier SVG par défaut existe
-            if (!fs.existsSync(defaultAvatarPath)) {
-                return res.status(500).json({ message: 'Default avatar not found' });
-            }
-
-             // Lire et modifier le contenu du SVG
-            let svgContent;
-            try {
-                svgContent = fs.readFileSync(defaultAvatarPath, 'utf8');
-            } catch {
-                return res.status(500).json({ message: 'Error reading default avatar' });
-            }
-
-            // Remplacer la couleur dans le SVG
-             svgContent = svgContent
-                .replace(/<circle[^>]*fill="[^"]*"[^>]*>/, `<circle cx="115" cy="115" r="115" fill="${circleColor}"/>`)
-                .replace(/<path[^>]*fill="[^"]*"[^>]*>/, `<path d="M114.37 48L150.593 117.743L167.732 116.319L184.87 114.894L158.396 132.766C169.932 154.979 184.87 183.741 184.87 183.741L161.077 183.801L140.549 144.814L66.4727 183.801H44L54.9652 162.64L135.365 133.027C135.365 133.027 135.396 133.016 135.457 132.994C136.576 132.584 177.708 117.529 184.87 114.894L167.732 116.319L150.593 117.743L131.372 124.824L115.018 92.3567L103.054 114.894L89.6156 140.207L44 157.012L66.0193 141.308L79.1852 115.9L114.37 48Z" fill="${pathColor}"/>`);
-
-            // Écrire le SVG modifié
-            try {
-                fs.writeFileSync(userAvatarPath, svgContent);
-            } catch {
-                return res.status(500).json({ message: 'Error saving user avatar' });
-            }
-
-            // Mettre à jour l'avatar de l'utilisateur dans la base de données
-            user.avatar = `${req.protocol}://${req.get("host")}/uploads/profiles/avatars/${uniqueAvatarName}`;
-            await user.save();
-        }
-
-         // Lire le fichier HTML pour l'e-mail
-        const emailTemplatePath = path.join(__dirname, '../../templates/signup-email.html');
-
-        let htmlContent;
-        try {
-            htmlContent = fs.readFileSync(emailTemplatePath, 'utf8');
-        } catch {
-            return res.status(500).json({ message: 'Error reading email template' });
-        }
-
-        // Remplacer le nom de l'utilisateur dans le contenu HTML
-        htmlContent = htmlContent.replace(/Salut\s+Rei,/, `Salut ${user.username},`);
-
-        // Envoyer l'e-mail de confirmation avec le contenu HTML
-        await req.mailer.sendEmail(
-            email_user,// Destinataire
-            'Bienvenue sur notre plateforme Anonym !',// Sujet
-            '',// Contenu texte (vide)
-            htmlContent// Contenu HTML
-        );
-
-        res.status(201).json(user);
-    } catch (error) {
-        // Gérer les erreurs spécifiques à la validation Sequelize
-        if (error.name === 'SequelizeValidationError') {
-            const messages = error.errors.map(err => err.message);
-            return res.status(400).json({ message: messages });
-        }
-
-        res.status(500).json({
-            message: error.message || 'Could not create user'
-        });
-    }
-}
+    return res.status(410).json({
+        message: "Cette route n'est plus disponible. Utilisez /auth/register/request-code puis /auth/register/confirm."
+    });
+};
 
 /**
  * Authentifie un utilisateur et renvoie un token JWT.
@@ -135,59 +297,262 @@ exports.signup = async (req, res) => {
  */
 exports.login = async (req, res) => {
     try {
-        const { identifier, password } = req.body;
-
-        // Vérifiez que le champ 'identifier' et le mot de passe sont fournis
-        if (!identifier) {
-            return res.status(400).json({ message: "Votre identifiant est requis." });
-        }
-
-        if (!password) {
-            return res.status(400).json({ message: "Votre mot de passe est requis." });
-        }
-
-        // Chercher l'utilisateur par email ou nom d'utilisateur
-        const user = await User.findOne({
-            where: {
-                [Op.or]: [
-                    { email: identifier },
-                    { username: identifier }
-                ]
-            }
-        });
-
-        if (!user) {
-            return res.status(404).json({ message: "Votre identifiant ou votre mot de passe est incorrect" });
-        }
-
-        // Comparer le mot de passe
-        const passwordMatch = await bcrypt.compare(password, user.password);
-
-        if (!passwordMatch) {
-            return res.status(401).json({ message: "Votre identifiant ou votre mot de passe est incorrect" });
-        }
-
-        // Générer le token JWT
-        const token = jwt.sign(
-            { userId: user.id, userRole: user.roles }, 
-            process.env.JWT_SECRET, 
-            { expiresIn: '10h' }
-        );
-
-        res.cookie('token', token, {
-            httpOnly: true,  // Empêche l'accès au cookie via JS
-            secure: process.env.NODE_ENV === 'production',  // Seulement en HTTPS en production
-            sameSite: 'Strict',  // Empêche l'envoi du cookie pour les requêtes cross-site
-            maxAge: 10 * 60 * 60 * 1000,  // Expire dans 10 heures
-        });
-
-        res.status(200).json({ token, user });
+        return await authenticateUser(req, res);
     } catch (error) {
-        res.status(500).json({
-            message: error.message || 'An error occurred during login'
-        });
+        return sendServerError(res, error, 'An error occurred during login', { scope: 'auth.login' });
     }
 }
+
+exports.loginAdmin = async (req, res) => {
+    try {
+        return await authenticateUser(req, res, {
+            allowedRoles: ADMIN_ROLES,
+            forbiddenMessage: "Acces interdit, vous devez etre administrateur."
+        });
+    } catch (error) {
+        return sendServerError(res, error, 'An error occurred during admin login', { scope: 'auth.adminLogin' });
+    }
+};
+
+exports.requestRegisterCode = async (req, res) => {
+    try {
+        const email = normalizeEmail(req.body?.email);
+        const username = normalizeUsername(extractUsernameFromBody(req.body));
+        const password = extractPasswordFromBody(req.body);
+        const ip = getRequesterIp(req);
+        const now = new Date();
+
+        if (!email) {
+            return res.status(400).json({ message: 'Email requis.' });
+        }
+
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) {
+            return res.status(400).json({ message: 'Email invalide.' });
+        }
+
+        if (!username) {
+            return res.status(400).json({ message: "Le nom d'utilisateur est requis." });
+        }
+        if (!password) {
+            return res.status(400).json({ message: 'Le mot de passe est requis.' });
+        }
+        if (!PASSWORD_REGEX.test(password)) {
+            return res.status(400).json({
+                message: "Mot de passe : 12 caractères min, avec majuscules, minuscules, chiffres et caractères spéciaux"
+            });
+        }
+
+        const [existingUsernameUser, existingEmailUser] = await Promise.all([
+            User.findOne({
+                where: User.sequelize.where(
+                    User.sequelize.fn('LOWER', User.sequelize.col('username')),
+                    username
+                )
+            }),
+            User.findOne({ where: { email } })
+        ]);
+
+        if (existingUsernameUser) {
+            return res.status(409).json({ message: "Ce nom d'utilisateur est deja utilise." });
+        }
+        if (existingEmailUser) {
+            return res.status(409).json({ message: "L'adresse email est deja utilise." });
+        }
+
+        const windowStart = new Date(now.getTime() - REGISTER_SEND_WINDOW_MINUTES * 60 * 1000);
+
+        const [emailWindowCount, ipWindowCount] = await Promise.all([
+            RegisterVerificationEvent.count({
+                where: {
+                    email,
+                    event_type: 'REQUEST_CODE',
+                    createdAt: { [Op.gte]: windowStart }
+                }
+            }),
+            RegisterVerificationEvent.count({
+                where: {
+                    ip,
+                    event_type: 'REQUEST_CODE',
+                    createdAt: { [Op.gte]: windowStart }
+                }
+            })
+        ]);
+
+        if (emailWindowCount >= REGISTER_SEND_WINDOW_MAX || ipWindowCount >= REGISTER_SEND_WINDOW_MAX) {
+            secureLog('warn', '[register_code] Rate limit hit', { email, ip });
+            return res.status(429).json({ message: 'Trop de tentatives. Reessayez plus tard.' });
+        }
+
+        const existingCode = await RegisterVerificationCode.findOne({ where: { email } });
+
+        if (existingCode?.last_sent_at) {
+            const elapsedMs = now.getTime() - new Date(existingCode.last_sent_at).getTime();
+            if (elapsedMs < REGISTER_RESEND_COOLDOWN_SECONDS * 1000) {
+                const remainingSeconds = Math.ceil((REGISTER_RESEND_COOLDOWN_SECONDS * 1000 - elapsedMs) / 1000);
+                return res.status(429).json({
+                    message: `Veuillez patienter ${remainingSeconds}s avant de redemander un code.`,
+                    retry_after_seconds: remainingSeconds
+                });
+            }
+        }
+
+        await RegisterVerificationEvent.destroy({ where: { email } });
+        await RegisterVerificationEvent.create({
+            email,
+            ip,
+            event_type: 'REQUEST_CODE'
+        });
+
+        const otpCode = `${Math.floor(100000 + Math.random() * 900000)}`;
+        const pendingPasswordHash = await bcrypt.hash(password, 10);
+        const nextWindowStartedAt = existingCode?.send_window_started_at
+            ? new Date(existingCode.send_window_started_at)
+            : now;
+        const isSameWindow = now.getTime() - nextWindowStartedAt.getTime() < REGISTER_SEND_WINDOW_MINUTES * 60 * 1000;
+        const sendAttempts = isSameWindow ? (existingCode?.send_attempts || 0) + 1 : 1;
+
+        if (sendAttempts > REGISTER_SEND_WINDOW_MAX) {
+            return res.status(429).json({ message: 'Trop de tentatives. Reessayez plus tard.' });
+        }
+
+        const codeData = {
+            email,
+            code_hash: hashOtpCode(otpCode),
+            pending_username: username,
+            pending_password_hash: pendingPasswordHash,
+            code_expires_at: new Date(now.getTime() + REGISTER_CODE_TTL_MINUTES * 60 * 1000),
+            last_sent_at: now,
+            send_attempts: sendAttempts,
+            send_window_started_at: isSameWindow ? nextWindowStartedAt : now,
+            verify_attempts: 0,
+            blocked_until: null,
+            last_ip: ip
+        };
+
+        if (existingCode) {
+            await existingCode.update(codeData);
+        } else {
+            await RegisterVerificationCode.create(codeData);
+        }
+
+        await req.mailer.sendEmail(
+            email,
+            'Votre code de verification Anonym',
+            `Votre code de verification est ${otpCode}. Il expire dans ${REGISTER_CODE_TTL_MINUTES} minutes.`,
+            `<p>Votre code de verification est <strong>${otpCode}</strong>.</p><p>Il expire dans ${REGISTER_CODE_TTL_MINUTES} minutes.</p>`
+        );
+
+        return res.status(200).json({
+            message: 'Code de verification renvoye avec succes.',
+            code_resent: true
+        });
+    } catch (error) {
+        return sendServerError(res, error, 'Erreur lors de la demande de code.', { scope: 'auth.requestRegisterCode' });
+    }
+};
+
+exports.confirmRegisterCode = async (req, res) => {
+    try {
+        const requestBody = req.body || {};
+        const email = normalizeEmail(requestBody.email);
+        const { code } = requestBody;
+        const now = new Date();
+
+        if (!email || !code) {
+            return res.status(400).json({ message: 'Email et code sont requis.' });
+        }
+
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) {
+            return res.status(400).json({ message: 'Email invalide.' });
+        }
+
+        const otpEntry = await RegisterVerificationCode.findOne({ where: { email } });
+        if (!otpEntry) {
+            return res.status(400).json({ message: 'Code invalide ou expire.' });
+        }
+
+        if (otpEntry.blocked_until && new Date(otpEntry.blocked_until) > now) {
+            return res.status(429).json({ message: 'Trop de tentatives de verification. Reessayez plus tard.' });
+        }
+
+        if (new Date(otpEntry.code_expires_at) <= now) {
+            return res.status(400).json({ message: 'Code invalide ou expire.' });
+        }
+
+        if (otpEntry.code_hash !== hashOtpCode(String(code))) {
+            const nextAttempts = (otpEntry.verify_attempts || 0) + 1;
+            const updates = { verify_attempts: nextAttempts };
+            if (nextAttempts >= REGISTER_VERIFY_MAX_ATTEMPTS) {
+                updates.blocked_until = new Date(now.getTime() + REGISTER_VERIFY_BLOCK_MINUTES * 60 * 1000);
+                secureLog('warn', '[register_code] Verification blocked', { email });
+            }
+            await otpEntry.update(updates);
+            return res.status(400).json({ message: 'Code invalide ou expire.' });
+        }
+
+        const username = normalizeUsername(otpEntry.pending_username);
+        const pendingPasswordHash = otpEntry.pending_password_hash;
+        if (!username || !pendingPasswordHash) {
+            return res.status(400).json({ message: 'Informations de pre-inscription manquantes. Redemandez un code.' });
+        }
+
+        const [existingEmailUser, existingUsernameUser] = await Promise.all([
+            User.findOne({ where: { email } }),
+            User.findOne({
+                where: User.sequelize.where(
+                    User.sequelize.fn('LOWER', User.sequelize.col('username')),
+                    username
+                )
+            })
+        ]);
+
+        if (existingEmailUser) {
+            await RegisterVerificationCode.destroy({ where: { email } });
+            await RegisterVerificationEvent.destroy({ where: { email } });
+            return res.status(409).json({ message: 'Un compte existe deja avec cet email.' });
+        }
+
+        if (existingUsernameUser) {
+            return res.status(409).json({ message: "Ce nom d'utilisateur est deja utilise." });
+        }
+
+        let newAvatarPath = null;
+        if (!req.file && req.avatarData) {
+            const { circleColor, pathColor, uniqueAvatarName } = req.avatarData;
+            const defaultAvatarPath = path.join(__dirname, '../../uploads/profiles/default/default_avatar.svg');
+            const userAvatarPath = path.resolve(__dirname, '../../uploads/profiles/avatars', uniqueAvatarName);
+
+            let svgContent = fs.readFileSync(defaultAvatarPath, 'utf8');
+            svgContent = svgContent.replace(/<circle[^>]*fill="[^"]*"[^>]*>/, `<circle cx="115" cy="115" r="115" fill="${circleColor}"/>`);
+            svgContent = svgContent.replace(/<path[^>]*fill="[^"]*"[^>]*>/, `<path d="M114.37 48L150.593 117.743L167.732 116.319L184.87 114.894L158.396 132.766C169.932 154.979 184.87 183.741 184.87 183.741L161.077 183.801L140.549 144.814L66.4727 183.801H44L54.9652 162.64L135.365 133.027C135.365 133.027 135.396 133.016 135.457 132.994C136.576 132.584 177.708 117.529 184.87 114.894L167.732 116.319L150.593 117.743L131.372 124.824L115.018 92.3567L103.054 114.894L89.6156 140.207L44 157.012L66.0193 141.308L79.1852 115.9L114.37 48Z" fill="${pathColor}"/>`);
+            fs.writeFileSync(userAvatarPath, svgContent);
+            newAvatarPath = `${req.protocol}://${req.get('host')}/uploads/profiles/avatars/${uniqueAvatarName}`;
+        } else if (req.file) {
+            newAvatarPath = `${req.protocol}://${req.get('host')}/uploads/profiles/avatars/${req.file.filename}`;
+        }
+
+        const user = await User.create({
+            username,
+            email,
+            password: pendingPasswordHash,
+            avatar: newAvatarPath
+        }, { hooks: false, validate: false });
+
+        await RegisterVerificationCode.destroy({ where: { email } });
+        await RegisterVerificationEvent.destroy({ where: { email } });
+        return await issueAuthResponse(req, res, user);
+    } catch (error) {
+        if (error.name === 'SequelizeValidationError') {
+            const messages = error.errors.map(err => err.message);
+            return res.status(400).json({ message: messages });
+        }
+        return sendServerError(res, error, 'Erreur lors de la confirmation de l inscription.', {
+            scope: 'auth.confirmRegisterCode'
+        });
+    }
+};
 
 /**
  * Déconnecte l'utilisateur en invalidant le cookie JWT.
@@ -201,19 +566,63 @@ exports.login = async (req, res) => {
  * // Exemple de requête
  * POST /api/auth/logout
  */
-exports.logout = (req, res) => {
+exports.refreshToken = async (req, res) => {
     try {
-        // Invalider le cookie contenant le token JWT
-        res.clearCookie('token', {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: 'Strict',
+        const refreshTokenFromCookie = req.cookies?.[REFRESH_TOKEN_COOKIE_NAME];
+        const refreshTokenFromBody = req.body?.refreshToken;
+        const refreshToken = refreshTokenFromCookie || refreshTokenFromBody;
+
+        if (!refreshToken) {
+            clearAuthCookies(res);
+            return res.status(401).json({ message: 'Refresh token missing' });
+        }
+
+        const tokenHash = hashRefreshToken(refreshToken);
+        const tokenRecord = await RefreshToken.findOne({ where: { token_hash: tokenHash } });
+
+        if (!tokenRecord || tokenRecord.revoked_at || new Date(tokenRecord.expires_at) <= new Date()) {
+            clearAuthCookies(res);
+            return res.status(401).json({ message: 'Invalid or expired refresh token' });
+        }
+
+        const user = await User.findByPk(tokenRecord.user_id);
+        if (!user) {
+            clearAuthCookies(res);
+            return res.status(401).json({ message: 'Invalid refresh token user' });
+        }
+
+        await tokenRecord.update({
+            revoked_at: new Date(),
+            last_used_at: new Date()
         });
 
-        // Envoyer une réponse de succès
+        const newAccessToken = createAccessToken(user);
+        const newRefreshToken = createRefreshToken();
+        await persistRefreshToken(user.id, newRefreshToken, req);
+        setAuthCookies(res, newAccessToken, newRefreshToken);
+
+        return res.status(200).json({ token: newAccessToken, user });
+    } catch (error) {
+        clearAuthCookies(res);
+        return sendServerError(res, error, 'Unable to refresh token', { scope: 'auth.refreshToken' });
+    }
+};
+
+exports.logout = async (req, res) => {
+    try {
+        const refreshToken = req.cookies?.[REFRESH_TOKEN_COOKIE_NAME] || req.body?.refreshToken;
+        if (refreshToken) {
+            const tokenHash = hashRefreshToken(refreshToken);
+            await RefreshToken.update(
+                { revoked_at: new Date() },
+                { where: { token_hash: tokenHash, revoked_at: null } }
+            );
+        }
+
+        clearAuthCookies(res);
         res.status(200).json({ message: "Successfully logged out" });
     } catch (error) {
-        res.status(500).json({ message: error.message || 'Logout failed' });
+        return sendServerError(res, error, 'Logout failed', { scope: 'auth.logout' });
     }
 };
 
@@ -259,12 +668,24 @@ exports.requestPasswordReset = async (req, res) => {
         await user.save();
 
         // Créer un lien de réinitialisation
-        const resetLink = `${env === 'production' ? process.env.ORIGIN_PROD : process.env.ORIGIN}/reset/?token=${token}`;
-
+        const webResetLink = buildResetPasswordLink(getResetPasswordWebBaseUrl(), token);
+        if (!webResetLink) {
+            return res.status(500).json({ message: "Configuration manquante pour l'URL de reinitialisation web" });
+        }
+        const mobileResetLink = buildResetPasswordLink(getResetPasswordMobileBaseUrl(), token);
+        const bridgeResetLink = buildResetPasswordBridgeLink(req, token);
+        const hasMobileResetLink = mobileResetLink.trim().length > 0;
+        // En local/dev, on peut forcer le deep link mobile pour tester l'ouverture de l'app.
+        // En dehors de ce mode, on privilégie HTTP(S) car plusieurs clients e-mail bloquent
+        // les schemes custom (ex: anonym://).
+        const primaryResetLink = (shouldPreferMobileResetLink() && hasMobileResetLink && bridgeResetLink)
+            ? bridgeResetLink
+            : (isHttpLink(mobileResetLink) ? mobileResetLink : webResetLink);
         // Lire le template d'email
         const emailTemplatePath = path.join(__dirname, '../../templates/reset-password-email.html');
         let htmlContent = fs.readFileSync(emailTemplatePath, 'utf8');
-        htmlContent = htmlContent.replace(/{{resetLink}}/, resetLink);
+        htmlContent = htmlContent.replace(/{{resetLink}}/g, primaryResetLink);
+        htmlContent = htmlContent.replace(/{{resetFallbackLink}}/g, webResetLink);
 
         // Envoyer l'email
         await req.mailer.sendEmail(
@@ -276,7 +697,9 @@ exports.requestPasswordReset = async (req, res) => {
 
         res.status(200).json({ message: 'Email envoyé pour la réinitialisation de votre mot de passe' });
     } catch (error) {
-        return res.status(500).json({ message: error.message || 'Impossible d’initier la réinitialisation du mot de passe' });
+        return sendServerError(res, error, 'Impossible d’initier la réinitialisation du mot de passe', {
+            scope: 'auth.requestPasswordReset'
+        });
     }
 };
 
@@ -299,8 +722,13 @@ exports.requestPasswordReset = async (req, res) => {
  */
 exports.resetPassword = async (req, res) => {
     try {
-        const { token } = req.query;
-        const { password, confirmPassword } = req.body;
+        const requestBody = req.body || {};
+        const token = req.query?.token || requestBody.token;
+        const { password, confirmPassword } = requestBody;
+
+        if (!token) {
+            return res.status(400).json({ message: 'Le token de reinitialisation est requis' });
+        }
     
         if (!password) {
             return res.status(400).json({ message: "Le mot de passe est requis" });
@@ -315,8 +743,7 @@ exports.resetPassword = async (req, res) => {
         }
 
         // Vérifier que le mot de passe respecte la regex définie dans le modèle
-        const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+=\-[\]{};:,.<>?/\\|`~"'£¤§µ¢₹])[A-Za-z\d!@#$%^&*()_+=\-[\]{};:,.<>?/\\|`~"'£¤§µ¢₹]{12,}$/;
-        if (!passwordRegex.test(password)) {
+        if (!PASSWORD_REGEX.test(password)) {
             return res.status(400).json({ 
                 message: "Mot de passe : 12 caractères min, avec majuscules, minuscules, chiffres et caractères spéciaux"
             });
@@ -354,15 +781,15 @@ exports.resetPassword = async (req, res) => {
             confirmationHtmlContent
         );
 
-        // Invalider le cookie contenant le token JWT
-        res.clearCookie('token', {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: 'Strict',
-        });
+        await RefreshToken.update(
+            { revoked_at: new Date() },
+            { where: { user_id: user.id, revoked_at: null } }
+        );
+        clearAuthCookies(res);
 
         res.status(200).json({ message: 'Le mot de passe a été réinitialisé avec succès' });
     } catch (error) {
-        res.status(500).json({ message: error.message || 'Impossible de réinitialiser le mot de passe' });
+        return sendServerError(res, error, 'Impossible de réinitialiser le mot de passe', { scope: 'auth.resetPassword' });
     }
 };
+

@@ -60,6 +60,14 @@ module.exports = (sequelize, DataTypes) => {
           msg: 'Content cannot be empty.'
         }
       }
+    },
+    points_multiplier: {
+      type: DataTypes.DECIMAL(5, 2),
+      allowNull: false,
+      defaultValue: 1.0,
+      validate: {
+        min: 1
+      }
     }
   }, {
     sequelize,
