@@ -15,7 +15,7 @@ const REGISTER_SEND_WINDOW_MINUTES = 15;
 const REGISTER_SEND_WINDOW_MAX = 5;
 const REGISTER_VERIFY_MAX_ATTEMPTS = 5;
 const REGISTER_VERIFY_BLOCK_MINUTES = 15;
-const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+=\-[\]{};:,.<>?/\\|`~"'Â£Â¤Â§ÂµÂ¢â‚¹])[A-Za-z\d!@#$%^&*()_+=\-[\]{};:,.<>?/\\|`~"'Â£Â¤Â§ÂµÂ¢â‚¹]{12,}$/;
+const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z\d])[^\s]{12,}$/;
 
 const ACCESS_TOKEN_TTL = process.env.JWT_ACCESS_TTL || '15m';
 const REFRESH_TOKEN_TTL_DAYS = Number(process.env.JWT_REFRESH_TTL_DAYS || 7);
