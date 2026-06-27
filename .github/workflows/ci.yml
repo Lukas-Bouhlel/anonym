@@ -98,8 +98,7 @@ jobs:
       working-directory: ./anonym_front_flutter
       run: >
         flutter build apk --release
-        --dart-define=APP_ENV=dev
-        --dart-define=API_BASE_URL=https://ci.invalid
+        --dart-define=APP_ENV=prod
         --dart-define=MAPBOX_ACCESS_TOKEN=${{ secrets.MAPBOX_ACCESS_TOKEN }}
 
     - name: Upload Android release APK artifact
