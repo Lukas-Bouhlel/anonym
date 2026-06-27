@@ -15,28 +15,34 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v7
 
       - name: Create SSH directory
         run: mkdir -p ~/.ssh
 
       - name: Set up known_hosts
-        run: ssh-keyscan -t rsa -p 53339 51.75.18.155 >> ~/.ssh/known_hosts
-
-      - name: Debug Known Hosts
-        run : cat ~/.ssh/known_hosts
+        run: ssh-keyscan -H -t rsa -p 53339 51.75.18.155 >> ~/.ssh/known_hosts
 
       - name: Set up SSH
-        uses: webfactory/ssh-agent@v0.8.0
+        uses: webfactory/ssh-agent@v0.10.0
         with:
           ssh-private-key: ${{ secrets.LUKAS_KEY_PRIVATE }}
 
       - name: Deploy to VPS
         run: |
-          ssh -p 53339 lukas@51.75.18.155 << 'EOF'
+          set -euo pipefail
+          ssh -o StrictHostKeyChecking=yes -p 53339 lukas@51.75.18.155 'bash -se' << 'EOF'
+          set -euo pipefail
           cd /home/ubuntu/anonym
+          git fetch origin main
           git checkout main
-          git pull --rebase
+          if ! git diff --quiet || ! git diff --cached --quiet; then
+            echo "Deployment stopped: the server repository has local changes."
+            echo "Review/commit/stash/clean changes in /home/ubuntu/anonym before deploying."
+            git status --short
+            exit 1
+          fi
+          git pull --ff-only origin main
           cd anonym-front-end
           npm run build
           cd ..
