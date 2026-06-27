@@ -10,6 +10,8 @@ on:
 jobs:
   prod-build-deploy:
     runs-on: ubuntu-latest
+    env:
+      MOBILE_ARTIFACTS_DIR: /home/lukas/mobile-artifacts/anonym
 
     if: ${{ github.event.pull_request.merged == true && github.event.pull_request.head.ref == 'preprod' }}
 
@@ -27,6 +29,53 @@ jobs:
         uses: webfactory/ssh-agent@v0.10.0
         with:
           ssh-private-key: ${{ secrets.LUKAS_KEY_PRIVATE }}
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Configure Android release signing
+        working-directory: ./anonym_front_flutter
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          echo "$ANDROID_KEYSTORE_BASE64" | base64 --decode > android/app/upload-keystore.jks
+          cat > android/key.properties <<EOF
+          storeFile=upload-keystore.jks
+          storePassword=$ANDROID_KEYSTORE_PASSWORD
+          keyAlias=$ANDROID_KEY_ALIAS
+          keyPassword=$ANDROID_KEY_PASSWORD
+          EOF
+
+      - name: Build Android release APK
+        working-directory: ./anonym_front_flutter
+        env:
+          MAPBOX_ACCESS_TOKEN: ${{ secrets.MAPBOX_ACCESS_TOKEN }}
+          MOBILE_API_BASE_URL: ${{ secrets.MOBILE_API_BASE_URL }}
+        run: |
+          set -euo pipefail
+          API_BASE_URL="${MOBILE_API_BASE_URL:-https://www.ano-nym.fr}"
+          flutter pub get
+          flutter build apk --release \
+            --dart-define=APP_ENV=prod \
+            --dart-define=API_BASE_URL="$API_BASE_URL" \
+            --dart-define=MAPBOX_ACCESS_TOKEN="$MAPBOX_ACCESS_TOKEN"
+          mkdir -p ../mobile-release
+          SHORT_SHA="${GITHUB_SHA::7}"
+          RELEASE_DATE="$(date -u +%Y%m%d%H%M%S)"
+          cp build/app/outputs/flutter-apk/app-release.apk "../mobile-release/anonym-${RELEASE_DATE}-${SHORT_SHA}.apk"
 
       - name: Deploy to VPS
         run: |
@@ -48,3 +97,10 @@ jobs:
           cd ..
           docker-compose -f docker-compose.prod.yml --env-file .env.production up -d --build
           EOF
+
+      - name: Upload Android APK to VPS
+        run: |
+          set -euo pipefail
+          ssh -o StrictHostKeyChecking=yes -p 53339 lukas@51.75.18.155 "mkdir -p '$MOBILE_ARTIFACTS_DIR'"
+          scp -o StrictHostKeyChecking=yes -P 53339 mobile-release/*.apk "lukas@51.75.18.155:$MOBILE_ARTIFACTS_DIR/"
+          ssh -o StrictHostKeyChecking=yes -p 53339 lukas@51.75.18.155 "cd '$MOBILE_ARTIFACTS_DIR' && ls -1t anonym-*.apk | tail -n +11 | xargs -r rm -f && ls -lh"
