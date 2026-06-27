@@ -11,7 +11,7 @@ abstract final class AppConfig {
   static const _devAndroidEmulatorApiBaseUrl = 'http://10.70.0.118:5000';
   static const _devIosSimulatorApiBaseUrl = 'http://127.0.0.1:5000';
   static const _stagingApiBaseUrl = 'https://staging-api.anonym-app.com';
-  static const _prodApiBaseUrl = 'https://api.anonym-app.com';
+  static const _prodApiBaseUrl = 'https://www.ano-nym.fr';
 
   // Global override:
   // flutter run --dart-define=API_BASE_URL=http://localhost:5000
