@@ -36,10 +36,17 @@ jobs:
         run: |
           ssh -p 53339 lukas@51.75.18.155 << 'EOF'
           cd /home/ubuntu/anonym
+          df -h
+          docker system df || true
+          docker container prune -f || true
+          docker image prune -af || true
+          docker builder prune -af || true
+          docker system df || true
+          df -h
           git checkout preprod
           git pull --rebase
           cd anonym-front-end
           npm run build
           cd ..
-          docker-compose -f docker-compose.preprod.yml --env-file .env.preprod up -d --build
+          docker-compose -f docker-compose.preprod.yml --env-file .env.preprod up -d --build --remove-orphans
           EOF
