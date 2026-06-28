@@ -3,7 +3,7 @@
 
 ## Description
 Anonym est un projet visant à créer un réseau social de discussion en ligne tout en préservant les données des utilisateurs de l'application. 
-Ce projet propose un système de messagerie privée basé sur IRC ainsi qu'un mécanisme de modération rigoureux avec un système de signalement et une boutique qui permet aux utilisateurs d’acheter des éléments de personnalisation pour leurs profils ainsi qu'un système de réputation avec un système de classement pour les communautés public.
+Ce projet propose un système de messagerie privée basé sur IRC ainsi qu'un mécanisme de modération rigoureux avec un système de signalement et une boutique qui permet aux utilisateurs d’acheter des éléments de personnalisation pour leurs profils ainsi qu'un système de réputation et un système de classement pour les communautés public.
 
 ## Table des matières
 1. [Guide d'installation local](#installation-local)
