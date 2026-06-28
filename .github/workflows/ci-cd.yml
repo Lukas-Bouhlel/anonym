@@ -7,6 +7,10 @@ on:
       - preprod
     types:
       - completed
+
+concurrency:
+  group: preprod-deploy
+  cancel-in-progress: false
  
 jobs:
   preprod-build-deploy:
@@ -34,7 +38,9 @@ jobs:
 
       - name: Deploy to VPS
         run: |
-          ssh -p 53339 lukas@51.75.18.155 << 'EOF'
+          set -euo pipefail
+          ssh -o StrictHostKeyChecking=yes -o ServerAliveInterval=30 -o ServerAliveCountMax=20 -p 53339 lukas@51.75.18.155 'bash -se' << 'EOF'
+          set -euo pipefail
           cd /home/ubuntu/anonym
           df -h
           docker system df || true
@@ -43,7 +49,33 @@ jobs:
           docker builder prune -af || true
           docker system df || true
           df -h
+          git fetch origin preprod
           git checkout preprod
-          git pull --rebase
+
+          if ! git diff --quiet || ! git diff --cached --quiet; then
+            echo "Deployment stopped: the server repository has local changes."
+            echo "Review/commit/stash/clean changes in /home/ubuntu/anonym before deploying."
+            git status --short
+            exit 1
+          fi
+
+          local_sha="$(git rev-parse preprod)"
+          remote_sha="$(git rev-parse origin/preprod)"
+          merge_base="$(git merge-base preprod origin/preprod)"
+
+          if [ "$local_sha" = "$remote_sha" ]; then
+            echo "Server repository already matches origin/preprod."
+          elif [ "$local_sha" = "$merge_base" ]; then
+            git merge --ff-only origin/preprod
+          else
+            backup_branch="server-preprod-backup-$(date -u +%Y%m%d%H%M%S)"
+            git branch "$backup_branch" "$local_sha"
+            echo "Server preprod diverged. Saved local preprod as $backup_branch."
+            git reset --hard origin/preprod
+          fi
+
+          export COMPOSE_HTTP_TIMEOUT=600
+          export DOCKER_CLIENT_TIMEOUT=600
           docker-compose -f docker-compose.preprod.yml --env-file .env.preprod up -d --build --remove-orphans
+          docker-compose -f docker-compose.preprod.yml --env-file .env.preprod ps
           EOF
