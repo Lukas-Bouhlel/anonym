@@ -152,7 +152,12 @@ jobs:
     # ---- Frontend: Lint, Test, and Build ----
     - name: Install dependencies for Frontend
       working-directory: ./anonym-front-end   # Path to your front-end folder
-      run: npm install
+      run: |
+        npm ci --legacy-peer-deps --foreground-scripts || (
+          rm -rf node_modules
+          npm cache clean --force
+          npm ci --legacy-peer-deps --foreground-scripts
+        )
 
     - name: Generate Documentation
       working-directory: ./anonym-front-end
@@ -177,7 +182,7 @@ jobs:
     # ---- Backend: Lint, Test, Database Setup, and Test Execution ----
     - name: Install dependencies for Backend
       working-directory: ./anonym-back-end
-      run: npm install
+      run: npm ci --legacy-peer-deps
 
     - name: Generate Documentation
       working-directory: ./anonym-back-end
@@ -254,7 +259,7 @@ jobs:
 
     - name: Install backend dependencies
       working-directory: ./anonym-back-end
-      run: npm install
+      run: npm ci --legacy-peer-deps
 
     - name: Start backend for performance test
       working-directory: ./anonym-back-end
