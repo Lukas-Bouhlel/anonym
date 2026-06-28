@@ -1,0 +1,26 @@
+name: main_merge_guard
+
+on:
+  pull_request:
+    branches:
+      - main
+    types:
+      - opened
+      - synchronize
+      - reopened
+      - edited
+
+jobs:
+  only-preprod-to-main:
+    name: Only preprod can target main
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Validate source branch
+        run: |
+          if [ "${{ github.head_ref }}" != "preprod" ]; then
+            echo "Only the preprod branch can be merged into main."
+            echo "Current source branch: ${{ github.head_ref }}"
+            exit 1
+          fi
+          echo "Main merge source is preprod."

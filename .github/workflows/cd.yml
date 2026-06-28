@@ -1,12 +1,9 @@
 name: cd_deploy_to_production
 
 on:
-  workflow_run:
-    workflows: ["ci_worflow"]
+  push:
     branches:
       - main
-    types:
-      - completed
   workflow_dispatch:
 
 concurrency:
@@ -23,12 +20,11 @@ jobs:
   prepare-production-deploy:
     name: Prepare production deployment
     runs-on: ubuntu-latest
-    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
 
     steps:
       - name: CI gate
         run: |
-          echo "Production deployment authorized."
+          echo "Production deployment authorized from preprod-gated main."
           echo "Trigger: ${{ github.event_name }}"
 
   build-mobile-apk:
@@ -40,7 +36,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v7
         with:
-          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+          ref: ${{ github.sha }}
 
       - name: Set up Java
         uses: actions/setup-java@v4
@@ -117,7 +113,7 @@ jobs:
       - name: Deploy to VPS
         run: |
           set -euo pipefail
-          ssh -o StrictHostKeyChecking=yes -p "$VPS_PORT" "$VPS_USER@$VPS_HOST" 'bash -se' << 'EOF'
+          ssh -o StrictHostKeyChecking=yes -o ServerAliveInterval=30 -o ServerAliveCountMax=20 -p "$VPS_PORT" "$VPS_USER@$VPS_HOST" 'bash -se' << 'EOF'
           set -euo pipefail
           cd /home/ubuntu/anonym
 
@@ -146,8 +142,8 @@ jobs:
             git reset --hard origin/main
           fi
 
-          export COMPOSE_HTTP_TIMEOUT=300
-          export DOCKER_CLIENT_TIMEOUT=300
+          export COMPOSE_HTTP_TIMEOUT=600
+          export DOCKER_CLIENT_TIMEOUT=600
           docker-compose -f docker-compose.prod.yml --env-file .env.production up -d --build --remove-orphans
           docker-compose -f docker-compose.prod.yml --env-file .env.production ps
           EOF
@@ -178,6 +174,6 @@ jobs:
       - name: Upload Android APK to VPS
         run: |
           set -euo pipefail
-          ssh -o StrictHostKeyChecking=yes -p "$VPS_PORT" "$VPS_USER@$VPS_HOST" "mkdir -p '$MOBILE_ARTIFACTS_DIR'"
-          scp -o StrictHostKeyChecking=yes -P "$VPS_PORT" mobile-release/*.apk "$VPS_USER@$VPS_HOST:$MOBILE_ARTIFACTS_DIR/"
-          ssh -o StrictHostKeyChecking=yes -p "$VPS_PORT" "$VPS_USER@$VPS_HOST" "cd '$MOBILE_ARTIFACTS_DIR' && ls -1t anonym-*.apk | tail -n +11 | xargs -r rm -f && ls -lh"
+          ssh -o StrictHostKeyChecking=yes -o ServerAliveInterval=30 -o ServerAliveCountMax=20 -p "$VPS_PORT" "$VPS_USER@$VPS_HOST" "mkdir -p '$MOBILE_ARTIFACTS_DIR'"
+          scp -o StrictHostKeyChecking=yes -o ServerAliveInterval=30 -o ServerAliveCountMax=20 -P "$VPS_PORT" mobile-release/*.apk "$VPS_USER@$VPS_HOST:$MOBILE_ARTIFACTS_DIR/"
+          ssh -o StrictHostKeyChecking=yes -o ServerAliveInterval=30 -o ServerAliveCountMax=20 -p "$VPS_PORT" "$VPS_USER@$VPS_HOST" "cd '$MOBILE_ARTIFACTS_DIR' && ls -1t anonym-*.apk | tail -n +11 | xargs -r rm -f && ls -lh"
