@@ -2,11 +2,12 @@ name: ci_worflow
 
 on: 
   push:
-    branches:
-      - '**'
+    branches-ignore:
+      - main
   pull_request:
     branches:
       - preprod 
+  workflow_dispatch:
 
 jobs:
   prepare-ci:
