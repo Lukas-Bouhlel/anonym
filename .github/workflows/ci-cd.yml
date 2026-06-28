@@ -45,8 +45,5 @@ jobs:
           df -h
           git checkout preprod
           git pull --rebase
-          cd anonym-front-end
-          npm run build
-          cd ..
           docker-compose -f docker-compose.preprod.yml --env-file .env.preprod up -d --build --remove-orphans
           EOF
