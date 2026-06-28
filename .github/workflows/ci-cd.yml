@@ -70,5 +70,8 @@ jobs:
             git reset --hard origin/preprod
           fi
 
+          export COMPOSE_HTTP_TIMEOUT=300
+          export DOCKER_CLIENT_TIMEOUT=300
           docker-compose -f docker-compose.preprod.yml --env-file .env.preprod up -d --build --remove-orphans
+          docker-compose -f docker-compose.preprod.yml --env-file .env.preprod ps
           EOF
