@@ -12,4 +12,4 @@ RUN npm run build -- --mode preprod
  
 EXPOSE 8100
 
-CMD ["npm", "run", "preview", "--", "--mode", "preprod"]
+CMD ["npm", "run", "preview", "--", "--mode", "preprod", "--host", "0.0.0.0"]
