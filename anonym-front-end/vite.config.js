@@ -2,6 +2,9 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import svgr from "vite-plugin-svgr";
 
+const productionAllowedHosts = ['www.ano-nym.fr', 'ano-nym.fr'];
+const preprodAllowedHosts = ['preprod.ano-nym.fr'];
+
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => {
 
@@ -13,8 +16,10 @@ export default defineConfig(({ mode }) => {
       base: "/",
       plugins: [react(), svgr()],
       preview: {
+        host: '0.0.0.0',
         port: 8080,
         strictPort: true,
+        allowedHosts: productionAllowedHosts,
       },
       server: {
         port: 8080,
@@ -41,8 +46,10 @@ export default defineConfig(({ mode }) => {
       base: "/",
       plugins: [react(), svgr()],
       preview: {
+        host: '0.0.0.0',
         port: 8100,
         strictPort: true,
+        allowedHosts: preprodAllowedHosts,
       },
       server: {
         port: 8100,
@@ -66,8 +73,10 @@ export default defineConfig(({ mode }) => {
     base: "/",
     plugins: [react(), svgr()],
     preview: {
+      host: '0.0.0.0',
       port: 8080,
       strictPort: true,
+      allowedHosts: [...productionAllowedHosts, ...preprodAllowedHosts],
     },
     server: {
       port: 8080,
