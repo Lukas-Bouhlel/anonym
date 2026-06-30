@@ -1,0 +1,445 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <title>Dossier de validation - Bloc 2 - Anonym</title>
+  <style>
+    @page {
+      size: A4;
+      margin: 9mm 9mm 9mm 9mm;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      color: #182235;
+      font-family: Arial, Helvetica, sans-serif;
+      font-size: 8.9pt;
+      line-height: 1.28;
+      background: #f4f7fb;
+    }
+
+    .cover {
+      min-height: 279mm;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      color: #f8fbff;
+      background:
+        linear-gradient(135deg, rgba(18, 28, 45, .96), rgba(37, 99, 235, .88)),
+        linear-gradient(90deg, #172033, #2563eb);
+      padding: 22mm;
+      page-break-after: always;
+    }
+
+    .cover .label {
+      color: #dbeafe;
+      font-size: 10pt;
+      font-weight: 700;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+
+    .cover h1 {
+      margin: 8mm 0 4mm;
+      color: #ffffff;
+      font-size: 31pt;
+      line-height: 1.05;
+      border: 0;
+      page-break-after: auto;
+    }
+
+    .cover h2 {
+      margin: 0 0 12mm;
+      color: #bfdbfe;
+      font-size: 20pt;
+      border: 0;
+    }
+
+    .meta {
+      display: grid;
+      grid-template-columns: 38mm 1fr;
+      gap: 3mm 6mm;
+      width: 100%;
+      margin-top: 10mm;
+      padding-top: 9mm;
+      border-top: 1pt solid rgba(255,255,255,.32);
+      font-size: 10.5pt;
+    }
+
+    .meta strong {
+      color: #bfdbfe;
+    }
+
+    h1 {
+      margin: 0 0 4mm;
+      padding: 3.5mm 4mm;
+      color: #111827;
+      font-size: 18pt;
+      line-height: 1.15;
+      border-left: 4pt solid #2563eb;
+      background: #eaf1fb;
+      page-break-after: avoid;
+    }
+
+    h2 {
+      margin: 4.4mm 0 2.4mm;
+      color: #111827;
+      font-size: 12.6pt;
+      line-height: 1.2;
+      page-break-after: avoid;
+    }
+
+    h3 {
+      margin: 3.2mm 0 1.6mm;
+      color: #2563eb;
+      font-size: 10.2pt;
+      line-height: 1.2;
+      page-break-after: avoid;
+    }
+
+    p {
+      margin: 0 0 2mm;
+    }
+
+    ul {
+      margin: .7mm 0 2.2mm 4mm;
+      padding-left: 4mm;
+    }
+
+    li {
+      margin-bottom: .65mm;
+    }
+
+    table {
+      width: 100%;
+      margin: 2.2mm 0 3mm;
+      border-collapse: collapse;
+      page-break-inside: avoid;
+      font-size: 7.7pt;
+      background: #ffffff;
+    }
+
+    th {
+      background: #dfe9f7;
+      color: #111827;
+      font-weight: 700;
+    }
+
+    th, td {
+      border: .65pt solid #c9d2e2;
+      padding: 1.25mm 1.55mm;
+      vertical-align: top;
+    }
+
+    code {
+      padding: .2mm 1mm;
+      border-radius: 2mm;
+      background: #eef2f7;
+      color: #0f172a;
+      font-family: Consolas, "Courier New", monospace;
+      font-size: 8.4pt;
+    }
+
+    pre {
+      margin: 2mm 0;
+      padding: 2.4mm;
+      background: #101827;
+      color: #f8fafc;
+      border-radius: 2mm;
+      white-space: pre-wrap;
+      font-size: 7.6pt;
+      page-break-inside: avoid;
+    }
+
+    pre code {
+      padding: 0;
+      background: transparent;
+      color: inherit;
+    }
+
+    strong {
+      color: #0f3d75;
+    }
+
+    .proof {
+      display: grid;
+      grid-template-columns: 34mm 1fr;
+      gap: 2mm;
+      align-items: stretch;
+      min-height: 14mm;
+      margin: 1.6mm 0 2.4mm;
+      border: .75pt solid #c9d7ec;
+      border-left: 3pt solid #2563eb;
+      background: #ffffff;
+      page-break-inside: avoid;
+    }
+
+    .proof-label {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2mm;
+      color: #0f3d75;
+      font-size: 7.6pt;
+      font-weight: 800;
+      text-align: center;
+      text-transform: uppercase;
+      background: #eaf1fb;
+    }
+
+    .proof-text {
+      display: flex;
+      align-items: center;
+      padding: 2mm 2.5mm;
+      color: #32435f;
+      font-size: 8.2pt;
+    }
+
+    .proof-uml,
+    .proof-schema {
+      border-left-color: #7c3aed;
+    }
+
+    .proof-uml .proof-label,
+    .proof-schema .proof-label {
+      color: #4c1d95;
+      background: #f1eafe;
+    }
+
+    .proof-tableau {
+      border-left-color: #0f766e;
+    }
+
+    .proof-tableau .proof-label {
+      color: #115e59;
+      background: #e6f5f3;
+    }
+
+    .section-divider {
+      height: 1.2mm;
+      margin: 4mm 0 3mm;
+      border-radius: 99mm;
+      background: linear-gradient(90deg, #2563eb, #94a3b8, transparent);
+    }
+
+    .content {
+      padding: 0;
+      counter-reset: h2;
+      background: #ffffff;
+    }
+  </style>
+</head>
+<body>
+  <section class="cover">
+    <div class="label">Bloc 2 - Dossier de validation</div>
+    <h1>Anonym</h1>
+    <h2>Developpement, tests, securite, accessibilite et deploiement</h2>
+    <p>Application sociale web et mobile orientee messagerie temps reel, confidentialite, supervision et deploiement continu.</p>
+    <div class="meta">
+      <strong>Candidat</strong><span>Lukas Bouhlel</span>
+      <strong>Version</strong><span>v1.0.0-bloc2</span>
+      <strong>Date</strong><span>Juin 2026</span>
+      <strong>Perimetre</strong><span>Dossier principal limite a 30 pages maximum, hors annexes.</span>
+    </div>
+  </section>
+  <main class="content">
+    <h1>Dossier de validation - Bloc 2</h1>
+<h2>Page de garde</h2>
+<p>Anonym est une application sociale web et mobile permettant aux utilisateurs de creer un compte, echanger en temps reel, gerer leur profil, rejoindre des conversations, utiliser une boutique virtuelle et acceder a des fonctionnalites de moderation et d&#039;administration.</p>
+<p>Le projet repose sur une architecture composee :</p>
+<ul><li>d&#039;un backend Node.js / Express avec Socket.IO ;</li><li>d&#039;une base de donnees MySQL geree avec Sequelize ;</li><li>d&#039;un frontend web React / Vite ;</li><li>d&#039;une application mobile Flutter ;</li><li>d&#039;une infrastructure Docker, Nginx et Certbot sur VPS ;</li><li>d&#039;une chaine CI/CD GitHub Actions couvrant tests, securite, build, performance et deploiement.</li></ul>
+<aside class="proof proof-screen"><div class="proof-label">SCREEN A AJOUTER</div><div class="proof-text">Capture de l&#039;application web ou mobile sur l&#039;ecran principal.</div></aside>
+<aside class="proof proof-screen"><div class="proof-label">SCREEN A AJOUTER</div><div class="proof-text">Capture du repository GitHub avec les branches <code>devlop</code>, <code>preprod</code> et <code>main</code>.</div></aside>
+<div class="section-divider"></div>
+<h2>Sommaire</h2>
+<p>1. Presentation du projet 2. Environnements de developpement, test, preproduction et production 3. Integration continue 4. Deploiement continu 5. Architecture logicielle et prototype 6. Tests unitaires, fonctionnels, securite et performance 7. Securite et OWASP 8. Accessibilite web et mobile 9. Versioning, recette et correction des anomalies 10. Documentation technique d&#039;exploitation 11. Synthese de validation des competences du bloc 2</p>
+<div class="section-divider"></div>
+<h2>1. Presentation du projet</h2>
+<p>Anonym est une plateforme de communication orientee confidentialite. Elle permet a un utilisateur de s&#039;inscrire, se connecter, gerer son profil, echanger dans des conversations, envoyer des messages texte et images, utiliser une carte avec Mapbox, gerer ses amis, acceder a une boutique et utiliser des fonctions de personnalisation.</p>
+<p>Le projet cible deux supports principaux :</p>
+<ul><li>le web, avec une interface React ;</li><li>le mobile, avec une application Flutter Android.</li></ul>
+<p>Le backend centralise les regles metier, la securite, l&#039;authentification, les donnees, les paiements, la messagerie temps reel et les metriques d&#039;exploitation.</p>
+<aside class="proof proof-screen"><div class="proof-label">SCREEN A AJOUTER</div><div class="proof-text">Capture de l&#039;ecran de connexion web.</div></aside>
+<aside class="proof proof-screen"><div class="proof-label">SCREEN A AJOUTER</div><div class="proof-text">Capture de l&#039;ecran de connexion mobile.</div></aside>
+<aside class="proof proof-screen"><div class="proof-label">SCREEN A AJOUTER</div><div class="proof-text">Capture de la messagerie mobile avec un message texte et une image.</div></aside>
+<div class="section-divider"></div>
+<h2>2. Environnements de developpement, test, preproduction et production</h2>
+<h3>2.1 Environnement de developpement</h3>
+<p>Le developpement est realise avec Visual Studio Code, Git, GitHub, Node.js, npm, Flutter, Android SDK, Docker, MySQL et les outils de test propres a chaque partie de l&#039;application.</p>
+<p>Les composants principaux sont :</p>
+<table><thead><tr><th>Element</th><th>Choix technique</th><th>Role</th></tr></thead><tbody><tr><td>Editeur</td><td>Visual Studio Code</td><td>Developpement et Remote SSH</td></tr><tr><td>Gestion de sources</td><td>Git + GitHub</td><td>Historique, branches, Pull Requests</td></tr><tr><td>Backend</td><td>Node.js / Express</td><td>API REST, securite, Socket.IO</td></tr><tr><td>Base de donnees</td><td>MySQL + Sequelize</td><td>Persistance, migrations, modeles</td></tr><tr><td>Frontend web</td><td>React / Vite</td><td>Interface web utilisateur et admin</td></tr><tr><td>Mobile</td><td>Flutter</td><td>Application Android</td></tr><tr><td>Deploiement</td><td>Docker Compose</td><td>Execution des services en preprod/prod</td></tr><tr><td>Reverse proxy</td><td>Nginx</td><td>HTTPS, routage, WebSocket</td></tr><tr><td>Certificats</td><td>Certbot</td><td>TLS en production</td></tr><tr><td>Monitoring externe</td><td>OVH + Site24x7</td><td>Disponibilite et supervision serveur</td></tr></tbody></table>
+<aside class="proof proof-screen"><div class="proof-label">SCREEN A AJOUTER</div><div class="proof-text">Capture de VS Code avec l&#039;arborescence du projet.</div></aside>
+<aside class="proof proof-screen"><div class="proof-label">SCREEN A AJOUTER</div><div class="proof-text">Capture de Docker ou du serveur montrant les conteneurs actifs.</div></aside>
+<h3>2.2 Environnements cibles</h3>
+<p>Le cycle de livraison est separe en plusieurs environnements :</p>
+<ul><li>developpement local : execution locale du backend, frontend web et Flutter ;</li><li>integration continue : execution automatique des tests dans GitHub Actions ;</li><li>preproduction : deploiement automatique apres validation CI de la branche <code>preprod</code> ;</li><li>production : deploiement automatique apres validation CI de la branche <code>main</code>.</li></ul>
+<p>Cette separation permet de tester les evolutions avant leur mise en production et de limiter les regressions.</p>
+<aside class="proof proof-schema"><div class="proof-label">SCHEMA A AJOUTER</div><div class="proof-text">Schema simple : Developpement local -&gt; GitHub -&gt; CI -&gt; Preproduction -&gt; Production.</div></aside>
+<div class="section-divider"></div>
+<h2>3. Integration continue</h2>
+<h3>3.1 Objectif</h3>
+<p>L&#039;integration continue permet de verifier automatiquement la qualite du code a chaque modification. Elle reduit le risque de regression en executant les controles avant les deploiements.</p>
+<p>La CI est definie dans <code>.github/workflows/ci.yml</code>.</p>
+<p>Elle se declenche :</p>
+<ul><li>a chaque push ;</li><li>sur les Pull Requests vers <code>preprod</code>.</li></ul>
+<h3>3.2 Pipeline CI</h3>
+<p>La CI est organisee sous forme de graphe GitHub Actions avec des dependances entre jobs.</p>
+<p>Ordre logique :</p>
+<p>1. <code>Prepare CI</code> 2. <code>Security checks</code> 3. <code>Flutter mobile validation</code> 4. <code>Web and backend validation</code> 5. <code>Backend performance validation</code> 6. <code>CI passed</code></p>
+<p>Les controles realises sont :</p>
+<ul><li>audit de securite Snyk frontend, backend et Flutter ;</li><li><code>npm audit</code> frontend et backend ;</li><li>lint frontend, SCSS et backend ;</li><li>generation de documentation JSDoc ;</li><li>tests unitaires frontend ;</li><li>tests unitaires backend ;</li><li>analyse Flutter ;</li><li>tests Flutter ;</li><li>build Android APK release signe ;</li><li>test de performance backend avec Artillery.</li></ul>
+<aside class="proof proof-screen"><div class="proof-label">SCREEN A AJOUTER</div><div class="proof-text">Capture du graphe GitHub Actions de la CI avec les jobs relies.</div></aside>
+<aside class="proof proof-screen"><div class="proof-label">SCREEN A AJOUTER</div><div class="proof-text">Capture d&#039;une execution CI verte.</div></aside>
+<aside class="proof proof-screen"><div class="proof-label">SCREEN A AJOUTER</div><div class="proof-text">Capture du job Flutter montrant le build APK release.</div></aside>
+<h3>3.3 Justification</h3>
+<p>Cette CI repond aux exigences du bloc 2 car elle teste regulierement les blocs de code, verifie la securite des dependances, valide le build web, backend et mobile, et fournit une preuve automatique avant le deploiement.</p>
+<div class="section-divider"></div>
+<h2>4. Deploiement continu</h2>
+<h3>4.1 Strategie de branches</h3>
+<p>Le projet utilise une strategie progressive :</p>
+<table><thead><tr><th>Branche</th><th>Role</th></tr></thead><tbody><tr><td><code>devlop</code></td><td>Developpement courant</td></tr><tr><td><code>preprod</code></td><td>Validation avant production</td></tr><tr><td><code>main</code></td><td>Production</td></tr></tbody></table>
+<p>Le flux de livraison est :</p>
+<p><code>devlop</code> -&gt; <code>preprod</code> -&gt; <code>main</code></p>
+<p>La branche <code>main</code> represente la version stable deployable en production.</p>
+<aside class="proof proof-screen"><div class="proof-label">SCREEN A AJOUTER</div><div class="proof-text">Capture GitHub du reseau de branches ou des Pull Requests <code>devlop -&gt; preprod</code> et <code>preprod -&gt; main</code>.</div></aside>
+<h3>4.2 CD preproduction</h3>
+<p>Le workflow <code>.github/workflows/ci-cd.yml</code> deploie la preproduction apres succes de la CI sur <code>preprod</code>.</p>
+<p>La preproduction permet de verifier l&#039;application dans un environnement proche de la production avant de merger vers <code>main</code>.</p>
+<aside class="proof proof-screen"><div class="proof-label">SCREEN A AJOUTER</div><div class="proof-text">Capture d&#039;une execution verte du workflow de preproduction.</div></aside>
+<h3>4.3 CD production</h3>
+<p>Le workflow <code>.github/workflows/cd.yml</code> deploie la production uniquement apres succes de la CI sur <code>main</code>.</p>
+<p>Le pipeline production suit maintenant une chaine graphique :</p>
+<p>1. <code>Prepare production deployment</code> 2. <code>Build signed mobile APK</code> 3. <code>Deploy web and backend to VPS</code> 4. <code>Publish APK to VPS</code></p>
+<p>La CD production :</p>
+<ul><li>attend que la CI soit terminee et reussie ;</li><li>build un APK Android release signe ;</li><li>deploie le backend et le web sur le VPS ;</li><li>execute Docker Compose en production ;</li><li>publie l&#039;APK sur le VPS dans <code>/home/lukas/mobile-artifacts/anonym</code> ;</li><li>conserve les 10 derniers APK ;</li><li>evite d&#039;ajouter l&#039;APK dans le repository GitHub.</li></ul>
+<aside class="proof proof-screen"><div class="proof-label">SCREEN A AJOUTER</div><div class="proof-text">Capture du graphe GitHub Actions de la CD production.</div></aside>
+<aside class="proof proof-screen"><div class="proof-label">SCREEN A AJOUTER</div><div class="proof-text">Capture du dossier VPS contenant les APK generes.</div></aside>
+<aside class="proof proof-screen"><div class="proof-label">SCREEN A AJOUTER</div><div class="proof-text">Capture des conteneurs Docker apres deploiement.</div></aside>
+<h3>4.4 Gestion des erreurs de deploiement</h3>
+<p>Le deploiement production verifie l&#039;etat du repository sur le VPS. Si le serveur contient des changements locaux non sauvegardes, la CD s&#039;arrete pour eviter d&#039;ecraser des fichiers.</p>
+<p>Si la branche <code>main</code> locale du serveur a diverge de <code>origin/main</code>, le workflow cree une branche de sauvegarde avant de realigner le serveur sur la version distante.</p>
+<p>Cela permet de garder une production stable tout en conservant une trace des commits locaux presents sur le serveur.</p>
+<div class="section-divider"></div>
+<h2>5. Architecture logicielle et prototype</h2>
+<h3>5.1 Architecture generale</h3>
+<p>L&#039;architecture d&#039;Anonym est separee en plusieurs couches :</p>
+<ul><li>presentation : React et Flutter ;</li><li>orchestration client : contexts React, providers Flutter ;</li><li>services clients : appels API, Socket.IO, repositories ;</li><li>API backend : routes, middlewares, controleurs ;</li><li>domaine et persistance : modeles Sequelize, migrations, MySQL ;</li><li>infrastructure : Docker, Nginx, Certbot, VPS.</li></ul>
+<aside class="proof proof-uml"><div class="proof-label">UML / SCHEMA A AJOUTER</div><div class="proof-text">Schema d&#039;architecture globale C4 ou equivalent : Utilisateur -&gt; React/Flutter -&gt; Nginx -&gt; API Express/Socket.IO -&gt; MySQL/uploads -&gt; services externes.</div></aside>
+<aside class="proof proof-uml"><div class="proof-label">UML A AJOUTER</div><div class="proof-text">Diagramme de sequence d&#039;authentification securisee.</div></aside>
+<aside class="proof proof-uml"><div class="proof-label">UML A AJOUTER</div><div class="proof-text">Diagramme de sequence d&#039;envoi d&#039;un message temps reel.</div></aside>
+<aside class="proof proof-uml"><div class="proof-label">UML A AJOUTER</div><div class="proof-text">Diagramme de classes ou MCD simplifie : User, Channel, UserChannel, PrivateMessage, Friend, Shop, Inventory, Invoice.</div></aside>
+<h3>5.2 Prototype web et mobile</h3>
+<p>Le prototype est fonctionnel sur web et mobile. Il couvre les principales fonctionnalites :</p>
+<ul><li>inscription et connexion ;</li><li>gestion du profil ;</li><li>messagerie temps reel ;</li><li>envoi de messages texte et images ;</li><li>navigation principale ;</li><li>gestion des amis ;</li><li>carte Mapbox en mode nuit ;</li><li>boutique ;</li><li>administration web pour les utilisateurs et la boutique ;</li><li>monitoring technique du backend.</li></ul>
+<aside class="proof proof-screen"><div class="proof-label">SCREEN A AJOUTER</div><div class="proof-text">Capture du dashboard ou de l&#039;accueil web.</div></aside>
+<aside class="proof proof-screen"><div class="proof-label">SCREEN A AJOUTER</div><div class="proof-text">Capture de la navigation mobile.</div></aside>
+<aside class="proof proof-screen"><div class="proof-label">SCREEN A AJOUTER</div><div class="proof-text">Capture de la map mobile en mode nuit.</div></aside>
+<aside class="proof proof-screen"><div class="proof-label">SCREEN A AJOUTER</div><div class="proof-text">Capture de la boutique.</div></aside>
+<aside class="proof proof-screen"><div class="proof-label">SCREEN A AJOUTER</div><div class="proof-text">Capture de l&#039;administration web.</div></aside>
+<div class="section-divider"></div>
+<h2>6. Tests unitaires, fonctionnels, securite et performance</h2>
+<h3>6.1 Tests unitaires</h3>
+<p>Le projet contient des tests automatises sur plusieurs parties :</p>
+<ul><li>tests backend avec Jest et Supertest ;</li><li>tests frontend web ;</li><li>tests Flutter ;</li><li>tests d&#039;accessibilite mobile via widgets Flutter ;</li><li>tests d&#039;observabilite backend pour <code>/health</code>, <code>/status</code>, <code>/api/health</code> et <code>/metrics</code>.</li></ul>
+<p>Les tests sont executes automatiquement dans la CI.</p>
+<aside class="proof proof-screen"><div class="proof-label">SCREEN A AJOUTER</div><div class="proof-text">Capture du job CI backend montrant les tests en succes.</div></aside>
+<aside class="proof proof-screen"><div class="proof-label">SCREEN A AJOUTER</div><div class="proof-text">Capture du job CI Flutter montrant <code>flutter test</code> en succes.</div></aside>
+<h3>6.2 Tests de performance backend</h3>
+<p>Le backend expose des routes de disponibilite et de metriques :</p>
+<ul><li><code>/health</code></li><li><code>/status</code></li><li><code>/api/health</code></li><li><code>/metrics</code></li></ul>
+<p>Un test de performance Artillery est configure dans :</p>
+<p><code>anonym-back-end/app/tests/performance/health.yml</code></p>
+<p>Il verifie :</p>
+<ul><li>le taux d&#039;erreur maximal ;</li><li>le temps de reponse p95 ;</li><li>le temps de reponse maximal ;</li><li>la disponibilite des endpoints de healthcheck ;</li><li>la disponibilite des metriques Prometheus.</li></ul>
+<aside class="proof proof-screen"><div class="proof-label">SCREEN A AJOUTER</div><div class="proof-text">Capture du job <code>Backend performance validation</code> dans GitHub Actions.</div></aside>
+<aside class="proof proof-screen"><div class="proof-label">SCREEN A AJOUTER</div><div class="proof-text">Capture de la sortie Artillery avec les temps de reponse.</div></aside>
+<h3>6.3 Observabilite</h3>
+<p>Le backend utilise :</p>
+<ul><li><code>pino-http</code> pour les logs structures ;</li><li><code>prom-client</code> pour les metriques Prometheus ;</li><li>des endpoints de sante pour le monitoring ;</li><li>Site24x7 et OVH pour la supervision externe.</li></ul>
+<p>Les metriques techniques permettent d&#039;observer la disponibilite, les temps de reponse et le comportement du serveur.</p>
+<aside class="proof proof-screen"><div class="proof-label">SCREEN A AJOUTER</div><div class="proof-text">Capture de <code>/health</code> dans le navigateur ou via curl.</div></aside>
+<aside class="proof proof-screen"><div class="proof-label">SCREEN A AJOUTER</div><div class="proof-text">Capture de <code>/metrics</code> montrant les metriques Prometheus.</div></aside>
+<aside class="proof proof-screen"><div class="proof-label">SCREEN A AJOUTER</div><div class="proof-text">Capture Site24x7 ou OVH montrant la surveillance du serveur.</div></aside>
+<div class="section-divider"></div>
+<h2>7. Securite et OWASP</h2>
+<h3>7.1 Mesures de securite mises en place</h3>
+<p>Le projet integre plusieurs mesures de securite :</p>
+<ul><li>authentification par JWT ;</li><li>refresh token ;</li><li>cookies <code>httpOnly</code> ;</li><li>protection CSRF ;</li><li>CORS configure par environnement ;</li><li>Helmet et Content Security Policy ;</li><li>rate limiting et ralentissement des requetes sensibles ;</li><li>controle des roles administrateurs ;</li><li>autorisation par ressource ;</li><li>verification des droits sur les messages, channels, amis, boutique et administration ;</li><li>durcissement des uploads ;</li><li>logs sans donnees sensibles ;</li><li>erreurs de production moins bavardes ;</li><li>secrets stockes dans GitHub Secrets et variables d&#039;environnement ;</li><li>audit des dependances avec Snyk et <code>npm audit</code> ;</li><li>rotation des tokens prevue dans la politique d&#039;exploitation ;</li><li>HTTPS via Nginx et Certbot.</li></ul>
+<aside class="proof proof-screen"><div class="proof-label">SCREEN A AJOUTER</div><div class="proof-text">Capture des GitHub Secrets, sans afficher les valeurs.</div></aside>
+<aside class="proof proof-screen"><div class="proof-label">SCREEN A AJOUTER</div><div class="proof-text">Capture d&#039;un audit Snyk ou npm audit en succes.</div></aside>
+<aside class="proof proof-screen"><div class="proof-label">SCREEN A AJOUTER</div><div class="proof-text">Capture du certificat HTTPS sur le site en production.</div></aside>
+<h3>7.2 Couverture OWASP Top 10</h3>
+<table><thead><tr><th>Risque OWASP</th><th>Reponse projet</th></tr></thead><tbody><tr><td>A01 Broken Access Control</td><td>Middlewares auth/admin, verification des permissions par ressource</td></tr><tr><td>A02 Cryptographic Failures</td><td>HTTPS, cookies <code>httpOnly</code>, secrets hors code source</td></tr><tr><td>A03 Injection</td><td>ORM Sequelize, validation des entrees, sanitization</td></tr><tr><td>A04 Insecure Design</td><td>Architecture en couches, separation admin/utilisateur, controles metier</td></tr><tr><td>A05 Security Misconfiguration</td><td>Helmet, CORS, variables par environnement, Docker/Nginx</td></tr><tr><td>A06 Vulnerable Components</td><td>Snyk, npm audit, CI de securite</td></tr><tr><td>A07 Identification and Authentication Failures</td><td>JWT, refresh token, mots de passe hashes</td></tr><tr><td>A08 Software and Data Integrity Failures</td><td>Git, CI/CD controlee, APK signe, dependances auditees</td></tr><tr><td>A09 Security Logging and Monitoring Failures</td><td>Logs structures, healthchecks, metriques Prometheus, Site24x7</td></tr><tr><td>A10 Server-Side Request Forgery</td><td>Limitation des integrations externes, controle des URLs et services utilises</td></tr></tbody></table>
+<aside class="proof proof-tableau"><div class="proof-label">TABLEAU A AJOUTER DANS CANVA</div><div class="proof-text">Reprendre ce tableau OWASP en 2 colonnes avec une couleur par niveau de couverture.</div></aside>
+<div class="section-divider"></div>
+<h2>8. Accessibilite web et mobile</h2>
+<h3>8.1 Referentiel choisi</h3>
+<p>Le referentiel retenu est le RGAA, car il est adapte au contexte francais et permet d&#039;evaluer l&#039;accessibilite des interfaces numeriques. Pour le mobile Flutter, les principes sont appliques via les recommandations d&#039;accessibilite Flutter : labels semantiques, navigation lisible, zones tactiles explicites, compatibilite lecteurs d&#039;ecran et informations non uniquement visuelles.</p>
+<h3>8.2 Actions mises en place</h3>
+<p>Sur mobile, des labels accessibles et des <code>Semantics</code> ont ete ajoutes sur les ecrans importants :</p>
+<ul><li>connexion ;</li><li>inscription ;</li><li>navigation principale ;</li><li>messages ;</li><li>profil.</li></ul>
+<p>Les tests widgets prouvent la presence des labels accessibles :</p>
+<p><code>anonym_front_flutter/test/screens/accessibility_semantics_test.dart</code></p>
+<p>Les elements verifies incluent :</p>
+<ul><li>champs <code>E-mail ou pseudo</code> ;</li><li>champ <code>Mot de passe</code> ;</li><li>action <code>Connexion</code> ;</li><li>action d&#039;affichage du mot de passe ;</li><li>consentement aux conditions generales ;</li><li>navigation <code>Accueil</code>, <code>Messages</code>, <code>Recherche</code>, <code>Profil</code>, <code>Creer</code> ;</li><li>actions de messagerie <code>Ajouter une image</code>, <code>Message</code>, <code>Envoyer le message</code>.</li></ul>
+<aside class="proof proof-screen"><div class="proof-label">SCREEN A AJOUTER</div><div class="proof-text">Capture du test Flutter accessibilite en succes.</div></aside>
+<aside class="proof proof-screen"><div class="proof-label">SCREEN A AJOUTER</div><div class="proof-text">Capture de l&#039;ecran login mobile.</div></aside>
+<aside class="proof proof-screen"><div class="proof-label">SCREEN A AJOUTER</div><div class="proof-text">Capture de l&#039;ecran inscription mobile.</div></aside>
+<aside class="proof proof-screen"><div class="proof-label">SCREEN A AJOUTER</div><div class="proof-text">Capture de la navigation mobile.</div></aside>
+<aside class="proof proof-screen"><div class="proof-label">SCREEN A AJOUTER</div><div class="proof-text">Capture de la messagerie mobile.</div></aside>
+<aside class="proof proof-screen"><div class="proof-label">SCREEN A AJOUTER</div><div class="proof-text">Capture du profil mobile.</div></aside>
+<h3>8.3 Benefices pour les utilisateurs</h3>
+<p>Ces actions facilitent l&#039;utilisation de l&#039;application pour :</p>
+<ul><li>les personnes utilisant un lecteur d&#039;ecran ;</li><li>les personnes ayant des difficultes visuelles ;</li><li>les personnes ayant besoin de libelles clairs pour comprendre les actions ;</li><li>les utilisateurs ayant des difficultes motrices, grace a des actions identifiables ;</li><li>les utilisateurs ayant besoin d&#039;une navigation simple et coherente.</li></ul>
+<div class="section-divider"></div>
+<h2>9. Versioning, recette et correction des anomalies</h2>
+<h3>9.1 Gestion de versions</h3>
+<p>Le projet utilise Git et GitHub pour tracer les evolutions. Les changements sont organises par branches, Pull Requests et workflows CI/CD.</p>
+<p>Un tag de version permet d&#039;identifier la version presentee pour le bloc 2 :</p>
+<p><code>v1.0.0-bloc2</code></p>
+<aside class="proof proof-screen"><div class="proof-label">SCREEN A AJOUTER</div><div class="proof-text">Capture de l&#039;historique Git ou du tag <code>v1.0.0-bloc2</code>.</div></aside>
+<aside class="proof proof-screen"><div class="proof-label">SCREEN A AJOUTER</div><div class="proof-text">Capture des Pull Requests mergees vers <code>preprod</code> et <code>main</code>.</div></aside>
+<h3>9.2 Cahier de recette</h3>
+<table><thead><tr><th>Scenario</th><th>Resultat attendu</th><th>Preuve</th></tr></thead><tbody><tr><td>Inscription utilisateur</td><td>Le compte est cree et l&#039;utilisateur peut confirmer son inscription</td><td>Screenshot inscription</td></tr><tr><td>Connexion utilisateur</td><td>L&#039;utilisateur accede a son espace</td><td>Screenshot login reussi</td></tr><tr><td>Modification profil</td><td>Les informations de profil sont mises a jour</td><td>Screenshot profil</td></tr><tr><td>Ajout ami</td><td>La demande est envoyee et visible</td><td>Screenshot amis</td></tr><tr><td>Messagerie texte</td><td>Le message apparait en temps reel</td><td>Screenshot chat</td></tr><tr><td>Messagerie image</td><td>L&#039;image apparait en temps reel chez les autres utilisateurs</td><td>Screenshot chat image</td></tr><tr><td>Modification/suppression message</td><td>Le changement est synchronise en temps reel</td><td>Screenshot avant/apres</td></tr><tr><td>Map mobile</td><td>La carte reste en mode nuit</td><td>Screenshot map</td></tr><tr><td>Boutique</td><td>Les articles sont visibles et achetables</td><td>Screenshot boutique</td></tr><tr><td>Administration</td><td>Les fonctions admin restent reservees aux admins</td><td>Screenshot acces admin</td></tr><tr><td>Healthcheck backend</td><td><code>/health</code> renvoie un statut OK</td><td>Screenshot <code>/health</code></td></tr><tr><td>Metriques backend</td><td><code>/metrics</code> renvoie des metriques Prometheus</td><td>Screenshot <code>/metrics</code></td></tr><tr><td>CI</td><td>Tous les jobs passent</td><td>Screenshot CI verte</td></tr><tr><td>CD</td><td>Le deploiement prod passe apres la CI</td><td>Screenshot CD verte</td></tr></tbody></table>
+<h3>9.3 Plan de correction des bogues</h3>
+<table><thead><tr><th>Anomalie detectee</th><th>Cause probable</th><th>Correction appliquee</th><th>Statut</th></tr></thead><tbody><tr><td>Acces interdit sur certaines fonctions mobile non admin</td><td>Controle de role trop large ou mauvaise route appelee</td><td>Verification des permissions backend/mobile et separation admin/utilisateur</td><td>Corrige</td></tr><tr><td>Image de chat non visible en temps reel pour les autres utilisateurs</td><td>Evenement Socket.IO incomplet pour les messages avec image</td><td>Synchronisation temps reel des messages texte + image</td><td>Corrige</td></tr><tr><td>Map parfois en mode clair</td><td>Style Mapbox non verrouille</td><td>Mode nuit force sur la carte</td><td>Corrige</td></tr><tr><td>Photo de profil non synchronisee</td><td>Rafraichissement profil non diffuse</td><td>Mise a jour temps reel de l&#039;avatar</td><td>Corrige</td></tr><tr><td>Modification/suppression message non synchronisee</td><td>Evenements temps reel manquants</td><td>Ajout de la synchronisation des editions/suppressions</td><td>Corrige</td></tr><tr><td>CD production lancee en meme temps que la CI</td><td>Trigger trop direct sur merge PR</td><td>Passage a <code>workflow_run</code> apres CI reussie</td><td>Corrige</td></tr><tr><td>Repository serveur diverge</td><td>Commits locaux sur le VPS</td><td>Backup branch puis realignement controle sur <code>origin/main</code></td><td>Corrige</td></tr></tbody></table>
+<aside class="proof proof-screen"><div class="proof-label">SCREEN A AJOUTER</div><div class="proof-text">Capture d&#039;une issue, d&#039;un commit ou d&#039;une PR montrant une correction.</div></aside>
+<div class="section-divider"></div>
+<h2>10. Documentation technique d&#039;exploitation</h2>
+<h3>10.1 Manuel de deploiement</h3>
+<p>Le deploiement repose sur Docker Compose, Nginx, Certbot et GitHub Actions.</p>
+<p>Commandes utiles :</p>
+<pre><code>docker-compose -f docker-compose.prod.yml --env-file .env.production up -d --build --remove-orphans</code></pre>
+<p>La CD production execute automatiquement cette commande apres validation CI.</p>
+<aside class="proof proof-screen"><div class="proof-label">SCREEN A AJOUTER</div><div class="proof-text">Capture du fichier <code>.github/workflows/cd.yml</code>.</div></aside>
+<h3>10.2 Manuel d&#039;utilisation</h3>
+<p>L&#039;utilisateur peut :</p>
+<ul><li>creer un compte ;</li><li>se connecter ;</li><li>modifier son profil ;</li><li>ajouter des amis ;</li><li>discuter en temps reel ;</li><li>envoyer des images ;</li><li>utiliser la carte ;</li><li>consulter la boutique ;</li><li>acheter des elements ;</li><li>consulter ses factures ou son inventaire.</li></ul>
+<p>L&#039;administrateur peut :</p>
+<ul><li>gerer les utilisateurs ;</li><li>gerer la boutique ;</li><li>acceder aux fonctions d&#039;administration ;</li><li>superviser les contenus selon les droits prevus.</li></ul>
+<aside class="proof proof-screen"><div class="proof-label">SCREEN A AJOUTER</div><div class="proof-text">Parcours utilisateur complet en 4 captures : login -&gt; navigation -&gt; message -&gt; profil.</div></aside>
+<h3>10.3 Manuel de mise a jour</h3>
+<p>Procedure de mise a jour :</p>
+<p>1. Developper sur <code>devlop</code>. 2. Ouvrir une Pull Request vers <code>preprod</code>. 3. Attendre le succes de la CI. 4. Valider le deploiement preproduction. 5. Ouvrir une Pull Request <code>preprod</code> vers <code>main</code>. 6. Attendre le succes de la CI sur <code>main</code>. 7. Laisser la CD production deployer le VPS. 8. Verifier la production, les healthchecks et les logs.</p>
+<aside class="proof proof-schema"><div class="proof-label">SCHEMA A AJOUTER</div><div class="proof-text">Schema de workflow Git : <code>devlop -&gt; preprod -&gt; main -&gt; VPS</code>.</div></aside>
+<h3>10.4 Exploitation et stockage VPS</h3>
+<p>Une documentation d&#039;exploitation stockage existe dans :</p>
+<p><code>docs/exploitation-stockage-vps.md</code></p>
+<p>Elle decrit :</p>
+<ul><li>le diagnostic disque ;</li><li>le nettoyage controle des backups ;</li><li>la retention recommandee ;</li><li>l&#039;objectif de garder le disque sous 90 % ;</li><li>la prevention des erreurs Remote SSH liees au manque d&#039;espace.</li></ul>
+<aside class="proof proof-screen"><div class="proof-label">SCREEN A AJOUTER</div><div class="proof-text">Capture de <code>df -h</code> sur le VPS.</div></aside>
+<aside class="proof proof-screen"><div class="proof-label">SCREEN A AJOUTER</div><div class="proof-text">Capture du dossier de backups apres nettoyage.</div></aside>
+<div class="section-divider"></div>
+<h2>11. Synthese de validation des competences du bloc 2</h2>
+<table><thead><tr><th>Competence</th><th>Reponse du projet</th><th>Preuves a fournir</th></tr></thead><tbody><tr><td>C2.1.1 Environnements de deploiement et test</td><td>Environnements local, CI, preprod, prod, monitoring, performance</td><td>Screens CI/CD, Docker, Site24x7, <code>/health</code></td></tr><tr><td>C2.1.2 Integration continue</td><td>GitHub Actions avec jobs securite, tests, build, Flutter, performance</td><td>Graphe CI, execution verte</td></tr><tr><td>C2.2.1 Prototype logiciel</td><td>Web React, mobile Flutter, backend Express, Socket.IO, MySQL</td><td>Screens web/mobile, UML architecture</td></tr><tr><td>C2.2.2 Tests unitaires</td><td>Jest, Supertest, tests frontend, tests Flutter, tests accessibilite</td><td>Screens tests CI</td></tr><tr><td>C2.2.3 Securite et accessibilite</td><td>OWASP, CSRF, JWT, Helmet, Snyk, Semantics Flutter, RGAA</td><td>Tableau OWASP, tests accessibilite</td></tr><tr><td>C2.2.4 Deploiement progressif</td><td>Branches <code>devlop</code>, <code>preprod</code>, <code>main</code>, CD preprod/prod, versioning</td><td>Screens branches, PR, CD</td></tr><tr><td>C2.3.1 Cahier de recette</td><td>Scenarios fonctionnels, techniques, securite et performance</td><td>Tableau recette + captures</td></tr><tr><td>C2.3.2 Correction des bogues</td><td>Anomalies identifiees, qualifiees et corrigees</td><td>Tableau anomalies + commits/PR</td></tr><tr><td>C2.4.1 Documentation exploitation</td><td>README, docs architecture, exploitation VPS, CI/CD, deploiement</td><td>Captures documentation</td></tr></tbody></table>
+<div class="section-divider"></div>
+<h2>Conclusion</h2>
+<p>Le projet Anonym repond aux attendus du bloc 2 grace a une application fonctionnelle web et mobile, une architecture maintenable, une integration continue complete, un deploiement progressif vers preproduction puis production, des tests automatises, des controles de securite, des mesures d&#039;accessibilite mobile et une documentation d&#039;exploitation.</p>
+<p>Les preuves a fournir dans le PDF sont principalement des captures GitHub Actions, des captures applicatives, des diagrammes UML/C4, des endpoints de monitoring et des traces de versioning Git. Ces elements permettront de demontrer que le projet est stable, securise, testable, deployable et exploitable.</p>
+  </main>
+</body>
+</html>

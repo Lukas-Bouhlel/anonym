@@ -75,11 +75,15 @@ jobs:
         run: |
           set -euo pipefail
           API_BASE_URL="${MOBILE_API_BASE_URL:-https://www.ano-nym.fr}"
+          API_HOST="$(python3 -c 'import sys, urllib.parse; print(urllib.parse.urlparse(sys.argv[1]).hostname or "")' "$API_BASE_URL")"
+          TLS_PINNED_CERT_SHA256="$(echo | openssl s_client -connect "$API_HOST:443" -servername "$API_HOST" 2>/dev/null | openssl x509 -noout -fingerprint -sha256 | sed 's/^.*=//' | tr -d ':' | tr '[:upper:]' '[:lower:]')"
+          test -n "$TLS_PINNED_CERT_SHA256"
           flutter pub get
           flutter build apk --release \
             --dart-define=APP_ENV=prod \
             --dart-define=API_BASE_URL="$API_BASE_URL" \
-            --dart-define=MAPBOX_ACCESS_TOKEN="$MAPBOX_ACCESS_TOKEN"
+            --dart-define=MAPBOX_ACCESS_TOKEN="$MAPBOX_ACCESS_TOKEN" \
+            --dart-define=TLS_PINNED_CERT_SHA256="$TLS_PINNED_CERT_SHA256"
           mkdir -p ../mobile-release
           SHORT_SHA="$(git rev-parse --short HEAD)"
           RELEASE_DATE="$(date -u +%Y%m%d%H%M%S)"
