@@ -6,7 +6,8 @@
   "scripts": {
     "build": "build",
     "test": "jest --runInBand",
-    "start": "nodemon --legacy-watch index.js",
+    "start": "node index.js",
+    "dev": "node --watch index.js",
     "start:ci": "node index.js",
     "lint": "eslint .",
     "generate-doc": "jsdoc -c jsdoc.json",
@@ -38,7 +39,6 @@
     "multer": "^2.1.1",
     "mysql2": "^3.9.7",
     "nodemailer": "^9.0.1",
-    "nodemon": "^3.1.4",
     "path": "^0.12.7",
     "pdfkit": "^0.15.0",
     "pino-http": "^11.0.0",
