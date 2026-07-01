@@ -4,7 +4,7 @@ WORKDIR /app
 
 COPY package*.json ./
 
-RUN npm install -g nodemon sequelize-cli
+RUN npm install -g sequelize-cli
 RUN npm ci --omit=dev --legacy-peer-deps
 
 COPY . .
