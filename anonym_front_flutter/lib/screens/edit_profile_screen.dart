@@ -13,7 +13,6 @@ import '../theme.dart';
 import '../widgets/app_remote_image.dart';
 import '../widgets/navigation/anonym_back_button.dart';
 
-
 part '../widgets/edit_profile_screen_widgets.dart';
 
 /// Écran de modification du profil utilisateur.
@@ -209,8 +208,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     try {
       final picked = await ImagePicker().pickImage(
         source: source,
-        imageQuality: 88,
-        maxWidth: 1600,
+        imageQuality: source == ImageSource.camera ? 88 : null,
+        maxWidth: source == ImageSource.camera ? 1600 : null,
       );
       if (!mounted || picked == null) return;
       if (kIsWeb) {

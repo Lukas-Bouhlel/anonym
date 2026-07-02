@@ -18,6 +18,7 @@ class AuthProvider extends ChangeNotifier {
   final AuthRepository _repository;
 
   UserModel? _user;
+  UserModel? _pendingRegisteredUser;
   bool _isBootstrapping = true;
   bool _isBusy = false;
   String? _errorMessage;
@@ -176,12 +177,22 @@ class AuthProvider extends ChangeNotifier {
   Future<bool> confirmRegister({
     required String email,
     required String code,
+    bool activateSession = true,
   }) async {
     _setBusy(true);
     _authMutationVersion++;
     _errorMessage = null;
     try {
-      _user = await _repository.confirmRegister(email: email, code: code);
+      final registeredUser = await _repository.confirmRegister(
+        email: email,
+        code: code,
+      );
+      if (activateSession) {
+        _user = registeredUser;
+        _pendingRegisteredUser = null;
+      } else {
+        _pendingRegisteredUser = registeredUser;
+      }
       return true;
     } catch (e) {
       _errorMessage = ApiErrorParser.parse(
@@ -192,6 +203,15 @@ class AuthProvider extends ChangeNotifier {
     } finally {
       _setBusy(false);
     }
+  }
+
+  void activatePendingRegistration() {
+    final registeredUser = _pendingRegisteredUser;
+    if (registeredUser == null) return;
+    _authMutationVersion++;
+    _user = registeredUser;
+    _pendingRegisteredUser = null;
+    notifyListeners();
   }
 
   Future<bool> requestPasswordReset({required String email}) async {

@@ -37,6 +37,18 @@ void main() {
       },
     );
 
+    test('hasStoredAuthSession accepts refresh-only session', () async {
+      final jar = CookieJar();
+      final uri = Uri.parse(AppConfig.apiBaseUrl);
+      await jar.saveFromResponse(uri, <Cookie>[
+        Cookie('refreshToken', 'refresh-value'),
+      ]);
+
+      final client = ApiClient(cookieJar: jar);
+
+      expect(await client.hasStoredAuthSession(), isTrue);
+    });
+
     test(
       'buildSocketAuthToken reads token cookie and returns null when missing',
       () async {

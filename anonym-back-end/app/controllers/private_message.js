@@ -161,7 +161,7 @@ exports.sendMessageWithImage = async (req, res) => {
         // Construire l'URL de l'image si elle existe
         let imageUrl = null;
         if (req.file) {
-            imageUrl = `${req.protocol}://${req.get('host')}/uploads/messages/images/${req.file.filename}`;
+            imageUrl = `/uploads/messages/images/${req.file.filename}`;
         }
 
         let awardedPoints = 1;
@@ -344,7 +344,7 @@ exports.uploadImage = async (req, res) => {
             return res.status(400).json({ message: 'Aucune image fournie.' });
         }
 
-        const imageUrl = `${req.protocol}://${req.get('host')}/uploads/messages/images/${req.file.filename}`;
+        const imageUrl = `/uploads/messages/images/${req.file.filename}`;
         
         res.status(200).json({ imageUrl });
     } catch (error) {

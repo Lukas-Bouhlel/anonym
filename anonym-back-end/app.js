@@ -89,14 +89,20 @@ const getPaymentSuccessWebBaseUrl = () => {
         || getRuntimeEnvVar('ORIGIN');
 };
 
-const getPaymentSuccessMobileBaseUrl = () => getRuntimeEnvVar('PAYMENT_SUCCESS_MOBILE_URL');
+const getPaymentSuccessMobileBaseUrl = () =>
+    getRuntimeEnvVar('PAYMENT_SUCCESS_MOBILE_URL')
+    || getRuntimeEnvVar('MOBILE_DEEP_LINK_BASE_URL')
+    || 'anonym://';
 
 const getPaymentCancelWebBaseUrl = () => {
     return getRuntimeEnvVar('PAYMENT_CANCEL_WEB_URL')
         || getRuntimeEnvVar('ORIGIN');
 };
 
-const getPaymentCancelMobileBaseUrl = () => getRuntimeEnvVar('PAYMENT_CANCEL_MOBILE_URL');
+const getPaymentCancelMobileBaseUrl = () =>
+    getRuntimeEnvVar('PAYMENT_CANCEL_MOBILE_URL')
+    || getRuntimeEnvVar('MOBILE_DEEP_LINK_BASE_URL')
+    || 'anonym://';
 
 const appendDeepLinkPath = (baseUrl, pathSuffix) => {
     if (typeof baseUrl !== 'string') return '';
