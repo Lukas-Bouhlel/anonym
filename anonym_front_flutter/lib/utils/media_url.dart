@@ -30,6 +30,9 @@ abstract final class MediaUrl {
     final parsed = Uri.tryParse(value);
 
     if (parsed != null && parsed.hasScheme) {
+      if (parsed.path.startsWith('/uploads/')) {
+        return _rebase(parsed, apiBase);
+      }
       if (_localHosts.contains(parsed.host.toLowerCase())) {
         return _rebase(parsed, apiBase);
       }

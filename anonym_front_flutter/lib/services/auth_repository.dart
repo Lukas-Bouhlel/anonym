@@ -13,10 +13,7 @@ class AuthRepository {
   final ApiClient _apiClient;
 
   Future<void> hydrateSession() async {
-    final cookieHeaders = await _apiClient.buildSocketAuthHeaders();
-    final hasLocalSessionCookie =
-        cookieHeaders['Cookie'] is String &&
-        (cookieHeaders['Cookie'] as String).trim().isNotEmpty;
+    final hasLocalSessionCookie = await _apiClient.hasStoredAuthSession();
 
     if (!hasLocalSessionCookie) {
       AppLogger.debug(

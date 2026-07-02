@@ -28,7 +28,7 @@ const getPaymentSuccessBaseUrl = (isMobile) => {
     const webBase = getEnvVar('PAYMENT_SUCCESS_WEB_URL') || webDefault;
     if (!isMobile) return webBase;
 
-    return getEnvVar('PAYMENT_SUCCESS_MOBILE_URL') || webBase;
+    return getEnvVar('PAYMENT_SUCCESS_MOBILE_URL') || getEnvVar('MOBILE_DEEP_LINK_BASE_URL') || 'anonym://';
 };
 
 const getPaymentCancelBaseUrl = (isMobile) => {
@@ -36,7 +36,7 @@ const getPaymentCancelBaseUrl = (isMobile) => {
     const webBase = getEnvVar('PAYMENT_CANCEL_WEB_URL') || webDefault;
     if (!isMobile) return webBase;
 
-    return getEnvVar('PAYMENT_CANCEL_MOBILE_URL') || webBase;
+    return getEnvVar('PAYMENT_CANCEL_MOBILE_URL') || getEnvVar('MOBILE_DEEP_LINK_BASE_URL') || 'anonym://';
 };
 
 /**

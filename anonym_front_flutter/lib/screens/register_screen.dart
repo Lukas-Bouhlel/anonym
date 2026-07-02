@@ -189,6 +189,7 @@ class _RegisterScreenState extends State<RegisterScreen>
       final success = await auth.confirmRegister(
         email: _emailCtrl.text.trim(),
         code: _verificationCode,
+        activateSession: false,
       );
       if (!mounted) return;
       if (!success) {
@@ -200,6 +201,7 @@ class _RegisterScreenState extends State<RegisterScreen>
       }
       await _showRegistrationSuccessModal();
       if (!mounted) return;
+      auth.activatePendingRegistration();
       context.go(AppRoutes.app);
     }
   }
