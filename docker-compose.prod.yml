@@ -27,6 +27,8 @@ services:
       context: ./anonym-back-end
       dockerfile: Dockerfile
     container_name: anonym-back-end
+    volumes:
+      - ./anonym-back-end/uploads:/app/uploads
     ports:
       - 5000:5000
     environment:
