@@ -682,13 +682,6 @@ class _ChatDetailViewState extends State<_ChatDetailView> {
                                       fontSize: 15,
                                     ),
                                     decoration: InputDecoration(
-                                      labelText: 'Message',
-                                      floatingLabelBehavior:
-                                          FloatingLabelBehavior.never,
-                                      labelStyle: const TextStyle(
-                                        fontSize: 0,
-                                        height: 0,
-                                      ),
                                       hintText: _hasPendingImage
                                           ? 'Ajouter un message...'
                                           : 'Envoyez un message...',
@@ -712,7 +705,7 @@ class _ChatDetailViewState extends State<_ChatDetailView> {
                                             horizontal: 8,
                                             vertical: 10,
                                           ),
-                                      isCollapsed: true,
+                                      isDense: true,
                                     ),
                                   ),
                                 ),
