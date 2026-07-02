@@ -510,6 +510,20 @@ class _TermsRow extends StatelessWidget {
   const _TermsRow({required this.accepted, required this.onToggle});
   final bool accepted;
   final VoidCallback onToggle;
+  static final Uri _termsUri = Uri.parse(
+    'https://www.ano-nym.fr/terms-conditions',
+  );
+
+  Future<void> _openTerms(BuildContext context) async {
+    final opened = await launchUrl(
+      _termsUri,
+      mode: LaunchMode.externalApplication,
+    );
+    if (opened || !context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Impossible d ouvrir le lien.')),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -559,18 +573,20 @@ class _TermsRow extends StatelessWidget {
                     fontSize: 13,
                     height: 1.4,
                   ),
-                  children: const [
-                    TextSpan(text: "J'accepte les "),
+                  children: [
+                    const TextSpan(text: "J'accepte les "),
                     TextSpan(
                       text: 'conditions générales',
-                      style: TextStyle(
+                      recognizer: TapGestureRecognizer()
+                        ..onTap = () => _openTerms(context),
+                      style: const TextStyle(
                         color: Color(0xFFB1BCFB),
                         fontWeight: FontWeight.w500,
                         decoration: TextDecoration.underline,
                         decorationColor: Color(0xFFB1BCFB),
                       ),
                     ),
-                    TextSpan(text: " d'utilisation"),
+                    const TextSpan(text: " d'utilisation"),
                   ],
                 ),
               ),

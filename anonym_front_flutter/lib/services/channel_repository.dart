@@ -46,8 +46,6 @@ class ChannelRepository {
         if (memberIds != null) 'memberIds': jsonEncode(memberIds),
         if (imagePath != null && imagePath.trim().isNotEmpty) ...{
           'image': await MultipartFile.fromFile(imagePath),
-          // Compat backend: certains environnements attendent explicitement cover_image.
-          'cover_image': await MultipartFile.fromFile(imagePath),
         },
       };
       final response = await _dio.post<Map<String, dynamic>>(
