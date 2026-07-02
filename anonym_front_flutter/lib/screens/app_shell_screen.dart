@@ -13,7 +13,6 @@ import 'friends_screen.dart';
 import 'home_screen.dart';
 import 'profile_screen.dart';
 
-
 part '../widgets/app_shell_screen_widgets.dart';
 
 /// Écran shell principal qui orchestre la navigation interne authentifiée.
@@ -282,7 +281,7 @@ class _AppShellScreenState extends State<AppShellScreen> {
                           acceptedTypeGroups: const [
                             fs.XTypeGroup(
                               label: 'images',
-                              extensions: ['jpg', 'jpeg', 'png', 'webp', 'svg'],
+                              extensions: ['jpg', 'jpeg', 'png', 'webp'],
                             ),
                           ],
                         );
