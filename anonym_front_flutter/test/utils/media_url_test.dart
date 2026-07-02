@@ -46,6 +46,16 @@ void main() {
       expect(normalized, expected);
     });
 
+    test('rebases uploaded media URL even when host is not local', () {
+      final normalized = MediaUrl.normalize(
+        'http://51.75.18.155:5000/uploads/messages/images/pic.jpg',
+      );
+      final expected = Uri.parse(
+        AppConfig.apiBaseUrl,
+      ).replace(path: '/uploads/messages/images/pic.jpg').toString();
+      expect(normalized, expected);
+    });
+
     test('builds absolute URL for relative path', () {
       final normalized = MediaUrl.normalize('uploads/avatar.png');
       final expected = Uri.parse(

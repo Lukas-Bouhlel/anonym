@@ -26,28 +26,34 @@ void main() {
       verify(() => apiClient.setSessionExpiredHandler(any())).called(1);
     });
 
-    test('hydrateSession skips refresh when no session cookie is available', () async {
-      when(
-        () => apiClient.buildSocketAuthHeaders(),
-      ).thenAnswer((_) async => const <String, dynamic>{});
+    test(
+      'hydrateSession skips refresh when no session cookie is available',
+      () async {
+        when(
+          () => apiClient.hasStoredAuthSession(),
+        ).thenAnswer((_) async => false);
 
-      await repository.hydrateSession();
+        await repository.hydrateSession();
 
-      verify(() => apiClient.buildSocketAuthHeaders()).called(1);
-      verifyNever(() => apiClient.refreshSession());
-    });
+        verify(() => apiClient.hasStoredAuthSession()).called(1);
+        verifyNever(() => apiClient.refreshSession());
+      },
+    );
 
-    test('hydrateSession refreshes when a session cookie is available', () async {
-      when(() => apiClient.buildSocketAuthHeaders()).thenAnswer(
-        (_) async => const <String, dynamic>{'Cookie': 'sid=test-cookie'},
-      );
-      when(() => apiClient.refreshSession()).thenAnswer((_) async => true);
+    test(
+      'hydrateSession refreshes when a session cookie is available',
+      () async {
+        when(
+          () => apiClient.hasStoredAuthSession(),
+        ).thenAnswer((_) async => true);
+        when(() => apiClient.refreshSession()).thenAnswer((_) async => true);
 
-      await repository.hydrateSession();
+        await repository.hydrateSession();
 
-      verify(() => apiClient.buildSocketAuthHeaders()).called(1);
-      verify(() => apiClient.refreshSession()).called(1);
-    });
+        verify(() => apiClient.hasStoredAuthSession()).called(1);
+        verify(() => apiClient.refreshSession()).called(1);
+      },
+    );
 
     test('login parses payload.user when present', () async {
       when(
@@ -57,11 +63,7 @@ void main() {
         ),
       ).thenAnswer(
         (_) async => dioResponse<Map<String, dynamic>>({
-          'user': {
-            'id': 10,
-            'username': 'neo',
-            'email': 'neo@test.dev',
-          },
+          'user': {'id': 10, 'username': 'neo', 'email': 'neo@test.dev'},
         }, path: '/api/auth/login'),
       );
 
@@ -70,12 +72,14 @@ void main() {
       expect(result.id, 10);
       expect(result.username, 'neo');
       expect(result.email, 'neo@test.dev');
-      final body = verify(
-        () => dio.post<Map<String, dynamic>>(
-          '/api/auth/login',
-          data: captureAny(named: 'data'),
-        ),
-      ).captured.single as Map<String, dynamic>;
+      final body =
+          verify(
+                () => dio.post<Map<String, dynamic>>(
+                  '/api/auth/login',
+                  data: captureAny(named: 'data'),
+                ),
+              ).captured.single
+              as Map<String, dynamic>;
       expect(body['identifier'], 'neo');
       expect(body['password'], 'pwd');
     });
@@ -86,7 +90,10 @@ void main() {
           '/api/auth/signup',
           data: any(named: 'data'),
         ),
-      ).thenAnswer((_) async => dioResponse<Map<String, dynamic>>({}, path: '/api/auth/signup'));
+      ).thenAnswer(
+        (_) async =>
+            dioResponse<Map<String, dynamic>>({}, path: '/api/auth/signup'),
+      );
       when(
         () => dio.post<Map<String, dynamic>>(
           '/api/auth/login',
@@ -173,12 +180,14 @@ void main() {
       );
 
       expect(result['message'], 'sent');
-      final body = verify(
-        () => dio.post<Map<String, dynamic>>(
-          '/api/auth/register/request-code',
-          data: captureAny(named: 'data'),
-        ),
-      ).captured.single as Map<String, dynamic>;
+      final body =
+          verify(
+                () => dio.post<Map<String, dynamic>>(
+                  '/api/auth/register/request-code',
+                  data: captureAny(named: 'data'),
+                ),
+              ).captured.single
+              as Map<String, dynamic>;
       expect(body['email'], 'neo@test.dev');
       expect(body['username'], 'neo');
       expect(body['password'], 'p');
@@ -192,11 +201,7 @@ void main() {
         ),
       ).thenAnswer(
         (_) async => dioResponse<Map<String, dynamic>>({
-          'user': {
-            'id': 3,
-            'username': 'user3',
-            'email': 'u3@test.dev',
-          },
+          'user': {'id': 3, 'username': 'user3', 'email': 'u3@test.dev'},
         }, path: '/api/auth/register/confirm'),
       );
 
@@ -209,37 +214,45 @@ void main() {
       expect(result.username, 'user3');
     });
 
-    test('requestPasswordReset and completePasswordReset call endpoints', () async {
-      when(
-        () => dio.post<void>(
-          '/api/auth/reset-password',
-          data: any(named: 'data'),
-        ),
-      ).thenAnswer((_) async => dioResponse<void>(null, path: '/api/auth/reset-password'));
-      when(
-        () => dio.post<void>(
-          '/api/auth/reset',
-          data: any(named: 'data'),
-        ),
-      ).thenAnswer((_) async => dioResponse<void>(null, path: '/api/auth/reset'));
+    test(
+      'requestPasswordReset and completePasswordReset call endpoints',
+      () async {
+        when(
+          () => dio.post<void>(
+            '/api/auth/reset-password',
+            data: any(named: 'data'),
+          ),
+        ).thenAnswer(
+          (_) async =>
+              dioResponse<void>(null, path: '/api/auth/reset-password'),
+        );
+        when(
+          () => dio.post<void>('/api/auth/reset', data: any(named: 'data')),
+        ).thenAnswer(
+          (_) async => dioResponse<void>(null, path: '/api/auth/reset'),
+        );
 
-      await repository.requestPasswordReset(email: 'a@test.dev');
-      await repository.completePasswordReset(
-        token: 'token',
-        password: 'new',
-        confirmPassword: 'new',
-      );
+        await repository.requestPasswordReset(email: 'a@test.dev');
+        await repository.completePasswordReset(
+          token: 'token',
+          password: 'new',
+          confirmPassword: 'new',
+        );
 
-      verify(
-        () => dio.post<void>('/api/auth/reset-password', data: any(named: 'data')),
-      ).called(1);
-      verify(() => dio.post<void>('/api/auth/reset', data: any(named: 'data'))).called(1);
-    });
+        verify(
+          () => dio.post<void>(
+            '/api/auth/reset-password',
+            data: any(named: 'data'),
+          ),
+        ).called(1);
+        verify(
+          () => dio.post<void>('/api/auth/reset', data: any(named: 'data')),
+        ).called(1);
+      },
+    );
 
     test('me parses account response', () async {
-      when(
-        () => dio.get<Map<String, dynamic>>('/api/account'),
-      ).thenAnswer(
+      when(() => dio.get<Map<String, dynamic>>('/api/account')).thenAnswer(
         (_) async => dioResponse<Map<String, dynamic>>({
           'id': 55,
           'username': 'me',
@@ -254,9 +267,9 @@ void main() {
     });
 
     test('logout always clears local session', () async {
-      when(() => dio.post<void>('/api/auth/logout')).thenThrow(
-        dioException(path: '/api/auth/logout', statusCode: 500),
-      );
+      when(
+        () => dio.post<void>('/api/auth/logout'),
+      ).thenThrow(dioException(path: '/api/auth/logout', statusCode: 500));
       when(() => apiClient.clearSessionData()).thenAnswer((_) async {});
 
       await expectLater(repository.logout(), throwsA(isA<DioException>()));

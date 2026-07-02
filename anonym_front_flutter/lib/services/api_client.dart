@@ -110,6 +110,14 @@ class ApiClient {
     return const <String, dynamic>{};
   }
 
+  Future<bool> hasStoredAuthSession() async {
+    final uri = Uri.parse(AppConfig.apiBaseUrl);
+    final accessToken = await _readCookieValue(uri, 'token');
+    if (accessToken != null && accessToken.isNotEmpty) return true;
+    final refreshToken = await _readCookieValue(uri, 'refreshToken');
+    return refreshToken != null && refreshToken.isNotEmpty;
+  }
+
   Future<String?> buildSocketAuthToken() async {
     final uri = Uri.parse(AppConfig.apiBaseUrl);
     final cookies = await _cookieJar.loadForRequest(uri);

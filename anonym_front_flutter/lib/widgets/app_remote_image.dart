@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
 import '../theme.dart';
@@ -58,6 +58,10 @@ class AppRemoteImage extends StatelessWidget {
             width: width,
             height: height,
             fit: fit,
+            gaplessPlayback: true,
+            filterQuality: _looksLikeGif(normalized)
+                ? FilterQuality.none
+                : FilterQuality.low,
             errorBuilder: (context, error, stackTrace) {
               // Some backends serve SVG avatars with non-standard extensions.
               return SvgPicture.network(
@@ -80,6 +84,11 @@ class AppRemoteImage extends StatelessWidget {
   bool _looksLikeSvg(String value) {
     final lower = value.toLowerCase();
     return lower.endsWith('.svg') || lower.contains('.svg?');
+  }
+
+  bool _looksLikeGif(String value) {
+    final lower = value.toLowerCase();
+    return lower.endsWith('.gif') || lower.contains('.gif?');
   }
 
   Widget _loading() {

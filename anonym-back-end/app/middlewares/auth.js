@@ -49,7 +49,6 @@ module.exports = (req, res, next) => {
             sameSite: 'Strict',
         };
         res.clearCookie?.(process.env.JWT_ACCESS_COOKIE_NAME || 'token', cookieOptions);
-        res.clearCookie?.(process.env.JWT_REFRESH_COOKIE_NAME || 'refreshToken', cookieOptions);
         res.status(401).json({
             error: 'Unauthorized request!'
         });

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../providers/app_providers.dart';
 import '../providers/auth_providers.dart';
@@ -18,7 +19,6 @@ import 'blocked_users_screen.dart';
 import 'faq_screen.dart';
 import 'feedback_screen.dart';
 import 'notifications_screen.dart';
-
 
 part '../widgets/settings_screen_widgets.dart';
 
@@ -77,6 +77,15 @@ class SettingsScreen extends StatelessWidget {
       ),
     );
     return confirmed == true;
+  }
+
+  Future<void> _openLegalLink(BuildContext context, String url) async {
+    final uri = Uri.parse(url);
+    final opened = await launchUrl(uri, mode: LaunchMode.externalApplication);
+    if (opened || !context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Impossible d ouvrir le lien.')),
+    );
   }
 
   @override
@@ -233,10 +242,29 @@ class SettingsScreen extends StatelessWidget {
               const SizedBox(height: 20),
               Text('JURIDIQUE', style: t.titleMedium),
               const SizedBox(height: 12),
-              const _SectionCard(
+              _SectionCard(
                 items: [
-                  _SettingsItem(label: 'Conditions générales'),
-                  _SettingsItem(label: 'Mentions légales'),
+                  _SettingsItem(
+                    label: 'Conditions générales',
+                    onTap: () => _openLegalLink(
+                      context,
+                      'https://www.ano-nym.fr/terms-conditions',
+                    ),
+                  ),
+                  _SettingsItem(
+                    label: 'Politique de confidentialité',
+                    onTap: () => _openLegalLink(
+                      context,
+                      'https://www.ano-nym.fr/privacy-policy',
+                    ),
+                  ),
+                  _SettingsItem(
+                    label: 'Mentions légales',
+                    onTap: () => _openLegalLink(
+                      context,
+                      'https://www.ano-nym.fr/legal-notices',
+                    ),
+                  ),
                 ],
               ),
               const SizedBox(height: 20),

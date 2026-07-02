@@ -12,6 +12,7 @@ describe('Auth Middleware', () => {
             cookies: {}, // Initialiser les cookies vides
         };
         res = {
+            clearCookie: jest.fn(),
             status: jest.fn().mockReturnThis(), // Moquer la méthode status
             json: jest.fn(), // Moquer la méthode json
         };
@@ -43,6 +44,8 @@ describe('Auth Middleware', () => {
 
         expect(res.status).toHaveBeenCalledWith(401); // Vérifier que le statut 401 a été appelé
         expect(res.json).toHaveBeenCalledWith({ error: 'Unauthorized request!' }); // Vérifier que le message d'erreur a été envoyé
+        expect(res.clearCookie).toHaveBeenCalledWith('token', expect.any(Object));
+        expect(res.clearCookie).not.toHaveBeenCalledWith('refreshToken', expect.any(Object));
         expect(next).not.toHaveBeenCalled(); // Vérifier que next() n'a pas été appelé
     });
 
