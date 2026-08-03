@@ -1,0 +1,83 @@
+version: 2
+
+updates:
+  # Backend Node.js
+  - package-ecosystem: "npm"
+    directory: "/anonym-back-end"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "Europe/Paris"
+    open-pull-requests-limit: 5
+    groups:
+      backend-minor-patch:
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
+
+  # Frontend React
+  - package-ecosystem: "npm"
+    directory: "/anonym-front-end"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:30"
+      timezone: "Europe/Paris"
+    open-pull-requests-limit: 5
+    groups:
+      frontend-minor-patch:
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
+
+  # Flutter / Dart
+  - package-ecosystem: "pub"
+    directory: "/anonym_front_flutter"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "10:00"
+      timezone: "Europe/Paris"
+    open-pull-requests-limit: 5
+    groups:
+      flutter-minor-patch:
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
+
+  # GitHub Actions
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "monthly"
+    groups:
+      github-actions:
+        patterns:
+          - "*"
+
+  # Docker backend
+  - package-ecosystem: "docker"
+    directory: "/anonym-back-end"
+    schedule:
+      interval: "monthly"
+    groups:
+      backend-docker:
+        patterns:
+          - "*"
+
+  # Docker frontend
+  - package-ecosystem: "docker"
+    directory: "/anonym-front-end"
+    schedule:
+      interval: "monthly"
+    groups:
+      frontend-docker:
+        patterns:
+          - "*"

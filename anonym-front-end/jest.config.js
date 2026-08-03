@@ -1,3 +1,20 @@
+const transformImportMetaHot = () => ({
+    visitor: {
+      MemberExpression(path) {
+        const { node } = path;
+        if (
+          node.object?.type === "MetaProperty" &&
+          node.object.meta?.name === "import" &&
+          node.object.property?.name === "meta" &&
+          node.property?.type === "Identifier" &&
+          node.property.name === "hot"
+        ) {
+          path.replaceWith(path.scope.buildUndefinedNode());
+        }
+      },
+    },
+});
+
 export default {
     testEnvironment: "jest-environment-jsdom", // Same name of the lib you installed
     setupFilesAfterEnv: ["<rootDir>/jest.setup.js"], // The file you created to extend jest config and "implement" the jest-dom environment in the jest globals
@@ -8,6 +25,20 @@ export default {
       "^@/(.*)$": "<rootDir>/src/$1", // [optional] Are you using aliases?
     },
     transform: {
-      "^.+\\.[t|j]sx?$": "babel-jest",
+      "^.+\\.[cm]?[tj]sx?$": [
+        "babel-jest",
+        {
+          babelrc: false,
+          configFile: false,
+          presets: [
+            ["@babel/preset-env", { targets: { node: "current" }, modules: "commonjs" }],
+            ["@babel/preset-react", { runtime: "automatic" }],
+          ],
+          plugins: ["babel-plugin-transform-vite-meta-env", transformImportMetaHot],
+        },
+      ],
     },
+    transformIgnorePatterns: [
+      "[/\\\\]node_modules[/\\\\](?!.*(react-router|react-router-dom|cookie-es))",
+    ],
 };
