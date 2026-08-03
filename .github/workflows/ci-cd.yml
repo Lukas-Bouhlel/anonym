@@ -20,7 +20,7 @@ jobs:
     
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v7
 
       - name: Create SSH directory
         run: mkdir -p ~/.ssh
@@ -32,7 +32,7 @@ jobs:
         run : cat ~/.ssh/known_hosts
 
       - name: Set up SSH
-        uses: webfactory/ssh-agent@v0.8.0
+        uses: webfactory/ssh-agent@v0.10.0
         with:
           ssh-private-key: ${{ secrets.LUKAS_KEY_PRIVATE }}
 
