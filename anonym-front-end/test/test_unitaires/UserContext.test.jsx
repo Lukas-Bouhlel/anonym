@@ -1,4 +1,5 @@
 import { render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import axios from 'axios';
 import { ApiProvider } from '../../src/context/ApiContext';
@@ -88,6 +89,7 @@ describe('UserContext', () => {
   });
 
   test('logs out the current user', async () => {
+    const user = userEvent.setup();
     axios.get.mockResolvedValueOnce({ data: { name: 'John Doe' } });
     axios.post.mockResolvedValueOnce({});
 
@@ -97,7 +99,7 @@ describe('UserContext', () => {
       expect(screen.getByTestId('user-info')).toHaveTextContent('Utilisateur: John Doe');
     });
 
-    screen.getByText('Deconnexion').click();
+    await user.click(screen.getByText('Deconnexion'));
 
     await waitFor(() => {
       expect(screen.getByTestId('no-user')).toHaveTextContent("Pas d'utilisateur connecte");
@@ -112,6 +114,7 @@ describe('UserContext', () => {
   });
 
   test('logs in a user from local data', async () => {
+    const user = userEvent.setup();
     axios.get.mockRejectedValueOnce(new Error('Non connecte'));
 
     const queryClient = renderWithProviders();
@@ -120,7 +123,7 @@ describe('UserContext', () => {
       expect(screen.getByTestId('no-user')).toBeInTheDocument();
     });
 
-    screen.getByText('Connexion locale').click();
+    await user.click(screen.getByText('Connexion locale'));
 
     await waitFor(() => {
       expect(screen.getByTestId('user-info')).toHaveTextContent('Utilisateur: Jane Doe');

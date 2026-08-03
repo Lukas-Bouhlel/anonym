@@ -1,0 +1,282 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <title>Dossier de validation - Bloc 4 - Anonym</title>
+  <style>
+    @page {
+      size: A4;
+      margin: 8mm 8mm 8mm 8mm;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      color: #182235;
+      font-family: Arial, Helvetica, sans-serif;
+      font-size: 8.45pt;
+      line-height: 1.22;
+      background: #ffffff;
+    }
+
+    .cover {
+      min-height: 281mm;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      color: #f8fbff;
+      background:
+        linear-gradient(135deg, rgba(18, 28, 45, .97), rgba(15, 118, 110, .88)),
+        linear-gradient(90deg, #172033, #0f766e);
+      padding: 22mm;
+      page-break-after: always;
+    }
+
+    .cover .label {
+      color: #ccfbf1;
+      font-size: 10pt;
+      font-weight: 700;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+
+    .cover h1 {
+      margin: 8mm 0 4mm;
+      color: #ffffff;
+      font-size: 31pt;
+      line-height: 1.05;
+      border: 0;
+      page-break-after: auto;
+    }
+
+    .cover h2 {
+      margin: 0 0 12mm;
+      color: #99f6e4;
+      font-size: 18pt;
+      border: 0;
+    }
+
+    .cover p {
+      max-width: 145mm;
+      color: #ecfeff;
+      font-size: 10.6pt;
+      line-height: 1.35;
+    }
+
+    .meta {
+      display: grid;
+      grid-template-columns: 38mm 1fr;
+      gap: 3mm 6mm;
+      width: 100%;
+      margin-top: 10mm;
+      padding-top: 9mm;
+      border-top: 1pt solid rgba(255,255,255,.32);
+      font-size: 10.2pt;
+    }
+
+    .meta strong {
+      color: #99f6e4;
+    }
+
+    h1 {
+      margin: 0 0 3.4mm;
+      padding: 3.2mm 4mm;
+      color: #111827;
+      font-size: 17.2pt;
+      line-height: 1.12;
+      border-left: 4pt solid #0f766e;
+      background: #e8f5f3;
+      page-break-after: avoid;
+    }
+
+    h2 {
+      margin: 3.7mm 0 2mm;
+      color: #111827;
+      font-size: 12pt;
+      line-height: 1.18;
+      page-break-after: avoid;
+    }
+
+    h3 {
+      margin: 2.8mm 0 1.3mm;
+      color: #0f766e;
+      font-size: 9.7pt;
+      line-height: 1.18;
+      page-break-after: avoid;
+    }
+
+    p {
+      margin: 0 0 1.6mm;
+    }
+
+    ul {
+      margin: .5mm 0 1.8mm 4mm;
+      padding-left: 4mm;
+    }
+
+    li {
+      margin-bottom: .45mm;
+    }
+
+    table {
+      width: 100%;
+      margin: 1.8mm 0 2.4mm;
+      border-collapse: collapse;
+      page-break-inside: avoid;
+      font-size: 7.15pt;
+      background: #ffffff;
+    }
+
+    th {
+      background: #dcefeb;
+      color: #111827;
+      font-weight: 700;
+    }
+
+    th, td {
+      border: .6pt solid #c8d6df;
+      padding: 1.05mm 1.25mm;
+      vertical-align: top;
+    }
+
+    code {
+      padding: .15mm .75mm;
+      border-radius: 1.6mm;
+      background: #eef2f7;
+      color: #0f172a;
+      font-family: Consolas, "Courier New", monospace;
+      font-size: 7.7pt;
+    }
+
+    pre {
+      margin: 1.6mm 0;
+      padding: 2mm;
+      background: #101827;
+      color: #f8fafc;
+      border-radius: 1.7mm;
+      white-space: pre-wrap;
+      font-size: 7.2pt;
+      page-break-inside: avoid;
+    }
+
+    pre code {
+      padding: 0;
+      background: transparent;
+      color: inherit;
+    }
+
+    strong {
+      color: #115e59;
+    }
+
+    .section-divider {
+      height: .9mm;
+      margin: 3.3mm 0 2.5mm;
+      border-radius: 99mm;
+      background: linear-gradient(90deg, #0f766e, #94a3b8, transparent);
+    }
+
+    .content {
+      background: #ffffff;
+    }
+  </style>
+</head>
+<body>
+  <section class="cover">
+    <div class="label">Bloc 4 - Dossier de validation</div>
+    <h1>Anonym</h1>
+    <h2>Maintenir l'application logicielle en condition opérationnelle</h2>
+    <p>Dossier écrit compact, compatible avec un dépôt Canvas : supervision, traitement des anomalies, maintenance, journal de version et collaboration support.</p>
+    <div class="meta">
+      <strong>Candidat</strong><span>Lukas Bouhlel</span>
+      <strong>Version</strong><span>v1.0.0-bloc4</span>
+      <strong>Date</strong><span>7 juillet 2026</span>
+      <strong>Périmètre</strong><span>Backend Express, frontend React, application Flutter, MySQL, Docker, VPS, CI/CD et supervision.</span>
+    </div>
+  </section>
+  <main class="content">
+    <h1>Dossier de validation - Bloc 4</h1>
+<h2>Sommaire</h2>
+<ul><li>Présentation du périmètre maintenu</li><li>Processus de mise à jour des dépendances</li><li>Système de supervision et d&#039;alerte</li><li>Collecte et consignation des anomalies</li><li>Fiche de consignation d&#039;une anomalie</li><li>Traitement d&#039;une anomalie détectée</li><li>Recommandations argumentées d&#039;amélioration</li><li>Journal de version</li><li>Problème résolu avec le support client</li><li>Synthèse de validation du bloc 4</li></ul>
+<div class="section-divider"></div>
+<h2>1. Présentation du périmètre maintenu</h2>
+<p>Anonym est une application sociale web et mobile orientée messagerie temps réel, confidentialité, boutique virtuelle, inventaire, facturation et administration. Le périmètre maintenu couvre le backend Node.js / Express, l&#039;API REST, Socket.IO, la base MySQL gérée par Sequelize, le frontend web React / Vite, l&#039;application mobile Flutter, l&#039;infrastructure Docker Compose sur VPS, Nginx, Certbot, les workflows GitHub Actions et les outils de supervision.</p>
+<p>L&#039;objectif de maintenance est de garantir la disponibilité de l&#039;application, la sécurité des dépendances, la traçabilité des anomalies et la capacité à déployer rapidement un correctif contrôlé.</p>
+<table><thead><tr><th>Élément</th><th>Technologie</th><th>Rôle en maintenance</th></tr></thead><tbody><tr><td>Backend</td><td>Node.js, Express, Socket.IO</td><td>API, temps réel, sécurité, logs, healthchecks</td></tr><tr><td>Données</td><td>MySQL, Sequelize, migrations</td><td>Persistance, évolutions de schéma, sauvegarde</td></tr><tr><td>Web</td><td>React, Vite, Axios, React Query</td><td>Interface publique, support, administration</td></tr><tr><td>Mobile</td><td>Flutter, Dio, Provider, go_router</td><td>Application utilisateur, support, feedback, notifications</td></tr><tr><td>Infra</td><td>Docker Compose, Nginx, Certbot, VPS</td><td>Déploiement, HTTPS, reverse proxy, persistance</td></tr><tr><td>CI/CD</td><td>GitHub Actions</td><td>Tests, audit, build, déploiement préproduction et production</td></tr><tr><td>Supervision</td><td>Healthchecks, Prometheus, pino, Artillery, OVH/Site24x7</td><td>Disponibilité, performance, alertes et diagnostic</td></tr></tbody></table>
+<p>Les preuves projet utilisées dans ce dossier sont notamment <code>app/utils/observability.js</code>, <code>app/tests/test_unitaires/observability.test.js</code>, <code>app/tests/performance/health.yml</code>, <code>.github/workflows/ci.yml</code>, <code>.github/workflows/ci-cd.yml</code>, <code>.github/workflows/cd.yml</code>, <code>docker-compose.prod.yml</code>, <code>docs/exploitation-stockage-vps.md</code> et les commits de correction récents.</p>
+<div class="section-divider"></div>
+<h2>2. Processus de mise à jour des dépendances</h2>
+<h3>2.1 Périmètre logiciel concerné</h3>
+<p>Le processus concerne toutes les dépendances qui peuvent introduire une faille, une régression ou une incompatibilité d&#039;exécution.</p>
+<table><thead><tr><th>Périmètre</th><th>Fichiers suivis</th><th>Outils de contrôle</th><th>Fréquence</th></tr></thead><tbody><tr><td>Backend Node.js</td><td><code>anonym-back-end/package.json</code>, <code>package-lock.json</code></td><td>Snyk, <code>npm audit</code>, Jest, ESLint</td><td>À chaque push/PR, revue mensuelle</td></tr><tr><td>Frontend React</td><td><code>anonym-front-end/package.json</code>, <code>package-lock.json</code></td><td>Snyk, <code>npm audit</code>, Jest, ESLint, Stylelint, build Vite</td><td>À chaque push/PR, revue mensuelle</td></tr><tr><td>Mobile Flutter</td><td><code>anonym_front_flutter/pubspec.yaml</code>, <code>pubspec.lock</code></td><td>SBOM CycloneDX, Snyk SBOM, <code>flutter analyze</code>, <code>flutter test</code></td><td>À chaque CI, revue mensuelle</td></tr><tr><td>Docker et CI</td><td>Dockerfiles, workflows GitHub Actions, images Docker</td><td>GitHub Actions, revue manuelle, déploiement préprod</td><td>Revue mensuelle et avant livraison</td></tr><tr><td>Services externes</td><td>Stripe, Firebase, Mapbox, SMTP</td><td>Tests fonctionnels, secrets GitHub, configuration par environnement</td><td>Revue trimestrielle ou changement fournisseur</td></tr></tbody></table>
+<h3>2.2 Type de mise à jour</h3>
+<p>La surveillance est automatisée, mais l&#039;intégration reste manuelle et sécurisée. Les audits Snyk, <code>npm audit</code>, SBOM Flutter et tests CI signalent les risques automatiquement. La montée de version est ensuite faite dans une branche dédiée, relue, testée puis validée en préproduction avant production. Aucune mise à jour majeure n&#039;est fusionnée automatiquement, car elle peut impacter l&#039;authentification, les cookies, Socket.IO, les paiements ou le build mobile.</p>
+<table><thead><tr><th>Type</th><th>Exemple</th><th>Décision</th></tr></thead><tbody><tr><td>Patch sécurité</td><td>Correctif npm, package Dart, action GitHub vulnérable</td><td>Traitement prioritaire sous 24 à 48 h si criticité élevée</td></tr><tr><td>Mineure compatible</td><td>Bibliothèque sans rupture documentée</td><td>Intégration groupée lors de la revue mensuelle</td></tr><tr><td>Majeure</td><td>Express, Vite, Flutter SDK, Socket.IO, Sequelize</td><td>Analyse d&#039;impact, branche dédiée, tests élargis, validation préprod</td></tr><tr><td>Image Docker</td><td><code>mysql</code>, <code>nginx</code>, <code>certbot</code></td><td>Version à pinner puis mise à jour planifiée</td></tr></tbody></table>
+<h3>2.3 Chaîne de validation</h3>
+<ul><li>Détection par CI, Snyk, <code>npm audit</code>, SBOM Flutter ou veille technique.</li><li>Qualification de l&#039;impact : sécurité, compatibilité, performance, coût de test.</li><li>Création d&#039;une branche <code>fix/dependency-*</code> ou <code>chore/dependency-*</code>.</li><li>Mise à jour des fichiers de verrouillage : <code>package-lock.json</code> ou <code>pubspec.lock</code>.</li><li>Exécution locale ciblée : lint, tests unitaires, tests fonctionnels, build.</li><li>Passage en CI : sécurité, Flutter, backend/frontend, performance Artillery.</li><li>Déploiement en préproduction si le changement touche l&#039;exécution.</li><li>Déploiement production via <code>main</code>, puis contrôle <code>/health</code>, <code>/metrics</code>, logs et support.</li><li>Ajout au journal de version avec correctifs, preuves et validation.</li></ul>
+<p>Ce processus répond à C4.1.1 car il précise la fréquence, le périmètre et le type de mise à jour. Il limite le risque d&#039;obsolescence tout en évitant les mises à jour automatiques non maîtrisées.</p>
+<div class="section-divider"></div>
+<h2>3. Système de supervision et d&#039;alerte</h2>
+<h3>3.1 Périmètre de supervision</h3>
+<p>La supervision couvre les composants qui conditionnent l&#039;accès utilisateur : API backend, endpoints publics, Socket.IO, MySQL, Nginx/HTTPS, stockage des uploads, CI/CD, espace disque VPS, certificats TLS et support utilisateur. Le système est adapté à une application web/mobile avec backend centralisé, car il surveille l&#039;API, les métriques HTTP, les erreurs applicatives et la disponibilité serveur.</p>
+<h3>3.2 Sondes mises en place</h3>
+<table><thead><tr><th>Sonde</th><th>Source</th><th>Indicateurs</th><th>Seuils / réaction</th><th>Finalité</th></tr></thead><tbody><tr><td>Santé backend</td><td><code>/health</code>, <code>/status</code>, <code>/api/health</code></td><td><code>status</code>, service, version, uptime, mémoire, runtime</td><td>HTTP différent de 200 ou <code>status != ok</code> : incident disponibilité</td><td>Confirmer que l&#039;API répond</td></tr><tr><td>Métriques Prometheus</td><td><code>/metrics</code> avec <code>prom-client</code></td><td>Requêtes HTTP, durée, codes statut, métriques Node.js</td><td>P95 &gt; 750 ms, max &gt; 2 s, erreurs &gt; 1 % : analyse perf</td><td>Suivre qualité et performance</td></tr><tr><td>Logs structurés</td><td><code>pino-http</code></td><td><code>requestId</code>, route normalisée, méthode, statut, niveau warn/error</td><td>5xx ou pics 4xx : diagnostic et création d&#039;anomalie</td><td>Identifier la cause technique</td></tr><tr><td>Base de données</td><td>Healthcheck Docker <code>mysqladmin ping</code></td><td>État conteneur MySQL</td><td>5 échecs de ping : conteneur non sain</td><td>Vérifier la persistance</td></tr><tr><td>Test performance CI</td><td>Artillery <code>health.yml</code></td><td>Erreur max, P95, temps max sur health/metrics</td><td><code>maxErrorRate &lt;= 1</code>, P95 &lt;= 750 ms, max &lt;= 2000 ms</td><td>Empêcher une livraison dégradée</td></tr><tr><td>CI/CD</td><td>GitHub Actions</td><td>Jobs sécurité, tests, build, déploiement</td><td>Échec job : blocage merge/déploiement</td><td>Éviter les régressions</td></tr><tr><td>Stockage VPS</td><td><code>df -h</code>, script cleanup</td><td>% disque, backups, cache, Docker</td><td>Alerte à 85 %, critique à 90 %</td><td>Prévenir les pannes de déploiement</td></tr><tr><td>Supervision externe</td><td>OVH / Site24x7</td><td>Disponibilité serveur, uptime HTTP</td><td>Indisponibilité détectée : notification support/tech</td><td>Surveillance hors application</td></tr><tr><td>Certificats</td><td>Certbot renouvellement 12 h</td><td>Échéance TLS, renouvellement</td><td>Échec renouvellement : alerte exploitation</td><td>Maintenir HTTPS</td></tr></tbody></table>
+<h3>3.3 Critères de qualité et performance</h3>
+<p>Les critères retenus sont liés aux usages réels : l&#039;utilisateur doit pouvoir ouvrir l&#039;application, se connecter, échanger des messages, charger des médias et finaliser un paiement. Le backend doit répondre rapidement, conserver ses fichiers, exposer ses métriques et rester observable en cas d&#039;erreur.</p>
+<table><thead><tr><th>Critère</th><th>Objectif projet</th><th>Contrôle</th></tr></thead><tbody><tr><td>Disponibilité API</td><td>API joignable en continu</td><td><code>/health</code>, supervision externe, Docker ps</td></tr><tr><td>Performance API</td><td>P95 inférieur à 750 ms sur endpoints techniques</td><td>Artillery et histogramme Prometheus</td></tr><tr><td>Fiabilité des médias</td><td>Uploads persistants après redéploiement</td><td>Volume Docker <code>./anonym-back-end/uploads:/app/uploads</code></td></tr><tr><td>Sécurité</td><td>Pas de vulnérabilité haute connue en livraison</td><td>Snyk, <code>npm audit</code>, SBOM Flutter</td></tr><tr><td>Traçabilité</td><td>Erreurs reliées à une route et un <code>requestId</code></td><td><code>pino-http</code>, logs sans secrets</td></tr><tr><td>Déploiement</td><td>Déploiement stoppé si dépôt serveur modifié</td><td>Workflows <code>ci-cd.yml</code> et <code>cd.yml</code></td></tr></tbody></table>
+<h3>3.4 Modalité de signalement</h3>
+<p>Les alertes techniques arrivent par GitHub Actions, par la supervision externe ou par les logs serveur. Les anomalies utilisateur arrivent par la page Support web, l&#039;écran Support/Feedback mobile et la route <code>/api/admin/report</code>. Chaque signalement est trié selon quatre niveaux : S1 indisponibilité totale, S2 fonction majeure dégradée, S3 bug contournable, S4 amélioration. Les S1/S2 sont traitées immédiatement, les S3 sont planifiées dans le sprint ou la maintenance mensuelle.</p>
+<p>Ce dispositif répond à C4.1.2 car il définit le périmètre de supervision, les indicateurs, les sondes et les modalités de signalement nécessaires à la disponibilité du logiciel.</p>
+<div class="section-divider"></div>
+<h2>4. Collecte et consignation des anomalies</h2>
+<h3>4.1 Sources de collecte</h3>
+<table><thead><tr><th>Source</th><th>Exemple</th><th>Information récupérée</th></tr></thead><tbody><tr><td>Support web</td><td>Formulaire <code>/support</code>, <code>POST /api/admin/report</code></td><td>Email, type, description, utilisateur connu</td></tr><tr><td>Support mobile</td><td><code>SupportScreen</code>, <code>FeedbackScreen</code>, <code>AdminRepository.report</code></td><td>Email, type de rapport, contenu</td></tr><tr><td>Monitoring</td><td>Site24x7/OVH, <code>/health</code>, <code>/metrics</code></td><td>Date, statut, disponibilité, latence</td></tr><tr><td>Logs backend</td><td><code>pino-http</code></td><td>Route, méthode, statut, <code>requestId</code>, niveau</td></tr><tr><td>CI/CD</td><td>GitHub Actions</td><td>Job échoué, commit, branche, logs de test</td></tr><tr><td>Tests automatisés</td><td>Jest, Flutter, Artillery</td><td>Scénario en échec, seuil dépassé</td></tr><tr><td>Retours internes</td><td>Recette préprod, test manuel</td><td>Étapes de reproduction et capture</td></tr></tbody></table>
+<h3>4.2 Fiche de consignation standard</h3>
+<p>Chaque anomalie est consignée avec les champs suivants afin de permettre la reproduction et le choix du correctif.</p>
+<table><thead><tr><th>Champ</th><th>Contenu attendu</th></tr></thead><tbody><tr><td>Identifiant</td><td>Code unique, date, composant concerné</td></tr><tr><td>Environnement</td><td>Local, CI, préproduction ou production</td></tr><tr><td>Version</td><td>Commit, branche, tag ou version déployée</td></tr><tr><td>Source</td><td>Support, monitoring, logs, CI, test manuel</td></tr><tr><td>Gravité / priorité</td><td>S1 à S4, impact utilisateur, urgence</td></tr><tr><td>Description</td><td>Résumé compréhensible du problème</td></tr><tr><td>Étapes de reproduction</td><td>Parcours précis, données de test, compte ou rôle</td></tr><tr><td>Résultat attendu</td><td>Comportement normal</td></tr><tr><td>Résultat constaté</td><td>Comportement observé</td></tr><tr><td>Preuves</td><td>Logs, capture, endpoint, job CI, commit</td></tr><tr><td>Analyse</td><td>Cause probable ou cause racine</td></tr><tr><td>Préconisation</td><td>Correctif proposé, test attendu, risque</td></tr><tr><td>Traitement</td><td>Branche, commit, PR, déploiement, validation</td></tr><tr><td>Statut</td><td>Nouveau, qualifié, en cours, corrigé, déployé, clôturé</td></tr></tbody></table>
+<h3>4.3 Processus de traitement</h3>
+<ul><li>Réception du signalement et création d&#039;une fiche.</li><li>Qualification : environnement, gravité, composant, utilisateurs touchés.</li><li>Reproduction sur préproduction ou local quand c&#039;est possible.</li><li>Recherche de cause avec logs, métriques, commits récents et configuration.</li><li>Choix du correctif et estimation du risque.</li><li>Implémentation dans une branche dédiée.</li><li>Validation par tests automatisés et scénario de non-régression.</li><li>Déploiement préproduction, puis production si la validation est positive.</li><li>Surveillance renforcée après déploiement.</li><li>Mise à jour du journal de version et clôture du ticket.</li></ul>
+<p>Ce processus répond à C4.2.1 car il structure la collecte, impose les informations permettant de reproduire le bug et relie l&#039;analyse à un correctif.</p>
+<div class="section-divider"></div>
+<h2>5. Fiche de consignation d&#039;une anomalie rencontrée</h2>
+<table><thead><tr><th>Champ</th><th>Valeur</th></tr></thead><tbody><tr><td>Identifiant</td><td>ANO-2026-07-02-001</td></tr><tr><td>Titre</td><td>Images uploadées non persistantes après redéploiement production</td></tr><tr><td>Source</td><td>Retour support utilisateur et vérification technique après déploiement</td></tr><tr><td>Environnement</td><td>Production, backend Docker <code>anonym-back-end</code></td></tr><tr><td>Composants</td><td>Backend Express, stockage <code>uploads</code>, Docker Compose, Nginx statique</td></tr><tr><td>Gravité</td><td>S2 : fonction majeure dégradée, médias utilisateur indisponibles</td></tr><tr><td>Version concernée</td><td>Production avant commit <code>62a03902</code></td></tr><tr><td>Description</td><td>Les images de profil, images de messages ou contenus stockés dans <code>uploads</code> peuvent devenir indisponibles après reconstruction du conteneur backend.</td></tr><tr><td>Étapes de reproduction</td><td>Uploader une image, vérifier son affichage, lancer un redéploiement Docker production, revenir sur le profil/message, constater que le fichier n&#039;est plus servi.</td></tr><tr><td>Résultat attendu</td><td>Les fichiers uploadés restent disponibles après redéploiement.</td></tr><tr><td>Résultat constaté</td><td>Le chemin applicatif existe en base, mais le fichier physique peut ne plus exister dans le nouveau conteneur.</td></tr><tr><td>Analyse</td><td>Le dossier <code>/app/uploads</code> était porté par le filesystem éphémère du conteneur backend au lieu d&#039;être monté depuis l&#039;hôte.</td></tr><tr><td>Préconisation</td><td>Ajouter un volume Docker de production pour persister <code>uploads</code> sur le VPS et vérifier le comportement après redéploiement.</td></tr><tr><td>Preuve projet</td><td>Commit <code>62a03902</code> : <code>Persist production uploads volume</code>, fichier <code>docker-compose.prod.yml</code>.</td></tr><tr><td>Statut</td><td>Corrigée et documentée dans le journal de version.</td></tr></tbody></table>
+<p>Correctif appliqué dans <code>docker-compose.prod.yml</code> :</p>
+<pre><code>backend:
+  volumes:
+    - ./anonym-back-end/uploads:/app/uploads</code></pre>
+<div class="section-divider"></div>
+<h2>6. Traitement d&#039;une anomalie détectée</h2>
+<p>Le traitement de l&#039;anomalie ANO-2026-07-02-001 a suivi le processus d&#039;intégration et de déploiement continu du projet.</p>
+<table><thead><tr><th>Étape</th><th>Action réalisée</th><th>Preuve / résultat</th></tr></thead><tbody><tr><td>Qualification</td><td>Impact sur la disponibilité des médias utilisateurs après redéploiement</td><td>Anomalie classée S2</td></tr><tr><td>Analyse cause racine</td><td>Vérification de <code>docker-compose.prod.yml</code> : absence de volume <code>uploads</code> pour le backend production</td><td>Cause Docker identifiée</td></tr><tr><td>Correction</td><td>Ajout du bind mount <code>./anonym-back-end/uploads:/app/uploads</code></td><td>Commit <code>62a03902</code></td></tr><tr><td>Branche / revue</td><td>Branche <code>fix/prod-uploads-volume</code>, PR de livraison vers préproduction puis production</td><td>PR #172 / #173 visibles dans l&#039;historique</td></tr><tr><td>Validation technique</td><td>Redéployer, vérifier <code>/health</code>, tester upload, contrôler que le fichier reste disponible après rebuild</td><td>Non-régression média</td></tr><tr><td>Déploiement</td><td>Pipeline GitHub Actions, Docker Compose production, vérification conteneurs</td><td><code>cd.yml</code>, <code>docker-compose.prod.yml</code></td></tr><tr><td>Surveillance</td><td>Contrôle logs backend, endpoints <code>/health</code> et <code>/metrics</code>, retours support</td><td>Incident clôturé</td></tr></tbody></table>
+<p>La correction tire profit de la CI/CD car elle passe par les branches de livraison, les jobs de contrôle, le déploiement VPS et la surveillance post-déploiement. Elle résout l&#039;anomalie en séparant les données utilisateurs du cycle de vie du conteneur applicatif.</p>
+<p>Mesure de prévention ajoutée au processus : tout nouveau stockage applicatif doit être classé comme éphémère ou persistant avant déploiement. Les fichiers utilisateurs, dumps, factures ou médias doivent être montés en volume, sauvegardés ou externalisés.</p>
+<div class="section-divider"></div>
+<h2>7. Recommandations argumentées d&#039;amélioration</h2>
+<table><thead><tr><th>Recommandation</th><th>Argument</th><th>Gain attendu</th><th>Coût / délai</th><th>Priorité</th></tr></thead><tbody><tr><td>Mettre en place Prometheus + Grafana + Alertmanager ou équivalent managé</td><td>Les métriques existent déjà via <code>/metrics</code>, il manque une visualisation continue et des alertes formalisées</td><td>MTTR réduit, historique P95/5xx/mémoire</td><td>Moyen, 2 à 4 jours</td><td>Haute</td></tr><tr><td>Externaliser les uploads vers un stockage objet compatible S3/OVH</td><td>Le volume local corrige la persistance, mais reste lié au VPS</td><td>Meilleure durabilité, backups simplifiés, scalabilité</td><td>Moyen, 3 à 5 jours</td><td>Haute</td></tr><tr><td>Ajouter Dependabot ou Renovate avec PR groupées</td><td>La surveillance existe, mais l&#039;ouverture des PR peut être automatisée</td><td>Dette sécurité réduite, suivi régulier</td><td>Faible, 1 jour</td><td>Haute</td></tr><tr><td>Pinner les images Docker (<code>mysql:8.0</code>, <code>nginx</code>, <code>certbot</code>)</td><td><code>latest</code> peut changer sans maîtrise et introduire une régression</td><td>Déploiements reproductibles</td><td>Faible, 0,5 à 1 jour</td><td>Haute</td></tr><tr><td>Enrichir le formulaire support</td><td>Ajouter version app, OS, navigateur, endpoint, capture optionnelle, <code>requestId</code></td><td>Reproduction plus rapide des bugs</td><td>Faible à moyen, 1 à 2 jours</td><td>Moyenne</td></tr><tr><td>Créer un runbook incident</td><td>Les actions existent, mais doivent être centralisées pour S1/S2</td><td>Diagnostic plus rapide, passation plus simple</td><td>Faible, 1 jour</td><td>Moyenne</td></tr><tr><td>Automatiser le changelog depuis commits/PR</td><td>Le journal est manuel</td><td>Traçabilité plus fiable et moins coûteuse</td><td>Faible, 1 jour</td><td>Moyenne</td></tr><tr><td>Ajouter une sauvegarde/restauration testée MySQL + uploads</td><td>Le projet documente le stockage VPS, mais la restauration doit être répétée</td><td>Réduction du risque de perte de données</td><td>Moyen, 2 à 3 jours</td><td>Haute</td></tr></tbody></table>
+<p>Ces recommandations sont réalistes car elles s&#039;appuient sur des briques déjà présentes : métriques Prometheus, CI/CD, Docker, support, logs et documentation VPS. Elles renforcent l&#039;attractivité du logiciel en améliorant la fiabilité perçue, la rapidité de correction et la confiance utilisateur.</p>
+<div class="section-divider"></div>
+<h2>8. Journal de version</h2>
+<p>Le journal ci-dessous est un journal d&#039;exploitation interne construit à partir des commits et PR du projet. Le package backend reste en <code>1.0.0</code>, mais les versions ci-dessous documentent les livraisons de maintenance.</p>
+<table><thead><tr><th>Version</th><th>Date</th><th>Référence</th><th>Améliorations / correctifs</th><th>Validation</th></tr></thead><tbody><tr><td>v1.0.4</td><td>2026-07-03</td><td><code>cde0e633</code>, PR #177, <code>a96591e5</code>, <code>9a999ac6</code></td><td>Couverture globale de tests, correction placeholder message mobile, lien CGU inscription, création groupe avec image</td><td>Tests Flutter/Jest et CI</td></tr><tr><td>v1.0.3</td><td>2026-07-02</td><td><code>62a03902</code>, PR #172/#173</td><td>Persistance des uploads production via volume Docker</td><td>Redéploiement + vérification médias</td></tr><tr><td>v1.0.2</td><td>2026-07-02</td><td><code>a92fcf7b</code></td><td>Correctifs paiement mobile, URL médias relatives, session après inscription, images distantes</td><td>Tests auth et vérification mobile</td></tr><tr><td>v1.0.1</td><td>2026-07-01</td><td><code>2176bfdd</code></td><td>Correction de vulnérabilités dépendances</td><td>Snyk et <code>npm audit</code></td></tr><tr><td>v1.0.0</td><td>2026-06-28</td><td><code>af7d8d1c</code>, <code>3f934468</code>, <code>2a838fc6</code></td><td>Stabilisation des gates de release, installations npm déterministes, timeout Docker Compose augmenté</td><td>CI/CD préprod/prod</td></tr><tr><td>v0.9.9</td><td>2026-06-27</td><td><code>44d2f908</code></td><td>Durcissement des workflows de déploiement serveur</td><td>Déploiement contrôlé</td></tr></tbody></table>
+<p>Chaque ligne contient les améliorations, les anomalies corrigées et le mode de validation. Ce journal répond à C4.3.2 car il documente les correctifs et permet de suivre les évolutions déployées.</p>
+<div class="section-divider"></div>
+<h2>9. Problème résolu en collaboration avec le support client</h2>
+<h3>9.1 Contexte du retour client</h3>
+<p>Un utilisateur signale via le support que certaines images ne s&#039;affichent plus après une mise en ligne. Le support reçoit la demande via le formulaire web/mobile, qui transmet l&#039;email, le type et la description à <code>/api/admin/report</code>. Le problème est fonctionnellement visible : le message ou le profil référence encore l&#039;image, mais l&#039;image n&#039;est plus accessible.</p>
+<h3>9.2 Contribution des parties prenantes</h3>
+<table><thead><tr><th>Partie prenante</th><th>Contribution</th></tr></thead><tbody><tr><td>Utilisateur</td><td>Décrit le problème, fournit le contexte et le moment d&#039;apparition</td></tr><tr><td>Support</td><td>Qualifie le retour, vérifie le compte, demande une reproduction simple, transmet l&#039;anomalie</td></tr><tr><td>Développeur</td><td>Analyse les logs, la configuration Docker, le stockage <code>uploads</code> et l&#039;historique de déploiement</td></tr><tr><td>CI/CD</td><td>Valide les tests et sécurise la livraison via branches préprod/prod</td></tr><tr><td>Exploitation</td><td>Redéploie, contrôle <code>/health</code>, <code>/metrics</code>, Docker Compose et disponibilité des médias</td></tr></tbody></table>
+<h3>9.3 Résolution apportée</h3>
+<p>La cause racine est liée à la persistance des fichiers dans Docker. Les fichiers uploadés étaient stockés dans le conteneur backend, alors qu&#039;un conteneur reconstruit ne doit pas être considéré comme stockage durable. Le correctif ajoute le volume <code>./anonym-back-end/uploads:/app/uploads</code> en production, puis le déploiement est validé par un test d&#039;upload, un rebuild et une nouvelle consultation du média.</p>
+<p>Le support peut ensuite répondre à l&#039;utilisateur que l&#039;incident est corrigé, que les nouveaux médias seront conservés après déploiement et que les fichiers historiques doivent être restaurés depuis sauvegarde si certains ont été perdus avant le correctif.</p>
+<p>Cette présentation répond à C4.3.3 : le contexte client est décrit, la résolution technique est expliquée et la contribution des parties prenantes est identifiée.</p>
+<div class="section-divider"></div>
+<h2>10. Synthèse de validation du bloc 4</h2>
+<table><thead><tr><th>Compétence</th><th>Réponse dans le dossier</th><th>Éléments de preuve</th></tr></thead><tbody><tr><td>C4.1.1 Mise à jour des dépendances</td><td>Processus, fréquence, périmètre, type automatique/manuel</td><td>Snyk, <code>npm audit</code>, SBOM Flutter, CI</td></tr><tr><td>C4.1.2 Supervision et alerte</td><td>Périmètre, sondes, seuils, signalement</td><td><code>/health</code>, <code>/metrics</code>, Artillery, pino, OVH/Site24x7</td></tr><tr><td>C4.2.1 Consignation anomalies</td><td>Processus structuré et fiche complète</td><td>Support, logs, fiche ANO-2026-07-02-001</td></tr><tr><td>C4.2.2 Correctif et déploiement</td><td>Traitement via branches, CI/CD, Docker Compose</td><td>Commit <code>62a03902</code>, PR #172/#173</td></tr><tr><td>C4.3.1 Améliorations</td><td>Recommandations argumentées avec coût, délai, gain</td><td>Tableau recommandations</td></tr><tr><td>C4.3.2 Journal de version</td><td>Versions, correctifs, validation</td><td>Journal d&#039;exploitation v0.9.9 à v1.0.4</td></tr><tr><td>C4.3.3 Support client</td><td>Exemple support avec rôles et résolution</td><td>Formulaires Support/Feedback, <code>/api/admin/report</code></td></tr></tbody></table>
+<h2>Conclusion</h2>
+<p>Le projet Anonym dispose d&#039;une base de maintenance opérationnelle cohérente : dépendances surveillées, CI/CD structurée, endpoints de santé, métriques Prometheus, logs structurés, tests de performance, support utilisateur et journal de version. L&#039;anomalie des uploads illustre un cycle complet : détection, consignation, analyse, correctif, déploiement et prévention. Les recommandations proposées renforcent la disponibilité, la traçabilité et la confiance utilisateur tout en restant réalistes pour la taille du projet.</p>
+  </main>
+</body>
+</html>
