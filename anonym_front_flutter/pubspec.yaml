@@ -20,7 +20,7 @@ dependencies:
   socket_io_client: ^3.1.2
   url_launcher: ^6.3.2
   flutter_svg: ^2.2.4
-  geolocator: ^13.0.4
+  geolocator: ^14.0.3
   flutter_map: ^8.3.0
   latlong2: ^0.9.1
   mapbox_maps_flutter: ^2.23.0
