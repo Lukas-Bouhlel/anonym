@@ -92,7 +92,7 @@ La supervision couvre les composants qui conditionnent l'accès utilisateur : AP
 | Sonde | Source | Indicateurs | Seuils / réaction | Finalité |
 | --- | --- | --- | --- | --- |
 | Santé backend | `/health`, `/status`, `/api/health` | `status`, service, version, uptime, mémoire, runtime | HTTP différent de 200 ou `status != ok` : incident disponibilité | Confirmer que l'API répond |
-| Métriques Prometheus | `/metrics` avec `prom-client` | Requêtes HTTP, durée, codes statut, métriques Node.js | P95 > 750 ms, max > 2 s, erreurs > 1 % : analyse perf | Suivre qualité et performance |
+| Métriques Prometheus | `/metrics` avec `prom-client`, protégé en production par `METRICS_TOKEN` | Requêtes HTTP, durée, codes statut, métriques Node.js | P95 > 750 ms, max > 2 s, erreurs > 1 % : analyse perf | Suivre qualité et performance sans exposer publiquement les métriques internes |
 | Logs structurés | `pino-http` | `requestId`, route normalisée, méthode, statut, niveau warn/error | 5xx ou pics 4xx : diagnostic et création d'anomalie | Identifier la cause technique |
 | Base de données | Healthcheck Docker `mysqladmin ping` | État conteneur MySQL | 5 échecs de ping : conteneur non sain | Vérifier la persistance |
 | Test performance CI | Artillery `health.yml` | Erreur max, P95, temps max sur health/metrics | `maxErrorRate <= 1`, P95 <= 750 ms, max <= 2000 ms | Empêcher une livraison dégradée |
@@ -116,7 +116,7 @@ Les critères retenus sont liés aux usages réels : l'utilisateur doit pouvoir 
 
 ### 3.4 Modalité de signalement
 
-Les alertes techniques arrivent par GitHub Actions, par la supervision externe ou par les logs serveur. Les anomalies utilisateur arrivent par la page Support web, l'écran Support/Feedback mobile et la route `/api/admin/report`. Chaque signalement est trié selon quatre niveaux : S1 indisponibilité totale, S2 fonction majeure dégradée, S3 bug contournable, S4 amélioration. Les S1/S2 sont traitées immédiatement, les S3 sont planifiées dans le sprint ou la maintenance mensuelle.
+Les alertes techniques arrivent par GitHub Actions, par la supervision externe ou par les logs serveur. L'endpoint `/metrics` est réservé aux outils de supervision : en production, la variable `METRICS_TOKEN` impose un accès authentifié par en-tête `x-metrics-token` ou par paramètre `token`, et un appel sans jeton retourne `401 Unauthorized`. Les anomalies utilisateur arrivent par la page Support web, l'écran Support/Feedback mobile et la route `/api/admin/report`. Chaque signalement est trié selon quatre niveaux : S1 indisponibilité totale, S2 fonction majeure dégradée, S3 bug contournable, S4 amélioration. Les S1/S2 sont traitées immédiatement, les S3 sont planifiées dans le sprint ou la maintenance mensuelle.
 
 Ce dispositif répond à C4.1.2 car il définit le périmètre de supervision, les indicateurs, les sondes et les modalités de signalement nécessaires à la disponibilité du logiciel.
 
