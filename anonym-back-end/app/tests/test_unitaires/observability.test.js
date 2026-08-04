@@ -50,4 +50,15 @@ describe('observability endpoints', () => {
         expect(unauthorizedResponse.status).toBe(401);
         expect(authorizedResponse.status).toBe(200);
     });
+
+    it('accepts a bearer token for prometheus scraping', async () => {
+        process.env.METRICS_TOKEN = 'metrics-secret';
+
+        const response = await request(app)
+            .get('/metrics')
+            .set('authorization', 'Bearer metrics-secret');
+
+        expect(response.status).toBe(200);
+        expect(response.text).toContain('anonym_backend_http_requests_total');
+    });
 });
