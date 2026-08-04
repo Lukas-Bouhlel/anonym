@@ -11,16 +11,31 @@ on:
       - edited
 
 jobs:
-  only-preprod-to-main:
-    name: Only preprod can target main
+  only-authorized-branches-to-main:
+    name: Only preprod or Dependabot can target main
     runs-on: ubuntu-latest
 
     steps:
       - name: Validate source branch
+        shell: bash
+        env:
+          HEAD_REF: ${{ github.head_ref }}
+          PR_AUTHOR: ${{ github.event.pull_request.user.login }}
         run: |
-          if [ "${{ github.head_ref }}" != "preprod" ]; then
-            echo "Only the preprod branch can be merged into main."
-            echo "Current source branch: ${{ github.head_ref }}"
-            exit 1
+          echo "Source branch: $HEAD_REF"
+          echo "PR author: $PR_AUTHOR"
+
+          # Flux normal : preprod -> main
+          if [[ "$HEAD_REF" == "preprod" ]]; then
+            echo "Allowed: preprod can be merged into main."
+            exit 0
           fi
-          echo "Main merge source is preprod."
+
+          # Exception : PR réellement créée par Dependabot
+          if [[ "$PR_AUTHOR" == "dependabot[bot]" && "$HEAD_REF" == dependabot/* ]]; then
+            echo "Allowed: authentic Dependabot PR can target main."
+            exit 0
+          fi
+
+          echo "::error::Only preprod or an authentic Dependabot PR can target main."
+          exit 1
