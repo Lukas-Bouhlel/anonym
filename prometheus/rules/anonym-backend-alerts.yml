@@ -1,0 +1,61 @@
+groups:
+  - name: anonym-backend
+    rules:
+      - alert: AnonymBackendDown
+        expr: up{job="anonym-backend"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          component: backend
+        annotations:
+          summary: "Backend Anonym indisponible"
+          description: "Prometheus ne parvient plus a collecter les metriques du backend depuis plus d'une minute."
+
+      - alert: AnonymBackendHighP95Latency
+        expr: |
+          histogram_quantile(
+            0.95,
+            sum(rate(anonym_backend_http_request_duration_seconds_bucket{job="anonym-backend"}[5m])) by (le)
+          ) > 0.75
+        for: 5m
+        labels:
+          severity: warning
+          component: backend
+        annotations:
+          summary: "Latence P95 backend elevee"
+          description: "Le P95 des temps de reponse backend depasse 750 ms pendant 5 minutes."
+
+      - alert: AnonymBackendHighErrorRate
+        expr: |
+          (
+            sum(rate(anonym_backend_http_requests_total{job="anonym-backend",status_code=~"5.."}[5m]))
+            /
+            clamp_min(sum(rate(anonym_backend_http_requests_total{job="anonym-backend"}[5m])), 0.001)
+          ) > 0.01
+        for: 5m
+        labels:
+          severity: critical
+          component: backend
+        annotations:
+          summary: "Taux d'erreurs 5xx backend eleve"
+          description: "Plus de 1 % des requetes backend se terminent en erreur 5xx pendant 5 minutes."
+
+      - alert: AnonymBackendHighMemoryUsage
+        expr: anonym_backend_process_resident_memory_bytes{job="anonym-backend"} > 536870912
+        for: 10m
+        labels:
+          severity: warning
+          component: backend
+        annotations:
+          summary: "Memoire backend elevee"
+          description: "La memoire residente du processus Node.js depasse 512 Mio pendant 10 minutes."
+
+      - alert: AnonymBackendHighRequestVolume
+        expr: sum(rate(anonym_backend_http_requests_total{job="anonym-backend"}[5m])) > 20
+        for: 10m
+        labels:
+          severity: warning
+          component: backend
+        annotations:
+          summary: "Volume de requetes backend eleve"
+          description: "Le backend recoit plus de 20 requetes par seconde en moyenne pendant 10 minutes."

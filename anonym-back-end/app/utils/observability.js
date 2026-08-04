@@ -117,9 +117,16 @@ const healthHandler = (req, res) => {
     return res.status(200).json(getHealthPayload());
 };
 
+const getProvidedMetricsToken = (req) => {
+    const authorization = req.get('authorization') || '';
+    const bearerMatch = authorization.match(/^Bearer\s+(.+)$/i);
+
+    return req.get('x-metrics-token') || bearerMatch?.[1] || req.query?.token;
+};
+
 const metricsHandler = async (req, res) => {
     const configuredToken = process.env.METRICS_TOKEN;
-    const providedToken = req.get('x-metrics-token') || req.query?.token;
+    const providedToken = getProvidedMetricsToken(req);
 
     if (configuredToken && providedToken !== configuredToken) {
         return res.status(401).json({ message: 'Unauthorized metrics access.' });
@@ -130,6 +137,7 @@ const metricsHandler = async (req, res) => {
 };
 
 module.exports = {
+    getProvidedMetricsToken,
     healthHandler,
     httpLogger,
     metricsHandler,

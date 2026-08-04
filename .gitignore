@@ -145,6 +145,10 @@ anonym-back-end/uploads/profiles/avatars
 server.key
 server.crt
 
+# Local monitoring secrets
+secrets/
+prometheus/secrets/
+
 # Ignorer les fichiers temporaires
 .DS_Store
 Thumbs.db
