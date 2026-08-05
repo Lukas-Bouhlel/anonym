@@ -2,6 +2,18 @@
 
 Ce fichier est maintenu à chaque release. Chaque entrée doit indiquer les changements livrés, les Pull Requests déployées, les issues/anomalies associées et les validations réalisées.
 
+## v1.0.7 - 2026-08-05
+
+### Ajouté
+- PR #219 - add pre deploymen t bloqued prod if version empty (`4d947948`)
+- `99f3cb05` - add pre deploymen t bloqued prod if version empty
+
+### Pull Requests déployées
+- PR #219 - add pre deploymen t bloqued prod if version empty depuis `Lukas-Bouhlel/devlop` (`4d947948`)
+
+### Périmètre Git
+- Changements inclus depuis `v1.0.6` jusqu’à `HEAD`.
+
 ## v1.0.6 - 2026-08-05
 
 ### Changé
