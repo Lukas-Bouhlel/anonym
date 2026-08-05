@@ -6,6 +6,9 @@ on:
       - main
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 concurrency:
   group: production-deploy
   cancel-in-progress: false
@@ -181,3 +184,45 @@ jobs:
           ssh -o StrictHostKeyChecking=yes -o ServerAliveInterval=30 -o ServerAliveCountMax=20 -p "$VPS_PORT" "$VPS_USER@$VPS_HOST" "mkdir -p '$MOBILE_ARTIFACTS_DIR'"
           scp -o StrictHostKeyChecking=yes -o ServerAliveInterval=30 -o ServerAliveCountMax=20 -P "$VPS_PORT" mobile-release/*.apk "$VPS_USER@$VPS_HOST:$MOBILE_ARTIFACTS_DIR/"
           ssh -o StrictHostKeyChecking=yes -o ServerAliveInterval=30 -o ServerAliveCountMax=20 -p "$VPS_PORT" "$VPS_USER@$VPS_HOST" "cd '$MOBILE_ARTIFACTS_DIR' && ls -1t anonym-*.apk | tail -n +11 | xargs -r rm -f && ls -lh"
+
+  tag-production-release:
+    name: Tag production release
+    runs-on: ubuntu-latest
+    needs: publish-mobile-apk
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+
+      - name: Create release tag from CHANGELOG
+        run: |
+          set -euo pipefail
+
+          release_tag="$(sed -nE 's/^## (v[0-9]+\.[0-9]+\.[0-9]+[^ ]*) .*/\1/p' CHANGELOG.md | head -n 1)"
+
+          if [ -z "$release_tag" ]; then
+            echo "No release tag found in CHANGELOG.md. Expected a heading like: ## v1.0.5 - 2026-08-05"
+            exit 1
+          fi
+
+          git fetch --tags origin
+
+          if git rev-parse -q --verify "refs/tags/$release_tag" >/dev/null; then
+            tag_sha="$(git rev-list -n 1 "$release_tag")"
+            if [ "$tag_sha" = "$GITHUB_SHA" ]; then
+              echo "Tag $release_tag already exists on this commit. Nothing to do."
+              exit 0
+            fi
+
+            echo "Tag $release_tag already exists on another commit: $tag_sha"
+            echo "Refusing to move an existing release tag."
+            exit 1
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag -a "$release_tag" "$GITHUB_SHA" -m "Release $release_tag"
+          git push origin "$release_tag"
