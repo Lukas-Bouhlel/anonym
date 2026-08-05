@@ -2,6 +2,18 @@
 
 Ce fichier est maintenu à chaque release. Chaque entrée doit indiquer les changements livrés, les Pull Requests déployées, les issues/anomalies associées et les validations réalisées.
 
+## v1.0.6 - 2026-08-05
+
+### Changé
+- PR #216 - Mise à jour de la CI pour que flutter ne build pas l'apk si aucun fic… (`6e80d847`)
+- `cd7d1fe2` - Mise à jour de la CI pour que flutter ne build pas l'apk si aucun fichier dart à changer
+
+### Pull Requests déployées
+- PR #216 - Mise à jour de la CI pour que flutter ne build pas l'apk si aucun fic… depuis `Lukas-Bouhlel/devlop` (`6e80d847`)
+
+### Périmètre Git
+- Changements inclus depuis `v1.0.5` jusqu’à `HEAD`.
+
 ## v1.0.5 - 2026-08-05
 
 ### Ajouté
