@@ -5,34 +5,45 @@ Ce fichier est maintenu à chaque release. Chaque entrée doit indiquer les chan
 ## v1.0.7 - 2026-08-05
 
 ### Ajouté
-- PR #219 - add pre deploymen t bloqued prod if version empty (`4d947948`)
-- `99f3cb05` - add pre deploymen t bloqued prod if version empty
+- Ajout d’un contrôle pré-déploiement dans `cd_deploy_to_production` pour vérifier la version du `CHANGELOG.md` avant le build et le déploiement production.
+- Alignement du build frontend sur Node.js `22.22.0`.
+- Ajout d’une politique `restart: unless-stopped` aux services Docker de production.
+
+### Correctifs documentés
+- Prévention d’un déploiement production non versionné ou utilisant un tag Git déjà existant sur un autre commit.
+- Réduction du risque qu’un service Docker reste arrêté après un arrêt brutal du conteneur.
+
+### Validation
+- Vérification syntaxique des workflows GitHub Actions et du fichier `docker-compose.prod.yml`.
+- Contrôle attendu : le workflow CD bloque avant le build/deploy si la version du changelog est incohérente.
+- Tag Git créé automatiquement uniquement après un déploiement production valide.
 
 ### Pull Requests déployées
-- PR #219 - add pre deploymen t bloqued prod if version empty depuis `Lukas-Bouhlel/devlop` (`4d947948`)
-
-### Périmètre Git
-- Changements inclus depuis `v1.0.6` jusqu’à `HEAD`.
+- PR #219 - Sécurisation du versionnement avant déploiement production.
 
 ## v1.0.6 - 2026-08-05
 
 ### Changé
-- PR #216 - Mise à jour de la CI pour que flutter ne build pas l'apk si aucun fic… (`6e80d847`)
-- `cd7d1fe2` - Mise à jour de la CI pour que flutter ne build pas l'apk si aucun fichier dart à changer
+- Optimisation de la CI : la validation Flutter est exécutée uniquement en cas de changement mobile ou de lancement manuel du workflow.
+- Ajout d’un job de détection des chemins modifiés pour éviter les builds APK inutiles.
+- Les étapes de sécurité Flutter sont ignorées lorsqu’aucun fichier mobile n’est modifié.
+
+### Correctifs documentés
+- Réduction du temps de validation CI pour les changements backend, web, documentation ou monitoring.
+- Conservation d’une validation Flutter complète lorsqu’un changement touche `anonym_front_flutter/` ou lorsque le workflow est lancé manuellement.
+
+### Validation
+- Workflow CI final compatible avec un job Flutter en état `skipped`.
+- Vérification syntaxique du workflow GitHub Actions.
 
 ### Pull Requests déployées
-- PR #216 - Mise à jour de la CI pour que flutter ne build pas l'apk si aucun fic… depuis `Lukas-Bouhlel/devlop` (`6e80d847`)
-
-### Périmètre Git
-- Changements inclus depuis `v1.0.5` jusqu’à `HEAD`.
+- PR #216 - Optimisation de la validation Flutter dans la CI.
 
 ## v1.0.5 - 2026-08-05
 
 ### Ajouté
 - Automatisation de la génération du `CHANGELOG.md` à partir de l’historique Git et des Pull Requests mergées.
 - Automatisation de la création du tag Git de release après déploiement production réussi, à partir de la dernière version renseignée dans `CHANGELOG.md`.
-- Ajout d’un contrôle pré-déploiement qui bloque la production si la version du `CHANGELOG.md` a déjà été taguée sur un autre commit.
-- Optimisation de la CI : la validation Flutter est exécutée uniquement en cas de changement mobile ou de lancement manuel du workflow.
 - Ajout d’une supervision Prometheus pour collecter automatiquement les métriques backend exposées par `/metrics`.
 - Ajout d’Alertmanager pour centraliser les alertes techniques.
 - Ajout de règles d’alerte Prometheus sur :
