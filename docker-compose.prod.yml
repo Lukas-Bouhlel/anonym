@@ -4,6 +4,7 @@ services:
   mysql-db:
     image: mysql:latest
     container_name: db-anonym
+    restart: unless-stopped
     volumes:
       - db-anonym:/var/lib/mysql
     environment:
@@ -21,6 +22,7 @@ services:
 
   backend:
     image: anonym-back-end:latest
+    restart: unless-stopped
     env_file:
       - ./anonym-back-end/.env
     build:
@@ -42,6 +44,7 @@ services:
 
   frontend:
     image: anonym-front-end:latest
+    restart: unless-stopped
     env_file:
       - ./anonym-front-end/.env.production
     build:
@@ -60,6 +63,7 @@ services:
   nginx:
     image: nginx:latest
     container_name: nginx-proxy
+    restart: unless-stopped
     ports:
       - "80:80"
       - "443:443"
@@ -80,6 +84,7 @@ services:
   certbot:
     image: certbot/certbot:latest
     container_name: certbot
+    restart: unless-stopped
     volumes:
       - ./nginx/ssl:/etc/letsencrypt
       - ./certbot/www:/var/www/certbot
