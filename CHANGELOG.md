@@ -19,6 +19,7 @@ Ce fichier est maintenu à chaque release. Chaque entrée doit indiquer les chan
 ### Ajouté
 - Automatisation de la génération du `CHANGELOG.md` à partir de l’historique Git et des Pull Requests mergées.
 - Automatisation de la création du tag Git de release après déploiement production réussi, à partir de la dernière version renseignée dans `CHANGELOG.md`.
+- Ajout d’un contrôle pré-déploiement qui bloque la production si la version du `CHANGELOG.md` a déjà été taguée sur un autre commit.
 - Optimisation de la CI : la validation Flutter est exécutée uniquement en cas de changement mobile ou de lancement manuel du workflow.
 - Ajout d’une supervision Prometheus pour collecter automatiquement les métriques backend exposées par `/metrics`.
 - Ajout d’Alertmanager pour centraliser les alertes techniques.
