@@ -30,10 +30,49 @@ jobs:
           echo "Production deployment authorized from preprod-gated main."
           echo "Trigger: ${{ github.event_name }}"
 
+  validate-release-version:
+    name: Validate release version
+    runs-on: ubuntu-latest
+    needs: prepare-production-deploy
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+
+      - name: Check CHANGELOG release tag
+        run: |
+          set -euo pipefail
+
+          release_tag="$(sed -nE 's/^## (v[0-9]+\.[0-9]+\.[0-9]+[^ ]*) .*/\1/p' CHANGELOG.md | head -n 1)"
+
+          if [ -z "$release_tag" ]; then
+            echo "No release tag found in CHANGELOG.md. Expected a heading like: ## v1.0.5 - 2026-08-05"
+            exit 1
+          fi
+
+          git fetch --tags origin
+
+          if git rev-parse -q --verify "refs/tags/$release_tag" >/dev/null; then
+            tag_sha="$(git rev-list -n 1 "$release_tag")"
+            if [ "$tag_sha" = "$GITHUB_SHA" ]; then
+              echo "Tag $release_tag already exists on this commit. Redeployment is allowed."
+              exit 0
+            fi
+
+            echo "Release tag $release_tag already exists on another commit: $tag_sha"
+            echo "Run release_changelog on preprod with a new version before merging to main."
+            exit 1
+          fi
+
+          echo "Release tag $release_tag is available for this production deployment."
+
   build-mobile-apk:
     name: Build signed mobile APK
     runs-on: ubuntu-latest
-    needs: prepare-production-deploy
+    needs: validate-release-version
 
     steps:
       - name: Checkout code
