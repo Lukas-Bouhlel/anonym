@@ -2,6 +2,18 @@
 
 Ce fichier est maintenu à chaque release. Chaque entrée doit indiquer les changements livrés, les Pull Requests déployées, les issues/anomalies associées et les validations réalisées.
 
+## v1.0.8 - 2026-08-05
+
+### Documentation
+- PR #222 - update changelog (`e1a5982f`)
+- `63bb58e3` - update changelog
+
+### Pull Requests déployées
+- PR #222 - update changelog depuis `Lukas-Bouhlel/devlop` (`e1a5982f`)
+
+### Périmètre Git
+- Changements inclus depuis `v1.0.7` jusqu’à `HEAD`.
+
 ## v1.0.7 - 2026-08-05
 
 ### Ajouté
