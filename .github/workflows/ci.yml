@@ -214,7 +214,7 @@ jobs:
     - name: Set up Node.js
       uses: actions/setup-node@v4
       with:
-        node-version: '22.12.0'
+        node-version: '22.22.0'
     
     # ---- Frontend: Lint, Test, and Build ----
     - name: Install dependencies for Frontend
@@ -322,7 +322,7 @@ jobs:
     - name: Set up Node.js
       uses: actions/setup-node@v4
       with:
-        node-version: '22.12.0'
+        node-version: '22.22.0'
 
     - name: Install backend dependencies
       working-directory: ./anonym-back-end
