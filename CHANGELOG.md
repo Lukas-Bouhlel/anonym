@@ -5,7 +5,9 @@ Ce fichier est maintenu à chaque release. Chaque entrée doit indiquer les chan
 ## v1.0.5 - 2026-08-05
 
 ### Ajouté
+- Automatisation de la génération du `CHANGELOG.md` à partir de l’historique Git et des Pull Requests mergées.
 - Automatisation de la création du tag Git de release après déploiement production réussi, à partir de la dernière version renseignée dans `CHANGELOG.md`.
+- Optimisation de la CI : la validation Flutter est exécutée uniquement en cas de changement mobile ou de lancement manuel du workflow.
 - Ajout d’une supervision Prometheus pour collecter automatiquement les métriques backend exposées par `/metrics`.
 - Ajout d’Alertmanager pour centraliser les alertes techniques.
 - Ajout de règles d’alerte Prometheus sur :
