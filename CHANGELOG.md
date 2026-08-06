@@ -1,5 +1,36 @@
 # Changelog
 
+## v1.0.9 - 2026-08-06
+
+### Corrigé
+- `4cea3dc5` - fix(mobile): polish search inputs and reset deep links
+
+### Changé
+- PR #225 - Devlop (`81d36a6f`)
+
+### Pull Requests déployées
+- PR #225 - Devlop depuis `Lukas-Bouhlel/devlop` (`81d36a6f`)
+
+### Périmètre Git
+- Changements inclus depuis `v1.0.8` jusqu’à `HEAD`.
+
+## v1.0.8 - 2026-08-06
+
+### Corrige
+- Recentrage vertical du placeholder et du texte saisi dans les champs de recherche de l'application mobile.
+- Ajout d'un espacement coherent entre l'icone de recherche et le texte dans les barres de recherche Conversations, Chercher et Rejoindre.
+- Correction du lien de reinitialisation de mot de passe pour ouvrir l'application mobile via deep link sur mobile, avec fallback web sur navigateur desktop.
+- Compatibilite des builds debug Android avec les emulateurs `x86_64`, tout en conservant le filtrage `arm64-v8a` pour les builds non-debug.
+
+### Validation
+- `flutter analyze`
+- `flutter build apk --debug --no-pub`
+- `npm test -- --runTestsByPath app/tests/test_unitaires/resetPasswordBridge.test.js --runInBand`
+- `npm run lint`
+
+### Pull Requests deployees
+- A renseigner apres creation de la PR.
+
 Ce fichier est maintenu à chaque release. Chaque entrée doit indiquer les changements livrés, les Pull Requests déployées, les issues/anomalies associées et les validations réalisées.
 
 ## v1.0.8 - 2026-08-05

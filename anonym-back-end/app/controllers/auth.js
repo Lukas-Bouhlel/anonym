@@ -219,23 +219,12 @@ const buildResetPasswordLink = (baseUrl, token) => {
     return `${urlWithResetPath}${separator}token=${encodedToken}`;
 };
 
-const isHttpLink = (url) => {
-    if (typeof url !== 'string') return false;
-    return /^https?:\/\//i.test(url.trim());
-};
-
 const getResetPasswordWebBaseUrl = () => {
     return getRuntimeEnvVar('RESET_PASSWORD_WEB_URL')
         || getRuntimeEnvVar('RESET_PASSWORD_URL')
         || getRuntimeEnvVar('ORIGIN');
 };
 
-const getResetPasswordMobileBaseUrl = () => getRuntimeEnvVar('RESET_PASSWORD_MOBILE_URL');
-const shouldPreferMobileResetLink = () => {
-    const raw = String(getRuntimeEnvVar('RESET_PASSWORD_PREFER_MOBILE') || '').trim().toLowerCase();
-    if (!raw) return env === 'development';
-    return raw === '1' || raw === 'true' || raw === 'yes';
-};
 const buildResetPasswordBridgeLink = (req, token) => {
     if (!req || typeof token !== 'string' || !token.trim()) return '';
     const encodedToken = encodeURIComponent(token);
@@ -672,15 +661,8 @@ exports.requestPasswordReset = async (req, res) => {
         if (!webResetLink) {
             return res.status(500).json({ message: "Configuration manquante pour l'URL de reinitialisation web" });
         }
-        const mobileResetLink = buildResetPasswordLink(getResetPasswordMobileBaseUrl(), token);
         const bridgeResetLink = buildResetPasswordBridgeLink(req, token);
-        const hasMobileResetLink = mobileResetLink.trim().length > 0;
-        // En local/dev, on peut forcer le deep link mobile pour tester l'ouverture de l'app.
-        // En dehors de ce mode, on privilégie HTTP(S) car plusieurs clients e-mail bloquent
-        // les schemes custom (ex: anonym://).
-        const primaryResetLink = (shouldPreferMobileResetLink() && hasMobileResetLink && bridgeResetLink)
-            ? bridgeResetLink
-            : (isHttpLink(mobileResetLink) ? mobileResetLink : webResetLink);
+        const primaryResetLink = bridgeResetLink || webResetLink;
         // Lire le template d'email
         const emailTemplatePath = path.join(__dirname, '../../templates/reset-password-email.html');
         let htmlContent = fs.readFileSync(emailTemplatePath, 'utf8');
