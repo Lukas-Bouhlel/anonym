@@ -222,17 +222,24 @@ class _ChannelsScreenState extends State<ChannelsScreen> {
             child: Row(
               children: [
                 const Icon(Icons.search, color: AppColors.whiteColor, size: 27),
+                const SizedBox(width: 10),
                 Expanded(
                   child: TextField(
                     controller: _searchController,
                     onChanged: (value) => setState(() {
                       _query = value.trim().toLowerCase();
                     }),
+                    textAlignVertical: TextAlignVertical.center,
+                    strutStyle: const StrutStyle(
+                      height: 1,
+                      forceStrutHeight: true,
+                    ),
                     style: const TextStyle(
                       color: AppColors.whiteColor,
                       fontFamily: AppTypography.primaryFontFamily,
                       fontWeight: FontWeight.w500,
                       fontSize: 13,
+                      height: 1,
                     ),
                     cursorColor: AppColors.whiteColor,
                     decoration: InputDecoration(
@@ -242,16 +249,18 @@ class _ChannelsScreenState extends State<ChannelsScreen> {
                         fontFamily: AppTypography.primaryFontFamily,
                         fontWeight: FontWeight.w500,
                         fontSize: 13,
+                        height: 1,
                       ),
                       filled: false,
                       fillColor: Colors.transparent,
+                      isDense: true,
+                      contentPadding: EdgeInsets.zero,
                       border: InputBorder.none,
                       enabledBorder: InputBorder.none,
                       focusedBorder: InputBorder.none,
                       disabledBorder: InputBorder.none,
                       errorBorder: InputBorder.none,
                       focusedErrorBorder: InputBorder.none,
-                      isCollapsed: true,
                     ),
                   ),
                 ),
@@ -986,11 +995,20 @@ class _ChannelsScreenState extends State<ChannelsScreen> {
                             () => query = value.trim().toLowerCase(),
                           );
                         },
-                        style: const TextStyle(color: AppColors.cFCFAFE),
+                        textAlignVertical: TextAlignVertical.center,
+                        strutStyle: const StrutStyle(
+                          height: 1,
+                          forceStrutHeight: true,
+                        ),
+                        style: const TextStyle(
+                          color: AppColors.cFCFAFE,
+                          height: 1,
+                        ),
                         decoration: InputDecoration(
                           hintText: 'Rechercher des amis',
                           hintStyle: TextStyle(
                             color: AppColors.cFCFAFE.withValues(alpha: 0.55),
+                            height: 1,
                           ),
                           prefixIcon: const Icon(
                             Icons.search_rounded,
@@ -998,6 +1016,8 @@ class _ChannelsScreenState extends State<ChannelsScreen> {
                           ),
                           filled: false,
                           fillColor: Colors.transparent,
+                          isDense: true,
+                          contentPadding: EdgeInsets.zero,
                           border: InputBorder.none,
                           enabledBorder: InputBorder.none,
                           focusedBorder: InputBorder.none,

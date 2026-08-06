@@ -1,0 +1,742 @@
+
+
+===== PAGE 1 =====
+B L O C  4
+M a i n t e n i r  l ' a p p l i c a t i o n  l o g i c i e l l e  e n
+c o n d i t i o n  o p é r a t i o n n e l l e
+N o m  e t  p r é n o m  :  B o u h l e l  L u k a s
+P r o j e t  :  A n o n y m
+L i e n  d u  p r o j e t  :  h t t p s : / / g i t h u b . c o m / L u k a s - B o u h l e l / a n o n y m . g i t
+S i t e  e n  p r o d u c t i o n  :  h t t p s : / / w w w . a n o - n y m . f r
+S o m m a i r e  o p é r a t i o n n e l
+ 
+L e  d o s s i e r  e s t  o r g a n i s é  s e l o n  l e s  a c t i v i t é s  e t  c o m p é t e n c e s  d u  b l o c  2 ,  a f i n  q u e  l e  j u r y  r e t r o u v e  r a p i d e m e n t  c h a q u e
+l i v r a b l e  a t t e n d u .
+P a r t i e
+C o n t e n u
+C o m p é t e n c e s
+A4.1
+Ger er les mises a jour des dependances et bibliotheques tiers et conce v oir un s y steme
+de super vision et d'aler te
+C4.1.1 , C4.1.2
+A4.2
+Consigner les anomalies detectees et cr eer et deplo y er un corr ectif via CI/CD
+C4.2.1 , C4.2.2
+A4. 3
+Pr oposer des ax es d'amelior ation ar gumentes , établir un journal des v ersions deplo y ees
+et collabor er a v ec le suppor t client
+C4.3.1 , C4.3.2 , C4.3.3
+Anne x e
+Liens et r essour ces du pr ojet
+P r i n c i p e  d u  d o s s i e r
+C e  d o s s i e r  p r e s e n t e  l a  m a n i e r e  d o n t  l e  p r o j e t  A n o n y m  e s t  m a i n t e n u  e n  c o n d i t i o n  o p e r a t i o n n e l l e .  
+I l  c o u v r e  l e  m o n i t o r i n g  d e  l ' a p p l i c a t i o n ,  l e  t r a i t e m e n t  d e s  a n o m a l i e s  d e  p r o d u c t i o n  e t  l a  m a i n t e n a n c e
+c o r r e c t i v e / e v o l u t i v e  d u  l o g i c i e l .
+C o u c h e
+T e c h n o l o g i e
+R e s p o n s a b i l i t é
+F r ontend w eb  
+R eact / Vite
+Inter f ace utilisateur et administr ation W eb
+Mobile
+Flutter Andr oid
+Application mobile , na vigation, messagerie et accessibilité mobile  
+Back end
+Node .js / Expr ess / Sock et.IO
+API RES T , temps réel, sécurité, contrôles métier
+Données
+MySQL / Sequeliz e
+Modèles , migr ations , persistance , r elations métier  
+Infr astructur e
+Do ck er Compose , Nginx, Cer tbot, VP S
+Exécution, HTTP S , r outage , W ebSock et et cer tificats  
+Industrialisation
+GitHub A ctions , Git, GitHub
+CI, CD , Pull R equests , historique et r eleases
+P r é s e n t a t i o n  d u  p r o j e t
+A n o n y m  e s t  u n e  a p p l i c a t i o n  s o c i a l e  M o b i l e  p e r m e t t a n t  d e  c r é e r  u n  c o m p t e ,  d e  s ' a u t h e n t i f i e r ,  d e  g é r e r  s o n  p r o f i l ,
+d ' é c h a n g e r  e n  t e m p s  r é e l ,  d ' e n v o y e r  d e s  m e s s a g e s  t e x t e s  e t  i m a g e s ,  d e  g é r e r  s e s  a m i s ,  d ' u t i l i s e r  u n e  c a r t e  M a p b o x ,
+d ' a c c é d e r  à  u n e  b o u t i q u e  v i r t u e l l e  e t  d ' a d m i n i s t r e r  c e r t a i n e s  d o n n é e s  s e l o n  l e s  d r o i t s .
+L e  b a c k e n d  c e n t r a l i s e  l e s  r è g l e s  m é t i e r ,  l ' a u t h e n t i f i c a t i o n ,  l e s  a u t o r i s a t i o n s ,  l a  m e s s a g e r i e  e n  t e m p s  r é e l ,  l e s  u p l o a d s ,  l a
+p e r s i s t a n c e ,  l e s  p a i e m e n t s  o u  a c h a t s  i n t e r n e s ,  l e s  m é t r i q u e s  e t  l e s  p o i n t s  d e  s u p e r v i s i o n .
+Vue d’architecture simplifiée
+U t i l i s a t e u r
+ R e a c t  /  F l u t t e r
+ N g i n x  H T T P S
+ A P I  E x p r e s s  /  S o c k e t . I O
+ M y S Q L  /  U p l o a d s
+
+
+
+===== PAGE 2 =====
+L ' a p p l i c a t i o n  e s t  d e p l o y é e  s u r  u n  V P S  U b u n t u .  
+L e s  s e r v i c e s  a p p l i c a t i f s  s o n t  e x e c u t e s  p a r  D o c k e r  C o m p o s e  :
+L e  b a c k e n d  e s t  e x p o s é  p u b l i q u e m e n t  d e r r i è r e  N g i n x  s u r  h t t p s : / / w w w . a n o - n y m . f r .
+L e s  e n d p o i n t s  d e  s a n t é  / h e a l t h  e t  / a p i / h e a l t h  p e r m e t t e n t  d e  v é r i f i e r  l a  d i s p o n i b i l i t é  a p p l i c a t i v e .
+L e s  f i c h i e r s  u t i l i s a t e u r s  s o n t  e x p o s é s  v i a  / u p l o a d s ,  a v e c  u n e  p e r s i s t a n c e  D o c k e r  s u r  l e  d o s s i e r  a n o n y m - b a c k - e n d / u p l o a d s .
+nginx-proxy : reverse proxy HTTPS, certificats TLS et routage public.
+anonym-front-end : application web React/Vite.
+anonym-back-end : API Express, Socket.IO, Stripe, authentification,
+uploads. db-anonym : base MySQL persistante.
+certbot : renouvellement automatique des certificats HTTPS.
+docker-compose.prod.yml : healthcheck MySQL, réseau Docker, volume persistant des uploads.
+anonym-back-end/app.js : endpoints /health, /status, /api/health, /metrics, exposition de /uploads, trust proxy.
+anonym-back-end/app/utils/observability.js : logs HTTP structurés, métriques Prometheus, masquage des données sensibles.
+.github/workflows/ci.yml : audit, lint, tests, build, performance.
+.github/workflows/cd.yml : déploiement en production automatisé vers le VPS.
+Dossier Bloc 4 - Anonym Page 2
+A 4 . 1  -  M o n i t o r e r  l ’ a p p l i c a t i o n  l o g i c i e l l e
+ 
+C e t t e  c a p t u r e  m o n t r e  l a  s t r a t é g i e  d e  v e r s i o n n a g e  ( v e r s i o n i n g )  u t i l i s é e  p o u r  l e  p r o j e t .  
+L a  b r a n c h e  d e v l o p  e s t  d é d i é e  a u  d é v e l o p p e m e n t  c o u r a n t ,  p r e p r o d  s e r t  à  v a l i d e r  l e s  é v o l u t i o n s  a v a n t  l a  m i s e  e n  p r o d u c t i o n ,  e t  m a i n
+r e p r é s e n t e  l a  v e r s i o n  s t a b l e  d é p l o y a b l e  e n  p r o d u c t i o n .  
+L e s  s t a t u t s  d e  v é r i f i c a t i o n  G i t H u b  A c t i o n s  p e r m e t t e n t  d e  p r o u v e r  q u e  l e s  c o n t r ô l e s  d e  C I  s o n t  e x é c u t é s  a v a n t  l e s  f u s i o n s  e t  l e s
+d é p l o i e m e n t s .
+Stratégie de branches GitHub
+P r e u v e s  t e c h n i q u e s  p r i n c i p a l e s  :
+
+
+===== PAGE 3 =====
+O b j e c t i f
+F r é q u e n c e
+T y p e s  d e  m i s e  à  j o u r
+M i s e s  à  j o u r  a u t o m a t i s é e s  :  D e p e n d a b o t  a s s u r e  l a  v e i l l e  d e s  n o u v e l l e s  v e r s i o n s  e t  o u v r e  d e s  P u l l  R e q u e s t s  s e l o n  u n e  p l a n i f i c a t i o n
+h e b d o m a d a i r e .  S n y k ,  n p m  a u d i t  - - a u d i t - l e v e l = h i g h ,  l a  g é n é r a t i o n  d e  l a  S B O M  F l u t t e r  e t  l ’ e x é c u t i o n  d e s  t e s t s  C I  c o m p l è t e n t  c e s
+c o n t r ô l e s .
+M i s e s  à  j o u r  m a n u e l l e s  :  e l l e s  c o m p r e n n e n t  l a  l e c t u r e  d e s  j o u r n a u x  d e s  m o d i f i c a t i o n s ,  l a  m i s e  à  j o u r  d e s  f i c h i e r s  d e  v e r r o u i l l a g e ,
+l ’ e x é c u t i o n  d e s  t e s t s  e n  l o c a l  e t  e n  p r é p r o d u c t i o n ,  a i n s i  q u e  l ’ o u v e r t u r e  d ’ u n e  P u l l  R e q u e s t  v e r s  l a  b r a n c h e  d e  p r é p r o d u c t i o n .
+M i s e s  à  j o u r  s é c u r i s é e s  :  a u c u n e  m i s e  à  j o u r  n e  p e u t  ê t r e  d é p l o y é e  d i r e c t e m e n t  e n  p r o d u c t i o n  s a n s  p a s s e r  p a r  l ’ e n s e m b l e  d e  l a  c h a î n e
+C I / C D .
+L e  p r o j e t  c o m b i n e  d e s  c o n t r ô l e s  a u t o m a t i s é s  e t  u n e  i n t é g r a t i o n  m a n u e l l e  m a î t r i s é e .
+D e p e n d a b o t  e s t  c o n f i g u r é  s u r  l ' e n s e m b l e  d u  p r o j e t  ( b a c k e n d ,  f r o n t e n d ,  m o b i l e )  a f i n  d e  s u r v e i l l e r  e n  c o n t i n u  l a  d i s p o n i b i l i t é  d e  n o u v e l l e s
+v e r s i o n s  e t  d ' o u v r i r  a u t o m a t i q u e m e n t  u n e  P u l l  R e q u e s t  d è s  q u ' u n e  m i s e  à  j o u r  e s t  d é t e c t é e ,  s e l o n  l a  f r é q u e n c e  d é f i n i e  d a n s  l e  f i c h i e r
+d e p e n d a b o t . y m l .
+Backend Node.js : dépendances npm, Express, Sequelize, Stripe, Socket.IO, Helmet, Multer, Firebase, Pino et le client Prometheus;
+Frontend web React : React, Vite, Axios, TanStack Query, Jest, ESLint et Stylelint ;
+Application mobile Flutter : packages Dart et Flutter, Gradle, Android et Mapbox ;
+Infrastructure : images Docker pour Node.js, MySQL, Nginx et Certbot ;
+CI/CD : actions GitHub, Snyk, actions Flutter et agent SSH ;
+VPS : paquets système Ubuntu, Docker et certificats TLS.
+Dossier Bloc 4 - Anonym Page 3
+C 4 . 1 . 1  -  P r o c e s s u s  d e  m i s e  à  j o u r  d e s  d é p e n d a n c e s
+L e s  d é p e n d a n c e s  l o g i c i e l l e s  d o i v e n t  ê t r e  m a i n t e n u e s  à  j o u r  a f i n  d e  l i m i t e r  l e s  f a i l l e s  d e  s é c u r i t é ,  d e  g a r a n t i r  l e u r  c o m p a t i b i l i t é  a v e c  l e s
+e n v i r o n n e m e n t s  d ’ e x é c u t i o n  e t  d ’ é v i t e r  l e s  r é g r e s s i o n s  l i é e s  a u x  b i b l i o t h è q u e s  t i e r c e s .
+L e  p é r i m è t r e  c o n c e r n é  c o m p r e n d  :
+C h a q u e  P R  d é c l e n c h e  l a  c h a î n e  C I / C D  a v a n t  t o u t e  f u s i o n ,  g a r a n t i s s a n t  q u ' a u c u n e  d é p e n d a n c e  n ' e s t  i n t é g r é e  s a n s  v a l i d a t i o n .
+L e s  c o m m a n d e s  u t i l i s e e s  d a n s  l a  C I  i n c l u e n t  n p m  c i  - - l e g a c y - p e e r - d e p s ,  n p m  a u d i t ,  n p x  s n y k  t e s t ,  f l u t t e r  p u b  g e t ,  f l u t t e r  a n a l y z e ,  f l u t t e r  t e s t
+e t  l e s  b u i l d s  w e b / m o b i l e .
+T y p e  d e  m i s e  à  j o u r
+F r é q u e n c e
+R e s p o n s a b l e
+V a l i d a t i o n
+Corr ectifs de sécurité critiques ou éle vés
+Dès leur détection, au plus vite
+Dév eloppeur
+CI complète et v alidation en prépr oduction
+Dépendances applicativ es mineur es
+Hebdomadair e ou par lot
+Dév eloppeur
+T ests automatisés et r ecette r apide
+Dépendances majeur es
+Mensuelle ou a v ant un lot f onctionnel
+Dév eloppeur
+Analy se du journal des modifications et tests r enf or cés
+Images Dock er et actions GitHub
+Mensuelle
+De vOps
+Build en prépr oduction et vérification des logs
+P aquets VP S
+Mensuelle
+Ops
+Snapshot ou sauv egar de , puis r edémarr age contrôlé
+L a  f r é q u e n c e  d e s  m i s e s  à  j o u r  d é p e n d  d e  l e u r  c r i t i c i t é ,  d e  l e u r  i m p a c t  p o t e n t i e l  e t  d e  l a  n a t u r e  d e s  c o m p o s a n t s  c o n c e r n é s .
+
+
+===== PAGE 4 =====
+L e s  e n d p o i n t s  d e  s a n t é  r e n v o i e n t  l e  s t a t u t ,  l e  n o m  d u  s e r v i c e ,  l a  v e r s i o n ,  l ’ e n v i r o n n e m e n t ,  l ’ u p t i m e ,  l e  t i m e s t a m p ,  l e  r u n t i m e  N o d e . j s  e t
+l ’ u t i l i s a t i o n  d e  l a  m é m o i r e .  
+L e s  m é t r i q u e s  P r o m e t h e u s  s u i v e n t  n o t a m m e n t  l e  n o m b r e  d e  r e q u ê t e s  e t  l a  d u r é e  d e s  r e q u ê t e s  H T T P  p a r  r o u t e  e t  p a r  s t a t u t .
+S o n d e s  m i s e s  e n  p l a c e
+P é r i m è t r e  d e  s u p e r v i s i o n
+d i s p o n i b i l i t é  H T T P  d u  d o m a i n e  p u b l i c  h t t p s : / / w w w . a n o - n y m . f r  ;
+d i s p o n i b i l i t é  d e  l ’ A P I  v i a  / h e a l t h  e t  / a p i / h e a l t h  ;
+e x p o s i t i o n  c o n t r ô l é e  d e s  m é t r i q u e s  v i a  / m e t r i c s  ;
+t e m p s  d e  r é p o n s e  e t  t a u x  d ’ e r r e u r  d e  l ’ A P I  ;
+d i s p o n i b i l i t é  d e  M y S Q L  v i a  l e  h e a l t h c h e c k  D o c k e r  ;
+é t a t  d e s  c o n t e n e u r s  D o c k e r  ;
+e s p a c e  d i s q u e  d u  V P S ,  n o t a m m e n t  p o u r  D o c k e r ,  l e s  s a u v e g a r d e s  e t  l e s  u p l o a d s  ;
+c e r t i f i c a t s  T L S  e t  r e v e r s e  p r o x y  N g i n x  ;
+e x é c u t i o n  d e s  w o r k f l o w s  C I / C D  ;
+r e t o u r s  u t i l i s a t e u r s  v i a  l e  f o r m u l a i r e  d e  s u p p o r t .
+L a  s u p e r v i s i o n  c o u v r e  l e s  é l é m e n t s  q u i  c o n d i t i o n n e n t  l a  d i s p o n i b i l i t é  d u  s e r v i c e  :
+C 4 . 1 . 2  -  S y s t è m e  d e  s u p e r v i s i o n  e t  d ’ a l e r t e
+Dossier Bloc 4 - Anonym Page 4
+S o n d e
+E m p l a c e m e n t
+F i n a l i t é
+P r e u v e
+/health
+Back end Expr ess
+Vérifier que l’ API répond
+anon ym-back-end/app .js
+/api/health
+Back end Expr ess
+Alias compatible a v ec les outils de monitoring et l’ API
+anon ym-back-end/app .js
+/status
+Back end Expr ess
+Endpoint technique interne
+anon ym-back-end/app .js
+/metrics
+Client Pr ometheus
+Suivr e les r equêtes , la latence et le runtime
+obser v ability .js
+Healthcheck MySQL
+Dock er Compose
+V alider la disponibilité de la base de données
+dock er-compose .pr od.yml
+Ar tiller y CI
+GitHub A ctions
+T ester la latence et les err eurs du back end
+health.yml
+L ogs HTTP Pino
+Back end
+Diagnostiquer les err eurs 4xx et 5xx
+obser v ability .js
+GitHub A ctions
+CI/CD
+Détecter les régr essions de build, de test et de déploiement
+.github/w orkflo w s
+F ormulair e de suppor t
+W eb/mobile
+R emonter une anomalie utilisateur
+Suppor t.js x , suppor t_scr een.dar t
+S e u i l s  d ' a l e r t e  r e t e n u s
+I n d i c a t e u r
+S e u i l
+A c t i o n  a t t e n d u e
+Disponibilité de /health
+2 échecs consécutifs
+Aler te par e-mail, vérification de Nginx et du back end
+Disponibilité de /api/health
+2 échecs consécutifs
+Vérification de l’ API et de la base de données
+T emps de réponse p95
+> 750 ms
+Analy se des logs , de la char ge , de la base de données et des endpoints lents
+T emps de réponse maximal
+> 2 000 ms
+In v estigation prioritair e
+T aux d’err eur
+> 1 %
+Analy se des err eurs applicativ es
+Dis que VP S
+> 90 %
+Netto y age des sauv egar des et de Dock er , contrôle des uploads
+Conteneur de base de données
+Healthcheck unhealth y
+R elance contrôlée de la base de données et vérification du v olume
+Cer tificat TLS
+Expir ation dans moins de 14 jours
+Vérification de Cer tbot et de Nginx
+CI/CD
+Job en échec
+Blocage de la fusion et du déploiement jus qu’à corr ection
+L e s  s e u i l s  p 9 5 ,  m a x i m a l  e t  d e  t a u x  d ’ e r r e u r  s o n t  d é j à  f o r m a l i s é s  d a n s  l e  t e s t  A r t i l l e r y  a n o n y m - b a c k - e n d / a p p / t e s t s / p e r f o r m a n c e / h e a l t h . y m l .
+
+
+===== PAGE 5 =====
+L e s  a l e r t e s  e t  l e s  a n o m a l i e s  a r r i v e n t  p a r  p l u s i e u r s  c a n a u x  c o m p l é m e n t a i r e s  :
+M o d a l i t é s  d e  s i g n a l e m e n t
+Dossier Bloc 4 - Anonym Page 5
+P r o m e t h e u s  /  A l e r t m a n a g e r  :  c o l l e c t e  a u t o m a t i q u e  d e s  m é t r i q u e s  b a c k e n d  e t  d é c l e n c h e m e n t  d ’ a l e r t e s  s u r  l a  d i s p o n i b i l i t é ,  l e  P 9 5 ,  l e
+t a u x  d ’ e r r e u r s  5 x x ,  l a  m é m o i r e  N o d e . j s  e t  l e  v o l u m e  d e  r e q u ê t e s .
+G i t H u b  A c t i o n s  :  n o t i f i c a t i o n  e n  c a s  d ’ é c h e c  d e  l a  C I / C D ,  d e s  t e s t s ,  d u  b u i l d  o u  d u  d é p l o i e m e n t .
+S u p e r v i s i o n  e x t e r n e  O V H  /  S i t e 2 4 x 7  :  c o n t r ô l e  d e  l a  d i s p o n i b i l i t é  d u  d o m a i n e ,  d u  V P S  e t  d e s  e n d p o i n t s  p u b l i c s .
+F o r m u l a i r e  d e  s u p p o r t  :  r e m o n t é e  u t i l i s a t e u r  p a r  e - m a i l  v i a  ` / a p i / a d m i n / r e p o r t ` .
+L o g s  b a c k e n d  /  N g i n x  :  a n a l y s e  t e c h n i q u e  d e s  e r r e u r s ,  d e s  s t a t u t s  H T T P  e t  d e s  c o m p o r t e m e n t s  a n o r m a u x .
+L e s  c a p t u r e s  s u i v a n t e s  p r é s e n t e n t  l e s  p r e u v e s  d e  s u p e r v i s i o n  e t  d e  s i g n a l e m e n t  m i s e s  e n  p l a c e  s u r  l e  p r o j e t .  
+E l l e s  m o n t r e n t  à  l a  f o i s  l a  s u p e r v i s i o n  i n t e r n e  d u  b a c k e n d ,  l a  s u p e r v i s i o n  e x t e r n e  d u  s i t e  e t  l e s  m é c a n i s m e s  d e  n o t i f i c a t i o n  u t i l i s é s  p o u r
+d é t e c t e r  o u  q u a l i f i e r  u n e  a n o m a l i e .
+H e a l t h c h e c k  b a c k e n d  e n  p r o d u c t i o n
+C e t t e  c a p t u r e  m o n t r e  q u e  l e  b a c k e n d  d e  p r o d u c t i o n  r é p o n d  c o r r e c t e m e n t  a u  e n d p o i n t  ` / h e a l t h ` .  L e  s t a t u t  ` o k ` ,  l ’ e n v i r o n n e m e n t
+` p r o d u c t i o n ` ,  l ’ u p t i m e  e t  l e s  i n f o r m a t i o n s  r u n t i m e  p e r m e t t e n t  d e  v é r i f i e r  r a p i d e m e n t  q u e  l ’ A P I  e s t  d i s p o n i b l e .
+A c c è s  s é c u r i s é  a u x  m é t r i q u e s  P r o m e t h e u s
+C e t t e  c a p t u r e  m o n t r e  l ’ a c c è s  a u x  m é t r i q u e s  b a c k e n d  v i a  ` / m e t r i c s `  a v e c  l ’ e n - t ê t e  ` x - m e t r i c s - t o k e n ` .  
+L e s  m é t r i q u e s  e x p o s é e s  p a r  ` p r o m - c l i e n t `  p e r m e t t e n t  à  P r o m e t h e u s  d e  s u i v r e  l a  m é m o i r e ,  l e  C P U ,  l e  n o m b r e  d e  r e q u ê t e s ,  l e s  s t a t u t s
+H T T P  e t  l e s  t e m p s  d e  r é p o n s e .
+C o l l e c t e  P r o m e t h e u s  o p é r a t i o n n e l l e
+C e t t e  c a p t u r e  m o n t r e  q u e  P r o m e t h e u s  c o l l e c t e  c o r r e c t e m e n t  l e s  m é t r i q u e s  d u  b a c k e n d .  
+L a  t a r g e t  ` a n o n y m - b a c k e n d `  e s t  e n  é t a t  ` U P ` ,  c e  q u i  p r o u v e  q u e  l e  b a c k e n d  e s t  j o i g n a b l e  d e p u i s  l e  r é s e a u  D o c k e r  i n t e r n e .
+
+
+
+===== PAGE 6 =====
+Dossier Bloc 4 - Anonym Page 6
+R è g l e s  d ’ a l e r t e s  P r o m e t h e u s
+C e t t e  c a p t u r e  m o n t r e  l e s  a l e r t e s  c o n f i g u r é e s  d a n s  P r o m e t h e u s  :  i n d i s p o n i b i l i t é  b a c k e n d ,  P 9 5  é l e v é ,  t a u x  d ’ e r r e u r s  5 x x ,  m é m o i r e  é l e v é e  e t
+v o l u m e  d e  r e q u ê t e s  a n o r m a l .  
+L e u r  é t a t  ` i n a c t i v e `  i n d i q u e  q u ’ a u c u n  s e u i l  c r i t i q u e  n ’ e s t  d é p a s s é  a u  m o m e n t  d e  l a  c a p t u r e .
+S u p e r v i s i o n  e x t e r n e  S i t e 2 4 x 7
+C e t t e  c a p t u r e  m o n t r e  l e  t a b l e a u  d e  b o r d  S i t e 2 4 x 7  u t i l i s é  p o u r  l a  s u p e r v i s i o n  e x t e r n e  d u  p r o j e t .  
+L e s  c o n t r ô l e s  a c t i f s  v é r i f i e n t  l a  d i s p o n i b i l i t é  d u  s i t e  “ w w w . a n o - n y m . f r ” ,  l e  c e r t i f i c a t  S S L / T L S ,  a i n s i  q u e  l e s  e n d p o i n t s  d e  s a n t é
+“ h t t p s : / / w w w . a n o - n y m . f r / h e a l t h ”  e t  “ h t t p s : / / w w w . a n o - n y m . f r / a p i / h e a l t h ” .  
+L e s  d e u x  m o n i t o r s  d é d i é s  a u x  h e a l t h c h e c k s  s o n t  e n  é t a t  “ H a u t ”  e t  r é p o n d e n t  e n  e n v i r o n  3 1  à  3 2  m s ,  c e  q u i  c o n f i r m e  q u e  l ’ A P I  e s t
+a c c e s s i b l e  d e p u i s  l ’ e x t é r i e u r  d u  V P S .
+L e s  m o n i t e u r s  i n t e r r o m p u s  c o r r e s p o n d e n t  à  d e s  f o n c t i o n n a l i t é s  a v a n c é e s  d u  p l a n  p a y a n t  S i t e 2 4 x 7  e t  n e  s o n t  p a s  r e t e n u s  d a n s  l e
+p é r i m è t r e  d e  s u p e r v i s i o n  o p é r a t i o n n e l l e .
+N o t i f i c a t i o n  e - m a i l  d ’ i n d i s p o n i b i l i t é  S i t e 2 4 x 7
+C e t t e  c a p t u r e  m o n t r e  u n e  n o t i f i c a t i o n  a u t o m a t i q u e  e n v o y é e  p a r  S i t e 2 4 x 7  l o r s q u ’ u n  m o n i t e u r  p a s s e  d e  l ’ é t a t  ` H a u t `  à  l ’ é t a t  ` B a s ` .  
+L e  s e r v i c e  ` S c a n s  A n o n y m `  e s t  d é t e c t é  c o m m e  i n d i s p o n i b l e  à  p a r t i r  d u  4  a o û t  2 0 2 6  à  0 1 : 0 5 : 0 4 .  
+C e t t e  a l e r t e  p e r m e t  d ’ i n f o r m e r  r a p i d e m e n t  l ’ é q u i p e  t e c h n i q u e  a f i n  d e  d é c l e n c h e r  l ’ a n a l y s e  d e  l ’ i n c i d e n t .
+
+
+===== PAGE 7 =====
+Dossier Bloc 4 - Anonym Page 7
+N o t i f i c a t i o n  e - m a i l  d e  r e t o u r  à  l a  n o r m a l e  S i t e 2 4 x 7
+C e t t e  c a p t u r e  m o n t r e  l a  n o t i f i c a t i o n  a u t o m a t i q u e  e n v o y é e  p a r  S i t e 2 4 x 7  l o r s q u e  l e  s e r v i c e  r e d e v i e n t  d i s p o n i b l e .  
+L e  m o n i t e u r  ` S c a n s  A n o n y m `  r e p a s s e  d e  l ’ é t a t  “ B a s ”  à  l ’ é t a t  “ H a u t ”  a p r è s  u n e  i n t e r r u p t i o n  d e  5  m i n u t e s  e t  1 8  s e c o n d e s .  
+E l l e  p e r m e t  d e  c l ô t u r e r  o u  d e  c o n f i r m e r  l a  r é s o l u t i o n  d e  l ’ i n c i d e n t .
+V a l i d a t i o n  d e  p e r f o r m a n c e  b a c k e n d  d a n s  G i t H u b  A c t i o n s
+C e t t e  c a p t u r e  m o n t r e  l e  j o b  ` B a c k e n d  p e r f o r m a n c e  v a l i d a t i o n `  e x é c u t é  d a n s  l e  w o r k f l o w  G i t H u b  A c t i o n s .  
+C e  j o b  d é m a r r e  l e  b a c k e n d ,  v é r i f i e  l e s  e n d p o i n t s  d e  s u p e r v i s i o n  p u i s  l a n c e  l e  t e s t  d e  p e r f o r m a n c e  A r t i l l e r y  s u r  ` / h e a l t h ` ,  ` / s t a t u s ` ,
+` / a p i / h e a l t h `  e t  ` / m e t r i c s ` .  
+L a  r é u s s i t e  d u  j o b  p e r m e t  d e  b l o q u e r  u n e  l i v r a i s o n  s i  l e s  s e u i l s  d e  p e r f o r m a n c e  o u  d e  d i s p o n i b i l i t é  n e  s o n t  p a s  r e s p e c t é s .
+C e s  é l é m e n t s  d é m o n t r e n t  q u e  l a  s u p e r v i s i o n  c o u v r e  à  l a  f o i s  l ’ é t a t  i n t e r n e  d u  b a c k e n d ,  l ’ a c c e s s i b i l i t é  e x t e r n e  d u  s e r v i c e  e t  l a
+r e m o n t é e  d e s  a n o m a l i e s .  
+L e s  a l e r t e s  t e c h n i q u e s  p e r m e t t e n t  d ’ i d e n t i f i e r  r a p i d e m e n t  u n  i n c i d e n t ,  p u i s  d e  l e  q u a l i f i e r  à  l ’ a i d e  d e s  l o g s ,  d e s  m é t r i q u e s  e t  d u
+p r o c e s s u s  d e  c o r r e c t i o n  G i t H u b  A c t i o n s  /  P u l l  R e q u e s t .
+
+
+===== PAGE 8 =====
+Dossier Bloc 4 - Anonym Page 8
+C 4 . 2 . 1  -  P r o c e s s u s  d e  c o l l e c t e  e t  d e  c o n s i g n a t i o n  d e s  a n o m a l i e s
+S o u r c e s  d e  d é t e c t i o n
+L e s  a n o m a l i e s  p e u v e n t  ê t r e  d é t e c t é e s  p a r  :
+u n  u t i l i s a t e u r  v i a  l e  s u p p o r t  w e b  o u  m o b i l e  ;
+u n  t e s t e u r  p e n d a n t  l a  r e c e t t e  e n  p r é p r o d u c t i o n  ;
+G i t H u b  A c t i o n s  l o r s  d ’ u n  t e s t ,  d ’ u n  b u i l d  o u  d ’ u n  d é p l o i e m e n t  ;
+l a  s u p e r v i s i o n  e x t e r n e  S i t e 2 4 x 7  s u r  / h e a l t h ,  / a p i / h e a l t h ,  H T T P S ,  S S L / T L S  e t  d o m a i n e  ;
+l e s  l o g s  d u  b a c k e n d ,  d e  N g i n x  o u  d e  D o c k e r  ;
+u n e  v é r i f i c a t i o n  m a n u e l l e  a p r è s  l e  d é p l o i e m e n t .
+A . 4 . 2  -  T r a i t e m e n t  d e s  a n o m a l i e s  d é t e c t é e s  e n  p r o d u c t i o n  
+C e t t e  p a r t i e  d é c r i t  l a  m a n i è r e  d o n t  l e s  a n o m a l i e s  d é t e c t é e s  e n  p r o d u c t i o n  s o n t  c o l l e c t é e s ,  c o n s i g n é e s ,  a n a l y s é e s  p u i s  c o r r i g é e s  d a n s
+l e  p r o j e t  A n o n y m .
+L ’ o b j e c t i f  e s t  d e  g a r a n t i r  u n e  p r i s e  e n  c h a r g e  s t r u c t u r é e  d e s  i n c i d e n t s ,  d e p u i s  l e u r  d é t e c t i o n  p a r  u n  u t i l i s a t e u r ,  u n  o u t i l  d e  s u p e r v i s i o n
+o u  l a  C I / C D ,  j u s q u ’ à  l e u r  r é s o l u t i o n  e t  l e u r  v a l i d a t i o n  e n  p r o d u c t i o n .
+L e  p r o c e s s u s  s ’ a p p u i e  s u r  G i t H u b  I s s u e s  p o u r  l a  c o n s i g n a t i o n ,  l e s  P u l l  R e q u e s t s  p o u r  l a  c o r r e c t i o n ,  G i t H u b  A c t i o n s  p o u r  l a  v a l i d a t i o n
+e t  l e  d é p l o i e m e n t ,  a i n s i  q u e  s u r  l e s  l o g s  e t  l e s  m é t r i q u e s  p o u r  l ’ a n a l y s e  t e c h n i q u e .
+C h a m p
+C o n t e n u  a t t e n d u
+Identifiant
+Numér o d’issue , de PR ou référ ence interne
+Date et en vir onnement
+Date , pr oduction, prépr oduction ou local, v ersion ou commit
+Sour ce
+Suppor t, monitoring, CI/CD ou r ecette
+Description
+S ymptôme obser vé par l’utilisateur ou le monitoring
+Étapes de r epr oduction
+P ar cours précis permettant de r epr oduir e l’anomalie
+Résultat attendu
+Compor tement normal attendu
+Résultat obtenu
+Compor tement constaté
+Impact
+Bloquant, majeur , mineur , sécurité ou per f ormance
+Analy se
+Hypothèse , logs et cause r acine
+Corr ectif pr oposé
+Solution technique r etenue
+V alidation
+T ests , captur es et logs après corr ection
+Livr aison
+Br anche , PR, commit et v ersion déplo yée
+P r o c e s s u s  d e  c o n s i g n a t i o n
+C h a q u e  a n o m a l i e  d o i t  ê t r e  c o n s i g n é e  d a n s  u n e  f i c h e  o u  u n e  i s s u e  c o n t e n a n t  l e s  i n f o r m a t i o n s  s u i v a n t e s  :
+C e  p r o c e s s u s  e s t  a d a p t é  à  A n o n y m ,  c a r  l ’ a p p l i c a t i o n  c o m b i n e  u n e  i n t e r f a c e  w e b ,  u n e  a p p l i c a t i o n  m o b i l e ,  u n e  A P I  e n  t e m p s  r é e l ,  d e s
+p a i e m e n t s  S t r i p e  e t  d e s  f i c h i e r s  u t i l i s a t e u r s .  
+L a  f i c h e  d o i t  d o n c  t o u j o u r s  p r é c i s e r  l e  s u p p o r t  c o n c e r n é ,  l ’ e n d p o i n t  t o u c h é ,  l e  c o m p t e  d e  t e s t  s i  n é c e s s a i r e  e t  i n c l u r e  d e s  c a p t u r e s  n e
+c o n t e n a n t  a u c u n e  d o n n é e  s e n s i b l e .
+
+
+===== PAGE 9 =====
+ 
+ 
+Dossier Bloc 4 - Anonym Page 9
+I s s u e  G i t H u b  c o m p l è t e  d e  c o n s i g n a t i o n  d ’ a n o m a l i e
+Cette capture pleine page présente l’issue GitHub `#213`, utilisée comme fiche de consignation pour l’anomalie `ANO-PROD-2026-07-02`.
+Elle reprend les champs définis dans le processus de consignation : identifiant, environnement, source, description, étapes de
+reproduction, résultat attendu, résultat obtenu, impact, analyse, correctif proposé, validation et livraison.  
+L’issue est labellisée `bug`, liée à la PR `#172` et au commit `62a0390`, puis clôturée après validation du correctif en production.
+F i c h e  d e  c o n s i g n a t i o n  d ’ u n e  a n o m a l i e  r e n c o n t r é e
+C h a m p
+R e n s e i g n e m e n t
+Identifiant
+ANO-PR OD-2026-07-02
+Titr e
+Images/GIF et r etour Stripe mobile non fiables après déploiement
+En vir onnement
+Pr oduction, https://www .ano-n ym.fr , Dock er Compose sur VP S
+Sour ce
+R etour utilisateur et vérification technique post-déploiement
+Impact
+Majeur :  images de pr ofil, messages et par cours de paiement mobile touchés
+S ymptômes
+Cer taines URL /uploads ne r en v o y aient pas les fichiers attendus ;  le r etour Stripe mobile ne r edirigeait pas corr ectement v ers
+l’application ;  ris que de per te des uploads lors d’un r edéploiement Dock er
+R epr oduction
+Ouvrir une image /uploads/..., r edéplo y er le back end et vérifier si le fichier r este disponible ;  lancer un paiement mobile et obser v er le
+r etour success ou cancel
+Résultat attendu
+L es fichiers uploadés r estent disponibles après le r edéploiement ;  les URL Stripe mobiles utilisent le deep link anon ym:// ;  les cookies de
+session r estent v alides en HTTP S
+Résultat obtenu
+L e dossier /app/uploads n’était pas monté sur un v olume persistant ;  les v ariables de deep link étaient absentes du conteneur ;  cer taines
+r outes Nginx n’étaient pas tr ansmises à Expr ess
+Analy se
+dock er inspect a montré l’absence de bind mount pour les uploads ;  la vérification de Nginx a montré un r outage incomplet ;
+l’en vir onnement du back end ne contenait pas toutes les v ariables mobiles
+C ause r acine
+Configur ation d’e xploitation incomplète :  persistance des uploads absente , r outage /uploads incomplet et v ariables mobiles non
+présentes en pr oduction
+Corr ectif
+Ajout d’un v olume Dock er ./anon ym-back-end/uploads:/app/uploads , s ynchr onisation des uploads e xistants , configur ation des v ariables
+P A YMENT_SUCCESS_MOBILE_URL, P A YMENT_C ANCEL_MOBILE_URL et MOBILE_DEEP_LINK_B A SE_URL, ajustement de
+Nginx et r edémarr age limité au back end et à Nginx
+V alidation
+curl /health, curl /api/health, test des fichiers /uploads , vérification des pages /open-pa yment-success , logs du back end et de Nginx
+sans err eur bloquante
+Livr aison
+Br anche fix/pr od-uploads-v olume , PR v ers pr epr od, puis fusion de pr epr od v ers main et déploiement en pr oduction via la CI/CD
+
+
+===== PAGE 10 =====
+Dossier Bloc 4 - Anonym Page 10
+V é r i f i c a t i o n  d ’ u n  f i c h i e r  u p l o a d é  s e r v i  e n  p r o d u c t i o n
+C e t t e  c a p t u r e  m o n t r e  l ’ e x é c u t i o n  d e  l a  c o m m a n d e  ` c u r l  - I `  s u r  u n e  i m a g e  s t o c k é e  d a n s  ` / u p l o a d s ` .  
+L a  r é p o n s e  H T T P  ` 2 0 0  O K `  e t  l e  t y p e  ` C o n t e n t - T y p e :  i m a g e / g i f `  c o n f i r m e n t  q u e  l e  f i c h i e r  e s t  b i e n  s e r v i  e n  p r o d u c t i o n  a p r è s  r e d é p l o i e m e n t .
+C e t t e  v é r i f i c a t i o n  v a l i d e  l e  c o r r e c t i f  d e  p e r s i s t a n c e  d e s  u p l o a d s .
+Pull Request de livraison du correctif
+C e t t e  c a p t u r e  m o n t r e  l a  P u l l  R e q u e s t  # 1 7 2 ,  c r é é e  d e p u i s  l a  b r a n c h e  f i x / p r o d - u p l o a d s - v o l u m e  e t  f u s i o n n é e  v e r s  p r e p r o d .  
+E l l e  c o n t i e n t  l e  c o m m i t  6 2 a 0 3 9 0  -  P e r s i s t  p r o d u c t i o n  u p l o a d s  v o l u m e  e t  m o n t r e  q u e  l e  c o r r e c t i f  a  é t é  i n t é g r é  v i a  l e  p r o c e s s u s  G i t H u b  P u l l
+R e q u e s t  a v e c  v a l i d a t i o n  d e s  c h e c k s .
+C o r r e c t i f  -  P R  # 1 7 2  e t  c o m m i t  P e r s i s t  p r o d u c t i o n  u p l o a d s  v o l u m e
+
+
+===== PAGE 11 =====
+Dossier Bloc 4 - Anonym Page 11
+M o d i f i c a t i o n  t e c h n i q u e  d a n s  d o c k e r - c o m p o s e . p r o d . y m l
+C e t t e  c a p t u r e  m o n t r e  l e  c h a n g e m e n t  r é a l i s é  d a n s  l e  f i c h i e r  d o c k e r - c o m p o s e . p r o d . y m l .  
+L ’ a j o u t  d u  v o l u m e  . / a n o n y m - b a c k - e n d / u p l o a d s : / a p p / u p l o a d s  p e r m e t  d e  s t o c k e r  l e s  f i c h i e r s  u p l o a d é s  s u r  l e  V P S  p l u t ô t  q u e  d a n s  l e
+f i l e s y s t e m  é p h é m è r e  d u  c o n t e n e u r  b a c k e n d .  
+C e  c o r r e c t i f  r é s o u t  l ’ a n o m a l i e  d e  p e r t e  d e s  i m a g e s  a p r è s  r e d é p l o i e m e n t .
+C e s  d e u x  c a p t u r e s  a s s u r e n t  l a  t r a ç a b i l i t é  e n t r e  l ’ a n o m a l i e  c o n s i g n é e ,  l a  b r a n c h e  d e  c o r r e c t i o n ,  l e  c o m m i t  l i v r é  e t  l a  m o d i f i c a t i o n  t e c h n i q u e
+r é e l l e m e n t  d é p l o y é e .
+L o g s  b a c k e n d  a p r è s  r e d é p l o i e m e n t
+C e t t e  c a p t u r e  m o n t r e  l e s  l o g s  d u  b a c k e n d  a p r è s  r e d é p l o i e m e n t  e n  p r o d u c t i o n .  
+S e q u e l i z e  C L I  c h a r g e  l a  c o n f i g u r a t i o n  d e  p r o d u c t i o n  e t  v é r i f i e  l e s  m i g r a t i o n s ,  l e  m e s s a g e  “ N o  m i g r a t i o n s  w e r e  e x e c u t e d ,  d a t a b a s e  s c h e m a
+w a s  a l r e a d y  u p  t o  d a t e ”  c o n f i r m e  q u e  l e  s c h é m a  e s t  à  j o u r .  
+L e  b a c k e n d  d é m a r r e  e n s u i t e  a v e c  “ A p p  a n d  S o c k e t . I O  l i s t e n i n g  o n  p o r t  5 0 0 0 ” ,  p u i s  v a l i d e  l a  c o n n e x i o n  à  l a  b a s e  d e  d o n n é e s  a v e c
+` D a t a b a s e  c o n n e c t e d . . . ` .
+
+
+===== PAGE 12 =====
+L e  t r a i t e m e n t  d e  l ’ a n o m a l i e  a  r e s p e c t é  l e  f l u x  d ’ i n t é g r a t i o n  e t  d e  d é p l o i e m e n t  c o n t i n u s  :
+c r é a t i o n  d ’ u n e  b r a n c h e  c o r r e c t i v e  d é d i é e  ;
+m o d i f i c a t i o n  c i b l é e  d e  l a  c o n f i g u r a t i o n  D o c k e r  C o m p o s e  d e  p r o d u c t i o n  ;
+v a l i d a t i o n  d u  f o n c t i o n n e m e n t  s u r  l e  V P S  à  l ’ a i d e  d e  t e s t s  H T T P  e t  d e  l ’ a n a l y s e  d e s  l o g s  ;
+o u v e r t u r e  d ’ u n e  P u l l  R e q u e s t  v e r s  p r e p r o d  p o u r  v a l i d a t i o n  ;
+f u s i o n  d e  p r e p r o d  v e r s  m a i n  ;
+d é p l o i e m e n t  e n  p r o d u c t i o n  v i a  G i t H u b  A c t i o n s  ;
+v é r i f i c a t i o n  p o s t - d é p l o i e m e n t  d e s  e n d p o i n t s ,  d e s  f i c h i e r s  u p l o a d é s  e t  d e s  l o g s .
+L e  c o r r e c t i f  a  p e r m i s  d e  r e n d r e  l e s  u p l o a d s  p e r s i s t a n t s .  I l  l i m i t e  l e  r i s q u e  d e  s u p p r e s s i o n  d e s  i m a g e s  e t  d e s  G I F  l o r s  d ’ u n  r e d é p l o i e m e n t
+D o c k e r  e t  g a r a n t i t  q u e  l e  b a c k e n d  c o n s e r v e  l e s  f i c h i e r s  u t i l i s a t e u r s  d a n s  u n  d o s s i e r  m o n t é  d e p u i s  l ’ h ô t e .
+L a  C I / C D  a p p o r t e  u n e  s é c u r i t é  s u p p l é m e n t a i r e  :
+e l l e  b l o q u e  l e s  r é g r e s s i o n s  g r â c e  a u  l i n t ,  a u x  t e s t s ,  a u  b u i l d  e t  a u x  t e s t s  d e  p e r f o r m a n c e  ;
+e l l e  e m p ê c h e  l e  d é p l o i e m e n t  s i  l e  d é p ô t  p r é s e n t  s u r  l e  s e r v e u r  c o n t i e n t  d e s  m o d i f i c a t i o n s  l o c a l e s  ;
+e l l e  c o n s e r v e  u n e  b r a n c h e  d e  s a u v e g a r d e  s i  l a  b r a n c h e  d u  s e r v e u r  d i v e r g e  ;
+e l l e  e x é c u t e  D o c k e r  C o m p o s e  a v e c  d e s  d é l a i s  d ’ e x p i r a t i o n  a d a p t é s  ;
+e l l e  a f f i c h e  l ’ é t a t  d e s  s e r v i c e s  a p r è s  l e  d é p l o i e m e n t .
+Dossier Bloc 4 - Anonym Page 12
+C 4 . 2 . 2  -  T r a i t e m e n t  e t  d é p l o i e m e n t  d u  c o r r e c t i f
+W o r k f l o w  c d _ d e p l o y _ t o _ p r o d u c t i o n  r é u s s i
+C e t t e  c a p t u r e  m o n t r e  l ’ e x é c u t i o n  r é u s s i e  d u  w o r k f l o w  G i t H u b  A c t i o n s  “ c d _ d e p l o y _ t o _ p r o d u c t i o n ”  a p r è s  u n  m e r g e  v e r s  l a  b r a n c h e  “ m a i n ” .
+L e s  j o b s  d e  p r é p a r a t i o n ,  d e  b u i l d  A P K ,  d e  d é p l o i e m e n t  w e b / b a c k e n d  s u r  l e  V P S  e t  d e  p u b l i c a t i o n  A P K  s o n t  t o u s  e n  s u c c è s .  
+E l l e  p r o u v e  q u e  l e  c o r r e c t i f  s u i t  b i e n  l e  p r o c e s s u s  d e  d é p l o i e m e n t  c o n t i n u  j u s q u ’ à  l a  p r o d u c t i o n .
+V é r i f i c a t i o n  d e s  c o n t e n e u r s  a p r è s  d é p l o i e m e n t
+C e t t e  c a p t u r e  m o n t r e  l e  j o b  “ D e p l o y  w e b  a n d  b a c k e n d  t o  V P S ”  d u  w o r k f l o w  d e  p r o d u c t i o n .  
+L e s  l o g s  a f f i c h e n t  l a  r e c o n s t r u c t i o n / r e d é m a r r a g e  d e s  s e r v i c e s  p u i s  l a  s o r t i e  d e  “ d o c k e r - c o m p o s e  p s ” .  
+L e s  c o n t e n e u r s  “ a n o n y m - b a c k - e n d ” ,  “ a n o n y m - f r o n t - e n d ” ,  “ d b - a n o n y m ” ,  “ n g i n x - p r o x y ”  e t  “ c e r t b o t ”  s o n t  e n  é t a t  “ U p ” ,  a v e c  M y S Q L  e n  “ U p
+( h e a l t h y ) ” ,  c e  q u i  c o n f i r m e  q u e  l e s  s e r v i c e s  s o n t  o p é r a t i o n n e l s  a p r è s  d é p l o i e m e n t .
+
+
+===== PAGE 13 =====
+R e c o m m a n d a t i o n
+G a i n  a t t e n d u
+C o û t  /  d é l a i  e s t i m é
+P r i o r i t é
+Ajouter Dependabot/R eno v ate
+Moins de r etar d sur les mises à jour , meilleur e
+sécurité
+F aible , 0,5 jour
+Haute
+Ajouter des sauv egar des automatisées et testées
+Réduction du ris que de per te de données
+Mo y en, 2 jours
+Haute
+Ajouter une pr océdur e de r ollback
+R etour r apide à une v ersion stable
+F aible , 0,5 jour
+Haute
+Centr aliser les logs
+R echer che plus r apide des err eurs en pr oduction
+Mo y en, 1 à 2 jours
+Haute
+Ajouter un tableau de bor d Gr af ana connecté à Pr ometheus
+Visualisation clair e des métriques :  P95, err eurs ,
+mémoir e , tr afic et disponibilité
+Mo y en, 1 à 2 jours
+Mo y enne
+Ajouter une page de statut interne d’administr ation
+L ectur e r apide de l’état de l’ API, de la base de
+données , du dis que et de la v ersion
+Mo y en, 1 jour
+Haute
+Ajouter des aler tes sur l’espace dis que , la RAM et les v olumes
+Dock er du VP S
+Prév ention des incidents liés aux r essour ces
+ser v eur
+Mo y en, 1 à 2 jours
+Haute
+Dossier Bloc 4 - Anonym Page 13
+C 4 . 3 . 1  -  R e c o m m a n d a t i o n s  a r g u m e n t é e s  d ’ a m é l i o r a t i o n
+L e s  r e c o m m a n d a t i o n s  s u i v a n t e s  v i s e n t  à  r e n f o r c e r  l a  m a i n t e n a b i l i t é ,  l a  d i s p o n i b i l i t é  e t  l ’ a t t r a c t i v i t é  d u  l o g i c i e l .
+C e s  a m é l i o r a t i o n s  s o n t  r é a l i s t e s ,  c a r  e l l e s  s ’ a p p u i e n t  s u r  d e s  b r i q u e s  d é j à  p r é s e n t e s  :  h e a l t h c h e c k s ,  m é t r i q u e s  P r o m e t h e u s ,  A l e r t m a n a g e r ,
+S i t e 2 4 x 7 ,  D o c k e r  C o m p o s e ,  G i t H u b  A c t i o n s ,  l o g s  s t r u c t u r é s  e t  e n d p o i n t s  p u b l i c s .
+E l l e s  p o u r r a i e n t  r e n f o r c e r  l a  m a i n t e n a b i l i t é ,  l a  d i s p o n i b i l i t é  e t  l ’ a t t r a c t i v i t é  d u  l o g i c i e l  e n  r é d u i s a n t  l e  t e m p s  d e  d é t e c t i o n ,  d e  d i a g n o s t i c  e t  d e
+c o r r e c t i o n  d e s  i n c i d e n t s .
+C 4 . 3 . 2  -  J o u r n a l  d e s  v e r s i o n s  d é p l o y é e s
+L e  p r o j e t  u t i l i s e  G i t ,  G i t H u b ,  l e s  P u l l  R e q u e s t s  e t  G i t H u b  A c t i o n s  p o u r  t r a c e r  l e s  v e r s i o n s  d é p l o y é e s .
+L a  b r a n c h e  p r e p r o d  s e r t  d e  s a s  d e  v a l i d a t i o n  e t  l a  b r a n c h e  m a i n  r e p r é s e n t e  l a  p r o d u c t i o n .
+U n  f i c h i e r  C H A N G E L O G . m d  e s t  m a i n t e n u  à  c h a q u e  r e l e a s e .  I l  l i s t e  l e s  é v o l u t i o n s ,  l e s  c o r r e c t i f s ,  l e s  P u l l  R e q u e s t s ,  l e s  a n o m a l i e s  a s s o c i é e s
+e t  l e s  v a l i d a t i o n s  r é a l i s é e s .
+L e  w o r k f l o w  r e l e a s e _ c h a n g e l o g  p e r m e t  d e  g é n é r e r  l e  c h a n g e l o g  d e p u i s  p r e p r o d ,  p u i s  l e  w o r k f l o w  d e  d é p l o i e m e n t  p r o d u c t i o n  c r é e
+a u t o m a t i q u e m e n t  u n  t a g  G i t  à  p a r t i r  d e  l a  d e r n i è r e  v e r s i o n  r e n s e i g n é e  d a n s  l e  c h a n g e l o g .
+A . 4 . 3  -  A s s u r e r  l a  m a i n t e n a n c e  d u  l o g i c i e l
+C e t t e  p a r t i e  p r é s e n t e  l e s  a c t i o n s  m i s e s  e n  p l a c e  e t  l e s  a m é l i o r a t i o n s  p r é v u e s  p o u r  m a i n t e n i r  l e  l o g i c i e l  A n o n y m  e n  c o n d i t i o n  o p é r a t i o n n e l l e
+a p r è s  s a  m i s e  e n  p r o d u c t i o n .
+L a  m a i n t e n a n c e  c o u v r e  l a  t r a ç a b i l i t é  d e s  v e r s i o n s ,  l e  s u i v i  d e s  c o r r e c t i f s ,  l ’ a n a l y s e  d e s  r e t o u r s  u t i l i s a t e u r s ,  l ’ a m é l i o r a t i o n  c o n t i n u e  d e  l a
+s u p e r v i s i o n  e t  l a  r é d u c t i o n  d e s  r i s q u e s  d ’ i n c i d e n t .
+E l l e  s ’ a p p u i e  s u r  G i t H u b ,  l e s  P u l l  R e q u e s t s ,  G i t H u b  A c t i o n s ,  D o c k e r  C o m p o s e ,  l e s  j o u r n a u x  a p p l i c a t i f s ,  P r o m e t h e u s ,  A l e r t m a n a g e r  e t
+S i t e 2 4 x 7  a f i n  d e  g a r a n t i r  q u e  l e s  é v o l u t i o n s  d u  l o g i c i e l  r e s t e n t  c o n t r ô l é e s ,  d o c u m e n t é e s  e t  v é r i f i a b l e s .
+C h a q u e  e n t r é e  d u  j o u r n a l  d e  v e r s i o n  d o i t  i n d i q u e r  :
+l a  v e r s i o n  e t  l a  d a t e  d e  l i v r a i s o n  ;
+l a  b r a n c h e  o u  l a  P u l l  R e q u e s t  a s s o c i é e  ;
+l e s  f o n c t i o n n a l i t é s  a j o u t é e s  o u  l e s  c o r r e c t i o n s  a p p o r t é e s  ;
+l e s  a n o m a l i e s  o u  c o r r e c t i f s  d o c u m e n t é s  ;
+l e s  l i e n s  v e r s  l e s  c o m m i t s  o u  P u l l  R e q u e s t s  ;
+l e s  t e s t s  r é a l i s é s  ;
+l e  s t a t u t  d e  d é p l o i e m e n t .
+
+
+===== PAGE 14 =====
+Dossier Bloc 4 - Anonym Page 14
+L a  p r e m i è r e  c a p t u r e  m o n t r e  u n  e x t r a i t  d u  f i c h i e r  C H A N G E L O G . m d .
+L e s  v e r s i o n s  d o c u m e n t é e s  i n d i q u e n t  l e s  c h a n g e m e n t s  l i v r é s ,  l e s  P u l l  R e q u e s t s  a s s o c i é e s ,  l e s  c o r r e c t i f s  r é a l i s é s  e t  l e s  v a l i d a t i o n s
+e f f e c t u é e s  a v a n t  o u  a p r è s  d é p l o i e m e n t .
+C a p t u r e  d e  l a  p a g e  G i t H u b  T a g s  m o n t r a n t  l e s  v e r s i o n s  c r é é e s  p o u r  l e  p r o j e t .  
+L e s  t a g s  v 1 . 0 . 8 ,  v 1 . 0 . 7 ,  v 1 . 0 . 6  e t  v 1 . 0 . 5  p e r m e t t e n t  d ’ i d e n t i f i e r  p r é c i s é m e n t  l e s  c o m m i t s  c o r r e s p o n d a n t  a u x  v e r s i o n s  l i v r é e s .
+L e s  t a g s  G i t  c o m p l è t e n t  l e  C H A N G E L O G . m d  e n  p e r m e t t a n t  d e  r e t r o u v e r  l e  c o d e  e x a c t  d é p l o y é  p o u r  c h a q u e  v e r s i o n .
+C a p t u r e  d e  l a  P u l l  R e q u e s t  # 2 1 9  l i é e  à  l ’ a j o u t  d ’ u n  c o n t r ô l e  p r é - d é p l o i e m e n t  s u r  l a  v e r s i o n  d u  C H A N G E L O G . m d .  
+L a  P R  a  é t é  f u s i o n n é e  v e r s  p r e p r o d  a p r è s  v a l i d a t i o n  d e s  c h e c k s  G i t H u b  A c t i o n s ,  c e  q u i  m o n t r e  q u e  l ’ é v o l u t i o n  d u  p r o c e s s u s  d e
+m a i n t e n a n c e  e s t  t r a c é e  e t  c o n t r ô l é e  a v a n t  l i v r a i s o n .
+C e s  é l é m e n t s  d é m o n t r e n t  q u e  l e s  v e r s i o n s  d é p l o y é e s  s o n t  t r a c é e s  d e  m a n i è r e  s t r u c t u r é e .
+L e  C H A N G E L O G . m d  d o c u m e n t e  l e s  é v o l u t i o n s  e t  l e s  c o r r e c t i f s ,  l e s  t a g s  G i t  p e r m e t t e n t  d e  r e t r o u v e r  l e  c o d e  e x a c t  l i v r é ,  e t  l e s  P u l l  R e q u e s t s
+a s s o c i é e s  c o n s e r v e n t  l ’ h i s t o r i q u e  d e s  v a l i d a t i o n s  r é a l i s é e s  p a r  G i t H u b  A c t i o n s .
+C e  f o n c t i o n n e m e n t  f a c i l i t e  l a  m a i n t e n a n c e  d u  l o g i c i e l ,  l e  s u i v i  d e s  c o r r e c t i o n s  e t  l ’ i d e n t i f i c a t i o n  r a p i d e  d ’ u n e  v e r s i o n  s t a b l e  e n  c a s  d e
+r é g r e s s i o n .
+
+
+===== PAGE 15 =====
+P a r t i e  p r e n a n t e
+C o n t r i b u t i o n
+Utilisateur / testeur
+R emonte le s ymptôme :  image ou r etour de paiement non conf orme
+Suppor t
+Collecte le conte xte :  compte , suppor t w eb ou mobile , action réalisée , captur e
+Dév eloppeur back end
+Analy se les r outes Expr ess , les cookies , les v ariables d’en vir onnement et Stripe
+De vOps
+Contrôle Dock er Compose , le v olume des uploads , Nginx et les logs du VP S
+CI/CD
+V alide et r edéploie le corr ectif en pr oduction
+ 
+U n  r e t o u r  u t i l i s a t e u r  i n d i q u e  q u e  c e r t a i n s  m é d i a s  n e  s ’ a f f i c h e n t  p a s  c o r r e c t e m e n t  a p r è s  u n  d é p l o i e m e n t  e t  q u e  l e  r e t o u r  d e  p a i e m e n t  m o b i l e
+n e  r a m è n e  p a s  l ’ u t i l i s a t e u r  d a n s  l e  b o n  p a r c o u r s .  
+L e  p r o b l è m e  a f f e c t e  l ’ e x p é r i e n c e  u t i l i s a t e u r  :  i m a g e s  e t  G I F  a b s e n t s ,  p a r c o u r s  d e  p a i e m e n t  m o i n s  f l u i d e ,  a i n s i  q u ’ u n e  s e s s i o n  o u  u n e
+r e d i r e c t i o n  m o b i l e  i n c e r t a i n e .
+Dossier Bloc 4 - Anonym Page 15
+C 4 . 3 . 3  -  C o l l a b o r a t i o n  a v e c  l e  s u p p o r t  c l i e n t
+C o n t e x t e  d u  r e t o u r  c l i e n t
+C o n t r i b u t i o n  d e s  p a r t i e s  p r e n a n t e s
+R é s o l u t i o n  a p p o r t é e
+La résolution a consisté à :
+vérifier les routes publiques /health, /api/health et /uploads ;
+contrôler les variables mobiles PAYMENT_SUCCESS_MOBILE_URL, PAYMENT_CANCEL_MOBILE_URL et
+MOBILE_DEEP_LINK_BASE_URL ;
+rendre le dossier uploads persistant ;
+confirmer que les cookies d’authentification sont sécurisés en HTTPS ;
+redémarrer uniquement les services nécessaires ;
+vérifier les logs du backend et de Nginx après la correction.
+L e  s u p p o r t  p e u t  e n s u i t e  i n f o r m e r  l ’ u t i l i s a t e u r  q u e  l e  c o r r e c t i f  e s t  e n  p r o d u c t i o n  e t  l u i  d e m a n d e r  d e  r e f a i r e  l e  p a r c o u r s  c o n c e r n é .
+Les captures suivantes présentent les canaux utilisés par les utilisateurs pour signaler une anomalie : formulaire de support web et
+formulaire de feedback mobile.
+Après réception du message par e-mail, le support vérifie le problème puis crée une tâche ClickUp si l’anomalie est confirmée.
+C a p t u r e s  d e s  f o r m u l a i r e s  d e  s u p p o r t  w e b  e t  m o b i l e  p e r m e t t a n t  à  u n  u t i l i s a t e u r  d e  s i g n a l e r  u n e  a n o m a l i e  o u  u n  r e t o u r  d ’ e x p é r i e n c e .
+
+
+===== PAGE 16 =====
+ 
+Dossier Bloc 4 - Anonym Page 16
+C a p t u r e  d ’ u n  e - m a i l  r e ç u  p a r  l e  s u p p o r t  a p r è s  l ’ e n v o i  d u  f o r m u l a i r e  d e  f e e d b a c k .  
+L e  m e s s a g e  c o n t i e n t  l e  t y p e  d e  d e m a n d e ,  l e  s u j e t  e t  l a  d e s c r i p t i o n  d u  p r o b l è m e ,  c e  q u i  p e r m e t  a u  s u p p o r t  d e  v é r i f i e r  l ’ a n o m a l i e  p u i s  d e  l a
+c o n s i g n e r  p o u r  t r a i t e m e n t .
+C e t t e  c o l l a b o r a t i o n  e n t r e  l ’ u t i l i s a t e u r ,  l e  s u p p o r t  e t  l e  d é v e l o p p e m e n t  p e r m e t  d e  t r a n s f o r m e r  u n  r e t o u r  c l i e n t  e n  a c t i o n  d e  m a i n t e n a n c e
+t r a c é e .
+L e  s u p p o r t  j o u e  u n  r ô l e  d e  f i l t r e  e n  c o l l e c t a n t  l a  d e m a n d e ,  e n  v é r i f i a n t  s a  r e p r o d u c t i b i l i t é  e t  e n  t r a n s m e t t a n t  l e s  i n f o r m a t i o n s  u t i l e s  a u
+d i a g n o s t i c .
+L ’ é q u i p e  d e  d é v e l o p p e m e n t  a n a l y s e  e n s u i t e  l e s  c a u s e s  t e c h n i q u e s ,  a p p l i q u e  l e  c o r r e c t i f  e t  l e  v a l i d e  v i a  l e s  l o g s ,  l e s  t e s t s  e t  l e  p r o c e s s u s
+C I / C D .
+U n e  f o i s  l a  c o r r e c t i o n  l i v r é e ,  l e  s u p p o r t  i n f o r m e  l ’ u t i l i s a t e u r  e t  c o n f i r m e  q u e  l e  p a r c o u r s  c o n c e r n é  e s t  d e  n o u v e a u  f o n c t i o n n e l .
+C e  f o n c t i o n n e m e n t  a m é l i o r e  l a  q u a l i t é  d u  l o g i c i e l ,  r é d u i t  l e  d é l a i  d e  t r a i t e m e n t  d e s  a n o m a l i e s  e t  r e n f o r c e  l a  c o n f i a n c e  d e s  u t i l i s a t e u r s  d a n s
+l ’ a p p l i c a t i o n .
+C e  d o s s i e r  p r é s e n t e  l e s  a c t i o n s  m i s e s  e n  p l a c e  p o u r  m a i n t e n i r  l ’ a p p l i c a t i o n  A n o n y m  e n  c o n d i t i o n  o p é r a t i o n n e l l e  a p r è s  s a  m i s e  e n
+p r o d u c t i o n .
+L a  s u p e r v i s i o n  r e p o s e  s u r  d e s  c o n t r ô l e s  i n t e r n e s  e t  e x t e r n e s  :  e n d p o i n t s  d e  s a n t é ,  m é t r i q u e s  P r o m e t h e u s ,  r è g l e s  d ’ a l e r t e  A l e r t m a n a g e r ,
+s u i v i  S i t e 2 4 x 7 ,  l o g s  b a c k e n d / N g i n x  e t  v é r i f i c a t i o n s  C I / C D .  
+C e s  é l é m e n t s  p e r m e t t e n t  d e  s u r v e i l l e r  l a  d i s p o n i b i l i t é  d u  s e r v i c e ,  d ’ i d e n t i f i e r  l e s  a n o m a l i e s  e t  d e  q u a l i f i e r  l e s  i n c i d e n t s  à  p a r t i r  d ’ i n d i c a t e u r s
+t e c h n i q u e s .
+L e  t r a i t e m e n t  d e s  a n o m a l i e s  s ’ a p p u i e  s u r  u n  p r o c e s s u s  s t r u c t u r é  :  c o l l e c t e  d e s  r e t o u r s  u t i l i s a t e u r s ,  c o n s i g n a t i o n  d a n s  G i t H u b  I s s u e s ,
+a n a l y s e  t e c h n i q u e ,  c o r r e c t i o n  v i a  P u l l  R e q u e s t ,  v a l i d a t i o n  p a r  G i t H u b  A c t i o n s  p u i s  d é p l o i e m e n t  c o n t r ô l é  e n  p r o d u c t i o n .  
+L ’ e x e m p l e  d e  l ’ a n o m a l i e  d e s  u p l o a d s  m o n t r e  q u e  l e  p r o j e t  c o n s e r v e  u n e  t r a c e  c o m p l è t e  e n t r e  l e  p r o b l è m e  d é t e c t é ,  l e  c o r r e c t i f  a p p l i q u é  e t  l a
+v a l i d a t i o n  f i n a l e .
+L a  m a i n t e n a n c e  e s t  é g a l e m e n t  a s s u r é e  p a r  u n  j o u r n a l  d e  v e r s i o n ,  d e s  t a g s  G i t ,  d e s  r e c o m m a n d a t i o n s  d ’ a m é l i o r a t i o n  r é a l i s t e s  e t  u n e
+c o l l a b o r a t i o n  e n t r e  s u p p o r t  e t  d é v e l o p p e m e n t .  
+C e s  p r a t i q u e s  r e n f o r c e n t  l a  t r a ç a b i l i t é ,  l a  f i a b i l i t é  e t  l a  c a p a c i t é  d ’ é v o l u t i o n  d u  l o g i c i e l .
+A i n s i ,  l e  p r o j e t  d i s p o s e  d ’ u n  s o c l e  o p é r a t i o n n e l  c o h é r e n t  p o u r  d é t e c t e r  l e s  i n c i d e n t s ,  c o r r i g e r  l e s  a n o m a l i e s ,  s u i v r e  l e s  v e r s i o n s  l i v r é e s  e t
+a m é l i o r e r  p r o g r e s s i v e m e n t  l a  q u a l i t é  d u  s e r v i c e .
+C o n c l u s i o n
+
+
+===== PAGE 17 =====
+Dossier Bloc 4 - Anonym Page 17
+R é c a p i t u l a t i f  t e c h n i q u e
+É l é m e n t
+V a l e u r  /  l i e n
+Back end  
+Node .js , Expr ess .js
+T emps réel
+Sock et.IO (W ebSock et)
+F r ontend w eb
+R eact, Vite
+Mobile  
+Flutter (Dar t), Andr oid SDK
+Base de données
+MySQL
+ORM / migr ations
+Sequeliz e
+P aiement
+Stripe
+Notifications push
+Fir ebase F CM
+C ar togr aphie
+Mapbo x
+E-mails
+SMTP Gmail  / Nodemailer
+Stack applicativ e
+É l é m e n t
+V a l e u r  /  l i e n
+Dépôt GitHub
+https://github .com/Luk as-Bouhlel/anon ym.git
+Site en pr oduction
+https://www .ano-n ym.fr
+Figma
+https://www .figma.com/design/anon ym
+A ccès
+Infr astructur e & Exploitation
+É l é m e n t
+V a l e u r  /  l i e n
+Infr astructur e
+Dock er  / Dock er Compose
+Ser v eur
+VP S O VH
+R e v erse pr o xy
+Nginx
+HTTP S
+Cer tbot
+Déploiement pr oduction
+dock er-compose .pr od.yml
+Monitoring Dock er
+dock er-compose .monitoring.yml
+R edémarr age ser vices
+r estar t:  unless-stopped
+A n n e x e s
+É l é m e n t
+V a l e u r  /  l i e n
+Gestion de v ersion
+Git / GitHub
+Br anches
+de vlop , pr epr od, main
+R e vue et fusion du code
+Pull R equests
+Journal de v ersion
+CHANGEL OG.md
+T ags de v ersion
+v1.0.5, v1.0.6, v1.0.7, v1.0.8
+CI
+.github/w orkflo w s/ci.yml
+Déploiement prépr oduction
+.github/w orkflo w s/ci-cd.yml
+Déploiement pr oduction
+.github/w orkflo w s/cd.yml
+Génér ation changelog
+.github/w orkflo w s/r elease-changelog.yml
+T ests back end
+Jest , Super test
+T ests mobile
+flutter test , widget tests
+Analy se mobile
+flutter analyz e
+T ests per f ormance
+Ar tiller y
+V ersioning, CI/CD & Qualité
+
+
+===== PAGE 18 =====
+Dossier Bloc 4 - Anonym Page 18
+É l é m e n t
+V a l e u r  /  l i e n
+A uthentification
+JWT  + r e fr esh tok en en cookies HttpOnly / Secur e / SameSite
+Contrôle d’accès
+RB A C administr ateur / utilisateur
+Pr otection HTTP
+Helmet , CSP , COR S
+Anti-abus
+R ate limiting ,   ralentissement des requêtes sensibles
+A udit de dépendances
+Sn yk , npm audit
+Secr ets
+GitHub Secr ets , v ariables d’en vir onnement
+Endpoints santé
+/health , /api/health , /status
+Métriques
+/metrics , Pr ometheus , pr om-client
+L ogs structurés
+pino-http
+Aler tes
+Aler tmanager
+Super vision e xterne
+Site24x7
+Sécurité & Obser v abilité

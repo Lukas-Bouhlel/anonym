@@ -76,13 +76,30 @@ const buildResetPasswordLink = (baseUrl, token) => {
     return `${urlWithResetPath}${separator}token=${encodedToken}`;
 };
 
+const isHttpLink = (url) => {
+    if (typeof url !== 'string') return false;
+    return /^https?:\/\//i.test(url.trim());
+};
+
 const getResetPasswordWebBaseUrl = () => {
     return getRuntimeEnvVar('RESET_PASSWORD_WEB_URL')
         || getRuntimeEnvVar('RESET_PASSWORD_URL')
         || getRuntimeEnvVar('ORIGIN');
 };
 
-const getResetPasswordMobileBaseUrl = () => getRuntimeEnvVar('RESET_PASSWORD_MOBILE_URL');
+const getResetPasswordMobileBaseUrl = () => {
+    const configuredMobileUrl = getRuntimeEnvVar('RESET_PASSWORD_MOBILE_URL');
+    const fallbackMobileUrl = getRuntimeEnvVar('MOBILE_DEEP_LINK_BASE_URL') || 'anonym:///auth/reset';
+
+    if (!configuredMobileUrl) return fallbackMobileUrl;
+    if (isHttpLink(configuredMobileUrl)) return fallbackMobileUrl;
+    return configuredMobileUrl;
+};
+
+const isMobileUserAgent = (userAgent) => {
+    const value = String(userAgent || '');
+    return /Android|iPhone|iPad|iPod|Windows Phone|Mobile Safari/i.test(value);
+};
 
 const getPaymentSuccessWebBaseUrl = () => {
     return getRuntimeEnvVar('PAYMENT_SUCCESS_WEB_URL')
@@ -135,6 +152,11 @@ const escapeHtml = (value) => String(value)
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#039;');
+
+const toSafeJsonString = (value) => JSON.stringify(String(value))
+    .replace(/</g, '\\u003c')
+    .replace(/>/g, '\\u003e')
+    .replace(/&/g, '\\u0026');
 
 /**
  * Connexion à la base de données avec Sequelize.
@@ -297,13 +319,17 @@ app.get('/open-reset-password', (req, res) => {
 
     const webResetLink = buildResetPasswordLink(getResetPasswordWebBaseUrl(), token);
     const mobileResetLink = buildResetPasswordLink(getResetPasswordMobileBaseUrl(), token);
-    const openLink = mobileResetLink || webResetLink;
     const fallbackLink = webResetLink || '/';
 
-    if (!openLink) {
+    if (!webResetLink) {
         return res.status(500).type('text/plain').send("Aucun lien de reinitialisation configure.");
     }
 
+    if (!isMobileUserAgent(req.get('user-agent'))) {
+        return res.redirect(302, webResetLink);
+    }
+
+    const openLink = mobileResetLink || webResetLink;
     const safeOpenLink = escapeHtml(openLink);
     const safeFallbackLink = escapeHtml(fallbackLink);
 
@@ -313,7 +339,6 @@ app.get('/open-reset-password', (req, res) => {
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Ouverture Anonym</title>
-  <meta http-equiv="refresh" content="0;url=${safeOpenLink}">
   <style>
     body { font-family: Arial, sans-serif; margin: 0; background: #121212; color: #f4f4f4; }
     .wrap { max-width: 460px; margin: 10vh auto; padding: 24px; text-align: center; }
@@ -321,6 +346,12 @@ app.get('/open-reset-password', (req, res) => {
     .muted { opacity: .8; font-size: 14px; margin-top: 12px; }
     a.fallback { color: #c4d4ff; word-break: break-all; }
   </style>
+  <script>
+    window.location.replace(${toSafeJsonString(openLink)});
+    window.setTimeout(function () {
+      window.location.href = ${toSafeJsonString(fallbackLink)};
+    }, 1400);
+  </script>
 </head>
 <body>
   <div class="wrap">

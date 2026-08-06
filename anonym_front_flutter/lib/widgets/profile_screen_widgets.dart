@@ -338,8 +338,14 @@ class _ShareProfileScreenState extends State<ShareProfileScreen> {
                                     () => query = value.trim().toLowerCase(),
                                   );
                                 },
+                                textAlignVertical: TextAlignVertical.center,
+                                strutStyle: const StrutStyle(
+                                  height: 1,
+                                  forceStrutHeight: true,
+                                ),
                                 style: const TextStyle(
                                   color: AppColors.cFCFAFE,
+                                  height: 1,
                                 ),
                                 decoration: InputDecoration(
                                   hintText: 'Rechercher des amis',
@@ -347,6 +353,7 @@ class _ShareProfileScreenState extends State<ShareProfileScreen> {
                                     color: AppColors.cFCFAFE.withValues(
                                       alpha: 0.55,
                                     ),
+                                    height: 1,
                                   ),
                                   prefixIcon: const Icon(
                                     Icons.search_rounded,
@@ -354,6 +361,8 @@ class _ShareProfileScreenState extends State<ShareProfileScreen> {
                                   ),
                                   filled: false,
                                   fillColor: Colors.transparent,
+                                  isDense: true,
+                                  contentPadding: EdgeInsets.zero,
                                   border: InputBorder.none,
                                   enabledBorder: InputBorder.none,
                                   focusedBorder: InputBorder.none,
