@@ -4,6 +4,11 @@ services:
   mysql-db-preprod:
     image: mysql:latest
     container_name: db-anonym-preprod
+    restart: unless-stopped
+    command:
+      - --innodb-buffer-pool-size=128M
+      - --max-connections=40
+      - --performance-schema=OFF
     volumes:
       - db-anonym-preprod:/var/lib/mysql
     environment:
@@ -21,6 +26,7 @@ services:
 
   backend-preprod:
     image: anonym-back-end:latest
+    restart: unless-stopped
     env_file:
       - ./anonym-back-end/.env
     build:
@@ -40,6 +46,7 @@ services:
 
   frontend-preprod:
     image: anonym-front-end:latest
+    restart: unless-stopped
     env_file:
       - ./anonym-front-end/.env.preprod
     build:
@@ -58,6 +65,7 @@ services:
   nginx-preprod:
     image: nginx:latest
     container_name: nginx-proxy-preprod
+    restart: unless-stopped
     ports:
       - "8180:80"
       - "8443:443"
@@ -76,6 +84,7 @@ services:
   certbot-preprod:
     image: certbot/certbot:latest
     container_name: certbot-preprod
+    restart: unless-stopped
     volumes:
       - ./nginx/ssl:/etc/letsencrypt
       - ./certbot/www:/var/www/certbot
