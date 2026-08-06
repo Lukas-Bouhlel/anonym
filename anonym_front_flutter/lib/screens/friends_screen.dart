@@ -12,7 +12,6 @@ import '../theme.dart';
 import '../widgets/app_remote_image.dart';
 import '../widgets/presence_badge.dart';
 
-
 part '../widgets/friends_screen_widgets.dart';
 
 /// Écran social: amis, demandes et découverte de profils.
@@ -195,17 +194,24 @@ class _FriendsScreenState extends State<FriendsScreen> {
                             color: AppColors.whiteColor,
                             size: 27,
                           ),
+                          const SizedBox(width: 10),
                           Expanded(
                             child: TextField(
                               controller: _searchController,
                               onChanged: (value) => setState(
                                 () => _query = value.trim().toLowerCase(),
                               ),
+                              textAlignVertical: TextAlignVertical.center,
+                              strutStyle: const StrutStyle(
+                                height: 1,
+                                forceStrutHeight: true,
+                              ),
                               style: const TextStyle(
                                 color: AppColors.whiteColor,
                                 fontFamily: AppTypography.primaryFontFamily,
                                 fontWeight: FontWeight.w500,
                                 fontSize: 13,
+                                height: 1,
                               ),
                               cursorColor: AppColors.whiteColor,
                               decoration: InputDecoration(
@@ -217,10 +223,12 @@ class _FriendsScreenState extends State<FriendsScreen> {
                                   fontFamily: AppTypography.primaryFontFamily,
                                   fontWeight: FontWeight.w500,
                                   fontSize: 13,
+                                  height: 1,
                                 ),
                                 filled: false,
                                 fillColor: Colors.transparent,
-                                isCollapsed: true,
+                                isDense: true,
+                                contentPadding: EdgeInsets.zero,
                                 border: InputBorder.none,
                                 enabledBorder: InputBorder.none,
                                 focusedBorder: InputBorder.none,
@@ -542,11 +550,7 @@ class _FriendsScreenState extends State<FriendsScreen> {
     );
   }
 
-  Future<void> _addFriend(
-    AppProvider app,
-    String value, {
-    int? userId,
-  }) async {
+  Future<void> _addFriend(AppProvider app, String value, {int? userId}) async {
     final username = value.trim();
     if (username.isEmpty) return;
     if (app.isFriendRequestPending(userId: userId, username: username)) {

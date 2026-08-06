@@ -45,7 +45,9 @@ android {
         versionCode = flutter.versionCode
         versionName = flutter.versionName
         ndk {
-            abiFilters += listOf("arm64-v8a")
+            if (!isDebugBuildTask) {
+                abiFilters += listOf("arm64-v8a")
+            }
         }
     }
 
@@ -96,7 +98,6 @@ android {
                 excludes += setOf(
                     "lib/armeabi-v7a/**",
                     "lib/x86/**",
-                    "lib/x86_64/**",
                 )
             }
         }

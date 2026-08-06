@@ -277,16 +277,22 @@ class _PublicConversationsScreenState extends State<PublicConversationsScreen>
                             color: AppColors.whiteColor,
                             size: 27,
                           ),
-                          const SizedBox(width: 8),
+                          const SizedBox(width: 10),
                           Expanded(
                             child: TextField(
                               onChanged: (value) =>
                                   setState(() => _query = value),
+                              textAlignVertical: TextAlignVertical.center,
+                              strutStyle: const StrutStyle(
+                                height: 1,
+                                forceStrutHeight: true,
+                              ),
                               style: const TextStyle(
                                 color: AppColors.whiteColor,
                                 fontFamily: AppTypography.primaryFontFamily,
                                 fontWeight: FontWeight.w500,
                                 fontSize: 13,
+                                height: 1,
                               ),
                               cursorColor: AppColors.whiteColor,
                               decoration: const InputDecoration(
@@ -296,10 +302,12 @@ class _PublicConversationsScreenState extends State<PublicConversationsScreen>
                                   fontFamily: AppTypography.primaryFontFamily,
                                   fontWeight: FontWeight.w500,
                                   fontSize: 13,
+                                  height: 1,
                                 ),
                                 filled: false,
                                 fillColor: Colors.transparent,
-                                isCollapsed: true,
+                                isDense: true,
+                                contentPadding: EdgeInsets.zero,
                                 border: InputBorder.none,
                                 enabledBorder: InputBorder.none,
                                 focusedBorder: InputBorder.none,
