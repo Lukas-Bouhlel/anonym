@@ -1,5 +1,19 @@
 # Changelog
 
+## v1.0.9 - 2026-08-06
+
+### Corrigé
+- `4cea3dc5` - fix(mobile): polish search inputs and reset deep links
+
+### Changé
+- PR #225 - Devlop (`81d36a6f`)
+
+### Pull Requests déployées
+- PR #225 - Devlop depuis `Lukas-Bouhlel/devlop` (`81d36a6f`)
+
+### Périmètre Git
+- Changements inclus depuis `v1.0.8` jusqu’à `HEAD`.
+
 ## v1.0.8 - 2026-08-06
 
 ### Corrige
