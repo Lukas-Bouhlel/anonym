@@ -225,13 +225,24 @@ const getResetPasswordWebBaseUrl = () => {
         || getRuntimeEnvVar('ORIGIN');
 };
 
-const buildResetPasswordBridgeLink = (req, token) => {
-    if (!req || typeof token !== 'string' || !token.trim()) return '';
-    const encodedToken = encodeURIComponent(token);
-    const protocol = req.protocol || 'http';
-    const host = req.get?.('host');
-    if (!host) return '';
-    return `${protocol}://${host}/open-reset-password?token=${encodedToken}`;
+const isHttpLink = (url) => typeof url === 'string' && /^https?:\/\//i.test(url.trim());
+
+const appendMobileResetPath = (baseUrl) => {
+    if (typeof baseUrl !== 'string') return '';
+    const trimmedBaseUrl = baseUrl.trim();
+    if (!trimmedBaseUrl || isHttpLink(trimmedBaseUrl)) return '';
+    if (/\/(?:auth\/)?reset\/?(?:\?|$)/i.test(trimmedBaseUrl)) return trimmedBaseUrl;
+    if (trimmedBaseUrl.endsWith(':///')) return `${trimmedBaseUrl}auth/reset`;
+    if (trimmedBaseUrl.endsWith('://')) return `${trimmedBaseUrl}/auth/reset`;
+    return `${trimmedBaseUrl.replace(/\/+$/, '')}/auth/reset`;
+};
+
+const getResetPasswordMobileBaseUrl = () => {
+    const configuredResetUrl = getRuntimeEnvVar('RESET_PASSWORD_MOBILE_URL');
+    if (configuredResetUrl && !isHttpLink(configuredResetUrl)) return configuredResetUrl;
+
+    return appendMobileResetPath(getRuntimeEnvVar('MOBILE_DEEP_LINK_BASE_URL'))
+        || 'anonym:///auth/reset';
 };
 
 /**
@@ -628,7 +639,8 @@ exports.logout = async (req, res) => {
  * // Exemple de requête
  * POST /api/auth/request-password-reset
  * {
- *   "email": "utilisateur@example.com"
+ *   "email": "utilisateur@example.com",
+ *   "platform": "mobile"
  * }
  */
 exports.requestPasswordReset = async (req, res) => {
@@ -656,18 +668,25 @@ exports.requestPasswordReset = async (req, res) => {
         user.resetPasswordExpires = Date.now() + 15 * 60 * 1000; // 15 minutes
         await user.save();
 
-        // Créer un lien de réinitialisation
+        // Créer le lien dans l'environnement depuis lequel la demande a été initiée.
+        // Les anciennes versions des clients n'envoyaient pas de plateforme : elles
+        // conservent le comportement web par défaut.
+        const resetPlatform = String(req.body.platform || '').trim().toLowerCase() === 'mobile'
+            ? 'mobile'
+            : 'web';
         const webResetLink = buildResetPasswordLink(getResetPasswordWebBaseUrl(), token);
-        if (!webResetLink) {
-            return res.status(500).json({ message: "Configuration manquante pour l'URL de reinitialisation web" });
+        const mobileResetLink = buildResetPasswordLink(getResetPasswordMobileBaseUrl(), token);
+        const resetLink = resetPlatform === 'mobile' ? mobileResetLink : webResetLink;
+        if (!resetLink) {
+            return res.status(500).json({
+                message: `Configuration manquante pour l'URL de reinitialisation ${resetPlatform}`
+            });
         }
-        const bridgeResetLink = buildResetPasswordBridgeLink(req, token);
-        const primaryResetLink = bridgeResetLink || webResetLink;
         // Lire le template d'email
         const emailTemplatePath = path.join(__dirname, '../../templates/reset-password-email.html');
         let htmlContent = fs.readFileSync(emailTemplatePath, 'utf8');
-        htmlContent = htmlContent.replace(/{{resetLink}}/g, primaryResetLink);
-        htmlContent = htmlContent.replace(/{{resetFallbackLink}}/g, webResetLink);
+        htmlContent = htmlContent.replace(/{{resetLink}}/g, resetLink);
+        htmlContent = htmlContent.replace(/{{resetFallbackLink}}/g, resetLink);
 
         // Envoyer l'email
         await req.mailer.sendEmail(

@@ -48,4 +48,6 @@ app.*.map.json
 key.properties
 android/key.properties
 keystore/
+google-play-service-account*.json
+*.der
 

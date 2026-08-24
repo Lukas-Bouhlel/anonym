@@ -239,12 +239,16 @@ void main() {
           confirmPassword: 'new',
         );
 
-        verify(
+        final resetRequestBody = verify(
           () => dio.post<void>(
             '/api/auth/reset-password',
-            data: any(named: 'data'),
+            data: captureAny(named: 'data'),
           ),
-        ).called(1);
+        ).captured.single as Map<String, dynamic>;
+        expect(resetRequestBody, {
+          'email': 'a@test.dev',
+          'platform': 'mobile',
+        });
         verify(
           () => dio.post<void>('/api/auth/reset', data: any(named: 'data')),
         ).called(1);
