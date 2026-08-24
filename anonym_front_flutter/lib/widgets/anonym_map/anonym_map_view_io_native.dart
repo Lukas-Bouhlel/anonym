@@ -796,7 +796,7 @@ class _NativeMapboxMapState extends State<_NativeMapboxMap> {
       final byteData = await NetworkAssetBundle(uri).load(uri.toString());
       final bytes = byteData.buffer.asUint8List();
       if (_looksLikeSvg(avatarUrl, bytes)) {
-        return _decodeSvgImage(bytes);
+        return await _decodeSvgImage(bytes);
       }
       final codec = await ui.instantiateImageCodec(
         bytes,

@@ -5,6 +5,28 @@ on:
     branches:
       - main
   workflow_dispatch:
+    inputs:
+      publish_google_play:
+        description: Publish the Android App Bundle to Google Play
+        required: true
+        type: boolean
+        default: false
+      google_play_track:
+        description: Google Play release track
+        required: true
+        type: choice
+        options:
+          - production
+          - internal
+        default: production
+      google_play_status:
+        description: Draft requires a final manual validation in Play Console
+        required: true
+        type: choice
+        options:
+          - draft
+          - completed
+        default: draft
 
 permissions:
   contents: write
@@ -34,6 +56,9 @@ jobs:
     name: Validate release version
     runs-on: ubuntu-latest
     needs: prepare-production-deploy
+    outputs:
+      release_tag: ${{ steps.release_version.outputs.release_tag }}
+      release_version: ${{ steps.release_version.outputs.release_version }}
 
     steps:
       - name: Checkout code
@@ -43,6 +68,7 @@ jobs:
           fetch-depth: 0
 
       - name: Check CHANGELOG release tag
+        id: release_version
         run: |
           set -euo pipefail
 
@@ -52,6 +78,9 @@ jobs:
             echo "No release tag found in CHANGELOG.md. Expected a heading like: ## v1.0.5 - 2026-08-05"
             exit 1
           fi
+
+          echo "release_tag=$release_tag" >> "$GITHUB_OUTPUT"
+          echo "release_version=${release_tag#v}" >> "$GITHUB_OUTPUT"
 
           git fetch --tags origin
 
@@ -70,7 +99,7 @@ jobs:
           echo "Release tag $release_tag is available for this production deployment."
 
   build-mobile-apk:
-    name: Build signed mobile APK
+    name: Build signed Android artifacts
     runs-on: ubuntu-latest
     needs: validate-release-version
 
@@ -109,19 +138,32 @@ jobs:
           keyPassword=$ANDROID_KEY_PASSWORD
           EOF
 
-      - name: Build Android release APK
+      - name: Build Android release APK and App Bundle
         working-directory: ./anonym_front_flutter
         env:
           MAPBOX_ACCESS_TOKEN: ${{ secrets.MAPBOX_ACCESS_TOKEN }}
           MOBILE_API_BASE_URL: ${{ secrets.MOBILE_API_BASE_URL }}
+          RELEASE_VERSION: ${{ needs.validate-release-version.outputs.release_version }}
         run: |
           set -euo pipefail
           API_BASE_URL="${MOBILE_API_BASE_URL:-https://www.ano-nym.fr}"
           API_HOST="$(python3 -c 'import sys, urllib.parse; print(urllib.parse.urlparse(sys.argv[1]).hostname or "")' "$API_BASE_URL")"
           TLS_PINNED_CERT_SHA256="$(echo | openssl s_client -connect "$API_HOST:443" -servername "$API_HOST" 2>/dev/null | openssl x509 -noout -fingerprint -sha256 | sed 's/^.*=//' | tr -d ':' | tr '[:upper:]' '[:lower:]')"
+          # Keep automated version codes above the manually uploaded bootstrap bundle (1081).
+          BUILD_NUMBER="$((100000 + GITHUB_RUN_NUMBER * 10 + GITHUB_RUN_ATTEMPT))"
           test -n "$TLS_PINNED_CERT_SHA256"
+          test -n "$RELEASE_VERSION"
           flutter pub get
           flutter build apk --release \
+            --build-name="$RELEASE_VERSION" \
+            --build-number="$BUILD_NUMBER" \
+            --dart-define=APP_ENV=prod \
+            --dart-define=API_BASE_URL="$API_BASE_URL" \
+            --dart-define=MAPBOX_ACCESS_TOKEN="$MAPBOX_ACCESS_TOKEN" \
+            --dart-define=TLS_PINNED_CERT_SHA256="$TLS_PINNED_CERT_SHA256"
+          flutter build appbundle --release \
+            --build-name="$RELEASE_VERSION" \
+            --build-number="$BUILD_NUMBER" \
             --dart-define=APP_ENV=prod \
             --dart-define=API_BASE_URL="$API_BASE_URL" \
             --dart-define=MAPBOX_ACCESS_TOKEN="$MAPBOX_ACCESS_TOKEN" \
@@ -129,7 +171,9 @@ jobs:
           mkdir -p ../mobile-release
           SHORT_SHA="$(git rev-parse --short HEAD)"
           RELEASE_DATE="$(date -u +%Y%m%d%H%M%S)"
-          cp build/app/outputs/flutter-apk/app-release.apk "../mobile-release/anonym-${RELEASE_DATE}-${SHORT_SHA}.apk"
+          ARTIFACT_BASENAME="anonym-${RELEASE_VERSION}-${BUILD_NUMBER}-${RELEASE_DATE}-${SHORT_SHA}"
+          cp build/app/outputs/flutter-apk/app-release.apk "../mobile-release/${ARTIFACT_BASENAME}.apk"
+          cp build/app/outputs/bundle/release/app-release.aab "../mobile-release/${ARTIFACT_BASENAME}.aab"
 
       - name: Store APK for deployment job
         uses: actions/upload-artifact@v4
@@ -138,6 +182,14 @@ jobs:
           path: mobile-release/*.apk
           if-no-files-found: error
           retention-days: 1
+
+      - name: Store App Bundle for Google Play
+        uses: actions/upload-artifact@v4
+        with:
+          name: production-mobile-aab
+          path: mobile-release/*.aab
+          if-no-files-found: error
+          retention-days: 7
 
   deploy-vps:
     name: Deploy web and backend to VPS
@@ -224,10 +276,62 @@ jobs:
           scp -o StrictHostKeyChecking=yes -o ServerAliveInterval=30 -o ServerAliveCountMax=20 -P "$VPS_PORT" mobile-release/*.apk "$VPS_USER@$VPS_HOST:$MOBILE_ARTIFACTS_DIR/"
           ssh -o StrictHostKeyChecking=yes -o ServerAliveInterval=30 -o ServerAliveCountMax=20 -p "$VPS_PORT" "$VPS_USER@$VPS_HOST" "cd '$MOBILE_ARTIFACTS_DIR' && ls -1t anonym-*.apk | tail -n +11 | xargs -r rm -f && ls -lh"
 
+  publish-google-play:
+    name: Publish Android App Bundle to Google Play
+    runs-on: ubuntu-latest
+    needs:
+      - validate-release-version
+      - build-mobile-apk
+      - deploy-vps
+    if: >-
+      ${{
+        vars.GOOGLE_PLAY_AUTO_PUBLISH == 'true' ||
+        (github.event_name == 'workflow_dispatch' && inputs.publish_google_play == true)
+      }}
+    environment:
+      name: google-play-production
+
+    steps:
+      - name: Download Android App Bundle
+        uses: actions/download-artifact@v4
+        with:
+          name: production-mobile-aab
+          path: mobile-release
+
+      - name: Validate Google Play credentials
+        env:
+          GOOGLE_PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
+        run: |
+          set -euo pipefail
+          test -n "$GOOGLE_PLAY_SERVICE_ACCOUNT_JSON" || {
+            echo "Missing GOOGLE_PLAY_SERVICE_ACCOUNT_JSON in the google-play-production environment."
+            exit 1
+          }
+          python3 -c 'import json, os; payload=json.loads(os.environ["GOOGLE_PLAY_SERVICE_ACCOUNT_JSON"]); assert payload.get("type") == "service_account" and payload.get("client_email") and payload.get("private_key")'
+
+      - name: Upload production bundle to Google Play
+        uses: r0adkll/upload-google-play@e738b9dd8f2476ea806d921b64aacd24f34515a5 # v1.1.5
+        with:
+          serviceAccountJsonPlainText: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
+          packageName: com.anonym.front_flutter
+          releaseFiles: mobile-release/*.aab
+          tracks: ${{ github.event_name == 'workflow_dispatch' && inputs.google_play_track || vars.GOOGLE_PLAY_TRACK || 'production' }}
+          status: ${{ github.event_name == 'workflow_dispatch' && inputs.google_play_status || vars.GOOGLE_PLAY_RELEASE_STATUS || 'completed' }}
+          releaseName: ${{ needs.validate-release-version.outputs.release_tag }}
+          changesNotSentForReview: false
+
   tag-production-release:
     name: Tag production release
     runs-on: ubuntu-latest
-    needs: publish-mobile-apk
+    needs:
+      - publish-mobile-apk
+      - publish-google-play
+    if: >-
+      ${{
+        always() &&
+        needs.publish-mobile-apk.result == 'success' &&
+        (needs.publish-google-play.result == 'success' || needs.publish-google-play.result == 'skipped')
+      }}
 
     steps:
       - name: Checkout code

@@ -129,7 +129,10 @@ class AuthRepository {
   }
 
   Future<void> requestPasswordReset({required String email}) async {
-    await _dio.post<void>('/api/auth/reset-password', data: {'email': email});
+    await _dio.post<void>(
+      '/api/auth/reset-password',
+      data: {'email': email, 'platform': kIsWeb ? 'web' : 'mobile'},
+    );
   }
 
   Future<void> completePasswordReset({

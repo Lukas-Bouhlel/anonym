@@ -18,6 +18,7 @@ const PasswordReset = ({setStatusForm}) => {
         mutationFn: async (data) => {
             return await axios.post(`${api_url}/api/auth/reset-password`, {
                 email: data.email,
+                platform: 'web',
             }, { withCredentials: true });
         },
         onSuccess: () => {

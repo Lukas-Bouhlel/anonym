@@ -158,6 +158,7 @@ Thumbs.db
 /anonym-front-end/docs
 /anonym-front-end/.env.production
 /anonym-back-end/firebase-service-account.json
+google-play-service-account*.json
 /anonym_front_flutter/utils/app_config.dart
 /anonym_front_flutter/key.properties
 /anonym_front_flutter/android/key.properties
