@@ -10,7 +10,10 @@ import '../providers/auth_providers.dart';
 ///
 /// Le routeur applique les redirections d'authentification et expose
 /// les routes publiques/privées à partir des constantes [AppRoutes].
-GoRouter buildRouter(AuthProvider authProvider) {
+GoRouter buildRouter(
+  AuthProvider authProvider, {
+  String initialLocation = AppRoutes.root,
+}) {
   String safeUriForLogs(Uri uri) {
     final hasToken = uri.queryParameters.containsKey('token');
     final keys = uri.queryParameters.keys
@@ -42,7 +45,7 @@ GoRouter buildRouter(AuthProvider authProvider) {
   }
 
   return GoRouter(
-    initialLocation: AppRoutes.root,
+    initialLocation: initialLocation,
     refreshListenable: authProvider,
     redirect: (context, state) {
       AppLogger.debug(
@@ -68,8 +71,17 @@ GoRouter buildRouter(AuthProvider authProvider) {
           location == AppRoutes.auth ||
           location == AppRoutes.login ||
           location == AppRoutes.register;
+      final isPasswordResetFlow = location == AppRoutes.resetPassword;
 
       if (authProvider.isBootstrapping) {
+        // A cold-start Android App Link already contains the one-time token.
+        // Do not replace it with /loading or the token would be lost.
+        if (isPasswordResetFlow) {
+          AppLogger.debug(
+            '[ROUTER][redirect] allow reset link during bootstrap',
+          );
+          return null;
+        }
         AppLogger.debug(
           '[ROUTER][redirect] bootstrapping -> ${location == AppRoutes.loading ? 'stay' : AppRoutes.loading}',
         );

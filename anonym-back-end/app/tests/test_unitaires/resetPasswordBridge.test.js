@@ -7,7 +7,7 @@ describe('reset password bridge', () => {
 
     beforeEach(() => {
         process.env.RESET_PASSWORD_WEB_URL = 'https://ano-nym.fr';
-        process.env.RESET_PASSWORD_MOBILE_URL = 'https://ano-nym.fr';
+        process.env.RESET_PASSWORD_MOBILE_URL = 'https://www.ano-nym.fr';
         delete process.env.MOBILE_DEEP_LINK_BASE_URL;
     });
 
@@ -31,7 +31,7 @@ describe('reset password bridge', () => {
             .set('user-agent', 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X)');
 
         expect(response.status).toBe(200);
-        expect(response.text).toContain('anonym:///auth/reset?token=abc123');
+        expect(response.text).toContain('https://www.ano-nym.fr/auth/reset?token=abc123');
         expect(response.text).toContain('https://ano-nym.fr/reset/?token=abc123');
     });
 });
