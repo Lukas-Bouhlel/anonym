@@ -5,6 +5,10 @@ import { useMutation } from '@tanstack/react-query';
 import { useApi } from '../../../context/ApiContext';
 import { useNavigate } from 'react-router-dom';
 import { usePopup } from '../../../context/PopupContext';
+import {
+    buildMobileResetDeepLink,
+    shouldOpenMobileResetApp
+} from '../../../utils/resetPasswordLinks';
 
 const Reset = () => {
     const { register, handleSubmit, formState: { errors }, } = useForm();
@@ -14,12 +18,30 @@ const Reset = () => {
     const { setOpenPopup, setTextPopup, setState } = usePopup();
     const [messageError, setMessageError] = useState('');
     const [showMessage, setShowMessage] = useState(false);
+    const [mobileAppLink, setMobileAppLink] = useState('');
 
     // Extraction du token de l'URL à partir des query params
     useEffect(() => {
         const params = new URLSearchParams(window.location.search); // Récupère les paramètres de l'URL
         const tokenFromUrl = params.get('token'); // Récupère le token
         setToken(tokenFromUrl); // Met à jour le state avec le token
+
+        const appLink = buildMobileResetDeepLink(tokenFromUrl);
+        setMobileAppLink(appLink);
+
+        if (!shouldOpenMobileResetApp({
+            pathname: window.location.pathname,
+            userAgent: window.navigator.userAgent,
+            token: tokenFromUrl
+        })) {
+            return undefined;
+        }
+
+        const openAppTimer = window.setTimeout(() => {
+            window.location.assign(appLink);
+        }, 150);
+
+        return () => window.clearTimeout(openAppTimer);
     }, []);
 
     // Mutation pour la réinitialisation du mot de passe
@@ -55,6 +77,11 @@ const Reset = () => {
                 <form className="reset-form" onSubmit={handleSubmit(onSubmit)}>
                     <h1>Réinitialisation</h1>
                     <span>Renseigner votre nouveau mot de passe</span>
+                    {mobileAppLink && (
+                        <a className="reset-open-app" href={mobileAppLink}>
+                            Ouvrir dans l&apos;application Anonym
+                        </a>
+                    )}
                     <input aria-label={"Mot de passe"} aria-required="true" type="password" placeholder='Mot de passe' {...register("password", { required: 'Le mot de passe est requis' })} />
                     <input aria-label={"Mot de passe de confirmation"} aria-required="true" type="password" placeholder="Mot de passe de confirmation" {...register("confirmPassword", { required: 'Le mot de passe de confirmation est requis' })} />
                     <button>Valider</button>
