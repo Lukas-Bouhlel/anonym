@@ -18,6 +18,7 @@ const {
     metricsMiddleware
 } = require('./app/utils/observability');
 const env = process.env.NODE_ENV || 'development';
+const PRODUCTION_RESET_PASSWORD_APP_LINK = 'https://www.ano-nym.fr/auth/reset';
 
 const configuredOrigin =
     env === 'production'
@@ -91,9 +92,13 @@ const getResetPasswordMobileBaseUrl = () => {
     const configuredMobileUrl = getRuntimeEnvVar('RESET_PASSWORD_MOBILE_URL');
     const fallbackMobileUrl = getRuntimeEnvVar('MOBILE_DEEP_LINK_BASE_URL') || 'anonym:///auth/reset';
 
-    if (!configuredMobileUrl) return fallbackMobileUrl;
-    if (isHttpLink(configuredMobileUrl)) return fallbackMobileUrl;
-    return configuredMobileUrl;
+    if (env === 'production') return PRODUCTION_RESET_PASSWORD_APP_LINK;
+    if (isHttpLink(configuredMobileUrl)) {
+        return /\/(?:auth\/)?reset\/?(?:\?|$)/i.test(configuredMobileUrl)
+            ? configuredMobileUrl
+            : `${configuredMobileUrl.replace(/\/+$/, '')}/auth/reset`;
+    }
+    return configuredMobileUrl || fallbackMobileUrl;
 };
 
 const isMobileUserAgent = (userAgent) => {

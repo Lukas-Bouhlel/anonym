@@ -40,6 +40,7 @@ const Router = () => {
                   <Route path="/privacy-policy" element={<PrivacyPolicy />} />
                   <Route path="/terms-conditions" element={<TermsConditions />} />
                   <Route path="/reset" element={<Reset />} />
+                  <Route path="/auth/reset" element={<Reset />} />
                   <Route path={ADMIN_LOGIN_PATH} element={<AdminLogin />} />
                   {/* Routes privées */}
                   <Route path="/admin" element={<PrivateRoute allowedRoles={['ADMIN', 'SUPER_ADMIN']}><Admin/></PrivateRoute>} />

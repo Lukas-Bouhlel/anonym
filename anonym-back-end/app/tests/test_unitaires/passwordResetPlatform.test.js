@@ -47,7 +47,7 @@ describe('Auth Controller - password reset platform', () => {
     beforeEach(() => {
         jest.clearAllMocks();
         process.env.RESET_PASSWORD_WEB_URL = 'https://web.example.com';
-        process.env.RESET_PASSWORD_MOBILE_URL = 'anonym:///auth/reset';
+        process.env.RESET_PASSWORD_MOBILE_URL = 'https://mobile.example.com';
         delete process.env.MOBILE_DEEP_LINK_BASE_URL;
     });
 
@@ -55,12 +55,13 @@ describe('Auth Controller - password reset platform', () => {
         process.env = originalEnv;
     });
 
-    it('puts a direct application deep link in emails requested by the mobile app', async () => {
+    it('puts a verified HTTPS app link in emails requested by the mobile app', async () => {
         const html = await requestReset('mobile');
 
-        expect(html).toMatch(/href="anonym:\/\/\/auth\/reset\?token=[a-f0-9]+"/);
+        expect(html).toMatch(/href="https:\/\/mobile\.example\.com\/auth\/reset\?token=[a-f0-9]+"/);
         expect(html).not.toContain('/open-reset-password');
         expect(html).not.toContain('href="https://web.example.com/reset/');
+        expect(html).not.toContain('href="anonym:');
     });
 
     it('builds the reset route from the shared mobile deep-link base', async () => {
