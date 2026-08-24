@@ -73,6 +73,7 @@
     "@rollup/rollup-linux-x64-gnu": "^4.24.0"
   },
   "overrides": {
+    "browserslist": "4.28.7",
     "nanoid": "5.1.16",
     "react-router": "8.3.0"
   }
