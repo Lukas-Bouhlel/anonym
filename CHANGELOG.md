@@ -1,5 +1,20 @@
 # Changelog
 
+## v1.1.0 - 2026-08-24
+
+### Changé
+- PR #234 - Devlop (`52f9dba2`)
+- `b53b0d4f` - feat(android): automatiser le déploiement AAB sur Google Play et préserver les redirections de réinitialisation du mot de passe
+- `063ac915` - Mise à jour de la version de browserslist
+- `af72b891` - mise à jour de la version d'artillery
+- `32594ead` - mise à jour du lint avec un intercepteur d'erreurs asynchrones du décodage SVG.
+
+### Pull Requests déployées
+- PR #234 - Devlop depuis `Lukas-Bouhlel/devlop` (`52f9dba2`)
+
+### Périmètre Git
+- Changements inclus depuis `v1.0.9` jusqu’à `HEAD`.
+
 ## v1.0.9 - 2026-08-06
 
 ### Corrigé
