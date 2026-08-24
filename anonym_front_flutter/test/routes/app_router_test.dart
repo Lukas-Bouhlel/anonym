@@ -12,7 +12,8 @@ import 'package:provider/provider.dart';
 
 class MockAuthRepository extends Mock implements AuthRepository {}
 
-String _pathOf(GoRouter router) => router.routeInformationProvider.value.uri.path;
+String _pathOf(GoRouter router) =>
+    router.routeInformationProvider.value.uri.path;
 
 Future<void> _pumpRouter(
   WidgetTester tester, {
@@ -56,7 +57,9 @@ void main() {
       expect(_pathOf(router), AppRoutes.auth);
     });
 
-    testWidgets('redirects unauthenticated private route to /auth', (tester) async {
+    testWidgets('redirects unauthenticated private route to /auth', (
+      tester,
+    ) async {
       when(() => repository.hydrateSession()).thenAnswer((_) async {});
       when(() => repository.me()).thenThrow(Exception('no session'));
 
@@ -74,7 +77,9 @@ void main() {
       expect(_pathOf(router), AppRoutes.auth);
     });
 
-    testWidgets('normalizes trailing slash for reset password route', (tester) async {
+    testWidgets('normalizes trailing slash for reset password route', (
+      tester,
+    ) async {
       when(() => repository.hydrateSession()).thenAnswer((_) async {});
       when(() => repository.me()).thenThrow(Exception('no session'));
 
@@ -90,13 +95,22 @@ void main() {
       await tester.pump(const Duration(milliseconds: 80));
 
       expect(_pathOf(router), AppRoutes.resetPassword);
-      expect(router.routeInformationProvider.value.uri.queryParameters['token'], 'abc');
+      expect(
+        router.routeInformationProvider.value.uri.queryParameters['token'],
+        'abc',
+      );
     });
 
-    testWidgets('stays on /loading while auth bootstrap is pending', (tester) async {
+    testWidgets('stays on /loading while auth bootstrap is pending', (
+      tester,
+    ) async {
       final completer = Completer<void>();
-      when(() => repository.hydrateSession()).thenAnswer((_) => completer.future);
-      when(() => repository.me()).thenThrow(Exception('unused while bootstrapping'));
+      when(
+        () => repository.hydrateSession(),
+      ).thenAnswer((_) => completer.future);
+      when(
+        () => repository.me(),
+      ).thenThrow(Exception('unused while bootstrapping'));
 
       final auth = AuthProvider(repository);
       addTearDown(auth.dispose);
@@ -108,7 +122,44 @@ void main() {
       completer.complete();
     });
 
-    testWidgets('redirects legacy reset path to modern auth reset path', (tester) async {
+    testWidgets('preserves a reset app link and its token during bootstrap', (
+      tester,
+    ) async {
+      final completer = Completer<void>();
+      when(
+        () => repository.hydrateSession(),
+      ).thenAnswer((_) => completer.future);
+      when(() => repository.me()).thenThrow(Exception('no session'));
+
+      final auth = AuthProvider(repository);
+      addTearDown(auth.dispose);
+
+      final router = buildRouter(
+        auth,
+        initialLocation: '${AppRoutes.resetPassword}?token=from-email',
+      );
+      await _pumpRouter(tester, auth: auth, router: router);
+
+      expect(_pathOf(router), AppRoutes.resetPassword);
+      expect(
+        router.routeInformationProvider.value.uri.queryParameters['token'],
+        'from-email',
+      );
+
+      completer.complete();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 80));
+
+      expect(_pathOf(router), AppRoutes.resetPassword);
+      expect(
+        router.routeInformationProvider.value.uri.queryParameters['token'],
+        'from-email',
+      );
+    });
+
+    testWidgets('redirects legacy reset path to modern auth reset path', (
+      tester,
+    ) async {
       when(() => repository.hydrateSession()).thenAnswer((_) async {});
       when(() => repository.me()).thenThrow(Exception('no session'));
 

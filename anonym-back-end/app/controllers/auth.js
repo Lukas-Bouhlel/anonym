@@ -22,6 +22,7 @@ const REFRESH_TOKEN_TTL_DAYS = Number(process.env.JWT_REFRESH_TTL_DAYS || 7);
 const REFRESH_TOKEN_COOKIE_NAME = process.env.JWT_REFRESH_COOKIE_NAME || 'refreshToken';
 const ACCESS_TOKEN_COOKIE_NAME = process.env.JWT_ACCESS_COOKIE_NAME || 'token';
 const ADMIN_ROLES = ['ADMIN', 'SUPER_ADMIN'];
+const PRODUCTION_RESET_PASSWORD_APP_LINK = 'https://www.ano-nym.fr/auth/reset';
 
 const normalizeEmail = (email) => {
     if (typeof email !== 'string') return '';
@@ -230,7 +231,7 @@ const isHttpLink = (url) => typeof url === 'string' && /^https?:\/\//i.test(url.
 const appendMobileResetPath = (baseUrl) => {
     if (typeof baseUrl !== 'string') return '';
     const trimmedBaseUrl = baseUrl.trim();
-    if (!trimmedBaseUrl || isHttpLink(trimmedBaseUrl)) return '';
+    if (!trimmedBaseUrl) return '';
     if (/\/(?:auth\/)?reset\/?(?:\?|$)/i.test(trimmedBaseUrl)) return trimmedBaseUrl;
     if (trimmedBaseUrl.endsWith(':///')) return `${trimmedBaseUrl}auth/reset`;
     if (trimmedBaseUrl.endsWith('://')) return `${trimmedBaseUrl}/auth/reset`;
@@ -239,7 +240,14 @@ const appendMobileResetPath = (baseUrl) => {
 
 const getResetPasswordMobileBaseUrl = () => {
     const configuredResetUrl = getRuntimeEnvVar('RESET_PASSWORD_MOBILE_URL');
-    if (configuredResetUrl && !isHttpLink(configuredResetUrl)) return configuredResetUrl;
+
+    // Custom schemes (anonym://) are not reliably clickable from email clients.
+    // Production always uses the canonical verified host, even if a legacy
+    // RESET_PASSWORD_MOBILE_URL still points to anonym:// or ano-nym.fr.
+    if (env === 'production') return PRODUCTION_RESET_PASSWORD_APP_LINK;
+
+    if (isHttpLink(configuredResetUrl)) return appendMobileResetPath(configuredResetUrl);
+    if (configuredResetUrl) return appendMobileResetPath(configuredResetUrl);
 
     return appendMobileResetPath(getRuntimeEnvVar('MOBILE_DEEP_LINK_BASE_URL'))
         || 'anonym:///auth/reset';

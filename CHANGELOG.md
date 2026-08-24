@@ -1,5 +1,17 @@
 # Changelog
 
+## v1.1.1 - 2026-08-24
+
+### Corrigé
+- PR #237 - énorme correctif sur la redirection prod après le reset du mot de passe (`dd41eebd`)
+- `ce01d707` - énorme correctif sur la redirection prod après le reset du mot de passe
+
+### Pull Requests déployées
+- PR #237 - énorme correctif sur la redirection prod après le reset du mot de passe depuis `Lukas-Bouhlel/devlop` (`dd41eebd`)
+
+### Périmètre Git
+- Changements inclus depuis `v1.1.0` jusqu’à `HEAD`.
+
 ## v1.1.0 - 2026-08-24
 
 ### Changé
