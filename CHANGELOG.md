@@ -1,5 +1,17 @@
 # Changelog
 
+## v1.1.2 - 2026-08-25
+
+### Ajouté
+- PR #239 - add link app mobile reset password (`20731ebd`)
+- `acdf19e5` - add link app mobile reset password
+
+### Pull Requests déployées
+- PR #239 - add link app mobile reset password depuis `Lukas-Bouhlel/devlop` (`20731ebd`)
+
+### Périmètre Git
+- Changements inclus depuis `v1.1.1` jusqu’à `HEAD`.
+
 ## v1.1.1 - 2026-08-24
 
 ### Corrigé
