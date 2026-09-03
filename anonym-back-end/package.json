@@ -28,7 +28,7 @@
     "crypto-js": "^4.2.0",
     "dompurify": "^3.4.13",
     "dotenv": "^16.4.5",
-    "express": "^4.19.2",
+    "express": "^5.2.1",
     "express-rate-limit": "^7.4.0",
     "express-slow-down": "^2.0.3",
     "firebase-admin": "^14.2.0",
