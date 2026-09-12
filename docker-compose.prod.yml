@@ -73,6 +73,7 @@ services:
       - ./nginx/nginxconfig.io:/etc/nginx/nginxconfig.io
       - ./nginx/ssl:/etc/letsencrypt
       - ./certbot/www:/var/www/certbot
+      - /home/lukas/mobile-artifacts/anonym:/var/www/anonym-apk:ro
       - ./nginx/sitemap.xml:/etc/nginx/sitemap.xml
       - ./nginx/robots.txt:/etc/nginx/robots.txt  
     depends_on:

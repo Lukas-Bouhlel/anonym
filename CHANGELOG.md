@@ -1,5 +1,33 @@
 # Changelog
 
+## v1.1.3 - 2026-09-12
+
+### Ajouté
+- Publication des normes Anonym liées à la sécurité des enfants.
+- Ajout du lien vers ces normes dans le footer.
+- Ajout d’un QR code permettant de télécharger l’application Android.
+- Intégration du logo Google Play dans l’interface de téléchargement.
+
+### Modifié
+- Mise à jour des adresses e-mail des pages légales.
+- Création d’une URL permanente vers le dernier APK signé.
+- Montage du dossier des APK en lecture seule dans Nginx.
+
+### Sécurité
+- Exposition limitée au seul APK courant via `/downloads/anonym.apk`.
+- Conservation des APK versionnés hors de l’accès public.
+
+### Validation
+- ESLint
+- Stylelint
+- Tests Jest
+- Build frontend de production
+- Validation Docker Compose
+- Validation du workflow GitHub Actions
+
+### Pull Requests déployées
+- À renseigner après création de la PR.
+
 ## v1.0.8 - 2026-08-06
 
 ### Corrige

@@ -30,6 +30,7 @@
     "dotenv": "^16.4.5",
     "hamburger-react": "^2.5.2",
     "js-cookie": "^3.0.5",
+    "qrcode.react": "^4.2.0",
     "react": "^19.2.8",
     "react-confetti-boom": "^1.0.0",
     "react-dom": "^19.2.8",
