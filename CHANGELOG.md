@@ -1,5 +1,17 @@
 # Changelog
 
+## v1.1.4 - 2026-09-12
+
+### Sécurité
+- PR #259 - Fix mobile auth with duplicate cookies (`b0b4dcbe`)
+- `28ebb0cf` - Fix mobile auth with duplicate cookies
+
+### Pull Requests déployées
+- PR #259 - Fix mobile auth with duplicate cookies depuis `Lukas-Bouhlel/fix/mobile-duplicate-auth-cookies` (`b0b4dcbe`)
+
+### Périmètre Git
+- Changements inclus depuis `v1.1.3` jusqu’à `HEAD`.
+
 ## v1.1.3 - 2026-09-12
 
 ### Ajouté
