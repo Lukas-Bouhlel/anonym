@@ -1,32 +1,57 @@
 # Changelog
 
-## v1.1.3 - 2026-09-12
+## v1.1.2 - 2026-08-25
 
 ### Ajouté
-- Publication des normes Anonym liées à la sécurité des enfants.
-- Ajout du lien vers ces normes dans le footer.
-- Ajout d’un QR code permettant de télécharger l’application Android.
-- Intégration du logo Google Play dans l’interface de téléchargement.
-
-### Modifié
-- Mise à jour des adresses e-mail des pages légales.
-- Création d’une URL permanente vers le dernier APK signé.
-- Montage du dossier des APK en lecture seule dans Nginx.
-
-### Sécurité
-- Exposition limitée au seul APK courant via `/downloads/anonym.apk`.
-- Conservation des APK versionnés hors de l’accès public.
-
-### Validation
-- ESLint
-- Stylelint
-- Tests Jest
-- Build frontend de production
-- Validation Docker Compose
-- Validation du workflow GitHub Actions
+- PR #239 - add link app mobile reset password (`20731ebd`)
+- `acdf19e5` - add link app mobile reset password
 
 ### Pull Requests déployées
-- À renseigner après création de la PR.
+- PR #239 - add link app mobile reset password depuis `Lukas-Bouhlel/devlop` (`20731ebd`)
+
+### Périmètre Git
+- Changements inclus depuis `v1.1.1` jusqu’à `HEAD`.
+
+## v1.1.1 - 2026-08-24
+
+### Corrigé
+- PR #237 - énorme correctif sur la redirection prod après le reset du mot de passe (`dd41eebd`)
+- `ce01d707` - énorme correctif sur la redirection prod après le reset du mot de passe
+
+### Pull Requests déployées
+- PR #237 - énorme correctif sur la redirection prod après le reset du mot de passe depuis `Lukas-Bouhlel/devlop` (`dd41eebd`)
+
+### Périmètre Git
+- Changements inclus depuis `v1.1.0` jusqu’à `HEAD`.
+
+## v1.1.0 - 2026-08-24
+
+### Changé
+- PR #234 - Devlop (`52f9dba2`)
+- `b53b0d4f` - feat(android): automatiser le déploiement AAB sur Google Play et préserver les redirections de réinitialisation du mot de passe
+- `063ac915` - Mise à jour de la version de browserslist
+- `af72b891` - mise à jour de la version d'artillery
+- `32594ead` - mise à jour du lint avec un intercepteur d'erreurs asynchrones du décodage SVG.
+
+### Pull Requests déployées
+- PR #234 - Devlop depuis `Lukas-Bouhlel/devlop` (`52f9dba2`)
+
+### Périmètre Git
+- Changements inclus depuis `v1.0.9` jusqu’à `HEAD`.
+
+## v1.0.9 - 2026-08-06
+
+### Corrigé
+- `4cea3dc5` - fix(mobile): polish search inputs and reset deep links
+
+### Changé
+- PR #225 - Devlop (`81d36a6f`)
+
+### Pull Requests déployées
+- PR #225 - Devlop depuis `Lukas-Bouhlel/devlop` (`81d36a6f`)
+
+### Périmètre Git
+- Changements inclus depuis `v1.0.8` jusqu’à `HEAD`.
 
 ## v1.0.8 - 2026-08-06
 
@@ -46,6 +71,18 @@
 - A renseigner apres creation de la PR.
 
 Ce fichier est maintenu à chaque release. Chaque entrée doit indiquer les changements livrés, les Pull Requests déployées, les issues/anomalies associées et les validations réalisées.
+
+## v1.0.8 - 2026-08-05
+
+### Documentation
+- PR #222 - update changelog (`e1a5982f`)
+- `63bb58e3` - update changelog
+
+### Pull Requests déployées
+- PR #222 - update changelog depuis `Lukas-Bouhlel/devlop` (`e1a5982f`)
+
+### Périmètre Git
+- Changements inclus depuis `v1.0.7` jusqu’à `HEAD`.
 
 ## v1.0.7 - 2026-08-05
 
