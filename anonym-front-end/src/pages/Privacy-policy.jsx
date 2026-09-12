@@ -58,7 +58,7 @@ const PrivacyPolicy = () => {
           <li><strong>Droit à la portabilité :</strong> Vous pouvez demander à recevoir vos données personnelles dans un format structuré et couramment utilisé.</li>
         </ul>
         <p>
-          Pour exercer ces droits, veuillez nous contacter à l&apos;adresse suivante : <a href="#">dpo@anonym.fr</a>.
+          Pour exercer ces droits, veuillez nous contacter à l&apos;adresse suivante : <a href="mailto:dpo.anonym@gmail.com">dpo.anonym@gmail.com</a>.
         </p>
         <h2>7. Cookies</h2>
         <p>
@@ -66,7 +66,7 @@ const PrivacyPolicy = () => {
         </p>
         <h2>8. Contact</h2>
         <p>
-          Pour toute question concernant cette politique de confidentialité ou pour exercer vos droits, vous pouvez nous contacter à l&apos;adresse suivante : <a href="#">dpo@anonym.fr</a>.
+          Pour toute question concernant cette politique de confidentialité ou pour exercer vos droits, vous pouvez nous contacter à l&apos;adresse suivante : <a href="mailto:dpo.anonym@gmail.com">dpo.anonym@gmail.com</a>.
         </p>
       </div>
     </section>

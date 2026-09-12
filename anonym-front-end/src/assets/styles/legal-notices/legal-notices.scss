@@ -1,6 +1,7 @@
 @use '../base/colors' as *;
 
-.page-legal-notices {
+.page-legal-notices,
+.page-child-safety-standards {
     h2 {
         font-size: 1.5rem;
     }
@@ -16,5 +17,9 @@
 
     &-content {
         padding: 69px 50px 40px;
+    }
+
+    .emergency-contact {
+        margin-bottom: 2%;
     }
 }

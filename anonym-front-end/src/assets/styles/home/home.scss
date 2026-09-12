@@ -1,6 +1,8 @@
 @use '../base/colors' as *;
 @use '../base/mixins' as *;
 
+$android-blue: #4285f4;
+
 .page-home {
     background: $black;
     height: 100vh;
@@ -27,6 +29,41 @@
     &-content {
         z-index: 1;
         position: relative;
+        display: flex;
+        align-items: center;
+        flex-direction: column;
+    }
+
+    &-download-trigger {
+        display: inline-flex;
+        align-items: center;
+        gap: 9px;
+        margin-top: 14px;
+        padding: 11px 20px;
+        border: 1px solid rgb(255 249 244 / 35%);
+        border-radius: 999px;
+        background: rgb(255 249 244 / 8%);
+        box-shadow: 0 12px 30px rgb(0 0 0 / 18%);
+        color: $white;
+        font-size: 13px;
+        font-weight: 600;
+        backdrop-filter: blur(12px);
+        cursor: pointer;
+        transition: background-color 180ms ease, border-color 180ms ease, transform 180ms ease;
+
+        img {
+            width: 19px;
+            height: 19px;
+            object-fit: contain;
+        }
+
+        &:hover,
+        &:focus-visible {
+            border-color: $android-blue;
+            background: rgb(255 249 244 / 14%);
+            outline: none;
+            transform: translateY(-2px);
+        }
     }
 
     &-icons {
@@ -99,5 +136,161 @@
 
     .sphere {
         width: 35% !important;
+    }
+}
+
+.android-download-backdrop {
+    position: fixed;
+    z-index: 10;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    background: rgb(10 10 10 / 72%);
+    backdrop-filter: blur(10px);
+    animation: download-backdrop-in 180ms ease-out;
+}
+
+.android-download-card {
+    position: relative;
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 28px;
+    width: min(100%, 590px);
+    padding: 30px;
+    border: 1px solid rgb(255 249 244 / 16%);
+    border-radius: 24px;
+    background: linear-gradient(145deg, rgb(58 58 58 / 98%), rgb(36 36 36 / 98%));
+    box-shadow: 0 28px 80px rgb(0 0 0 / 45%);
+    color: $white;
+    animation: download-card-in 220ms ease-out;
+}
+
+.android-download-close {
+    position: absolute;
+    top: 12px;
+    right: 14px;
+    width: 34px;
+    height: 34px;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    color: $white;
+    font-size: 27px;
+    line-height: 1;
+    cursor: pointer;
+
+    &:hover,
+    &:focus-visible {
+        background: rgb(255 249 244 / 10%);
+        outline: 1px solid rgb(255 249 244 / 25%);
+    }
+}
+
+.android-download-qr {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 10px;
+    border-radius: 18px;
+    background: $white;
+    box-shadow: 0 12px 30px rgb(0 0 0 / 24%);
+}
+
+.android-download-content {
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    flex-direction: column;
+
+    h2 {
+        margin: 0;
+        font-size: 24px;
+    }
+
+    p {
+        margin: 14px 0 8px;
+        color: rgb(255 249 244 / 78%);
+        font-size: 14px;
+        line-height: 1.55;
+    }
+
+    small {
+        margin-top: 9px;
+        color: rgb(255 249 244 / 52%);
+        font-size: 10px;
+    }
+}
+
+.android-download-platform {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+
+    img {
+        width: 36px;
+        height: 36px;
+        object-fit: contain;
+    }
+}
+
+@keyframes download-backdrop-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes download-card-in {
+    from {
+        opacity: 0;
+        transform: translateY(12px) scale(.98);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+@media (width < 600px) {
+    .android-download-card {
+        grid-template-columns: 1fr;
+        gap: 18px;
+        width: min(100%, 340px);
+        max-height: calc(100vh - 32px);
+        padding: 26px 22px 22px;
+        overflow-y: auto;
+        text-align: center;
+    }
+
+    .android-download-qr {
+        width: fit-content;
+        margin: 0 auto;
+
+        svg {
+            width: 140px;
+            height: 140px;
+        }
+    }
+
+    .android-download-content {
+        align-items: center;
+
+        h2 {
+            font-size: 21px;
+        }
+    }
+
+    .android-download-platform img {
+        width: 32px;
+        height: 32px;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .android-download-backdrop,
+    .android-download-card {
+        animation: none;
     }
 }

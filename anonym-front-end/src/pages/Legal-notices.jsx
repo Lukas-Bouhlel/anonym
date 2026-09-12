@@ -32,7 +32,7 @@ const LegalNotices = () => {
         </ul>
         <h3>Directeur de la publication :</h3>
         <p>Bouhlel Lukas</p>
-        <p>Email : dpo@anonym-tech.fr</p>
+        <p>Email : dpo.anonym@gmail.com</p>
         <h2>2. Hébergement du site</h2>
         <h3>Hébergeur du site :</h3>
         <ul>
@@ -57,7 +57,7 @@ const LegalNotices = () => {
         <p>Ces données sont conservées pour la durée nécessaire aux finalités pour lesquelles elles sont collectées et traitées de manière sécurisée.</p>
         <p>Les mots de passe sont hachés pour garantir la sécurité de vos informations sensibles.</p>
         <p>Conformément à la loi &quot;Informatique et Libertés&quot; du 6 janvier 1978 modifiée, vous bénéficiez d&apos;un droit d&apos;accès, de rectification et d&apos;opposition aux données vous concernant.</p>
-        <p>Pour exercer ce droit, il vous suffit d&apos;envoyer un mail à l&apos;adresse suivante : dpo@anonym.fr.</p>
+        <p>Pour exercer ce droit, il vous suffit d&apos;envoyer un mail à l&apos;adresse suivante : dpo.anonym@gmail.com.</p>
         <p>Nous vous informons que vos données ne sont pas partagées avec des tiers, sauf pour des raisons légales ou pour la sous-traitance dans le cadre de l&apos;exécution de nos services, et toujours sous réserve de la protection de ces données.</p>
         <h2>6. Liens hypertextes</h2>
         <p>Il est possible de créer un lien vers la page de présentation de ce site sans autorisation expresse de Anonym.</p>

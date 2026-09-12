@@ -23,6 +23,7 @@ const Footer = () => {
                 <Link to='/legal-notices' className='footer-items-links'>Mentions légales</Link>
                 <Link to='/privacy-policy' className='footer-items-links'>Confidentialité</Link>
                 <Link to='/terms-conditions' className='footer-items-links'>CGV-CGU</Link>
+                <Link to='/child-safety-standards' className='footer-items-links'>Normes liées à la sécurité</Link>
             </div>
         </div>
      )

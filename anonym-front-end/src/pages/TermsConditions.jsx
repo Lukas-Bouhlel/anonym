@@ -62,7 +62,7 @@ const TermsConditions = () => {
                 </p>
                 <h2>11. Service client</h2>
                 <p>
-                    Pour toute question ou réclamation, le Client peut contacter le service client de Anonym à l&apos;adresse e-mail suivante : service.client@anonym.fr, ou par téléphone au 0192833921.
+                    Pour toute question ou réclamation, le Client peut contacter le service client de Anonym à l&apos;adresse e-mail suivante : dpo.anonym@gmail.com, ou par téléphone au 0192833921.
                 </p>
                 <h2>12. Droit applicable et juridiction compétente</h2>
                 <p>

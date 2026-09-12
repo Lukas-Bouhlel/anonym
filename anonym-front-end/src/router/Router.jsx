@@ -9,6 +9,7 @@ import LegalNotices from "../pages/Legal-notices";
 import Support from "../pages/Support";
 import PrivacyPolicy from "../pages/Privacy-policy";
 import TermsConditions from "../pages/TermsConditions";
+import ChildSafetyStandards from "../pages/ChildSafetyStandards";
 import Layout from "../components/layout/Layout.jsx";
 import Profile from "../pages/Profile.jsx";
 import Reset from "../components/Access/Reset/Reset.jsx";
@@ -39,6 +40,7 @@ const Router = () => {
                   <Route path="/legal-notices" element={<LegalNotices />} />
                   <Route path="/privacy-policy" element={<PrivacyPolicy />} />
                   <Route path="/terms-conditions" element={<TermsConditions />} />
+                  <Route path="/child-safety-standards" element={<ChildSafetyStandards />} />
                   <Route path="/reset" element={<Reset />} />
                   <Route path="/auth/reset" element={<Reset />} />
                   <Route path={ADMIN_LOGIN_PATH} element={<AdminLogin />} />
