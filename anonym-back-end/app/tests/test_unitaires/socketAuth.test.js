@@ -51,4 +51,20 @@ describe('Socket Auth Middleware', () => {
         expect(mockSocket.userId).toBe(decodedToken.userId); // Vérifier que l'ID utilisateur a été attaché
         expect(mockNext).toHaveBeenCalled(); // Vérifier que next() a été appelé sans erreur
     });
+
+    it('should accept a valid duplicate cookie token after a stale token', () => {
+        const decodedToken = { userId: '12345' };
+        mockSocket.handshake.headers = {
+            cookie: 'token=stale_token; token=valid_token',
+        };
+        jwt.verify.mockImplementation((token) => {
+            if (token === 'valid_token') return decodedToken;
+            throw new Error('Invalid token');
+        });
+
+        socketAuth(mockSocket, mockNext);
+
+        expect(mockSocket.userId).toBe(decodedToken.userId);
+        expect(mockNext).toHaveBeenCalledWith();
+    });
 });

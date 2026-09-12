@@ -32,6 +32,25 @@ describe('Auth Middleware', () => {
         expect(next).toHaveBeenCalled(); // Vérifier que next() a été appelé
     });
 
+    it('should accept a valid duplicate token after a stale cookie', () => {
+        const decodedToken = { userId: '123', userRole: 'admin' };
+
+        req.headers = {
+            cookie: 'token=stale-token; token=valid-token',
+        };
+        req.cookies.token = 'stale-token';
+        jwt.verify.mockImplementation((token) => {
+            if (token === 'valid-token') return decodedToken;
+            throw new Error('Invalid token');
+        });
+
+        authMiddleware(req, res, next);
+
+        expect(req.auth).toEqual({ userId: '123', userRole: 'admin' });
+        expect(next).toHaveBeenCalled();
+        expect(res.status).not.toHaveBeenCalled();
+    });
+
     it('should return 401 when token is invalid', () => {
         const token = 'invalid-token';
         req.cookies.token = token;
