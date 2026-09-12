@@ -3,9 +3,14 @@ import '@testing-library/jest-dom';
 import Home from '../../src/pages/Home';
 import { HelmetProvider } from 'react-helmet-async';
 import sphereAnimation from '../../src/components/Animation/useSphereAnimation';
+import userEvent from '@testing-library/user-event';
 
 // Mock des éléments
 jest.mock('../../src/components/Animation/useSphereAnimation', () => jest.fn());
+jest.mock('../../src/assets/images/icons/google_play_logo.png', () => ({
+  __esModule: true,
+  default: 'google-play-logo.png',
+}));
 jest.mock('../../src/assets/images/icons/sphere.svg?react', () => {
   const SphereSvg = () => <svg data-testid="sphere-svg" />;
   SphereSvg.displayName = 'SphereSvg';
@@ -48,5 +53,22 @@ describe('Home Page', () => {
 
     const svgElement = screen.getByTestId('sphere-svg');
     expect(svgElement).toBeInTheDocument();
+  });
+
+  test('should display the Android QR code dialog without a direct download link', async () => {
+    const user = userEvent.setup();
+
+    render(
+      <HelmetProvider>
+        <Home />
+      </HelmetProvider>
+    );
+
+    await user.click(screen.getByRole('button', { name: /application android/i }));
+
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+    expect(screen.getByLabelText(/qr code de téléchargement android/i)).toBeInTheDocument();
+    expect(screen.getByAltText(/logo google play/i)).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /télécharger l’apk/i })).not.toBeInTheDocument();
   });
 });

@@ -1,5 +1,23 @@
 # Changelog
 
+## v1.1.3 - 2026-09-12
+
+### Ajouté
+- `c8304665` - feat: ajout des normes enfant et du téléchargement Android par QR code
+
+### Sécurité
+- `a4881ec4` - fix(security): corrige les dépendances vulnérables du frontend
+- `a3813ab7` - fix(security): corrige les dépendances vulnérables du backend
+
+### Changé
+- PR #256 - Mergre devlop to preprod (`8e41be84`)
+
+### Pull Requests déployées
+- PR #256 - Mergre devlop to preprod depuis `Lukas-Bouhlel/devlop` (`8e41be84`)
+
+### Périmètre Git
+- Changements inclus depuis `v1.1.2` jusqu’à `HEAD`.
+
 ## v1.1.2 - 2026-08-25
 
 ### Ajouté

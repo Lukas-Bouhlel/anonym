@@ -274,7 +274,7 @@ jobs:
           set -euo pipefail
           ssh -o StrictHostKeyChecking=yes -o ServerAliveInterval=30 -o ServerAliveCountMax=20 -p "$VPS_PORT" "$VPS_USER@$VPS_HOST" "mkdir -p '$MOBILE_ARTIFACTS_DIR'"
           scp -o StrictHostKeyChecking=yes -o ServerAliveInterval=30 -o ServerAliveCountMax=20 -P "$VPS_PORT" mobile-release/*.apk "$VPS_USER@$VPS_HOST:$MOBILE_ARTIFACTS_DIR/"
-          ssh -o StrictHostKeyChecking=yes -o ServerAliveInterval=30 -o ServerAliveCountMax=20 -p "$VPS_PORT" "$VPS_USER@$VPS_HOST" "cd '$MOBILE_ARTIFACTS_DIR' && ls -1t anonym-*.apk | tail -n +11 | xargs -r rm -f && ls -lh"
+          ssh -o StrictHostKeyChecking=yes -o ServerAliveInterval=30 -o ServerAliveCountMax=20 -p "$VPS_PORT" "$VPS_USER@$VPS_HOST" "cd '$MOBILE_ARTIFACTS_DIR' && latest_apk=\$(ls -1t anonym-*.apk | head -n 1) && ln -sfn \"\$latest_apk\" anonym.apk && ls -1t anonym-*.apk | tail -n +11 | xargs -r rm -f && ls -lh"
 
   publish-google-play:
     name: Publish Android App Bundle to Google Play
