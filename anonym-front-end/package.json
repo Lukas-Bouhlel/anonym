@@ -68,7 +68,7 @@
     "jest": "^29.7.0",
     "jest-environment-jsdom": "^29.7.0",
     "jsdoc": "^4.0.3",
-    "stylelint": "^16.9.0",
+    "stylelint": "^16.26.1",
     "stylelint-config-standard-scss": "^13.1.0"
   },
   "optionalDependencies": {
